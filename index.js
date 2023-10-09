@@ -41,7 +41,6 @@ const defaultUser={
 const client=new Client({intents:Object.keys(GatewayIntentBits).map((a)=>{
     return GatewayIntentBits[a]
 })});
-
 function notify(urgencyLevel,what){
     switch(urgencyLevel){
         default:
@@ -59,7 +58,13 @@ function notify(urgencyLevel,what){
         break;
     }
 }
-
+const uptime=0;
+client.once("ready",()=>{
+    uptime=Math.round(Date.now()/1000);
+    notify(0,`Started <t:${uptime}:R>`);
+    console.log(`Logged into ${client.user.tag}`);
+    save();
+});
 client.on("messageCreate",async msg=>{
 
 });
