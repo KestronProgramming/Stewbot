@@ -34,6 +34,60 @@ function objCopy(obj){
     return JSON.parse(JSON.stringify(obj));
 }
 
+const defaultMii={
+    info: {
+      creatorName: '',
+      name: 'Default',
+      gender: 'Male',
+      mingle: true,
+      birthMonth: 0,
+      birthday: 0,
+      favColor: 'Red',
+      favorited: false,
+      height: 64,
+      weight: 64,
+      downloadedFromCheckMiiOut: false,
+      type:"Normal"
+    },
+    face: { shape: 0, col: 'White', feature: 'None' },
+    nose: { type: 0, size: 4, vertPos: 9 },
+    mouth: { type: '111', col: 'Peach', size: 4, yPos: 13 },
+    mole: { on: false, size: 4, xPos: 2, yPos: 20 },
+    hair: { type: '111', col: 'Brown', flipped: false },
+    eyebrows: {
+      type: '111',
+      rotation: 6,
+      col: 'Brown',
+      size: 4,
+      yPos: 10,
+      distApart: 2
+    },
+    eyes: {
+      type: '111',
+      rotation: 4,
+      yPos: 12,
+      col: 'Black',
+      size: 4,
+      distApart: 2
+    },
+    glasses: { type: 0, col: 'Grey', size: 4, yPos: 10 },
+    facialHair: {
+      mustacheType: 0,
+      beardType: 0,
+      col: 'Black',
+      mustacheSize: 4,
+      mustacheYPos: 10
+    },
+    name: 'Default',
+    creatorName: ''
+  };
+const defaultReactionRole={//Indexed under messageId
+    "roles":{}//{ emojiId:roleId }
+};
+const defaultInvite={//Indexed under inviteId
+    "uses":0,
+    "createdBy":"",
+};
 const defaultGuild={
     "filter":{
         "blacklist":[],
@@ -70,11 +124,22 @@ const defaultGuild={
         "goombaSquad":true,
         "ai":true
     },
-    "users":[]
+    "counting":{
+        "active":false,
+        "channel":"",
+        "nextNum":1,
+        "highestNum":0,
+        "legit":true, //If manually setting the next number, disqualify from the overarching leaderboard
+        "reset":true
+    },
+    "users":[],
+    "reactionRoles":[],
+    "invites":[]
 };
 const defaultGuildUser={
     "offenses":0,
-    "stars":0
+    "stars":0,
+    "invited":0
 };
 const defaultUser={
     "offenses":0,
@@ -85,7 +150,8 @@ const defaultUser={
         "cards":[],
         "chose":null,
         "playing":null
-    }
+    },
+    "mii":objCopy(defaultMii)
 };
 
 const client=new Client({intents:Object.keys(GatewayIntentBits).map((a)=>{
