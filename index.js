@@ -19,7 +19,7 @@ function makeCall(toWhom,what){
         from:twilio.num
     })
 }
-const {Client, ActionRowBuilder, ButtonBuilder, ButtonStyle, SlashCommandBuilder, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials}=require("discord.js");
+const {Client, ActionRowBuilder, ButtonBuilder, ButtonStyle, SlashCommandBuilder, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType}=require("discord.js");
 const fs=require("fs");
 const express=require("express");
 const path=require("path");
@@ -87,7 +87,8 @@ const defaultGuild={
         "blacklist":[],
         "active":false,
         "censor":true,
-        "logOffenses":"",
+        "log":true,
+        "channel":"",
         "whitelist":[]
     },
     "starboard":{
@@ -173,8 +174,9 @@ var uptime=0;
 client.once("ready",()=>{
     uptime=Math.round(Date.now()/1000);
     notify(0,`Started <t:${uptime}:R>`);
-    console.log(`Logged into ${client.user.tag}`);
+    console.log(`Logged Stewbot handles into ${client.user.tag}`);
     save();
+    client.user.setActivity("S omething T o E xpedite W ork",{type:ActivityType.Custom},1000*60*60*24*31*12);
 });
 client.on("messageCreate",async msg=>{
     if(msg.author.id===client.user.id) return;
@@ -194,18 +196,17 @@ client.on("messageCreate",async msg=>{
         save();
     }
     if(storage[msg.guildId].filter.active===true){
-        console.log(storage[msg.guildId].filter.active);
         var foundOne=false;
         storage[msg.guildId].filter.blacklist.forEach(blockedWord=>{
             if(new RegExp(`([^\\D]|\\b)${blockedWord}(ing|s|ed|er|ism|ist)*([^\\D]|\\b)`,"ig").test(msg.content)){
                 foundOne=true;
-                msg.content.replace(new RegExp(`([^\\D]|\\b)${blockedWord}(ing|s|ed|er|ism|ist)*([^\\D]|\\b)`,"ig"),"[\_]");
+                msg.content=msg.content.replace(new RegExp(`([^\\D]|\\b)${blockedWord}(ing|s|ed|er|ism|ist)*([^\\D]|\\b)`,"ig"),"[\_]");
             }
         });
         if(foundOne){
             storage[msg.guildId].users[msg.author.id].infractions++;
             msg.delete();
-            msg.channel.send(`\`\`\`\nI have censored a message from ${msg.user.username}.\`\`\`\n\n${msg.content}`);
+            msg.channel.send(`\`\`\`\nThe following message from ${msg.author.username} has been censored by Stewbot.\`\`\`\n${msg.content}`);
             return;
         }
     }
@@ -262,6 +263,15 @@ client.on("interactionCreate",async cmd=>{
             else{
                 cmd.reply(`This server doesn't have any words blacklisted at the moment. To add some, you can use \`/no_swear\`.`);
             }
+        break;
+        case 'filter_config':
+            storage[cmd.guild.id].filter.active=cmd.options.getBoolean("active");
+            if(cmd.options.getBoolean("censor")!==null) storage[cmd.guild.id].filter.censor=cmd.options.getBoolean("censor");
+            if(cmd.options.getBoolean("log")!==null) storage[cmd.guild.id].filter.log=cmd.options.getBoolean("log");
+            if(cmd.options.getChannel("channel")!==null) storage[cmd.guild.id].filter.log=cmd.options.getChannel("channel");
+            if(storage[cmd.guild.id].filter.channel==="") storage[cmd.guild.id].filter.log=false;
+            cmd.reply(`Filter configured.${(cmd.options.getBoolean("log")&&!storage[cmd.guild.id].filter.log)?"\n\nNo channel was set to log summaries of deleted messages to, so logging these is turned off. To reenable this, run the command again and set `log` to true and specify a channel.":""}`);
+            save();
         break;
     }
     //Buttons
