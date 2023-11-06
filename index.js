@@ -195,7 +195,7 @@ client.on("messageCreate",async msg=>{
             }
         };
         save();
-        msg.reply(msg.channel.send.toString());
+        msg.reply("Cleared");
         return;
     }
     if(msg.author.id===client.user.id) return;
