@@ -98,7 +98,8 @@ const defaultGuild={
         "channel":"",
         "emoji":"⭐",
         "active":false,
-        "threshold":3
+        "threshold":3,
+        "posted":{}
     },
     "logs":{
         "channel":"",
@@ -262,6 +263,7 @@ client.on("interactionCreate",async cmd=>{
         storage[cmd.user.id]=structuredClone(defaultUser);
         save();
     }
+
     //Slash Commands
     switch(cmd.commandName){
         case 'ping':
@@ -301,8 +303,27 @@ client.on("interactionCreate",async cmd=>{
             if(cmd.options.getBoolean("log")!==null) storage[cmd.guild.id].filter.log=cmd.options.getBoolean("log");
             if(cmd.options.getChannel("channel")!==null) storage[cmd.guild.id].filter.log=cmd.options.getChannel("channel");
             if(storage[cmd.guild.id].filter.channel==="") storage[cmd.guild.id].filter.log=false;
-            cmd.reply(`Filter configured.${(cmd.options.getBoolean("log")&&!storage[cmd.guild.id].filter.log)?"\n\nNo channel was set to log summaries of deleted messages to, so logging these is turned off. To reenable this, run the command again and set `log` to true and specify a channel.":""}`);
+            cmd.reply(`Filter configured.${(cmd.options.getBoolean("log")&&!storage[cmd.guild.id].filter.log)?"\n\nNo channel was set to log summaries of deleted messages to, so logging these is turned off. To reenable this, run the command again and set `log` to true and specify a `channel`.":""}`);
             save();
+        break;
+        case 'starboard_config':
+            storage[cmd.guild.id].starboard.active=cmd.options.getBoolean("active");
+            if(cmd.options.getChannel("channel")!==null) storage[cmd.guild.id].starboard.channel=cmd.options.getChannel("channel");
+            if(cmd.options.getInteger("threshold")!==null) storage[cmd.guild.id].starboard.threshold=cmd.options.getInteger("threshold");
+            if(cmd.options.getString("emoji")!==null) storage[cmd.guild.id].starboard.emoji=cmd.options.getString("emoji");
+            if(storage[cmd.guild.id].starboard.channel==="") storage[cmd.guild.id].starboard.active=false;
+            cmd.reply(`Starboard configured.${cmd.options.getBoolean("active")&&!storage[cmd.guild.id].starboard.active?`\n\nNo channel has been set for this server, so starboard is inactive. To enable starboard, run the command again setting \`active\` to true and specify a \`channel\`.`:""}`);
+            save();
+        break;
+        case 'fun':
+            switch(cmd.options.getSubcommand()){
+                case 'dne':
+                    fetch("https://thispersondoesnotexist.com").then(d=>d.arrayBuffer()).then(d=>{
+                        fs.writeFileSync("./tempDne.jpg",Buffer.from(d));
+                        cmd.reply({content:`Image courtesy of <https://thispersondoesnotexist.com>`,files:["./tempDne.jpg"]});
+                    });
+                break;
+            }
         break;
     }
     //Buttons
@@ -314,6 +335,26 @@ client.on("interactionCreate",async cmd=>{
         case "delete-all":
             cmd.message.delete();
         break;
+    }
+});
+client.on("messageReactionAdd",async (react,user)=>{
+    if(react.message.guildId===null) return;
+    if(react.message.guildId!=="0"){
+        if(!storage.hasOwnProperty(react.message.guildId)){
+            storage[react.message.guildId]=structuredClone(defaultGuild);
+            save();
+        }
+        if(!storage[react.message.guildId].users.hasOwnProperty(user.id)){
+            storage[react.message.guildId].users[user.id]=structuredClone(defaultGuildUser);
+            save();
+        }
+    }
+    if(!storage.hasOwnProperty(user.id)){
+        storage[user.id]=structuredClone(defaultUser);
+        save();
+    }
+    if((storage[react.message.guildId].starboard.emoji===react._emoji.name||storage[react.message.guildId].starboard.emoji===react._emoji.id)&&storage[react.message.guildId].starboard.active&&storage[react.message.guildId].starboard.channel&&react.count>=storage[react.message.guildId].starboard.threshold&&!storage[react.message.guildId].starboard.posted.hasOwnProperty(react.message.id)){
+        react.message.reply("I think I'm supposed to do starboard things here, huh?");
     }
 });
 
