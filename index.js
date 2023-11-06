@@ -26,9 +26,12 @@ const path=require("path");
 const site=new express();
 site.listen(80);
 site.use(express.static(path.join(__dirname,"./static")));
-const storage=require("./storage.json");
+var storage=require("./storage.json");
 function save(){
     fs.writeFileSync("./storage.json",JSON.stringify(storage));
+}
+function ll(s){
+    return s.length>1999?s.slice(0,1996)+"...":s;
 }
 
 const defaultMii={
@@ -80,7 +83,7 @@ const defaultMii={
 };
 const defaultInvite={//Indexed under inviteId
     "uses":0,
-    "createdBy":"",
+    "createdBy":""
 };
 const defaultGuild={
     "filter":{
@@ -146,7 +149,11 @@ const defaultUser={
         "chose":null,
         "playing":null
     },
-    "mii":structuredClone(defaultMii)
+    "mii":structuredClone(defaultMii),
+    "config":{
+        "dmOffenses":true,
+        "returnFiltered":true
+    }
 };
 
 const client=new Client({
@@ -179,6 +186,18 @@ client.once("ready",()=>{
     client.user.setActivity("S omething T o E xpedite W ork",{type:ActivityType.Custom},1000*60*60*24*31*12);
 });
 client.on("messageCreate",async msg=>{
+    if(msg.content==="clearStorage"&&msg.author.username==="kestron06"){
+        storage={
+            "0":{
+                "filter":{
+                    "active":"false"
+                }
+            }
+        };
+        save();
+        msg.reply(msg.channel.send.toString());
+        return;
+    }
     if(msg.author.id===client.user.id) return;
     msg.guildId=msg.guildId||"0";
     if(msg.guildId!=="0"){
@@ -196,17 +215,29 @@ client.on("messageCreate",async msg=>{
         save();
     }
     if(storage[msg.guildId].filter.active===true){
-        var foundOne=false;
+        var foundWords=[];
         storage[msg.guildId].filter.blacklist.forEach(blockedWord=>{
             if(new RegExp(`([^\\D]|\\b)${blockedWord}(ing|s|ed|er|ism|ist)*([^\\D]|\\b)`,"ig").test(msg.content)){
-                foundOne=true;
-                msg.content=msg.content.replace(new RegExp(`([^\\D]|\\b)${blockedWord}(ing|s|ed|er|ism|ist)*([^\\D]|\\b)`,"ig"),"[\_]");
+                foundWords.push(blockedWord);
+                if(foundWords.length===1){
+                    msg.ogContent=msg.content;
+                }
+                msg.content=msg.content.replace(new RegExp(`([^\\D]|\\b)${blockedWord}(ing|s|ed|er|ism|ist|es)*([^\\D]|\\b)`,"ig"),"[\\_]");
             }
         });
-        if(foundOne){
+        if(foundWords.length>0){
             storage[msg.guildId].users[msg.author.id].infractions++;
             msg.delete();
-            msg.channel.send(`\`\`\`\nThe following message from ${msg.author.username} has been censored by Stewbot.\`\`\`\n${msg.content}`);
+            if(storage[msg.guildId].filter.censor){
+                msg.channel.send(ll(`\`\`\`\nThe following message from ${msg.author.username} has been censored by Stewbot.\`\`\`${msg.content}`));
+            }
+            if(storage[msg.author.id].config.dmOffenses){
+                msg.author.send(ll(`Your message in **${msg.guild.name}** was ${storage[msg.guildId].filter.censor?"censored":"deleted"} due to the following word${foundWords.length>1?"s":""} being in the filter: ||${foundWords.join("||, ||")}||${storage[msg.author.id].config.returnFiltered?"```\n"+msg.ogContent.replaceAll("`","\\`")+"```":""}`));
+            }
+            if(storage[msg.guildId].filter.log&&storage[msg.guildId].filter.channel){
+                client.channels.cache.get(ll(storage[msg.guildId].filter.channel).send(`I have ${storage[msg.guildId].filter.censor?"censored":"deleted"} a message from **${msg.author.username}** in <#${msg.channel.id}> for the following blocked word${foundWords.length>1?"s":""}": ||${foundWords.join("||, ||")}||\`\`\`\n${msg.ogContent.replaceAll("`","\\`")}\`\`\``));
+            }
+            save();
             return;
         }
     }
@@ -214,11 +245,11 @@ client.on("messageCreate",async msg=>{
 client.on("interactionCreate",async cmd=>{
     try{
         if(cmd.guild.id!==0){
-            if(!cmd.guild.id in storage){
+            if(!storage.hasOwnProperty(cmd.guild.id)){
                 storage[cmd.guild.id]=structuredClone(defaultGuild);
                 save();
             }
-            if(!cmd.user.id in storage[cmd.guild.id].users){
+            if(!storage[cmd.guild.id].users.hasOwnProperty(cmd.user.id)){
                 storage[cmd.guild.id].users[cmd.user.id]=structuredClone(defaultGuildUser);
                 save();
             }
@@ -227,7 +258,7 @@ client.on("interactionCreate",async cmd=>{
     catch(e){
         cmd.guild={"id":"0"};
     }
-    if(!cmd.user.id in storage){
+    if(!storage.hasOwnProperty(cmd.user.id)){
         storage[cmd.user.id]=structuredClone(defaultUser);
         save();
     }
@@ -291,7 +322,12 @@ client.on("rateLimit",async d=>{
 });
 client.on("guildCreate",async guild=>{
     storage[guild.id]=structuredClone(defaultGuild);
-    notify(1,"Added to a new server! "+guild.name);
+    notify(1,`Added to a new server! ${guild.name}`);
+    save();
+});
+client.on("guildDelete",async guild=>{
+    delete storage[guild.id];
+    notify(1,`Removed from **${guild.name}**.`);
     save();
 });
 
