@@ -19,7 +19,7 @@ function makeCall(toWhom,what){
         from:twilio.num
     })
 }
-const {Client, ActionRowBuilder, ButtonBuilder, ButtonStyle, SlashCommandBuilder, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType}=require("discord.js");
+const {Client, ActionRowBuilder, ButtonBuilder, ButtonStyle, SlashCommandBuilder, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, EmbedBuilder}=require("discord.js");
 const fs=require("fs");
 const express=require("express");
 const path=require("path");
@@ -153,9 +153,12 @@ const defaultUser={
     "mii":structuredClone(defaultMii),
     "config":{
         "dmOffenses":true,
-        "returnFiltered":true
+        "returnFiltered":true,
+        "dmNotifs":true
     }
 };
+var kaProgramRegex =/\b(?!<)https?:\/\/(?:www\.)?khanacademy\.org\/(?:cs|computer-programming)\/[a-z,\d,-]+\/\d{1,16}(?!>)\b/gi;
+var discordMessageRegex =/\b(?!<)https?:\/\/(ptb\.|canary\.)?discord(app)?.com\/channels\/(\@me|\d{1,25})\/\d{1,25}\d{1,25}(?!>)\b/gi;
 
 const client=new Client({
     intents:Object.keys(GatewayIntentBits).map(a=>{return GatewayIntentBits[a]}),
@@ -322,6 +325,52 @@ client.on("interactionCreate",async cmd=>{
                         fs.writeFileSync("./tempDne.jpg",Buffer.from(d));
                         cmd.reply({content:`Image courtesy of <https://thispersondoesnotexist.com>`,files:["./tempDne.jpg"]});
                     });
+                break;
+                case 'wyr':
+                    fetch("https://would-you-rather.p.rapidapi.com/wyr/random", {
+                        method: "GET",
+                        headers: {
+                            "X-RapidAPI-Key": "7bd6392ac6mshceb99882c34c39cp16b90cjsn985bc49d5ae1",
+                            "X-RapidAPI-Host": "would-you-rather.p.rapidapi.com",
+                        },
+                    }).then(d=>d.json()).then(async d=>{
+                        let firstQues=d[0].question.split("Would you rather ")[1];
+                        let firstQuest=firstQues[0].toUpperCase()+firstQues.slice(1,firstQues.length).split(" or ")[0];
+                        let nextQues=firstQues.split(" or ")[1];
+                        let nextQuest=nextQues[0].toUpperCase()+nextQues.slice(1,nextQues.length).split("?")[0];
+                        cmd.reply(`**Would you Rather**\n🅰️: ${firstQuest}\n🅱️: ${nextQuest}`);
+                        let msg = await cmd.fetchReply();
+                        msg.react("🅰️").then(msg.react("🅱️"));
+                    });
+                break;
+                case 'craiyon':
+                    await cmd.reply({content:`Your request is now loading. Expected finish time <t:${Math.round(Date.now()/1000)+60}:R>`,files:["./loading.gif"]});
+                    try{
+                        fetch("https://api.craiyon.com/v3", {
+                            "headers": {
+                                "accept": "*/*",
+                                "accept-language": "en-US,en;q=0.9",
+                                "content-type": "application/json",
+                                "sec-ch-ua": "\"Chromium\";v=\"116\", \"Not)A;Brand\";v=\"24\", \"Opera GX\";v=\"102\"",
+                                "sec-ch-ua-mobile": "?0",
+                                "sec-ch-ua-platform": "\"Windows\"",
+                                "sec-fetch-dest": "empty",
+                                "sec-fetch-mode": "cors",
+                                "sec-fetch-site": "same-site"
+                            },
+                            "referrerPolicy": "same-origin",
+                            "body": `{\"prompt\":\"${cmd.options.getString("prompt")}\",\"version\":\"c4ue22fb7kb6wlac\",\"token\":null,\"model\":\"${cmd.options.getString("type")?cmd.options.getString("type"):"photo"}\",\"negative_prompt\":\"${cmd.options.getString("negative")?cmd.options.getString("negative"):""}\"}`,
+                            "method": "POST",
+                            "mode": "cors",
+                            "credentials": "omit"
+                        }).then(d=>d.json()).then(d=>{
+                            cmd.editReply({"content":`<@${cmd.user.id}>, your prompt has been completed. Images courtesy of <https://www.craiyon.com/>.`,files:d.images.map(i=>`https://img.craiyon.com/${i}`)});
+                            if(storage[cmd.user.id].config.dmNotifs) cmd.user.send(`Your craiyon prompt \`${cmd.options.getString("prompt")}\` has completed. https://discord.com/channels/${cmd.guildId?cmd.guildId:"@me"}/${cmd.channelId}/${cmd.id}`);
+                        });
+                    }
+                    catch(e){
+                        cmd.editReply({"content":"Uh oh, something went wrong."});
+                    }
                 break;
             }
         break;
