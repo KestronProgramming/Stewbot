@@ -39,6 +39,19 @@ const commands = [
 		command.setName("wyr").setDescription("Posts a Would-You-Rather question")
 	).addSubcommand(command=>
 		command.setName("dne").setDescription("Posts a picture of a person - who never existed! (AI Person generation)")
+	).addSubcommand(command=>
+		command.setName("craiyon").setDescription("Use Dall-E Mini to generate an image").addStringOption(option=>
+			option.setName("prompt").setDescription("The prompt to use").setRequired(true)
+		).addStringOption(option=>
+			option.setName("type").setDescription("The type of image to generate").addChoices(
+				{name:"Photo",value:"photo"},
+				{name:"Art",value:"art"},
+				{name:"Drawing",value:"drawing"},
+				{name:"None",value:"none"}
+			)
+		).addStringOption(option=>
+			option.setName("negative").setDescription("Negative words for the AI (Example: 'blue' would result in less blue)")
+		)
 	),
 
 	new ContextMenuCommandBuilder().setName("submit_meme").setType(ApplicationCommandType.Message)
@@ -46,7 +59,6 @@ const commands = [
 	.map(command => command.toJSON());
 
 const rest = new REST({ version: '9' }).setToken(process.env.token);
-
 rest.put(Routes.applicationCommands(process.env.clientId), { body: commands })
 	.then(() => console.log('Launched slash commands'))
 	.catch(console.error);
