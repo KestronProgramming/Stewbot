@@ -4,6 +4,7 @@ const { REST,Routes,PermissionFlagsBits,SlashCommandBuilder,ContextMenuCommandBu
 //Command permissions should be set to the level you would need to do it manually (so if the bot is deleting messages, the permission to set it up would be the permission to delete messages)
 //Don't enable anything in DMs that is unusable in DMs (server configurations, multiplayer reliant commands, etc)
 const commands = [
+	new SlashCommandBuilder().setName("help").setDescription("View the help menu"),
 	new SlashCommandBuilder().setName('ping').setDescription('Check uptime stats'),
 	new SlashCommandBuilder().setName("filter").setDescription("Manage the filter for this server").addSubcommand(command=>
 		command.setName("config").setDescription("Configure the filter for this server").addBooleanOption(option=>
@@ -113,6 +114,22 @@ const commands = [
 	new SlashCommandBuilder().setName("search").setDescription("Search the internet for a query").addStringOption(option=>
 			option.setName("query").setDescription("The query to search for").setRequired(true)
 		),
+	new SlashCommandBuilder().setName("invite_tracking_config").setDescription("Configure invite tracking").addBooleanOption(option=>
+			option.setName("active").setDescription("Track invites").setRequired(true)
+		).addChannelOption(option=>
+			option.setName("channel").setDescription("The channel to post updates to").setRequired(true)
+		).setDefaultMemberPermissions(PermissionFlagsBits.ViewAuditLog).setDMPermission(false),
+	new SlashCommandBuilder().setName("general_config").setDescription("Configure general behaviors").addBooleanOption(option=>
+			option.setName("ai_pings").setDescription("Have the bot post an AI message when pinging it?")
+		).setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers).setDMPermission(false),
+	new SlashCommandBuilder().setName("personal_config").setDescription("Configure the bot for you personally").addBooleanOption(option=>
+			option.setName("ai_pings").setDescription("Respond with an AI message to pings or DMs")
+		).addBooleanOption(option=>
+			option.setName("dm_infractions").setDescription("If you get filtered, should I DM you what was filtered?")
+		),
+	new SlashCommandBuilder().setName("poll").setDescription("Make a poll with automatically tracked options").addStringOption(option=>
+			option.setName("prompt").setDescription("The prompt (We'll set options in a minute)").setRequired(true)
+		).setDMPermission(false),
 
 	new ContextMenuCommandBuilder().setName("submit_meme").setType(ApplicationCommandType.Message),
 	new ContextMenuCommandBuilder().setName("delete_message").setType(ApplicationCommandType.Message).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),//Leaving this in DMs to delete undesirable bot DMs
