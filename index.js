@@ -90,7 +90,7 @@ const defaultGuild={
         "blacklist":[],
         "active":false,
         "censor":true,
-        "log":true,
+        "log":false,
         "channel":"",
         "whitelist":[]
     },
@@ -103,7 +103,7 @@ const defaultGuild={
     },
     "logs":{
         "channel":"",
-        "active":"",
+        "active":false,
         "events":{
             "channel":false,
             "user":false,
@@ -114,14 +114,6 @@ const defaultGuild={
             "invites":false,
             "roles":false
         }
-    },
-    "plugins":{
-        "entertainment":true,
-        "social":true,
-        "informational":true,
-        "miis":true,
-        "goombaSquad":true,
-        "ai":true
     },
     "counting":{
         "active":false,
@@ -157,7 +149,7 @@ const defaultUser={
         "dmNotifs":true
     }
 };
-var kaProgramRegex =/\b(?!<)https?:\/\/(?:www\.)?khanacademy\.org\/(?:cs|computer-programming)\/[a-z,\d,-]+\/\d{1,16}(?!>)\b/gi;
+var kaProgramRegex =/\b(?!<)https?:\/\/(?:www\.)?khanacademy\.org\/(cs|computer-programming)\/[a-z,\d,-]+\/\d{1,16}(?!>)\b/gi;
 var discordMessageRegex =/\b(?!<)https?:\/\/(ptb\.|canary\.)?discord(app)?.com\/channels\/(\@me|\d{1,25})\/\d{1,25}\d{1,25}(?!>)\b/gi;
 
 const client=new Client({
@@ -221,12 +213,12 @@ client.on("messageCreate",async msg=>{
     if(storage[msg.guildId].filter.active===true){
         var foundWords=[];
         storage[msg.guildId].filter.blacklist.forEach(blockedWord=>{
-            if(new RegExp(`([^\\D]|\\b)${blockedWord}(ing|s|ed|er|ism|ist)*([^\\D]|\\b)`,"ig").test(msg.content)){
+            if(new RegExp(`([^\\D]|\\b)${blockedWord}(ing|s|ed|er|ism|ist|es|ual)?([^\\D]|\\b)`,"ig").test(msg.content)){
                 foundWords.push(blockedWord);
                 if(foundWords.length===1){
                     msg.ogContent=msg.content;
                 }
-                msg.content=msg.content.replace(new RegExp(`([^\\D]|\\b)${blockedWord}(ing|s|ed|er|ism|ist|es)*([^\\D]|\\b)`,"ig"),"[\\_]");
+                msg.content=msg.content.replace(new RegExp(`([^\\D]|\\b)${blockedWord}(ing|s|ed|er|ism|ist|es|ual)?([^\\D]|\\b)`,"ig"),"[\\_]");
             }
         });
         if(foundWords.length>0){
@@ -272,24 +264,37 @@ client.on("interactionCreate",async cmd=>{
         case 'ping':
             cmd.reply(`**Online**\n- Latency: ${client.ws.ping} milliseconds\n- Last Started: <t:${uptime}:f>, <t:${uptime}:R>\n- Uptime: ${((Math.round(Date.now()/1000)-uptime)/(1000*60*60)).toFixed(2)} hours`);
         break;
-        case 'no_swear':
-            if(storage[cmd.guild.id].filter.blacklist.includes(cmd.options.getString("word"))){
-                cmd.reply({"ephemeral":true,"content":`The word ||${cmd.options.getString("word")}|| is already in the blacklist.${storage[cmd.guild.id].filter.active?"":"To begin filtering in this server, use `/filter_config`."}`});
-            }
-            else{
-                storage[cmd.guild.id].filter.blacklist.push(cmd.options.getString("word"));
-                cmd.reply(`Added ||${cmd.options.getString("word")}|| to the filter for this server.${storage[cmd.guild.id].filter.active?"":`\n\nThe filter for this server is currently disabled. To enable it, use \`/filter_config\`.`}`);
-                save();
-            }
-        break;
-        case 're_swear':
-            if(storage[cmd.guild.id].filter.blacklist.includes(cmd.options.getString("word"))){
-                storage[cmd.guild.id].filter.blacklist.splice(storage[cmd.guild.id].filter.blacklist.indexOf(cmd.options.getString("word")),1);
-                cmd.reply(`Alright, I have removed ||${cmd.options.getString("word")}|| from the filter.`);
-                save();
-            }
-            else{
-                cmd.reply(`I'm sorry, but I don't appear to have that word in my blacklist. Are you sure you're spelling it right? You can use \`/view_filter\` to see all filtered words.`);
+        case "filter":
+            switch(cmd.options.getSubCommand()){
+                case "add":
+                    if(storage[cmd.guild.id].filter.blacklist.includes(cmd.options.getString("word"))){
+                        cmd.reply({"ephemeral":true,"content":`The word ||${cmd.options.getString("word")}|| is already in the blacklist.${storage[cmd.guild.id].filter.active?"":"To begin filtering in this server, use `/filter_config`."}`});
+                    }
+                    else{
+                        storage[cmd.guild.id].filter.blacklist.push(cmd.options.getString("word"));
+                        cmd.reply(`Added ||${cmd.options.getString("word")}|| to the filter for this server.${storage[cmd.guild.id].filter.active?"":`\n\nThe filter for this server is currently disabled. To enable it, use \`/filter_config\`.`}`);
+                        save();
+                    }
+                break;
+                case "remove":
+                    if(storage[cmd.guild.id].filter.blacklist.includes(cmd.options.getString("word"))){
+                        storage[cmd.guild.id].filter.blacklist.splice(storage[cmd.guild.id].filter.blacklist.indexOf(cmd.options.getString("word")),1);
+                        cmd.reply(`Alright, I have removed ||${cmd.options.getString("word")}|| from the filter.`);
+                        save();
+                    }
+                    else{
+                        cmd.reply(`I'm sorry, but I don't appear to have that word in my blacklist. Are you sure you're spelling it right? You can use \`/view_filter\` to see all filtered words.`);
+                    }
+                break;
+                case "config":
+                    storage[cmd.guild.id].filter.active=cmd.options.getBoolean("active");
+                    if(cmd.options.getBoolean("censor")!==null) storage[cmd.guild.id].filter.censor=cmd.options.getBoolean("censor");
+                    if(cmd.options.getBoolean("log")!==null) storage[cmd.guild.id].filter.log=cmd.options.getBoolean("log");
+                    if(cmd.options.getChannel("channel")!==null) storage[cmd.guild.id].filter.log=cmd.options.getChannel("channel");
+                    if(storage[cmd.guild.id].filter.channel==="") storage[cmd.guild.id].filter.log=false;
+                    cmd.reply(`Filter configured.${(cmd.options.getBoolean("log")&&!storage[cmd.guild.id].filter.log)?"\n\nNo channel was set to log summaries of deleted messages to, so logging these is turned off. To reenable this, run the command again and set `log` to true and specify a `channel`.":""}`);
+                    save();
+                break;
             }
         break;
         case 'view_filter':
@@ -299,15 +304,6 @@ client.on("interactionCreate",async cmd=>{
             else{
                 cmd.reply(`This server doesn't have any words blacklisted at the moment. To add some, you can use \`/no_swear\`.`);
             }
-        break;
-        case 'filter_config':
-            storage[cmd.guild.id].filter.active=cmd.options.getBoolean("active");
-            if(cmd.options.getBoolean("censor")!==null) storage[cmd.guild.id].filter.censor=cmd.options.getBoolean("censor");
-            if(cmd.options.getBoolean("log")!==null) storage[cmd.guild.id].filter.log=cmd.options.getBoolean("log");
-            if(cmd.options.getChannel("channel")!==null) storage[cmd.guild.id].filter.log=cmd.options.getChannel("channel");
-            if(storage[cmd.guild.id].filter.channel==="") storage[cmd.guild.id].filter.log=false;
-            cmd.reply(`Filter configured.${(cmd.options.getBoolean("log")&&!storage[cmd.guild.id].filter.log)?"\n\nNo channel was set to log summaries of deleted messages to, so logging these is turned off. To reenable this, run the command again and set `log` to true and specify a `channel`.":""}`);
-            save();
         break;
         case 'starboard_config':
             storage[cmd.guild.id].starboard.active=cmd.options.getBoolean("active");
@@ -374,6 +370,19 @@ client.on("interactionCreate",async cmd=>{
                 break;
             }
         break;
+        case 'delete_message':
+            if(cmd.guildId!==null&&cmd.guildId!=="0"){
+                cmd.targetMessage.delete();
+                if(storage[cmd.guildId].filter.log&&storage[cmd.guildId].filter.channel){
+                    client.channels.cache.get(storage[cmd.guildId]).send(`Message from **${cmd.targetMessage.author.id}** deleted by **${cmd.user.username}**.\n\n${cmd.targetMessage.content}`);
+                }
+                cmd.reply({"content":"Success","ephemeral":true});
+            }
+            else if(cmd.targetMessage.author.id===client.user.id){
+                cmd.targetMessage.delete();
+                cmd.reply({"content":"Success","ephemeral":true});
+            }
+        break;
     }
     //Buttons
     switch(cmd.customId){
@@ -416,7 +425,6 @@ client.on("guildCreate",async guild=>{
     save();
 });
 client.on("guildDelete",async guild=>{
-    delete storage[guild.id];
     notify(1,`Removed from **${guild.name}**.`);
     save();
 });
