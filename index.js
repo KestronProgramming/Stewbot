@@ -125,7 +125,8 @@ const defaultGuild={
     },
     "users":{},
     "reactionRoles":[],
-    "invites":[]
+    "invites":[],
+    "polls":{}
 };
 const defaultGuildUser={
     "infractions":0,
