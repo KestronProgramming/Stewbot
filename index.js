@@ -543,7 +543,7 @@ client.on("interactionCreate",async cmd=>{
         break;
     }
     if(cmd.customId?.startsWith("poll-closeOption")){
-        if(cmd.user.id===cmd.customId.split("poll-closeOption")[1]||!cmd.member.permissions.has(PermissionFlagsBits.ManageMessages)){
+        if(cmd.user.id===cmd.customId.split("poll-closeOption")[1]||cmd.member.permissions.has(PermissionFlagsBits.ManageMessages)){
             var poll=parsePoll(cmd.message.content,true);
             var keys=Object.keys(storage[cmd.guild.id].polls[cmd.message.id].options);
             var finalResults={};
@@ -569,6 +569,8 @@ client.on("interactionCreate",async cmd=>{
             });
             fs.writeFileSync("./tempPoll.png",canvas.toBuffer("image/png"));
             cmd.update({content:`**Poll Closed**\n<@${poll.starter}> asked: **${poll.title}**${poll.choices.map((a,i)=>`\n${i}. ${a} **${storage[cmd.guild.id].polls[cmd.message.id].options[a].length}** - ${pieCols[i][1]}`).join("")}`,components:[],allowedMentions:[],files:["./tempPoll.png"]});
+            delete storage[cmd.guild.id].polls[cmd.message.id];
+            save();
         }
         else{
             cmd.reply({"ephemeral":true,"content":"You didn't start this poll and you don't have sufficient permissions to override this."});
