@@ -21,8 +21,16 @@ const commands = [
 				option.setName("word").setDescription("The word to blacklist").setRequired(true)
 			)
 		).addSubcommand(command=>
-			command.setName("remove").setDescription('Remove a word to the filter').addStringOption(option=>
+			command.setName("remove").setDescription('Remove a word from the filter').addStringOption(option=>
 				option.setName("word").setDescription("The word to remove from the blacklist").setRequired(true)
+			)
+		).addSubcommand(command=>
+			command.setName("import").setDescription("Import a predetermined wordlist").addStringOption(option=>
+				option.setName("strictness").setDescription("How strict should the imported words be?").addChoices(
+					{"name":"Strict","value":"strict"},
+					{"name":"Moderate","value":"moderate"},
+					{"name":"Weak","value":"weak"}
+				)
 			)
 		).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages).setDMPermission(false),
 	new SlashCommandBuilder().setName("view_filter").setDescription("View the list of blacklisted words for this server").setDMPermission(false),
@@ -130,10 +138,23 @@ const commands = [
 	new SlashCommandBuilder().setName("poll").setDescription("Make a poll with automatically tracked options").addStringOption(option=>
 			option.setName("prompt").setDescription("The prompt (We'll set options in a minute)").setRequired(true)
 		).setDMPermission(false),
+	new SlashCommandBuilder().setName("ticket").setDescription("Set up a ticket system for users to contact mods").setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels).setDMPermission(false),
+	new SlashCommandBuilder().setName("auto-join-message_config").setDescription("Set up a message to be sent automatically when a user joins").addStringOption(option=>
+			option.setName("message").setDescription("The message to be sent").setRequired(true)
+		).addStringOption(option=>
+			option.setName("channel_or_dm").setDescription("Should I post this message in a channel or the user's DMs?").addChoices(
+				{"name":"Channel","value":"channel"},
+				{"name":"DM","value":"dm"}
+			)
+		).addChannelOption(option=>
+			option.setName("channel").setDescription("The channel to post the message to")
+		).setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers).setDMPermission(false),
+	new SlashCommandBuilder().setName("reaction_roles").setDescription("Setup a message with reaction roles").setDefaultMemberPermissions(PermissionFlagsBits.ManageRoles).setDMPermission(false),
 
 	new ContextMenuCommandBuilder().setName("submit_meme").setType(ApplicationCommandType.Message),
 	new ContextMenuCommandBuilder().setName("delete_message").setType(ApplicationCommandType.Message).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),//Leaving this in DMs to delete undesirable bot DMs
-	new ContextMenuCommandBuilder().setName("translate_message").setType(ApplicationCommandType.Message)
+	new ContextMenuCommandBuilder().setName("translate_message").setType(ApplicationCommandType.Message),
+	new ContextMenuCommandBuilder().setName("move_message").setType(ApplicationCommandType.Message).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages).setDMPermission(false)
 ]
 	.map(command => command.toJSON());
 
