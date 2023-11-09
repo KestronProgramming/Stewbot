@@ -19,7 +19,8 @@ function makeCall(toWhom,what){
         from:twilio.num
     })
 }
-const {Client, ActionRowBuilder, ButtonBuilder, ButtonStyle, SlashCommandBuilder, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, EmbedBuilder}=require("discord.js");
+const { createCanvas, loadImage } = require('canvas');
+const {Client, ActionRowBuilder, ButtonBuilder, ButtonStyle, SlashCommandBuilder, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, EmbedBuilder, PermissionFlagsBits}=require("discord.js");
 const fs=require("fs");
 const express=require("express");
 const path=require("path");
@@ -33,6 +34,46 @@ function save(){
 function ll(s){
     return s.length>1999?s.slice(0,1996)+"...":s;
 }
+function parsePoll(c,published){
+    var ret={};
+    ret.title=c.split("**")[1];
+    ret.options=c.match(/(?:^\d\.\s).+(?:$)/gm)?.map(a=>a.slice(2).trim())||[];
+    if(published){
+        var temp={};
+        ret.choices=[];
+        ret.options.forEach(a=>{
+            var t=+a.split("**")[a.split("**").length-1];
+            a=a.split("**")[0].trim();
+            ret.choices.push(a);
+            temp[a]=t;
+        });
+        ret.options=structuredClone(temp);
+        ret.starter=c.split("<@")[1].split(">")[0];
+    }
+    return ret;
+}
+var pieCols=[
+    ["00ff00","Green"],
+    ["00d7ff","Cyan"],
+    ["ff0000","Red"],
+    ["964b00","Brown"],
+    ["ff6400","Orange"],
+    ["ffffff","White"],
+    ["ffff00","Yellow"],
+    ["0000ff","Blue"],
+    ["640064","Purple"],
+    ["c0c0c0","Gray"],
+    ["ff6464","Light Red"],
+    ["054605","Dark Green"],
+    ["ff00ff","Light Purple"],
+    ["00008b","Dark Blue"],
+    ["9370db","Lavender"],
+    ["fa8072","Salmon"],
+    ["808080","Dark Gray"],
+    ["8b0000","Dark Red"],
+    ["f5deb3","Wheat"],
+    ["daa520","Goldenrod"]
+];
 
 const defaultMii={
     info: {
@@ -150,12 +191,26 @@ const defaultUser={
         "dmNotifs":true
     }
 };
+const inps={
+    "pollAdd":new ButtonBuilder().setCustomId("poll-addOption").setLabel("Add a poll option").setStyle(ButtonStyle.Primary),
+    "pollDel":new ButtonBuilder().setCustomId("poll-delOption").setLabel("Remove a poll option").setStyle(ButtonStyle.Danger),
+    "pollLaunch":new ButtonBuilder().setCustomId("poll-publish").setLabel("Publish the poll").setStyle(ButtonStyle.Success),
+
+    "pollInp":new TextInputBuilder().setCustomId("poll-addedInp").setLabel("What should the option be?").setStyle(TextInputStyle.Short).setMinLength(1).setMaxLength(70).setRequired(true),
+    "pollNum":new TextInputBuilder().setCustomId("poll-removedInp").setLabel("Which # option should I remove?").setStyle(TextInputStyle.Short).setMinLength(1).setMaxLength(2).setRequired(true)
+};
+const presets={
+    "pollCreation":new ActionRowBuilder().addComponents(inps.pollAdd,inps.pollDel,inps.pollLaunch),
+
+    "pollAddModal":new ModalBuilder().setCustomId("poll-added").setTitle("Add a poll option").addComponents(new ActionRowBuilder().addComponents(inps.pollInp)),
+    "pollRemModal":new ModalBuilder().setCustomId("poll-removed").setTitle("Remove a poll option").addComponents(new ActionRowBuilder().addComponents(inps.pollNum))
+};
 var kaProgramRegex =/\b(?!<)https?:\/\/(?:www\.)?khanacademy\.org\/(cs|computer-programming)\/[a-z,\d,-]+\/\d{1,16}(?!>)\b/gi;
 var discordMessageRegex =/\b(?!<)https?:\/\/(ptb\.|canary\.)?discord(app)?.com\/channels\/(\@me|\d{1,25})\/\d{1,25}\d{1,25}(?!>)\b/gi;
 
 const client=new Client({
-    intents:Object.keys(GatewayIntentBits).map(a=>{return GatewayIntentBits[a]}),
-    partials:Object.keys(Partials).map(a=>{return Partials[a]})
+    intents:Object.keys(GatewayIntentBits).map(a=>GatewayIntentBits[a]),
+    partials:Object.keys(Partials).map(a=>Partials[a])
 });
 function notify(urgencyLevel,what){
     switch(urgencyLevel){
@@ -384,9 +439,13 @@ client.on("interactionCreate",async cmd=>{
                 cmd.reply({"content":"Success","ephemeral":true});
             }
         break;
+        case 'poll':
+            cmd.reply({"content":`**${cmd.options.getString("prompt")}**`,"ephemeral":true,"components":[presets.pollCreation]});
+        break;
     }
-    //Buttons
+    //Buttons and Modals
     switch(cmd.customId){
+        //Buttons
         case "view_filter":
             cmd.user.send({"content":`The following is the blacklist for **${cmd.guild.name}** as requested.\n\n||${storage[cmd.guild.id].filter.blacklist.join("||, ||")}||`,"components":[new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId("delete-all").setLabel("Delete message").setStyle(ButtonStyle.Success))]});
             cmd.deferUpdate();
@@ -394,6 +453,163 @@ client.on("interactionCreate",async cmd=>{
         case "delete-all":
             cmd.message.delete();
         break;
+        case 'poll-addOption':
+            cmd.showModal(presets.pollAddModal);
+        break;
+        case 'poll-delOption':
+            cmd.showModal(presets.pollRemModal);
+        break;
+        case 'poll-publish':
+            var poll=parsePoll(cmd.message.content);
+            var comp=[];
+            var comp2=[];
+            for(var i=0;i<poll.options.length;i++){
+                comp2.push(new ButtonBuilder().setCustomId("voted"+i).setLabel(poll.options[i]).setStyle(ButtonStyle.Primary));
+                if(comp2.length===5){
+                    comp.push(new ActionRowBuilder().addComponents(...comp2));
+                    comp2=[];
+                }
+            }
+            comp.push(new ActionRowBuilder().addComponents(...comp2));
+            cmd.channel.send({content:`<@${cmd.user.id}> asks: **${poll.title}**${poll.options.map((a,i)=>`\n${i}. ${a} **0**`).join("")}`,components:[...comp,new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId("poll-removeVote"+cmd.user.id).setLabel("Remove vote").setStyle(ButtonStyle.Danger),new ButtonBuilder().setCustomId("poll-closeOption"+cmd.user.id).setLabel("Close poll").setStyle(ButtonStyle.Danger))],allowedMentions:[]}).then(msg=>{
+                var t={};
+                poll.options.forEach(option=>{
+                    t[option]=[];
+                });
+                poll.options=structuredClone(t);
+                storage[cmd.guild.id].polls[msg.id]=structuredClone(poll);
+                save();
+            });
+        break;
+
+        //Modals
+        case 'poll-added':
+            var poll=parsePoll(cmd.message.content);
+            if(poll.options.length>=20){
+                cmd.reply("It looks like you've already generated the maximum amount of options!");
+                return;
+            }
+            poll.options.push(cmd.fields.getTextInputValue("poll-addedInp"));
+            cmd.update(`**${poll.title}**${poll.options.map((a,i)=>`\n${i}. ${a}`).join("")}`);
+        break;
+        case 'poll-removed':
+            var i=cmd.fields.getTextInputValue("poll-removedInp");
+            if(!/^\d+$/.test(i)){
+                cmd.deferUpdate();
+                return;
+            }
+            var poll=parsePoll(cmd.message.content);
+            if(+i>poll.options.length||+i<1){
+                cmd.deferUpdate();
+                return;
+            }
+            poll.options.splice(+i-1,1);
+            cmd.update(`**${poll.title}**${poll.options.map((a,i)=>`\n${i}. ${a}`).join("")}`);
+        break;
+        case 'poll-removeVote':
+            var poll=parsePoll(cmd.message.content,true);
+            var keys=Object.keys(storage[cmd.guild.id].polls[cmd.message.id].options);
+            for(var i=0;i<keys.length;i++){
+                if(storage[cmd.guild.id].polls[cmd.message.id].options[keys[i]].includes(cmd.user.id)){
+                    storage[cmd.guild.id].polls[cmd.message.id].options[keys[i]].splice(storage[cmd.guild.id].polls[cmd.message.id].options[keys[i]].indexOf(cmd.user.id),1);
+                    i--;
+                }
+            }
+            save();
+
+            var finalResults={};
+            var totalVotes=0;
+            keys.forEach(a=>{
+                totalVotes+=storage[cmd.guild.id].polls[cmd.message.id].options[a].length;
+            });
+            keys.forEach(a=>{
+                if(storage[cmd.guild.id].polls[cmd.message.id].options[a].length>0) finalResults[a]=((360/totalVotes)*storage[cmd.guild.id].polls[cmd.message.id].options[a].length);
+            });
+            let canvas = createCanvas(600, 600);
+            let ctx = canvas.getContext('2d');
+            ctx.fillStyle = "black";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            var t=0;
+            Object.keys(finalResults).forEach((key,i)=>{
+                ctx.beginPath();
+                ctx.fillStyle="#"+pieCols[poll.choices.indexOf(key)][0];
+                ctx.arc(canvas.width/2,canvas.height/2,canvas.width/2-50,(t)*(Math.PI/180),(finalResults[key]+t)*(Math.PI/180));
+                ctx.lineTo(300, 300);
+                t+=finalResults[key];
+                ctx.fill();
+            });
+            fs.writeFileSync("./tempPoll.png",canvas.toBuffer("image/png"));
+            cmd.update({content:`<@${poll.starter}> asks: **${poll.title}**${poll.choices.map((a,i)=>`\n${i}. ${a} **${storage[cmd.guild.id].polls[cmd.message.id].options[a].length}**${finalResults.hasOwnProperty(a)?` - ${pieCols[i][1]}`:""}`).join("")}`,files:["./tempPoll.png"]});
+        break;
+    }
+    if(cmd.customId?.startsWith("poll-closeOption")){
+        if(cmd.user.id===cmd.customId.split("poll-closeOption")[1]||!cmd.member.permissions.has(PermissionFlagsBits.ManageMessages)){
+            var poll=parsePoll(cmd.message.content,true);
+            var keys=Object.keys(storage[cmd.guild.id].polls[cmd.message.id].options);
+            var finalResults={};
+            var totalVotes=0;
+            keys.forEach(a=>{
+                totalVotes+=storage[cmd.guild.id].polls[cmd.message.id].options[a].length;
+            });
+            keys.forEach(a=>{
+                if(storage[cmd.guild.id].polls[cmd.message.id].options[a].length>0) finalResults[a]=((360/totalVotes)*storage[cmd.guild.id].polls[cmd.message.id].options[a].length);
+            });
+            let canvas = createCanvas(600, 600);
+            let ctx = canvas.getContext('2d');
+            ctx.fillStyle = "black";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            var t=0;
+            Object.keys(finalResults).forEach((key,i)=>{
+                ctx.beginPath();
+                ctx.fillStyle="#"+pieCols[poll.choices.indexOf(key)][0];
+                ctx.arc(canvas.width/2,canvas.height/2,canvas.width/2-50,(t)*(Math.PI/180),(finalResults[key]+t)*(Math.PI/180));
+                ctx.lineTo(300, 300);
+                t+=finalResults[key];
+                ctx.fill();
+            });
+            fs.writeFileSync("./tempPoll.png",canvas.toBuffer("image/png"));
+            cmd.update({content:`**Poll Closed**\n<@${poll.starter}> asked: **${poll.title}**${poll.choices.map((a,i)=>`\n${i}. ${a} **${storage[cmd.guild.id].polls[cmd.message.id].options[a].length}** - ${pieCols[i][1]}`).join("")}`,components:[],allowedMentions:[],files:["./tempPoll.png"]});
+        }
+        else{
+            cmd.reply({"ephemeral":true,"content":"You didn't start this poll and you don't have sufficient permissions to override this."});
+        }
+    }
+    if(cmd.customId?.startsWith("voted")){
+        var poll=parsePoll(cmd.message.content,true);
+        var choice=poll.choices[+cmd.customId.split('voted')[1]];
+        var keys=Object.keys(storage[cmd.guild.id].polls[cmd.message.id].options);
+        for(var i=0;i<keys.length;i++){
+            if(storage[cmd.guild.id].polls[cmd.message.id].options[keys[i]].includes(cmd.user.id)){
+                storage[cmd.guild.id].polls[cmd.message.id].options[keys[i]].splice(storage[cmd.guild.id].polls[cmd.message.id].options[keys[i]].indexOf(cmd.user.id),1);
+                i--;
+            }
+        }
+        storage[cmd.guild.id].polls[cmd.message.id].options[choice].push(cmd.user.id);
+
+        var finalResults={};
+        var totalVotes=0;
+        keys.forEach(a=>{
+            totalVotes+=storage[cmd.guild.id].polls[cmd.message.id].options[a].length;
+        });
+        keys.forEach(a=>{
+            if(storage[cmd.guild.id].polls[cmd.message.id].options[a].length>0) finalResults[a]=((360/totalVotes)*storage[cmd.guild.id].polls[cmd.message.id].options[a].length);
+        });
+        let canvas = createCanvas(600, 600);
+        let ctx = canvas.getContext('2d');
+        ctx.fillStyle = "black";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        var t=0;
+        Object.keys(finalResults).forEach((key,i)=>{
+            ctx.beginPath();
+            ctx.fillStyle="#"+pieCols[poll.choices.indexOf(key)][0];
+            ctx.arc(canvas.width/2,canvas.height/2,canvas.width/2-50,(t)*(Math.PI/180),(finalResults[key]+t)*(Math.PI/180));
+            ctx.lineTo(300, 300);
+            t+=finalResults[key];
+            ctx.fill();
+        });
+        fs.writeFileSync("./tempPoll.png",canvas.toBuffer("image/png"));
+        cmd.update({content:`<@${poll.starter}> asks: **${poll.title}**${poll.choices.map((a,i)=>`\n${i}. ${a} **${storage[cmd.guild.id].polls[cmd.message.id].options[a].length}**${finalResults.hasOwnProperty(a)?` - ${pieCols[i][1]}`:""}`).join("")}`,files:["./tempPoll.png"]});
+        save();
     }
 });
 client.on("messageReactionAdd",async (react,user)=>{
