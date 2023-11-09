@@ -20,7 +20,8 @@ function makeCall(toWhom,what){
     })
 }
 const { createCanvas, loadImage } = require('canvas');
-const {Client, ActionRowBuilder, ButtonBuilder, ButtonStyle, SlashCommandBuilder, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, EmbedBuilder, PermissionFlagsBits}=require("discord.js");
+const { InworldClient, InworldPacket, ServiceError, SessionToken, status } = require("@inworld/nodejs-sdk");
+const {Client, ActionRowBuilder, ButtonBuilder, ButtonStyle, SlashCommandBuilder, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, EmbedBuilder, PermissionFlagsBits, DMChannel}=require("discord.js");
 const fs=require("fs");
 const express=require("express");
 const path=require("path");
@@ -74,6 +75,87 @@ var pieCols=[
     ["f5deb3","Wheat"],
     ["daa520","Goldenrod"]
 ];
+
+//Inworld AI stuff
+var curText={};
+var conns = {};
+var msgs={};
+var lastChannels={};
+var sessions=[];
+function generateSessionToken(key) {
+    return async () => {
+        const inClient = new InworldClient().setApiKey({
+            key: process.env.inworldKey,
+            secret: process.env.inworldSecret
+        }).setScene(process.env.inworldScene);
+        const token = await inClient.generateSessionToken();
+        const sessionId = sessions[key];
+        const actualToken = new SessionToken({
+            expirationTime: token.expirationTime,
+            token: token.token,
+            type: token.type,
+            sessionId: sessionId || token.sessionId
+        });
+        if (!sessionId) {
+            sessions[key] = actualToken.sessionId;
+        }
+        return actualToken;
+    };
+}
+function createInWorldClient(args) {
+    var inClient = new InworldClient()
+        .setGenerateSessionToken(generateSessionToken(`${args.msg.author.id}`))
+        .setConfiguration({
+            capabilities: { audio: false },
+            ...(args.dm ? {} : { connection: { disconnectTimeout: 60000 } })
+        })
+        .setUser({ fullName: args.msg.author.globalName||args.msg.author.username})
+        .setScene(process.env.inworldScene)
+        .setOnError(handleError(args.msg))
+        .setOnMessage((packet) => {
+            if (packet.isText() && packet.text.final) {
+                curText[args.msg.author.username].push(packet.text.text.startsWith(" ")?packet.text.text.slice(1,packet.text.text.length):packet.text.text);
+            }
+            if(packet.control){
+                if(packet.control.type==="INTERACTION_END"){
+                    if(curText[args.msg.author.username].length>0){
+                        msgs[args.msg.author.id].reply(curText[args.msg.author.username].join("\n").replaceAll("@","\\@"));
+                    }
+                    else{
+                        msgs[args.msg.author.id].reply("No comment");
+                    }
+                    inClient.close();
+                }
+            }
+        })
+        .build();
+    return inClient;
+}
+async function sendMessage(msg, dm) {
+    curText[msg.author.username]=[];
+    if (conns[msg.author.id] === null || conns[msg.author.id] === undefined || lastChannels[msg.author.id]!==msg.channel.id) {
+        console.log("Made new connection for " + msg.author.tag);
+        conns[msg.author.id] = createInWorldClient({ dm: dm, msg: msg });
+        lastChannels[msg.author.id]=msg.channel.id;
+    }
+    conns[msg.author.id].sendText(`Message from ${msg.author.globalName||msg.author.username}: ${msg.content.replaceAll("<@" + client.user.id + ">", "")}`);
+    msgs[msg.author.id]=msg;
+}
+const handleError = (msg, dm) => {
+    return (err) => {
+        switch (err.code) {
+            case status.ABORTED:
+            case status.CANCELLED:
+                break;
+            case status.FAILED_PRECONDITION:
+                sendMessage(msg, dm);
+                break;
+            default:
+                console.error(err);
+                break;
+        }
+    }
+};
 
 const defaultMii={
     info: {
@@ -293,6 +375,16 @@ client.on("messageCreate",async msg=>{
             return;
         }
     }
+
+    if (msg.channel instanceof DMChannel&&!msg.author.bot) {
+        sendMessage(msg, true);
+    }
+    else if (msg.mentions.users.has(client.user.id)&&!msg.author.bot) {
+        if (/^<[@|#|@&].*?>$/g.test(msg.content.replace(/\s+/g, ''))) {
+            msg.content = "*User says nothing*";
+        }
+        sendMessage(msg);
+    }
 });
 client.on("interactionCreate",async cmd=>{
     try{
@@ -315,13 +407,41 @@ client.on("interactionCreate",async cmd=>{
         save();
     }
 
-    //Slash Commands
+    //Slash Commands and Context Menu Commands
     switch(cmd.commandName){
+        //Slash Commands
         case 'ping':
             cmd.reply(`**Online**\n- Latency: ${client.ws.ping} milliseconds\n- Last Started: <t:${uptime}:f>, <t:${uptime}:R>\n- Uptime: ${((Math.round(Date.now()/1000)-uptime)/(1000*60*60)).toFixed(2)} hours`);
         break;
+        case 'define':
+            fetch("https://api.dictionaryapi.dev/api/v2/entries/en/"+cmd.options.getString("what")).then(d=>d.json()).then(d=>{
+                    d = d[0];
+                    let defs = [];
+                    for (var i = 0; i < d.meanings.length; i++) {
+                        for (var j = 0;j < d.meanings[i].definitions.length;j++) {
+                            defs.push({
+                                name:"Type: " +d.meanings[i].partOfSpeech,
+                                value:d.meanings[i].definitions[j].definition+(d.meanings[i].definitions[j].example?"\nExample: " +d.meanings[i].definitions[j].example:""),
+                                inline: true
+                            });
+                        }
+                    }
+                    cmd.reply({embeds:[{
+                        type: "rich",
+                        title: "Definition of "+d.word,
+                        description: d.origin,
+                        color: 0x00ff00,
+                        fields: defs,
+                        footer: {
+                            text: d.phonetic,
+                        }
+                    }]});
+                }).catch(e=>{
+                    cmd.reply("I'm sorry, I didn't find a definition for that");
+                });
+        break;
         case "filter":
-            switch(cmd.options.getSubCommand()){
+            switch(cmd.options.getSubcommand()){
                 case "add":
                     if(storage[cmd.guild.id].filter.blacklist.includes(cmd.options.getString("word"))){
                         cmd.reply({"ephemeral":true,"content":`The word ||${cmd.options.getString("word")}|| is already in the blacklist.${storage[cmd.guild.id].filter.active?"":"To begin filtering in this server, use `/filter_config`."}`});
@@ -426,6 +546,11 @@ client.on("interactionCreate",async cmd=>{
                 break;
             }
         break;
+        case 'poll':
+            cmd.reply({"content":`**${cmd.options.getString("prompt")}**`,"ephemeral":true,"components":[presets.pollCreation]});
+        break;
+
+        //Context Menu Commands
         case 'delete_message':
             if(cmd.guildId!==null&&cmd.guildId!=="0"){
                 cmd.targetMessage.delete();
@@ -438,9 +563,6 @@ client.on("interactionCreate",async cmd=>{
                 cmd.targetMessage.delete();
                 cmd.reply({"content":"Success","ephemeral":true});
             }
-        break;
-        case 'poll':
-            cmd.reply({"content":`**${cmd.options.getString("prompt")}**`,"ephemeral":true,"components":[presets.pollCreation]});
         break;
     }
     //Buttons and Modals
@@ -528,6 +650,7 @@ client.on("interactionCreate",async cmd=>{
             let canvas = createCanvas(600, 600);
             let ctx = canvas.getContext('2d');
             ctx.fillStyle = "black";
+            ctx.strokeStyle = "black";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             var t=0;
             Object.keys(finalResults).forEach((key,i)=>{
@@ -537,6 +660,7 @@ client.on("interactionCreate",async cmd=>{
                 ctx.lineTo(300, 300);
                 t+=finalResults[key];
                 ctx.fill();
+                ctx.stroke();
             });
             fs.writeFileSync("./tempPoll.png",canvas.toBuffer("image/png"));
             cmd.update({content:`<@${poll.starter}> asks: **${poll.title}**${poll.choices.map((a,i)=>`\n${i}. ${a} **${storage[cmd.guild.id].polls[cmd.message.id].options[a].length}**${finalResults.hasOwnProperty(a)?` - ${pieCols[i][1]}`:""}`).join("")}`,files:["./tempPoll.png"]});
@@ -557,6 +681,7 @@ client.on("interactionCreate",async cmd=>{
             let canvas = createCanvas(600, 600);
             let ctx = canvas.getContext('2d');
             ctx.fillStyle = "black";
+            ctx.strokeStyle = "black";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             var t=0;
             Object.keys(finalResults).forEach((key,i)=>{
@@ -566,6 +691,7 @@ client.on("interactionCreate",async cmd=>{
                 ctx.lineTo(300, 300);
                 t+=finalResults[key];
                 ctx.fill();
+                ctx.stroke();
             });
             fs.writeFileSync("./tempPoll.png",canvas.toBuffer("image/png"));
             cmd.update({content:`**Poll Closed**\n<@${poll.starter}> asked: **${poll.title}**${poll.choices.map((a,i)=>`\n${i}. ${a} **${storage[cmd.guild.id].polls[cmd.message.id].options[a].length}** - ${pieCols[i][1]}`).join("")}`,components:[],allowedMentions:[],files:["./tempPoll.png"]});
@@ -599,6 +725,7 @@ client.on("interactionCreate",async cmd=>{
         let canvas = createCanvas(600, 600);
         let ctx = canvas.getContext('2d');
         ctx.fillStyle = "black";
+        ctx.strokeStyle="black";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         var t=0;
         Object.keys(finalResults).forEach((key,i)=>{
@@ -608,6 +735,7 @@ client.on("interactionCreate",async cmd=>{
             ctx.lineTo(300, 300);
             t+=finalResults[key];
             ctx.fill();
+            ctx.stroke();
         });
         fs.writeFileSync("./tempPoll.png",canvas.toBuffer("image/png"));
         cmd.update({content:`<@${poll.starter}> asks: **${poll.title}**${poll.choices.map((a,i)=>`\n${i}. ${a} **${storage[cmd.guild.id].polls[cmd.message.id].options[a].length}**${finalResults.hasOwnProperty(a)?` - ${pieCols[i][1]}`:""}`).join("")}`,files:["./tempPoll.png"]});
