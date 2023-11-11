@@ -11,6 +11,7 @@ Currently being rewritten, you can see progress here.
  - Would you Rather
  - Message Deletion via Context Menu
  - Better notifications of important bot events
+ - Auto roles
 ## Planned Features
  - Starboard
  - Counting
@@ -26,5 +27,6 @@ Currently being rewritten, you can see progress here.
  - Personal and Server configs for general options
  - Staff tickets
  - Auto join messages
- - Reaction Roles
  - Message moving
+ - Automatic permission checking
+ - Better error correction

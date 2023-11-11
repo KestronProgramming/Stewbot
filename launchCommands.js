@@ -149,7 +149,9 @@ const commands = [
 		).addChannelOption(option=>
 			option.setName("channel").setDescription("The channel to post the message to")
 		).setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers).setDMPermission(false),
-	new SlashCommandBuilder().setName("reaction_roles").setDescription("Setup a message with reaction roles").setDefaultMemberPermissions(PermissionFlagsBits.ManageRoles).setDMPermission(false),
+	new SlashCommandBuilder().setName("auto_roles").setDescription("Setup a message with auto roles").addStringOption(option=>
+			option.setName("message").setDescription("The message to be sent with the role options").setRequired(true)
+		).setDefaultMemberPermissions(PermissionFlagsBits.ManageRoles).setDMPermission(false),
 
 	new ContextMenuCommandBuilder().setName("submit_meme").setType(ApplicationCommandType.Message),
 	new ContextMenuCommandBuilder().setName("delete_message").setType(ApplicationCommandType.Message).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),//Leaving this in DMs to delete undesirable bot DMs
