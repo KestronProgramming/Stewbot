@@ -19,9 +19,9 @@ function makeCall(toWhom,what){
         from:twilio.num
     })
 }
-const { createCanvas, loadImage } = require('canvas');
-const { InworldClient, InworldPacket, ServiceError, SessionToken, status } = require("@inworld/nodejs-sdk");
-const {Client, ActionRowBuilder, ButtonBuilder, ButtonStyle, SlashCommandBuilder, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, EmbedBuilder, PermissionFlagsBits, DMChannel}=require("discord.js");
+const { createCanvas } = require('canvas');
+const { InworldClient, SessionToken, status } = require("@inworld/nodejs-sdk");
+const {Client, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder}=require("discord.js");
 const fs=require("fs");
 const express=require("express");
 const path=require("path");
@@ -29,6 +29,7 @@ const site=new express();
 site.listen(80);
 site.use(express.static(path.join(__dirname,"./static")));
 var storage=require("./storage.json");
+const { EsimProfilePage } = require("twilio/lib/rest/supersim/v1/esimProfile");
 function save(){
     fs.writeFileSync("./storage.json",JSON.stringify(storage));
 }
@@ -279,10 +280,13 @@ const inps={
     "pollLaunch":new ButtonBuilder().setCustomId("poll-publish").setLabel("Publish the poll").setStyle(ButtonStyle.Success),
 
     "pollInp":new TextInputBuilder().setCustomId("poll-addedInp").setLabel("What should the option be?").setStyle(TextInputStyle.Short).setMinLength(1).setMaxLength(70).setRequired(true),
-    "pollNum":new TextInputBuilder().setCustomId("poll-removedInp").setLabel("Which # option should I remove?").setStyle(TextInputStyle.Short).setMinLength(1).setMaxLength(2).setRequired(true)
+    "pollNum":new TextInputBuilder().setCustomId("poll-removedInp").setLabel("Which # option should I remove?").setStyle(TextInputStyle.Short).setMinLength(1).setMaxLength(2).setRequired(true),
+
+    "roleAdd":new RoleSelectMenuBuilder().setCustomId("role-addOption").setMinValues(1).setMaxValues(20).setPlaceholder("Select all the roles you would like to offer")
 };
 const presets={
     "pollCreation":new ActionRowBuilder().addComponents(inps.pollAdd,inps.pollDel,inps.pollLaunch),
+    "rolesCreation":new ActionRowBuilder().addComponents(inps.roleAdd),
 
     "pollAddModal":new ModalBuilder().setCustomId("poll-added").setTitle("Add a poll option").addComponents(new ActionRowBuilder().addComponents(inps.pollInp)),
     "pollRemModal":new ModalBuilder().setCustomId("poll-removed").setTitle("Remove a poll option").addComponents(new ActionRowBuilder().addComponents(inps.pollNum))
@@ -549,6 +553,9 @@ client.on("interactionCreate",async cmd=>{
         case 'poll':
             cmd.reply({"content":`**${cmd.options.getString("prompt")}**`,"ephemeral":true,"components":[presets.pollCreation]});
         break;
+        case 'auto_roles':
+            cmd.reply({"content":`${cmd.options.getString("message")}`,"ephemeral":true,"components":[presets.rolesCreation]});
+        break;
 
         //Context Menu Commands
         case 'delete_message':
@@ -565,7 +572,7 @@ client.on("interactionCreate",async cmd=>{
             }
         break;
     }
-    //Buttons and Modals
+    //Buttons, Modals, and Select Menus
     switch(cmd.customId){
         //Buttons
         case "view_filter":
@@ -592,7 +599,7 @@ client.on("interactionCreate",async cmd=>{
                     comp2=[];
                 }
             }
-            comp.push(new ActionRowBuilder().addComponents(...comp2));
+            if(comp2.length>0) comp.push(new ActionRowBuilder().addComponents(...comp2));
             cmd.channel.send({content:`<@${cmd.user.id}> asks: **${poll.title}**${poll.options.map((a,i)=>`\n${i}. ${a} **0**`).join("")}`,components:[...comp,new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId("poll-removeVote").setLabel("Remove vote").setStyle(ButtonStyle.Danger),new ButtonBuilder().setCustomId("poll-closeOption"+cmd.user.id).setLabel("Close poll").setStyle(ButtonStyle.Danger))],allowedMentions:[]}).then(msg=>{
                 var t={};
                 poll.options.forEach(option=>{
@@ -664,6 +671,32 @@ client.on("interactionCreate",async cmd=>{
             });
             fs.writeFileSync("./tempPoll.png",canvas.toBuffer("image/png"));
             cmd.update({content:`<@${poll.starter}> asks: **${poll.title}**${poll.choices.map((a,i)=>`\n${i}. ${a} **${storage[cmd.guild.id].polls[cmd.message.id].options[a].length}**${finalResults.hasOwnProperty(a)?` - ${pieCols[i][1]}`:""}`).join("")}`,files:["./tempPoll.png"]});
+        break;
+
+        //Select Menus
+        case 'role-addOption':
+            let myRole=cmd.guild.members.cache.get(client.user.id).roles.highest.position;
+            var badRoles=[];
+            var rows=[];
+            var tempRow=[];
+            cmd.values.forEach(role=>{
+                tempRow.push(new ButtonBuilder().setCustomId("autoRole-"+role).setLabel(cmd.roles.get(role).name).setStyle(ButtonStyle.Success));
+                if(myRole<=cmd.roles.get(role).rawPosition){
+                    badRoles.push(cmd.roles.get(role).name);
+                }
+                if(tempRow.length===5){
+                    rows.push(new ActionRowBuilder().addComponents(...tempRow));
+                    tempRow=[];
+                }
+            });
+            if(tempRow.length>0) rows.push(new ActionRowBuilder().addComponents(...tempRow));
+            if(badRoles.length===0){
+                cmd.channel.send({"content":`**Auto-Roles**\n${cmd.message.content}`,"components":rows});
+                cmd.deferUpdate();
+            }
+            else{
+                cmd.reply({ephemeral:true,content:ll(`I'm sorry, but I can't help with the following roles as I don't have high enough permissions to. If you'd like me to offer these roles, visit Server Settings and make sure I have a role listed above the following roles. You can do this by dragging the order around or adding roles.\n\n${badRoles.map(a=>`- **${a}**`).join("\n")}`)});
+            }
         break;
     }
     if(cmd.customId?.startsWith("poll-closeOption")){
@@ -740,6 +773,17 @@ client.on("interactionCreate",async cmd=>{
         fs.writeFileSync("./tempPoll.png",canvas.toBuffer("image/png"));
         cmd.update({content:`<@${poll.starter}> asks: **${poll.title}**${poll.choices.map((a,i)=>`\n${i}. ${a} **${storage[cmd.guild.id].polls[cmd.message.id].options[a].length}**${finalResults.hasOwnProperty(a)?` - ${pieCols[i][1]}`:""}`).join("")}`,files:["./tempPoll.png"]});
         save();
+    }
+    if(cmd.customId?.startsWith("autoRole-")){
+        let id=cmd.customId.split("autoRole-")[1];
+        let role=cmd.guild.roles.cache.get(id);
+        if(!cmd.member.roles.cache.find(r=>r.id===id)){
+            cmd.member.roles.add(role);
+        }
+        else{
+            cmd.member.roles.remove(role);
+        }
+        cmd.deferUpdate();
     }
 });
 client.on("messageReactionAdd",async (react,user)=>{
