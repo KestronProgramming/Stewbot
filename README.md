@@ -3,8 +3,8 @@ Currently being rewritten, you can see progress here.
 
 ## Current Working Features
  - Swear Filter
- - Definitions
- - Polls
+ - Definitions - Use AI to define words not in database?
+ - Polls - Add list of votes
  - AI Ping Response
  - AI Person Generation
  - AI Image Generation via Dall-E Mini
@@ -12,11 +12,11 @@ Currently being rewritten, you can see progress here.
  - Message Deletion via Context Menu
  - Better notifications of important bot events
  - Auto roles
+ - Memes
 ## Planned Features
  - Starboard
  - Counting
  - Logging
- - Memes
  - Jokes
  - Message embed previews for linked messages
  - Rows and Columns

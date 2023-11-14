@@ -321,9 +321,24 @@ client.once("ready",()=>{
     notify(0,`Started <t:${uptime}:R>`);
     console.log(`Logged Stewbot handles into ${client.user.tag}`);
     save();
-    client.user.setActivity("S omething T o E xpedite W ork",{type:ActivityType.Custom},1000*60*60*24*31*12);
+    client.user.setActivity("𝐒omething 𝐓o 𝐄xpedite 𝐖ork",{type:ActivityType.Custom},1000*60*60*24*31*12);
 });
 client.on("messageCreate",async msg=>{
+    async function sendHook(what){
+        var hook=await msg.channel.fetchWebhooks();
+        hook=hook.find(h=>h.token);
+        if(hook){
+            hook.send(what);
+        }
+        else{
+            msg.channel.createWebhook({
+                name:"Stewbot",
+                avatar: "https://cdn.discordapp.com/attachments/1145432570104926234/1170273261704196127/kt.jpg",
+            }).then(d=>{
+                d.send(what);
+            });
+        }
+    }
     if(msg.content==="clearStorage"&&msg.author.username==="kestron06"){
         storage={
             "0":{
@@ -367,7 +382,11 @@ client.on("messageCreate",async msg=>{
             storage[msg.guildId].users[msg.author.id].infractions++;
             msg.delete();
             if(storage[msg.guildId].filter.censor){
-                msg.channel.send(ll(`\`\`\`\nThe following message from ${msg.author.username} has been censored by Stewbot.\`\`\`${msg.content}`));
+                sendHook({
+                    username:msg.member.nickname||msg.author.globalName||msg.author.username,
+                    content:ll(`\`\`\`\nThe following message from ${msg.author.username} has been censored by Stewbot.\`\`\`${msg.content}`),
+                    avatarURL:msg.member.displayAvatarURL()
+                });
             }
             if(storage[msg.author.id].config.dmOffenses){
                 msg.author.send(ll(`Your message in **${msg.guild.name}** was ${storage[msg.guildId].filter.censor?"censored":"deleted"} due to the following word${foundWords.length>1?"s":""} being in the filter: ||${foundWords.join("||, ||")}||${storage[msg.author.id].config.returnFiltered?"```\n"+msg.ogContent.replaceAll("`","\\`")+"```":""}`));
@@ -548,6 +567,15 @@ client.on("interactionCreate",async cmd=>{
                         cmd.editReply({"content":"Uh oh, something went wrong."});
                     }
                 break;
+                case 'meme':
+                    var memes=fs.readdirSync("./memes");
+                    if(memes.length===0){
+                        cmd.reply("I'm sorry, but I don't appear to have any at the moment.");
+                        break;
+                    }
+                    var meme=cmd.options.getInteger("number")?memes.filter(m=>m.split(".")[0]===cmd.options.getInteger("number").toString()):memes[Math.floor(Math.random()*memes.length)];
+                    cmd.reply({content:`Meme #${meme.split(".")[0]}`,files:[`./memes/${meme}`]});
+                break;
             }
         break;
         case 'poll':
@@ -569,6 +597,45 @@ client.on("interactionCreate",async cmd=>{
             else if(cmd.targetMessage.author.id===client.user.id){
                 cmd.targetMessage.delete();
                 cmd.reply({"content":"Success","ephemeral":true});
+            }
+        break;
+        case 'submit_meme':
+            if(cmd.targetMessage.attachments.size===0){
+                cmd.reply({ephemeral:true,content:"I'm sorry, but I didn't detect any attachments on that message. Note that it has to be attached (uploaded), and that I don't visit embedded links."});
+                break;
+            }
+            if(cmd.channel.id===process.env.noticeChannel){
+                cmd.targetMessage.attachments.forEach(a=>{
+                    var dots=a.proxyURL.split("?")[0].split(".");
+                    dots=dots[dots.length-1];
+                    if(!["mov","png","jpg","jpeg","gif","mp4","mp3","wav","webm","ogg"].includes(dots)){
+                        cmd.reply({content:`I don't support or recognize that format (\`.${dots}\`)`,ephemeral:true});
+                        return;
+                    }
+                    fetch(a.proxyURL.split("?")[0]).then(d=>d.arrayBuffer()).then(d=>{
+                        fs.writeFileSync(`./memes/${fs.readdirSync("./memes").length}.${dots}`,Buffer.from(d));
+                    });
+                });
+                cmd.reply({content:`Saved to \`/memes\``,ephemeral:true});
+                cmd.targetMessage.react("✅");
+            }
+            else{
+                cmd.reply({content:`Submitted for evaluation`,ephemeral:true});
+                for(a of cmd.targetMessage.attachments){
+                    var dots=a[1].proxyURL.split("?")[0].split(".");
+                    dots=dots[dots.length-1];
+                    if(!["mov","png","jpg","jpeg","gif","mp4","mp3","wav","webm","ogg"].includes(dots)){
+                        cmd.reply({content:`I don't support/recognize the file extension \`.${dots}\``,ephemeral:true});
+                        return;
+                    }
+                    await fetch(a[1].proxyURL.split("?")[0]).then(d=>d.arrayBuffer()).then(d=>{
+                        fs.writeFileSync(`./tempMemes/${i}.${dots}`,Buffer.from(d));
+                    });
+                }
+                await client.channels.cache.get(process.env.noticeChannel).send({content:ll(`User ${cmd.user.username} submitted a meme for evaluation.`),files:fs.readdirSync("./tempMemes").map(a=>`./tempMemes/${a}`)});
+                fs.readdirSync("./tempMemes").forEach(file=>{
+                    fs.unlinkSync("./tempMemes/"+file);
+                });
             }
         break;
     }
