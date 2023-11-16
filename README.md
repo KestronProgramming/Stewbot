@@ -13,8 +13,8 @@ Currently being rewritten, you can see progress here.
  - Better notifications of important bot events
  - Auto roles
  - Memes
-## Planned Features
  - Starboard
+## Planned Features
  - Counting
  - Logging
  - Jokes

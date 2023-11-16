@@ -117,6 +117,8 @@ const commands = [
 				option.setName("channel").setDescription("Channel to count in")
 			).addBooleanOption(option=>
 				option.setName("reset").setDescription("Reset the count if a wrong number is posted (True to be on leaderboard)")
+			).addBooleanOption(option=>
+				option.setName("public").setDescription("Do you want this server to show up in the counting leaderboard?")
 			)
 		).addSubcommand(command=>
 			command.setName("set_number").setDescription("Set the next number to count at (Disqualifies from leaderboard)").addIntegerOption(option=>

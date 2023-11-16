@@ -247,7 +247,8 @@ const defaultGuild={
         "nextNum":1,
         "highestNum":0,
         "legit":true, //If manually setting the next number, disqualify from the overarching leaderboard
-        "reset":true
+        "reset":true,
+        "public":true
     },
     "users":{},
     "reactionRoles":[],
@@ -300,7 +301,7 @@ const presets={
 };
 var kaProgramRegex =/\b(?!<)https?:\/\/(?:www\.)?khanacademy\.org\/(cs|computer-programming)\/[a-z,\d,-]+\/\d{1,16}(?!>)\b/gi;
 var discordMessageRegex =/\b(?!<)https?:\/\/(ptb\.|canary\.)?discord(app)?.com\/channels\/(\@me|\d{1,25})\/\d{1,25}\d{1,25}(?!>)\b/gi;
-function getStarMsg(){
+function getStarMsg(msg){
     var msgs=[
         `Excuse me, there is a new message.`,
         `I have detected a notification for you.`,
@@ -308,9 +309,10 @@ function getStarMsg(){
         `Here's the mail it never fails`,
         `Detected popularity. Shall I put it on screen for you?`,
         `And now it's time for a word from our sponsor.`,
-        `Got a message for you.`
+        `Got a message for you.`,
+        `It's always a good day when @ posts`
     ];
-    return `**${msgs[Math.floor(Math.random()*msgs.length)]}**`;
+    return `**${msgs[Math.floor(Math.random()*msgs.length)].replaceAll("@",msg.author.globalName||msg.author.username)}**`;
 }
 
 client=new Client({
@@ -415,6 +417,28 @@ client.on("messageCreate",async msg=>{
             }
             save();
             return;
+        }
+    }
+
+    if(storage[msg.guild.id].counting.active&&msg.channel.id===storage[msg.guild.id].counting.channel){
+        var num=msg.content.match(/^(\d|,)+(?:\b)/i);
+        if(num!==null){
+            num=+num[0].replaceAll(",","");
+            if(num===storage[msg.guild.id].counting.nextNum){
+                msg.react("✅");
+                storage[msg.guild.id].counting.nextNum++;
+                if(storage[msg.guild.id].counting.legit&&num>storage[msg.guild.id].counting.highestNum){
+                    msg.react("🎉");
+                    storage[msg.guild.id].counting.highestNum=num;
+                }
+                save();
+            }
+            else if(storage[msg.guild.id].counting.reset&&storage[msg.guild.id].counting.nextNum!==1){
+                msg.reply(`Oh no, that was incorrect! The next number to post was going to be \`${storage[msg.guild.id].counting.nextNum}\`, but now it's \`1\`.`);
+                storage[msg.guild.id].counting.nextNum=1;
+                storage[msg.guild.id].counting.legit=true;
+                save();
+            }
         }
     }
 
@@ -542,10 +566,14 @@ client.on("interactionCreate",async cmd=>{
             save();
         break;
         case 'counting':
-            switch(cmd.getSubcommand()){
+            switch(cmd.options.getSubcommand()){
                 case "config":
                     storage[cmd.guild.id].counting.active=cmd.options.getBoolean("active");
                     if(cmd.options.getChannel("channel")!==null) storage[cmd.guild.id].counting.channel=cmd.options.getChannel("channel").id;
+                    if(cmd.options.getBoolean("public")!==null) storage[cmd.guild.id].counting.public=cmd.options.getBoolean("public");
+                    if(!storage[cmd.guild.id].counting.channel) storage[cmd.guild.id].counting.active=false;
+                    cmd.reply(`Alright, I configured counting for this server.${storage[cmd.guild.id].counting.active!==cmd.options.getBoolean("active")?` It looks like no channel has been set to count in, so counting is currently disabled. Please run this command again and set the channel to activate counting.`:""}`);
+                    save();
                 break;
                 case "set_number":
                     storage[cmd.guild.id].counting.nextNum=cmd.options.getInteger("num");
@@ -556,6 +584,19 @@ client.on("interactionCreate",async cmd=>{
                     save();
                 break;
             }
+        break;
+        case 'next_counting_number':
+            cmd.reply(storage[cmd.guild.id].counting.active?`The next number to enter ${cmd.channel.id!==storage[cmd.guild.id].counting.channel?`in <#${storage[cmd.guild.id].counting.channel}> `:""}is \`${storage[cmd.guild.id].counting.nextNum}\`.`:`Counting isn't active in this server! Use \`/counting_config\` to set it up.`);
+        break;
+        case 'counting_leaderboard':
+            var leaders=[];
+            for(let a in storage){
+                if(storage[a].counting?.public){
+                    leaders.push([client.guilds.cache.get(a).name,storage[a].counting.highestNum,a]);
+                }
+            }
+            leaders.sort((a,b)=>b[1]-a[1]);
+            cmd.reply(`**Counting Leaderboard**${leaders.slice(0,10).map((a,i)=>`\n${i+1}. ${a[0]}: \`${a[1]}\``).join("")}${cmd.guild?`\n\nYour server is in \`${leaders.map(a=>a[2]).indexOf(cmd.guild.id)+1}${leaders.map(a=>a[2]).indexOf(cmd.guild.id)===0?"st":leaders.map(a=>a[2]).indexOf(cmd.guild.id)===1?"nd":leaders.map(a=>a[2]).indexOf(cmd.guild.id)===2?"rd":"th"}\` place.`:""}`);
         break;
         case 'fun':
             switch(cmd.options.getSubcommand()){
@@ -974,7 +1015,7 @@ client.on("messageReactionAdd",async (react,user)=>{
                     .setImage(react.message.attachments.first()?react.message.attachments.first().proxyURL:null)
                 ];
                 if(storage[react.message.guild.id].starboard.messType==="1"){
-                    resp.content=getStarMsg();
+                    resp.content=getStarMsg(react.message);
                 }
                 client.channels.cache.get(storage[react.message.guild.id].starboard.channel).send(resp).then(d=>{
                     storage[react.message.guild.id].starboard.posted[react.message.id]=d.id;
@@ -1052,7 +1093,7 @@ client.on("messageUpdate",async (msgO,msg)=>{
             .setImage(msg.attachments.first()?msg.attachments.first().proxyURL:null)
         ];
         if(storage[msg.guild.id].starboard.messType==="1"){
-            resp.content=getStarMsg();
+            resp.content=getStarMsg(msg);
         }
         var c=await client.channels.cache.get(storage[msg.guild.id].starboard.channel).messages.fetch(storage[msg.guild.id].starboard.posted[msg.id]);
         c.edit(resp);
