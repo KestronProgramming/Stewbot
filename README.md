@@ -14,8 +14,8 @@ Currently being rewritten, you can see progress here.
  - Auto roles
  - Memes
  - Starboard
-## Planned Features
  - Counting
+## Planned Features
  - Logging
  - Jokes
  - Message embed previews for linked messages
