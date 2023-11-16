@@ -386,7 +386,7 @@ client.on("messageCreate",async msg=>{
         storage[msg.author.id]=structuredClone(defaultUser);
         save();
     }
-    if(storage[msg.guildId].filter.active===true){
+    if(storage[msg.guildId].filter.active){
         var foundWords=[];
         storage[msg.guildId].filter.blacklist.forEach(blockedWord=>{
             if(new RegExp(`([^\\D]|\\b)${blockedWord}(ing|s|ed|er|ism|ist|es|ual)?([^\\D]|\\b)`,"ig").test(msg.content)){
@@ -532,7 +532,6 @@ client.on("interactionCreate",async cmd=>{
             }
         break;
         case 'starboard_config':
-            console.log(cmd.options.getString("emoji"));
             storage[cmd.guild.id].starboard.active=cmd.options.getBoolean("active");
             if(cmd.options.getChannel("channel")!==null) storage[cmd.guild.id].starboard.channel=cmd.options.getChannel("channel").id;
             if(cmd.options.getInteger("threshold")!==null) storage[cmd.guild.id].starboard.threshold=cmd.options.getInteger("threshold");
@@ -909,7 +908,6 @@ client.on("interactionCreate",async cmd=>{
     }
 });
 client.on("messageReactionAdd",async (react,user)=>{
-    console.log(react._emoji.name);
     if(react.message.guildId===null) return;
     if(react.message.guildId!=="0"){
         if(!storage.hasOwnProperty(react.message.guildId)){
@@ -942,20 +940,22 @@ client.on("messageReactionAdd",async (react,user)=>{
                 var hook=await client.channels.cache.get(storage[react.message.guild.id].starboard.channel).fetchWebhooks();
                 hook=hook.find(h=>h.token);
                 if(hook){
-                    hook.send(resp);
+                    hook.send(resp).then(h=>{
+                        storage[react.message.guild.id].starboard.posted[react.message.guild.id]=`webhook${h.id}`;
+                    });
                 }
                 else{
                     client.channels.cache.get(storage[react.message.guild.id].starboard.channel).createWebhook({
                         name:"Stewbot",
                         avatar: "https://cdn.discordapp.com/attachments/1145432570104926234/1170273261704196127/kt.jpg",
                     }).then(d=>{
-                        d.send(resp);
+                        d.send(resp).then(h=>{
+                            storage[react.message.guild.id].starboard.posted[react.message.id]=`webhook${h.id}`;
+                        });
                     });
                 }
-                storage[react.message.guild.id].starboard.posted[react.message.guild.id]="webhook";
             }
             else{
-                console.log(react.message);
                 resp.embeds=[new EmbedBuilder()
                     .setColor(0x006400)
                     .setTitle("(Jump to message)")
@@ -977,11 +977,85 @@ client.on("messageReactionAdd",async (react,user)=>{
                     resp.content=getStarMsg();
                 }
                 client.channels.cache.get(storage[react.message.guild.id].starboard.channel).send(resp).then(d=>{
-                    storage[react.message.guild.id].starboard.posted[react.message.guild.id]=d.id;
+                    storage[react.message.guild.id].starboard.posted[react.message.id]=d.id;
                 });
             }
             save();
         }
+    }
+});
+client.on("messageDelete",async msg=>{
+    if(!msg.guild?.id) return;
+    console.log("Checking if it was a starboard post");
+    if(storage[msg.guild.id]?.starboard.posted.hasOwnProperty(msg.id)){
+        console.log("Starboard post");
+        if(storage[msg.guild.id].starboard.posted[msg.id].startsWith("webhook")){
+            console.log("It was a webhook, just delete it.");
+            var c=await client.channels.cache.get(storage[msg.guild.id].starboard.channel).messages.fetch(storage[msg.guild.id].starboard.posted[msg.id].split("webhook")[1]);
+            c.delete();
+        }
+        else{
+            console.log("It was a non-webhook, edit it to say it was deleted.");
+            var c=await client.channels.cache.get(storage[msg.guild.id].starboard.channel).messages.fetch(storage[msg.guild.id].starboard.posted[msg.id]);
+            c.edit({content:`I'm sorry, but it looks like this post by **${msg.author.globalName||msg.author.username}** was deleted.`,embeds:[],files:[]});
+        }
+    }
+});
+client.on("messageUpdate",async (msgO,msg)=>{
+    if(!msg.guild?.id) return;
+    if(storage[msg.guild.id]?.filter.active){
+        var foundWords=[];
+        storage[msg.guildId].filter.blacklist.forEach(blockedWord=>{
+            if(new RegExp(`([^\\D]|\\b)${blockedWord}(ing|s|ed|er|ism|ist|es|ual)?([^\\D]|\\b)`,"ig").test(msg.content)){
+                foundWords.push(blockedWord);
+            }
+        });
+        if(foundWords.length>0){
+            storage[msg.guildId].users[msg.author.id].infractions++;
+            if(storage[msg.guildId].filter.censor){
+                msg.reply(`This post by **${msg.author.globalName||msg.author.username}** sent <t:${msg.createdTimestamp}:f> has been deleted due to retroactively editing a blocked word into the message.`);
+            }
+            msg.delete();
+            if(storage[msg.author.id].config.dmOffenses){
+                msg.author.send(ll(`Your message in **${msg.guild.name}** was ${storage[msg.guildId].filter.censor?"censored":"deleted"} due to editing in the following word${foundWords.length>1?"s":""} that are in the filter: ||${foundWords.join("||, ||")}||${storage[msg.author.id].config.returnFiltered?"```\n"+msg.content.replaceAll("`","\\`")+"```":""}`));
+            }
+            if(storage[msg.guildId].filter.log&&storage[msg.guildId].filter.channel){
+                client.channels.cache.get(ll(storage[msg.guildId].filter.channel).send(`I have deleted a message from **${msg.author.username}** in <#${msg.channel.id}> for editing in the following blocked word${foundWords.length>1?"s":""}": ||${foundWords.join("||, ||")}||\`\`\`\n${msg.content.replaceAll("`","\\`")}\`\`\``));
+            }
+            save();
+            return;
+        }
+    }
+    if(storage[msg.guild.id]?.starboard.posted.hasOwnProperty(msg.id)&&!storage[msg.guild.id].starboard.posted[msg.id]?.startsWith("webhook")){
+        var resp={files:[]};
+        msg.attachments.forEach((attached,i) => {
+            let url=attached.proxyURL.toLowerCase();
+            if(i!==0||(!url.includes(".jpg")&&!url.includes(".png")&&!url.includes(".jpeg")&&!url.includes(".gif"))||storage[cmd.guild.id].starboard.messType==="0"){
+                resp.files.push(attached.proxyURL);
+            }
+        });
+        resp.embeds=[new EmbedBuilder()
+            .setColor(0x006400)
+            .setTitle("(Jump to message)")
+            .setURL(`https://www.discord.com/channels/${msg.guild.id}/${msg.channel.id}/${msg.id}`)
+            .setAuthor({
+                name: msg.author.globalName||msg.author.username,
+                iconURL:msg.author.displayAvatarURL(),
+                url:`https://discord.com/users/${msg.author.id}`
+            })
+            .setDescription(msg.content?msg.content:"⠀")
+            .setTimestamp(new Date(msg.createdTimestamp))
+            .setFooter({
+                text: msg.channel.name,
+                iconURL:"https://cdn.discordapp.com/attachments/1052328722860097538/1069496476687945748/141d49436743034a59dec6bd5618675d.png",
+            })
+            .setImage(msg.attachments.first()?msg.attachments.first().proxyURL:null)
+        ];
+        if(storage[msg.guild.id].starboard.messType==="1"){
+            resp.content=getStarMsg();
+        }
+        var c=await client.channels.cache.get(storage[msg.guild.id].starboard.channel).messages.fetch(storage[msg.guild.id].starboard.posted[msg.id]);
+        c.edit(resp);
     }
 });
 
