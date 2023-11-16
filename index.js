@@ -19,9 +19,10 @@ function makeCall(toWhom,what){
         from:twilio.num
     })
 }
+var client;
 const { createCanvas } = require('canvas');
 const { InworldClient, SessionToken, status } = require("@inworld/nodejs-sdk");
-const {Client, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder}=require("discord.js");
+const {Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder}=require("discord.js");
 const fs=require("fs");
 const express=require("express");
 const path=require("path");
@@ -39,7 +40,7 @@ function ll(s){
 function parsePoll(c,published){
     var ret={};
     ret.title=c.split("**")[1];
-    ret.options=c.match(/(?:^\d\.\s).+(?:$)/gm)?.map(a=>a.slice(2).trim())||[];
+    ret.options=c.match(/(?:^\d\d?\.\s).+(?:$)/gm)?.map(a=>a.slice(2).trim())||[];
     if(published){
         var temp={};
         ret.choices=[];
@@ -223,7 +224,8 @@ const defaultGuild={
         "emoji":"⭐",
         "active":false,
         "threshold":3,
-        "posted":{}
+        "posted":{},
+        "messType":"0"
     },
     "logs":{
         "channel":"",
@@ -282,19 +284,36 @@ const inps={
     "pollInp":new TextInputBuilder().setCustomId("poll-addedInp").setLabel("What should the option be?").setStyle(TextInputStyle.Short).setMinLength(1).setMaxLength(70).setRequired(true),
     "pollNum":new TextInputBuilder().setCustomId("poll-removedInp").setLabel("Which # option should I remove?").setStyle(TextInputStyle.Short).setMinLength(1).setMaxLength(2).setRequired(true),
 
-    "roleAdd":new RoleSelectMenuBuilder().setCustomId("role-addOption").setMinValues(1).setMaxValues(20).setPlaceholder("Select all the roles you would like to offer")
+    "roleAdd":new RoleSelectMenuBuilder().setCustomId("role-addOption").setMinValues(1).setMaxValues(20).setPlaceholder("Select all the roles you would like to offer"),
+
+    "delete":new ButtonBuilder().setCustomId("delete-all").setLabel("Delete message").setStyle(ButtonStyle.Danger),
+
+    "approve":new ButtonBuilder().setCustomId("save_meme").setLabel("Approve meme").setStyle(ButtonStyle.Success)
 };
 const presets={
     "pollCreation":new ActionRowBuilder().addComponents(inps.pollAdd,inps.pollDel,inps.pollLaunch),
     "rolesCreation":new ActionRowBuilder().addComponents(inps.roleAdd),
+    "meme":[new ActionRowBuilder().addComponents(inps.approve,inps.delete)],
 
     "pollAddModal":new ModalBuilder().setCustomId("poll-added").setTitle("Add a poll option").addComponents(new ActionRowBuilder().addComponents(inps.pollInp)),
     "pollRemModal":new ModalBuilder().setCustomId("poll-removed").setTitle("Remove a poll option").addComponents(new ActionRowBuilder().addComponents(inps.pollNum))
 };
 var kaProgramRegex =/\b(?!<)https?:\/\/(?:www\.)?khanacademy\.org\/(cs|computer-programming)\/[a-z,\d,-]+\/\d{1,16}(?!>)\b/gi;
 var discordMessageRegex =/\b(?!<)https?:\/\/(ptb\.|canary\.)?discord(app)?.com\/channels\/(\@me|\d{1,25})\/\d{1,25}\d{1,25}(?!>)\b/gi;
+function getStarMsg(){
+    var msgs=[
+        `Excuse me, there is a new message.`,
+        `I have detected a notification for you.`,
+        `Greetings, esteemed individuals, a new message has achieved popularity.`,
+        `Here's the mail it never fails`,
+        `Detected popularity. Shall I put it on screen for you?`,
+        `And now it's time for a word from our sponsor.`,
+        `Got a message for you.`
+    ];
+    return `**${msgs[Math.floor(Math.random()*msgs.length)]}**`;
+}
 
-const client=new Client({
+client=new Client({
     intents:Object.keys(GatewayIntentBits).map(a=>GatewayIntentBits[a]),
     partials:Object.keys(Partials).map(a=>Partials[a])
 });
@@ -384,8 +403,8 @@ client.on("messageCreate",async msg=>{
             if(storage[msg.guildId].filter.censor){
                 sendHook({
                     username:msg.member.nickname||msg.author.globalName||msg.author.username,
-                    content:ll(`\`\`\`\nThe following message from ${msg.author.username} has been censored by Stewbot.\`\`\`${msg.content}`),
-                    avatarURL:msg.member.displayAvatarURL()
+                    avatarURL:msg.member.displayAvatarURL(),
+                    content:ll(`\`\`\`\nThe following message from ${msg.author.username} has been censored by Stewbot.\`\`\`${msg.content}`)
                 });
             }
             if(storage[msg.author.id].config.dmOffenses){
@@ -434,7 +453,7 @@ client.on("interactionCreate",async cmd=>{
     switch(cmd.commandName){
         //Slash Commands
         case 'ping':
-            cmd.reply(`**Online**\n- Latency: ${client.ws.ping} milliseconds\n- Last Started: <t:${uptime}:f>, <t:${uptime}:R>\n- Uptime: ${((Math.round(Date.now()/1000)-uptime)/(1000*60*60)).toFixed(2)} hours`);
+            cmd.reply(`**Online**\n- Latency: ${client.ws.ping} milliseconds\n- Last Started: <t:${uptime}:f>, <t:${uptime}:R>\n- Uptime: ${((Math.round(Date.now()/1000)-uptime)/(1000*60*60)).toFixed(2)} hours\n- Server Count: ${client.guilds.cache.size} Servers`);
         break;
         case 'define':
             fetch("https://api.dictionaryapi.dev/api/v2/entries/en/"+cmd.options.getString("what")).then(d=>d.json()).then(d=>{
@@ -442,9 +461,17 @@ client.on("interactionCreate",async cmd=>{
                     let defs = [];
                     for (var i = 0; i < d.meanings.length; i++) {
                         for (var j = 0;j < d.meanings[i].definitions.length;j++) {
+                            let foundOne=false;
+                            if(storage[cmd.guild.id.filter.active]){
+                                storage[cmd.guild.id].filter.blacklist.forEach(blockedWord=>{
+                                    if(new RegExp(`([^\\D]|\\b)${blockedWord}(ing|s|ed|er|ism|ist|es|ual)?([^\\D]|\\b)`,"ig").test(`${cmd.meanings[i].definitions[j]}`)){
+                                        foundOne=true;
+                                    }
+                                });
+                            }
                             defs.push({
                                 name:"Type: " +d.meanings[i].partOfSpeech,
-                                value:d.meanings[i].definitions[j].definition+(d.meanings[i].definitions[j].example?"\nExample: " +d.meanings[i].definitions[j].example:""),
+                                value:foundOne?"Blocked by this server's filter":d.meanings[i].definitions[j].definition+(d.meanings[i].definitions[j].example?"\nExample: " +d.meanings[i].definitions[j].example:""),
                                 inline: true
                             });
                         }
@@ -489,7 +516,7 @@ client.on("interactionCreate",async cmd=>{
                     storage[cmd.guild.id].filter.active=cmd.options.getBoolean("active");
                     if(cmd.options.getBoolean("censor")!==null) storage[cmd.guild.id].filter.censor=cmd.options.getBoolean("censor");
                     if(cmd.options.getBoolean("log")!==null) storage[cmd.guild.id].filter.log=cmd.options.getBoolean("log");
-                    if(cmd.options.getChannel("channel")!==null) storage[cmd.guild.id].filter.log=cmd.options.getChannel("channel");
+                    if(cmd.options.getChannel("channel")!==null) storage[cmd.guild.id].filter.log=cmd.options.getChannel("channel").id;
                     if(storage[cmd.guild.id].filter.channel==="") storage[cmd.guild.id].filter.log=false;
                     cmd.reply(`Filter configured.${(cmd.options.getBoolean("log")&&!storage[cmd.guild.id].filter.log)?"\n\nNo channel was set to log summaries of deleted messages to, so logging these is turned off. To reenable this, run the command again and set `log` to true and specify a `channel`.":""}`);
                     save();
@@ -505,13 +532,31 @@ client.on("interactionCreate",async cmd=>{
             }
         break;
         case 'starboard_config':
+            console.log(cmd.options.getString("emoji"));
             storage[cmd.guild.id].starboard.active=cmd.options.getBoolean("active");
-            if(cmd.options.getChannel("channel")!==null) storage[cmd.guild.id].starboard.channel=cmd.options.getChannel("channel");
+            if(cmd.options.getChannel("channel")!==null) storage[cmd.guild.id].starboard.channel=cmd.options.getChannel("channel").id;
             if(cmd.options.getInteger("threshold")!==null) storage[cmd.guild.id].starboard.threshold=cmd.options.getInteger("threshold");
-            if(cmd.options.getString("emoji")!==null) storage[cmd.guild.id].starboard.emoji=cmd.options.getString("emoji");
+            if(cmd.options.getString("emoji")!==null) storage[cmd.guild.id].starboard.emoji=cmd.options.getString("emoji").includes(":")?cmd.options.getString("emoji").split(":")[2].split(">")[0]:cmd.options.getString("emoji");
+            if(cmd.options.getString("message_type")!==null) storage[cmd.guild.id].starboard.messType=cmd.options.getString("message_type");
             if(storage[cmd.guild.id].starboard.channel==="") storage[cmd.guild.id].starboard.active=false;
             cmd.reply(`Starboard configured.${cmd.options.getBoolean("active")&&!storage[cmd.guild.id].starboard.active?`\n\nNo channel has been set for this server, so starboard is inactive. To enable starboard, run the command again setting \`active\` to true and specify a \`channel\`.`:""}`);
             save();
+        break;
+        case 'counting':
+            switch(cmd.getSubcommand()){
+                case "config":
+                    storage[cmd.guild.id].counting.active=cmd.options.getBoolean("active");
+                    if(cmd.options.getChannel("channel")!==null) storage[cmd.guild.id].counting.channel=cmd.options.getChannel("channel").id;
+                break;
+                case "set_number":
+                    storage[cmd.guild.id].counting.nextNum=cmd.options.getInteger("num");
+                    if(storage[cmd.guild.id].counting.nextNum>1){
+                        storage[cmd.guild.id].counting.legit=false;
+                    }
+                    cmd.reply(`Alright, I've set the next number to be counted to \`${storage[cmd.guild.id].counting.nextNum}\`.${storage[cmd.guild.id].counting.legit?"":`\n\nPlease be aware that you are currently ineligible for the leaderboard. To fix this, make sure that the number you start from is less than 2, and that counting is configured to reset upon any mistakes.`}`);
+                    save();
+                break;
+            }
         break;
         case 'fun':
             switch(cmd.options.getSubcommand()){
@@ -560,7 +605,7 @@ client.on("interactionCreate",async cmd=>{
                             "credentials": "omit"
                         }).then(d=>d.json()).then(d=>{
                             cmd.editReply({"content":`<@${cmd.user.id}>, your prompt has been completed. Images courtesy of <https://www.craiyon.com/>.`,files:d.images.map(i=>`https://img.craiyon.com/${i}`)});
-                            if(storage[cmd.user.id].config.dmNotifs) cmd.user.send(`Your craiyon prompt \`${cmd.options.getString("prompt")}\` has completed. https://discord.com/channels/${cmd.guildId?cmd.guildId:"@me"}/${cmd.channelId}/${cmd.id}`);
+                            if(storage[cmd.user.id].config.dmNotifs) cmd.user.send(`Your craiyon prompt \`${cmd.options.getString("prompt")}\` has completed. https://discord.com/channels/${cmd.guild.id?cmd.guild.id:"@me"}/${cmd.channelId}/${cmd.id}`);
                         });
                     }
                     catch(e){
@@ -573,7 +618,13 @@ client.on("interactionCreate",async cmd=>{
                         cmd.reply("I'm sorry, but I don't appear to have any at the moment.");
                         break;
                     }
-                    var meme=cmd.options.getInteger("number")?memes.filter(m=>m.split(".")[0]===cmd.options.getInteger("number").toString()):memes[Math.floor(Math.random()*memes.length)];
+                    var meme;
+                    try{
+                        meme=cmd.options.getInteger("number")?memes.filter(m=>m.split(".")[0]===cmd.options.getInteger("number").toString()):memes[Math.floor(Math.random()*memes.length)];
+                    }
+                    catch(e){
+                        meme=memes[Math.floor(Math.random()*memes.length)];
+                    }
                     cmd.reply({content:`Meme #${meme.split(".")[0]}`,files:[`./memes/${meme}`]});
                 break;
             }
@@ -584,13 +635,17 @@ client.on("interactionCreate",async cmd=>{
         case 'auto_roles':
             cmd.reply({"content":`${cmd.options.getString("message")}`,"ephemeral":true,"components":[presets.rolesCreation]});
         break;
-
+        case 'report_problem':
+            notify(1,`**${cmd.options.getString("type")[0].toUpperCase()}${cmd.options.getString("type").slice(1)} Reported by ${cmd.user.username}** (${cmd.user.id})\n\n\`\`\`\n${cmd.options.getString("details")}\`\`\``);
+            cmd.reply({content:"I have reported the issue. Thank you.",ephemeral:true});
+        break;
+        
         //Context Menu Commands
         case 'delete_message':
-            if(cmd.guildId!==null&&cmd.guildId!=="0"){
+            if(cmd.guild.id!==null&&cmd.guild.id!=="0"){
                 cmd.targetMessage.delete();
-                if(storage[cmd.guildId].filter.log&&storage[cmd.guildId].filter.channel){
-                    client.channels.cache.get(storage[cmd.guildId]).send(`Message from **${cmd.targetMessage.author.id}** deleted by **${cmd.user.username}**.\n\n${cmd.targetMessage.content}`);
+                if(storage[cmd.guild.id].filter.log&&storage[cmd.guild.id].filter.channel){
+                    client.channels.cache.get(storage[cmd.guild.id]).send(`Message from **${cmd.targetMessage.author.id}** deleted by **${cmd.user.username}**.\n\n${cmd.targetMessage.content}`);
                 }
                 cmd.reply({"content":"Success","ephemeral":true});
             }
@@ -604,46 +659,46 @@ client.on("interactionCreate",async cmd=>{
                 cmd.reply({ephemeral:true,content:"I'm sorry, but I didn't detect any attachments on that message. Note that it has to be attached (uploaded), and that I don't visit embedded links."});
                 break;
             }
-            if(cmd.channel.id===process.env.noticeChannel){
-                cmd.targetMessage.attachments.forEach(a=>{
-                    var dots=a.proxyURL.split("?")[0].split(".");
-                    dots=dots[dots.length-1];
-                    if(!["mov","png","jpg","jpeg","gif","mp4","mp3","wav","webm","ogg"].includes(dots)){
-                        cmd.reply({content:`I don't support or recognize that format (\`.${dots}\`)`,ephemeral:true});
-                        return;
-                    }
-                    fetch(a.proxyURL.split("?")[0]).then(d=>d.arrayBuffer()).then(d=>{
-                        fs.writeFileSync(`./memes/${fs.readdirSync("./memes").length}.${dots}`,Buffer.from(d));
-                    });
-                });
-                cmd.reply({content:`Saved to \`/memes\``,ephemeral:true});
-                cmd.targetMessage.react("✅");
-            }
-            else{
-                cmd.reply({content:`Submitted for evaluation`,ephemeral:true});
-                for(a of cmd.targetMessage.attachments){
-                    var dots=a[1].proxyURL.split("?")[0].split(".");
-                    dots=dots[dots.length-1];
-                    if(!["mov","png","jpg","jpeg","gif","mp4","mp3","wav","webm","ogg"].includes(dots)){
-                        cmd.reply({content:`I don't support/recognize the file extension \`.${dots}\``,ephemeral:true});
-                        return;
-                    }
-                    await fetch(a[1].proxyURL.split("?")[0]).then(d=>d.arrayBuffer()).then(d=>{
-                        fs.writeFileSync(`./tempMemes/${i}.${dots}`,Buffer.from(d));
-                    });
+            cmd.reply({content:`Submitted for evaluation`,ephemeral:true});
+            let i=0;
+            for(a of cmd.targetMessage.attachments){
+                var dots=a[1].proxyURL.split("?")[0].split(".");
+                dots=dots[dots.length-1];
+                if(!["mov","png","jpg","jpeg","gif","mp4","mp3","wav","webm","ogg"].includes(dots)){
+                    cmd.reply({content:`I don't support/recognize the file extension \`.${dots}\``,ephemeral:true});
+                    return;
                 }
-                await client.channels.cache.get(process.env.noticeChannel).send({content:ll(`User ${cmd.user.username} submitted a meme for evaluation.`),files:fs.readdirSync("./tempMemes").map(a=>`./tempMemes/${a}`)});
-                fs.readdirSync("./tempMemes").forEach(file=>{
-                    fs.unlinkSync("./tempMemes/"+file);
+                await fetch(a[1].proxyURL.split("?")[0]).then(d=>d.arrayBuffer()).then(d=>{
+                    fs.writeFileSync(`./tempMemes/${i}.${dots}`,Buffer.from(d));
                 });
+                i++;
             }
+            await client.channels.cache.get(process.env.noticeChannel).send({content:ll(`User ${cmd.user.username} submitted a meme for evaluation.`),files:fs.readdirSync("./tempMemes").map(a=>`./tempMemes/${a}`),components:presets.meme});
+            fs.readdirSync("./tempMemes").forEach(file=>{
+                fs.unlinkSync("./tempMemes/"+file);
+            });
         break;
     }
     //Buttons, Modals, and Select Menus
     switch(cmd.customId){
         //Buttons
+        case "save_meme":
+            cmd.message.attachments.forEach(a=>{
+                var dots=a.proxyURL.split("?")[0].split(".");
+                dots=dots[dots.length-1];
+                if(!["mov","png","jpg","jpeg","gif","mp4","mp3","wav","webm","ogg"].includes(dots)){
+                    cmd.reply({content:`I don't support or recognize that format (\`.${dots}\`)`,ephemeral:true});
+                    return;
+                }
+                fetch(a.proxyURL.split("?")[0]).then(d=>d.arrayBuffer()).then(d=>{
+                    fs.writeFileSync(`./memes/${fs.readdirSync("./memes").length}.${dots}`,Buffer.from(d));
+                });
+            });
+            cmd.update({components:[]});
+            cmd.message.react("✅");
+        break;
         case "view_filter":
-            cmd.user.send({"content":`The following is the blacklist for **${cmd.guild.name}** as requested.\n\n||${storage[cmd.guild.id].filter.blacklist.join("||, ||")}||`,"components":[new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId("delete-all").setLabel("Delete message").setStyle(ButtonStyle.Success))]});
+            cmd.user.send({"content":`The following is the blacklist for **${cmd.guild.name}** as requested.\n\n||${storage[cmd.guild.id].filter.blacklist.join("||, ||")}||`,"components":[new ActionRowBuilder().addComponents(inps.delete)]});
             cmd.deferUpdate();
         break;
         case "delete-all":
@@ -854,6 +909,7 @@ client.on("interactionCreate",async cmd=>{
     }
 });
 client.on("messageReactionAdd",async (react,user)=>{
+    console.log(react._emoji.name);
     if(react.message.guildId===null) return;
     if(react.message.guildId!=="0"){
         if(!storage.hasOwnProperty(react.message.guildId)){
@@ -869,8 +925,63 @@ client.on("messageReactionAdd",async (react,user)=>{
         storage[user.id]=structuredClone(defaultUser);
         save();
     }
-    if((storage[react.message.guildId].starboard.emoji===react._emoji.name||storage[react.message.guildId].starboard.emoji===react._emoji.id)&&storage[react.message.guildId].starboard.active&&storage[react.message.guildId].starboard.channel&&react.count>=storage[react.message.guildId].starboard.threshold&&!storage[react.message.guildId].starboard.posted.hasOwnProperty(react.message.id)){
-        react.message.reply("I think I'm supposed to do starboard things here, huh?");
+    if((storage[react.message.guildId].starboard.emoji===react._emoji.name||storage[react.message.guildId].starboard.emoji===react._emoji.id)&&storage[react.message.guildId].starboard.active&&storage[react.message.guildId].starboard.channel&&!storage[react.message.guildId].starboard.posted.hasOwnProperty(react.message.id)){
+        var msg=await react.message.channel.messages.fetch(react.message.id);
+        if(msg.reactions.cache.get(storage[msg.guildId].starboard.emoji).count>=storage[msg.guildId].starboard.threshold){
+            var resp={files:[]};
+            react.message.attachments.forEach((attached,i) => {
+                let url=attached.proxyURL.toLowerCase();
+                if(i!==0||(!url.includes(".jpg")&&!url.includes(".png")&&!url.includes(".jpeg")&&!url.includes(".gif"))||storage[cmd.guild.id].starboard.messType==="0"){
+                    resp.files.push(attached.proxyURL);
+                }
+            });
+            if(storage[react.message.guild.id].starboard.messType==="0"){
+                resp.content=react.message.content;
+                resp.username=react.message.author.globalName||react.message.author.username;
+                resp.avatarURL=react.message.author.displayAvatarURL();
+                var hook=await client.channels.cache.get(storage[react.message.guild.id].starboard.channel).fetchWebhooks();
+                hook=hook.find(h=>h.token);
+                if(hook){
+                    hook.send(resp);
+                }
+                else{
+                    client.channels.cache.get(storage[react.message.guild.id].starboard.channel).createWebhook({
+                        name:"Stewbot",
+                        avatar: "https://cdn.discordapp.com/attachments/1145432570104926234/1170273261704196127/kt.jpg",
+                    }).then(d=>{
+                        d.send(resp);
+                    });
+                }
+                storage[react.message.guild.id].starboard.posted[react.message.guild.id]="webhook";
+            }
+            else{
+                console.log(react.message);
+                resp.embeds=[new EmbedBuilder()
+                    .setColor(0x006400)
+                    .setTitle("(Jump to message)")
+                    .setURL(`https://www.discord.com/channels/${react.message.guild.id}/${react.message.channel.id}/${react.message.id}`)
+                    .setAuthor({
+                        name: react.message.author.globalName||react.message.author.username,
+                        iconURL:react.message.author.displayAvatarURL(),
+                        url:`https://discord.com/users/${react.message.author.id}`
+                    })
+                    .setDescription(react.message.content?react.message.content:"⠀")
+                    .setTimestamp(new Date(react.message.createdTimestamp))
+                    .setFooter({
+                        text: react.message.channel.name,
+                        iconURL:"https://cdn.discordapp.com/attachments/1052328722860097538/1069496476687945748/141d49436743034a59dec6bd5618675d.png",
+                    })
+                    .setImage(react.message.attachments.first()?react.message.attachments.first().proxyURL:null)
+                ];
+                if(storage[react.message.guild.id].starboard.messType==="1"){
+                    resp.content=getStarMsg();
+                }
+                client.channels.cache.get(storage[react.message.guild.id].starboard.channel).send(resp).then(d=>{
+                    storage[react.message.guild.id].starboard.posted[react.message.guild.id]=d.id;
+                });
+            }
+            save();
+        }
     }
 });
 

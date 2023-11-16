@@ -42,6 +42,12 @@ const commands = [
 			option.setName("emoji").setDescription("The emoji to react with to trigger starboard (Default: ⭐)")
 		).addIntegerOption(option=>
 			option.setName("threshold").setDescription("How many reactions are needed to trigger starboard? (Default: 3)")
+		).addStringOption(option=>
+			option.setName("message_type").setDescription("What should the bot's starboard posts look like?").addChoices(
+				{"name":"Make it look like the user posted","value":"0"},
+				{"name":"Post an embed with the message and a greeting","value":"1"},
+				{"name":"Post an embed with the message","value":"2"}
+			)
 		).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages).setDMPermission(false),
 	new SlashCommandBuilder().setName("fun").setDescription("Posts something fun to enjoy").addSubcommand(command=>
 			command.setName("meme").setDescription("Posts a meme").addIntegerOption(option=>
@@ -139,7 +145,7 @@ const commands = [
 			option.setName("prompt").setDescription("The prompt (We'll set options in a minute)").setRequired(true)
 		).setDMPermission(false),
 	new SlashCommandBuilder().setName("ticket").setDescription("Set up a ticket system for users to contact mods").setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels).setDMPermission(false),
-	new SlashCommandBuilder().setName("auto-join-message_config").setDescription("Set up a message to be sent automatically when a user joins").addStringOption(option=>
+	new SlashCommandBuilder().setName("auto-join-message").setDescription("Set up a message to be sent automatically when a user joins").addStringOption(option=>
 			option.setName("message").setDescription("The message to be sent").setRequired(true)
 		).addStringOption(option=>
 			option.setName("channel_or_dm").setDescription("Should I post this message in a channel or the user's DMs?").addChoices(
@@ -152,6 +158,18 @@ const commands = [
 	new SlashCommandBuilder().setName("auto_roles").setDescription("Setup a message with auto roles").addStringOption(option=>
 			option.setName("message").setDescription("The message to be sent with the role options").setRequired(true)
 		).setDefaultMemberPermissions(PermissionFlagsBits.ManageRoles).setDMPermission(false),
+	new SlashCommandBuilder().setName("report_problem").setDescription("Report an error to be looked at").addStringOption(option=>
+			option.setName("type").setDescription("What kind of problem are you reporting?").addChoices(
+				{"name":"Profanity","value":"profanity"},
+				{"name":"Controversial","value":"controversy"},
+				{"name":"Bug or Error","value":"bug"},
+				{"name":"Suggestion","value":"suggestion"},
+				{"name":"Exploit","value":"exploit"},
+				{"name":"Other","value":"other"}
+			).setRequired(true)
+		).addStringOption(option=>
+			option.setName("details").setDescription("Can you please provide us some details?").setRequired(true)
+		),
 
 	new ContextMenuCommandBuilder().setName("submit_meme").setType(ApplicationCommandType.Message),
 	new ContextMenuCommandBuilder().setName("delete_message").setType(ApplicationCommandType.Message).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),//Leaving this in DMs to delete undesirable bot DMs
