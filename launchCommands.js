@@ -119,6 +119,8 @@ const commands = [
 				option.setName("reset").setDescription("Reset the count if a wrong number is posted (True to be on leaderboard)")
 			).addBooleanOption(option=>
 				option.setName("public").setDescription("Do you want this server to show up in the counting leaderboard?")
+			).addIntegerOption(option=>
+				option.setName("posts_between_turns").setDescription("How many posts do you need to wait between turns?")
 			)
 		).addSubcommand(command=>
 			command.setName("set_number").setDescription("Set the next number to count at (Disqualifies from leaderboard)").addIntegerOption(option=>

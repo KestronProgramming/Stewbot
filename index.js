@@ -159,53 +159,6 @@ const handleError = (msg, dm) => {
     }
 };
 
-const defaultMii={
-    info: {
-      creatorName: '',
-      name: 'Default',
-      gender: 'Male',
-      mingle: true,
-      birthMonth: 0,
-      birthday: 0,
-      favColor: 'Red',
-      favorited: false,
-      height: 64,
-      weight: 64,
-      downloadedFromCheckMiiOut: false,
-      type:"Normal"
-    },
-    face: { shape: 0, col: 'White', feature: 'None' },
-    nose: { type: 0, size: 4, vertPos: 9 },
-    mouth: { type: '111', col: 'Peach', size: 4, yPos: 13 },
-    mole: { on: false, size: 4, xPos: 2, yPos: 20 },
-    hair: { type: '111', col: 'Brown', flipped: false },
-    eyebrows: {
-      type: '111',
-      rotation: 6,
-      col: 'Brown',
-      size: 4,
-      yPos: 10,
-      distApart: 2
-    },
-    eyes: {
-      type: '111',
-      rotation: 4,
-      yPos: 12,
-      col: 'Black',
-      size: 4,
-      distApart: 2
-    },
-    glasses: { type: 0, col: 'Grey', size: 4, yPos: 10 },
-    facialHair: {
-      mustacheType: 0,
-      beardType: 0,
-      col: 'Black',
-      mustacheSize: 4,
-      mustacheYPos: 10
-    },
-    name: 'Default',
-    creatorName: ''
-};
 const defaultInvite={//Indexed under inviteId
     "uses":0,
     "createdBy":""
@@ -248,7 +201,8 @@ const defaultGuild={
         "highestNum":0,
         "legit":true, //If manually setting the next number, disqualify from the overarching leaderboard
         "reset":true,
-        "public":true
+        "public":true,
+        "takeTurns":1
     },
     "users":{},
     "reactionRoles":[],
@@ -262,15 +216,7 @@ const defaultGuildUser={
 };
 const defaultUser={
     "offenses":0,
-    "goombaSquad":{
-        "wins":0,
-        "losses":0,
-        "draws":0,
-        "cards":[],
-        "chose":null,
-        "playing":null
-    },
-    "mii":structuredClone(defaultMii),
+    "countTurns":0,
     "config":{
         "dmOffenses":true,
         "returnFiltered":true,
@@ -420,23 +366,46 @@ client.on("messageCreate",async msg=>{
         }
     }
 
-    if(storage[msg.guild.id].counting.active&&msg.channel.id===storage[msg.guild.id].counting.channel){
+    if(storage[msg.guild.id].counting.active&&msg.channel.id===storage[msg.guild.id].counting.channel&&!msg.author.bot){
         var num=msg.content.match(/^(\d|,)+(?:\b)/i);
         if(num!==null){
             num=+num[0].replaceAll(",","");
             if(num===storage[msg.guild.id].counting.nextNum){
-                msg.react("✅");
-                storage[msg.guild.id].counting.nextNum++;
-                if(storage[msg.guild.id].counting.legit&&num>storage[msg.guild.id].counting.highestNum){
-                    msg.react("🎉");
-                    storage[msg.guild.id].counting.highestNum=num;
+                if(storage[msg.guild.id].users[msg.author.id].countTurns<=0){
+                    msg.react("✅");
+                    storage[msg.guild.id].counting.nextNum++;
+                    if(storage[msg.guild.id].counting.legit&&num>storage[msg.guild.id].counting.highestNum){
+                        msg.react("🎉");
+                        storage[msg.guild.id].counting.highestNum=num;
+                    }
+                    for(let a in storage[msg.guild.id].users){
+                        storage[msg.guild.id].users[a].countTurns--;
+                    }
+                    storage[msg.guild.id].users[msg.author.id].count++;
+                    storage[msg.guild.id].users[msg.author.id].countTurns=storage[msg.guild.id].counting.takeTurns;
+                    save();
                 }
-                save();
+                else{
+                    msg.react("❌");
+                    msg.reply(`Nope, you need to wait for ${storage[msg.guild.id].counting.takeTurns} other people to post before you post again!${storage[msg.guild.id].counting.reset?` The next number to post was going to be \`${storage[msg.guild.id].counting.nextNum}\`, but now it's \`1\`.`:""}`);
+                    if(storage[msg.guild.id].counting.reset){
+                        storage[msg.guild.id].counting.nextNum=1;
+                        storage[msg.guild.id].counting.legit=true;
+                        for(let a in storage[msg.guild.id].users){
+                            storage[msg.guild.id].users[a].countTurns=0;
+                        }
+                        save();
+                    }
+                }
             }
             else if(storage[msg.guild.id].counting.reset&&storage[msg.guild.id].counting.nextNum!==1){
+                msg.react("❌");
                 msg.reply(`Oh no, that was incorrect! The next number to post was going to be \`${storage[msg.guild.id].counting.nextNum}\`, but now it's \`1\`.`);
                 storage[msg.guild.id].counting.nextNum=1;
                 storage[msg.guild.id].counting.legit=true;
+                for(let a in storage[msg.guild.id].users){
+                    storage[msg.guild.id].users[a].countTurns=0;
+                }
                 save();
             }
         }
@@ -571,8 +540,10 @@ client.on("interactionCreate",async cmd=>{
                     storage[cmd.guild.id].counting.active=cmd.options.getBoolean("active");
                     if(cmd.options.getChannel("channel")!==null) storage[cmd.guild.id].counting.channel=cmd.options.getChannel("channel").id;
                     if(cmd.options.getBoolean("public")!==null) storage[cmd.guild.id].counting.public=cmd.options.getBoolean("public");
+                    if(cmd.options.getInteger("posts_between_turns")!==null) storage[cmd.guild.id].counting.takeTurns=cmd.options.getInteger("posts_between_turns");
                     if(!storage[cmd.guild.id].counting.channel) storage[cmd.guild.id].counting.active=false;
-                    cmd.reply(`Alright, I configured counting for this server.${storage[cmd.guild.id].counting.active!==cmd.options.getBoolean("active")?` It looks like no channel has been set to count in, so counting is currently disabled. Please run this command again and set the channel to activate counting.`:""}`);
+                    if(!storage[cmd.guild.id].counting.reset||storage[cmd.guild.id].counting.takeTurns<1) storage[cmd.guild.id].counting.legit=false;
+                    cmd.reply(`Alright, I configured counting for this server.${storage[cmd.guild.id].counting.active!==cmd.options.getBoolean("active")?` It looks like no channel has been set to count in, so counting is currently disabled. Please run this command again and set the channel to activate counting.`:`${storage[cmd.guild.id].counting.legit?` Please be aware this server is currently inelegible for the leaderboard. To fix this, make sure that reset is set to true, that the posts between turns is at least 1, and that you don't set the number to anything higher than 1 manually.`:""}`}`);
                     save();
                 break;
                 case "set_number":
@@ -580,7 +551,7 @@ client.on("interactionCreate",async cmd=>{
                     if(storage[cmd.guild.id].counting.nextNum>1){
                         storage[cmd.guild.id].counting.legit=false;
                     }
-                    cmd.reply(`Alright, I've set the next number to be counted to \`${storage[cmd.guild.id].counting.nextNum}\`.${storage[cmd.guild.id].counting.legit?"":`\n\nPlease be aware that you are currently ineligible for the leaderboard. To fix this, make sure that the number you start from is less than 2, and that counting is configured to reset upon any mistakes.`}`);
+                    cmd.reply(`Alright, I've set the next number to be counted to \`${storage[cmd.guild.id].counting.nextNum}\`.${storage[cmd.guild.id].counting.legit?"":`\n\nPlease be aware that you are currently ineligible for the leaderboard. To fix this, make sure that the number you start from is less than 2, that the posts between turns is at least 1, and that counting is configured to reset upon any mistakes.`}`);
                     save();
                 break;
             }
@@ -1021,22 +992,19 @@ client.on("messageReactionAdd",async (react,user)=>{
                     storage[react.message.guild.id].starboard.posted[react.message.id]=d.id;
                 });
             }
+            storage[react.message.guild.id].users[react.message.author.id].stars++;
             save();
         }
     }
 });
 client.on("messageDelete",async msg=>{
     if(!msg.guild?.id) return;
-    console.log("Checking if it was a starboard post");
     if(storage[msg.guild.id]?.starboard.posted.hasOwnProperty(msg.id)){
-        console.log("Starboard post");
         if(storage[msg.guild.id].starboard.posted[msg.id].startsWith("webhook")){
-            console.log("It was a webhook, just delete it.");
             var c=await client.channels.cache.get(storage[msg.guild.id].starboard.channel).messages.fetch(storage[msg.guild.id].starboard.posted[msg.id].split("webhook")[1]);
             c.delete();
         }
         else{
-            console.log("It was a non-webhook, edit it to say it was deleted.");
             var c=await client.channels.cache.get(storage[msg.guild.id].starboard.channel).messages.fetch(storage[msg.guild.id].starboard.posted[msg.id]);
             c.edit({content:`I'm sorry, but it looks like this post by **${msg.author.globalName||msg.author.username}** was deleted.`,embeds:[],files:[]});
         }
