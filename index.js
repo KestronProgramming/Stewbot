@@ -207,7 +207,11 @@ const defaultGuild={
     "users":{},
     "reactionRoles":[],
     "invites":[],
-    "polls":{}
+    "polls":{},
+    "config":{
+        "embedPreviews":true,
+        "ai":true
+    }
 };
 const defaultGuildUser={
     "infractions":0,
@@ -220,7 +224,8 @@ const defaultUser={
     "config":{
         "dmOffenses":true,
         "returnFiltered":true,
-        "dmNotifs":true
+        "dmNotifs":true,
+        "embedPreviews":true
     }
 };
 const cmds=require("./commands.json");
@@ -247,7 +252,7 @@ const presets={
     "pollRemModal":new ModalBuilder().setCustomId("poll-removed").setTitle("Remove a poll option").addComponents(new ActionRowBuilder().addComponents(inps.pollNum))
 };
 var kaProgramRegex =/\b(?!<)https?:\/\/(?:www\.)?khanacademy\.org\/(cs|computer-programming)\/[a-z,\d,-]+\/\d{1,16}(?!>)\b/gi;
-var discordMessageRegex =/\b(?!<)https?:\/\/(ptb\.|canary\.)?discord(app)?.com\/channels\/(\@me|\d{1,25})\/\d{1,25}\d{1,25}(?!>)\b/gi;
+var discordMessageRegex =/\b(?!<)https?:\/\/(ptb\.|canary\.)?discord(app)?.com\/channels\/(\@me|\d{1,25})\/\d{1,25}\/\d{1,25}(?!>)\b/gi;
 function getStarMsg(msg){
     var msgs=[
         `Excuse me, there is a new message.`,
@@ -308,13 +313,7 @@ client.on("messageCreate",async msg=>{
         }
     }
     if(msg.content==="clearStorage"&&msg.author.username==="kestron06"){
-        storage={
-            "0":{
-                "filter":{
-                    "active":"false"
-                }
-            }
-        };
+        storage={};
         save();
         msg.reply("Cleared");
         return;
@@ -335,7 +334,7 @@ client.on("messageCreate",async msg=>{
         storage[msg.author.id]=structuredClone(defaultUser);
         save();
     }
-    if(storage[msg.guildId].filter.active){
+    if(storage[msg.guildId]?.filter.active){
         var foundWords=[];
         storage[msg.guildId].filter.blacklist.forEach(blockedWord=>{
             if(new RegExp(`([^\\D]|\\b)${blockedWord}(ing|s|ed|er|ism|ist|es|ual)?([^\\D]|\\b)`,"ig").test(msg.content)){
@@ -367,7 +366,7 @@ client.on("messageCreate",async msg=>{
         }
     }
 
-    if(storage[msg.guild.id].counting.active&&msg.channel.id===storage[msg.guild.id].counting.channel&&!msg.author.bot){
+    if(storage[msg.guildId]?.counting.active&&msg.channel.id===storage[msg.guildId]?.counting.channel&&!msg.author.bot){
         var num=msg.content.match(/^(\d|,)+(?:\b)/i);
         if(num!==null){
             num=+num[0].replaceAll(",","");
@@ -411,6 +410,50 @@ client.on("messageCreate",async msg=>{
             }
         }
     }
+
+    var links=msg.content.match(discordMessageRegex)||[];
+    if(!storage[msg.author.id].config.embedPreviews||!storage[msg.guild.id].config.embedPreviews){
+        links=[];
+    }
+    var embs=[];
+    var fils=[];
+    for(var i=0;i<links.length;i++){
+        let slashes=links[i].split("channels/")[1].split("/");
+        try{
+            var mes=await client.channels.cache.get(slashes[slashes.length-2]).messages.fetch(slashes[slashes.length-1]);
+            let messEmbed = new EmbedBuilder()
+                .setColor("#006400")
+                .setTitle("(Jump to message)")
+                .setURL(links[i])
+                .setAuthor({
+                    name: mes.author.nickname||mes.author.globalName||mes.author.username,
+                    iconURL: "" + mes.author.displayAvatarURL(),
+                    url: "https://discord.com/users/" + mes.author.id,
+                })
+                .setDescription(mes.content||null)
+                .setTimestamp(new Date(mes.createdTimestamp))
+                .setFooter({
+                    text: mes.guild?.name?mes.guild.name + " / " + mes.channel.name:`DM with ${client.user.username}`,
+                    iconURL: mes.guild.iconURL(),
+                });
+            var attachedImg=false;
+            mes.attachments.forEach((attached,i) => {
+                let url = attached.proxyURL;
+                if(attachedImg||!(/(png|jpe?g)/i.test(url))){
+                    fils.push(url);
+                }
+                else{
+                    messEmbed.setImage(url);
+                    attachedImg=true;
+                }
+            });
+            embs.push(messEmbed);
+        }
+        catch(e){
+            console.log(e);
+        }
+    }
+    if(embs.length>0) msg.reply({content:`Embedded linked message${embs.length>1?"s":""}. You can prevent this behavior by surrounding message links in \`<\` and \`>\`.`,embeds:embs,files:fils});
 
     if (msg.channel instanceof DMChannel&&!msg.author.bot) {
         sendMessage(msg, true);
