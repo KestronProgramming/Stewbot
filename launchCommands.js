@@ -139,11 +139,15 @@ const commands = [
 		).setDefaultMemberPermissions(PermissionFlagsBits.ViewAuditLog).setDMPermission(false),
 	new SlashCommandBuilder().setName("general_config").setDescription("Configure general behaviors").addBooleanOption(option=>
 			option.setName("ai_pings").setDescription("Have the bot post an AI message when pinging it?")
+		).addBooleanOption(option=>
+			option.setName("embeds").setDescription("If a message link is posted, should I post a preview?")
 		).setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers).setDMPermission(false),
 	new SlashCommandBuilder().setName("personal_config").setDescription("Configure the bot for you personally").addBooleanOption(option=>
 			option.setName("ai_pings").setDescription("Respond with an AI message to pings or DMs")
 		).addBooleanOption(option=>
 			option.setName("dm_infractions").setDescription("If you get filtered, should I DM you what was filtered?")
+		).addBooleanOption(option=>
+			option.setName("embeds").setDescription("If you link a Discord message, should I embed a preview for you?")
 		),
 	new SlashCommandBuilder().setName("poll").setDescription("Make a poll with automatically tracked options").addStringOption(option=>
 			option.setName("prompt").setDescription("The prompt (We'll set options in a minute)").setRequired(true)
