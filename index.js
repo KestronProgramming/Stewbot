@@ -223,6 +223,7 @@ const defaultUser={
         "dmNotifs":true
     }
 };
+const cmds=require("./commands.json");
 const inps={
     "pollAdd":new ButtonBuilder().setCustomId("poll-addOption").setLabel("Add a poll option").setStyle(ButtonStyle.Primary),
     "pollDel":new ButtonBuilder().setCustomId("poll-delOption").setLabel("Remove a poll option").setStyle(ButtonStyle.Danger),
@@ -387,7 +388,7 @@ client.on("messageCreate",async msg=>{
                 }
                 else{
                     msg.react("❌");
-                    msg.reply(`Nope, you need to wait for ${storage[msg.guild.id].counting.takeTurns} other people to post before you post again!${storage[msg.guild.id].counting.reset?` The next number to post was going to be \`${storage[msg.guild.id].counting.nextNum}\`, but now it's \`1\`.`:""}`);
+                    msg.reply(`Nope, you need to wait for ${storage[msg.guild.id].counting.takeTurns} other ${storage[msg.guild.id].counting.takeTurns===1?"person":"people"} to post before you post again!${storage[msg.guild.id].counting.reset?` The next number to post was going to be \`${storage[msg.guild.id].counting.nextNum}\`, but now it's \`1\`.`:""}`);
                     if(storage[msg.guild.id].counting.reset){
                         storage[msg.guild.id].counting.nextNum=1;
                         storage[msg.guild.id].counting.legit=true;
@@ -446,7 +447,7 @@ client.on("interactionCreate",async cmd=>{
     switch(cmd.commandName){
         //Slash Commands
         case 'ping':
-            cmd.reply(`**Online**\n- Latency: ${client.ws.ping} milliseconds\n- Last Started: <t:${uptime}:f>, <t:${uptime}:R>\n- Uptime: ${((Math.round(Date.now()/1000)-uptime)/(1000*60*60)).toFixed(2)} hours\n- Server Count: ${client.guilds.cache.size} Servers`);
+            cmd.reply(`**Online**\n- Latency: ${client.ws.ping} milliseconds\n- Last Started: <t:${uptime}:f>, <t:${uptime}:R>\n- Uptime: ${((Math.round(Date.now()/1000)-uptime)/(60*60)).toFixed(2)} hours\n- Server Count: ${client.guilds.cache.size} Servers`);
         break;
         case 'define':
             fetch("https://api.dictionaryapi.dev/api/v2/entries/en/"+cmd.options.getString("what")).then(d=>d.json()).then(d=>{
@@ -487,11 +488,11 @@ client.on("interactionCreate",async cmd=>{
             switch(cmd.options.getSubcommand()){
                 case "add":
                     if(storage[cmd.guild.id].filter.blacklist.includes(cmd.options.getString("word"))){
-                        cmd.reply({"ephemeral":true,"content":`The word ||${cmd.options.getString("word")}|| is already in the blacklist.${storage[cmd.guild.id].filter.active?"":"To begin filtering in this server, use `/filter_config`."}`});
+                        cmd.reply({"ephemeral":true,"content":`The word ||${cmd.options.getString("word")}|| is already in the blacklist.${storage[cmd.guild.id].filter.active?"":`To begin filtering in this server, use ${cmds.filterConfig}.`}`});
                     }
                     else{
                         storage[cmd.guild.id].filter.blacklist.push(cmd.options.getString("word"));
-                        cmd.reply(`Added ||${cmd.options.getString("word")}|| to the filter for this server.${storage[cmd.guild.id].filter.active?"":`\n\nThe filter for this server is currently disabled. To enable it, use \`/filter_config\`.`}`);
+                        cmd.reply(`Added ||${cmd.options.getString("word")}|| to the filter for this server.${storage[cmd.guild.id].filter.active?"":`\n\nThe filter for this server is currently disabled. To enable it, use ${cmds.filterConfig}.`}`);
                         save();
                     }
                 break;
@@ -502,7 +503,7 @@ client.on("interactionCreate",async cmd=>{
                         save();
                     }
                     else{
-                        cmd.reply(`I'm sorry, but I don't appear to have that word in my blacklist. Are you sure you're spelling it right? You can use \`/view_filter\` to see all filtered words.`);
+                        cmd.reply(`I'm sorry, but I don't appear to have that word in my blacklist. Are you sure you're spelling it right? You can use ${cmds.viewFilter} to see all filtered words.`);
                     }
                 break;
                 case "config":
@@ -511,17 +512,17 @@ client.on("interactionCreate",async cmd=>{
                     if(cmd.options.getBoolean("log")!==null) storage[cmd.guild.id].filter.log=cmd.options.getBoolean("log");
                     if(cmd.options.getChannel("channel")!==null) storage[cmd.guild.id].filter.log=cmd.options.getChannel("channel").id;
                     if(storage[cmd.guild.id].filter.channel==="") storage[cmd.guild.id].filter.log=false;
-                    cmd.reply(`Filter configured.${(cmd.options.getBoolean("log")&&!storage[cmd.guild.id].filter.log)?"\n\nNo channel was set to log summaries of deleted messages to, so logging these is turned off. To reenable this, run the command again and set `log` to true and specify a `channel`.":""}`);
+                    cmd.reply(`Filter configured.${(cmd.options.getBoolean("log")&&!storage[cmd.guild.id].filter.log)?`\n\nNo channel was set to log summaries of deleted messages to, so logging these is turned off. To reenable this, run ${cmds.filterConfig} again and set \`log\` to true and specify a \`channel\`.`:""}`);
                     save();
                 break;
             }
         break;
         case 'view_filter':
             if(storage[cmd.guild.id].filter.blacklist.length>0){
-                cmd.reply({"content":`**Warning!** There is no guarantee what kinds of words may be in the blacklist. There is a chance it could be heavily dirty. To continue, press the button below.`,"components":[new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('view_filter').setLabel('DM me the blacklist').setStyle(ButtonStyle.Danger))]});
+                cmd.reply({"content":`**Warning!** There is no guarantee what kinds of words may be in the blacklist. There is a chance it could be heavily dirty or offensive. To continue, press the button below.`,"components":[new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('view_filter').setLabel('DM me the blacklist').setStyle(ButtonStyle.Danger))]});
             }
             else{
-                cmd.reply(`This server doesn't have any words blacklisted at the moment. To add some, you can use \`/no_swear\`.`);
+                cmd.reply(`This server doesn't have any words blacklisted at the moment. To add some, you can use ${cmds.noSwear}.`);
             }
         break;
         case 'starboard_config':
@@ -531,7 +532,7 @@ client.on("interactionCreate",async cmd=>{
             if(cmd.options.getString("emoji")!==null) storage[cmd.guild.id].starboard.emoji=cmd.options.getString("emoji").includes(":")?cmd.options.getString("emoji").split(":")[2].split(">")[0]:cmd.options.getString("emoji");
             if(cmd.options.getString("message_type")!==null) storage[cmd.guild.id].starboard.messType=cmd.options.getString("message_type");
             if(storage[cmd.guild.id].starboard.channel==="") storage[cmd.guild.id].starboard.active=false;
-            cmd.reply(`Starboard configured.${cmd.options.getBoolean("active")&&!storage[cmd.guild.id].starboard.active?`\n\nNo channel has been set for this server, so starboard is inactive. To enable starboard, run the command again setting \`active\` to true and specify a \`channel\`.`:""}`);
+            cmd.reply(`Starboard configured.${cmd.options.getBoolean("active")&&!storage[cmd.guild.id].starboard.active?`\n\nNo channel has been set for this server, so starboard is inactive. To enable starboard, run ${cmds.starboardConfig} again setting \`active\` to true and specify a \`channel\`.`:""}`);
             save();
         break;
         case 'counting':
@@ -543,7 +544,7 @@ client.on("interactionCreate",async cmd=>{
                     if(cmd.options.getInteger("posts_between_turns")!==null) storage[cmd.guild.id].counting.takeTurns=cmd.options.getInteger("posts_between_turns");
                     if(!storage[cmd.guild.id].counting.channel) storage[cmd.guild.id].counting.active=false;
                     if(!storage[cmd.guild.id].counting.reset||storage[cmd.guild.id].counting.takeTurns<1) storage[cmd.guild.id].counting.legit=false;
-                    cmd.reply(`Alright, I configured counting for this server.${storage[cmd.guild.id].counting.active!==cmd.options.getBoolean("active")?` It looks like no channel has been set to count in, so counting is currently disabled. Please run this command again and set the channel to activate counting.`:`${storage[cmd.guild.id].counting.legit?` Please be aware this server is currently inelegible for the leaderboard. To fix this, make sure that reset is set to true, that the posts between turns is at least 1, and that you don't set the number to anything higher than 1 manually.`:""}`}`);
+                    cmd.reply(`Alright, I configured counting for this server.${storage[cmd.guild.id].counting.active!==cmd.options.getBoolean("active")?` It looks like no channel has been set to count in, so counting is currently disabled. Please run ${cmds.countingConfig} again and set the channel to activate counting.`:`${storage[cmd.guild.id].counting.legit?` Please be aware this server is currently inelegible for the leaderboard. To fix this, make sure that reset is set to true, that the posts between turns is at least 1, and that you don't set the number to anything higher than 1 manually.`:""}`}`);
                     save();
                 break;
                 case "set_number":
@@ -551,13 +552,13 @@ client.on("interactionCreate",async cmd=>{
                     if(storage[cmd.guild.id].counting.nextNum>1){
                         storage[cmd.guild.id].counting.legit=false;
                     }
-                    cmd.reply(`Alright, I've set the next number to be counted to \`${storage[cmd.guild.id].counting.nextNum}\`.${storage[cmd.guild.id].counting.legit?"":`\n\nPlease be aware that you are currently ineligible for the leaderboard. To fix this, make sure that the number you start from is less than 2, that the posts between turns is at least 1, and that counting is configured to reset upon any mistakes.`}`);
+                    cmd.reply(`Alright, I've set the next number to be counted to \`${storage[cmd.guild.id].counting.nextNum}\`.${storage[cmd.guild.id].counting.legit?"":`\n\nPlease be aware that this server is currently ineligible for the leaderboard. To fix this, make sure that the number you start from is less than 2, that the posts between turns is at least 1, and that counting is configured to reset upon any mistakes.`}`);
                     save();
                 break;
             }
         break;
         case 'next_counting_number':
-            cmd.reply(storage[cmd.guild.id].counting.active?`The next number to enter ${cmd.channel.id!==storage[cmd.guild.id].counting.channel?`in <#${storage[cmd.guild.id].counting.channel}> `:""}is \`${storage[cmd.guild.id].counting.nextNum}\`.`:`Counting isn't active in this server! Use \`/counting_config\` to set it up.`);
+            cmd.reply(storage[cmd.guild.id].counting.active?`The next number to enter ${cmd.channel.id!==storage[cmd.guild.id].counting.channel?`in <#${storage[cmd.guild.id].counting.channel}> `:""}is \`${storage[cmd.guild.id].counting.nextNum}\`.`:`Counting isn't active in this server! Use ${cmds.countingConfig} to set it up.`);
         break;
         case 'counting_leaderboard':
             var leaders=[];
@@ -616,7 +617,7 @@ client.on("interactionCreate",async cmd=>{
                             "credentials": "omit"
                         }).then(d=>d.json()).then(d=>{
                             cmd.editReply({"content":`<@${cmd.user.id}>, your prompt has been completed. Images courtesy of <https://www.craiyon.com/>.`,files:d.images.map(i=>`https://img.craiyon.com/${i}`)});
-                            if(storage[cmd.user.id].config.dmNotifs) cmd.user.send(`Your craiyon prompt \`${cmd.options.getString("prompt")}\` has completed. https://discord.com/channels/${cmd.guild.id?cmd.guild.id:"@me"}/${cmd.channelId}/${cmd.id}`);
+                            if(storage[cmd.user.id].config.dmNotifs) cmd.user.send(`Your ${cmds.craiyon} prompt \`${cmd.options.getString("prompt")}\` has completed. https://discord.com/channels/${cmd.guild.id?cmd.guild.id:"@me"}/${cmd.channelId}/${cmd.id}`);
                         });
                     }
                     catch(e){
