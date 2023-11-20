@@ -23,7 +23,6 @@ Currently being rewritten, you can see progress here.
  - Moderator actions with better logging
  - Translations
  - Search Engine integration
- - Invite Tracking
  - Personal and Server configs for general options
  - Staff tickets
  - Auto join messages
