@@ -26,12 +26,8 @@ const commands = [
 				option.setName("word").setDescription("The word to remove from the blacklist").setRequired(true)
 			)
 		).addSubcommand(command=>
-			command.setName("import").setDescription("Import a predetermined wordlist").addStringOption(option=>
-				option.setName("strictness").setDescription("How strict should the imported words be?").addChoices(
-					{"name":"Strict","value":"strict"},
-					{"name":"Moderate","value":"moderate"},
-					{"name":"Weak","value":"weak"}
-				)
+			command.setName("import").setDescription("Import a CSV wordlist").addAttachmentOption(option=>
+				option.setName("file").setDescription("A .csv with comma seperated words you'd like to block").setRequired(true)
 			)
 		).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages).setDMPermission(false),
 	new SlashCommandBuilder().setName("view_filter").setDescription("View the list of blacklisted words for this server").setDMPermission(false),

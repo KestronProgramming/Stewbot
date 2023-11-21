@@ -351,6 +351,7 @@ const inps={
     "channels":new ChannelSelectMenuBuilder().setCustomId("move-message").setChannelTypes(ChannelType.GuildText).setMaxValues(1).setMinValues(1),
 
     "delete":new ButtonBuilder().setCustomId("delete-all").setLabel("Delete message").setStyle(ButtonStyle.Danger),
+    "export":new ButtonBuilder().setCustomId("export").setLabel("Export to CSV").setStyle(ButtonStyle.Primary),
 
     "approve":new ButtonBuilder().setCustomId("save_meme").setLabel("Approve meme").setStyle(ButtonStyle.Success)
 };
@@ -733,6 +734,19 @@ client.on("interactionCreate",async cmd=>{
                     cmd.reply(`Filter configured.${(cmd.options.getBoolean("log")&&!storage[cmd.guild.id].filter.log)?`\n\nNo channel was set to log summaries of deleted messages to, so logging these is turned off. To reenable this, run ${cmds['filter config']} again and set \`log\` to true and specify a \`channel\`.`:""}`);
                     save();
                 break;
+                case "import":
+                    fetch(cmd.options.getAttachment("file").attachment).then(d=>d.text()).then(d=>{
+                        var badWords=d.split(",");
+                        let addedWords=[];
+                        badWords.forEach(word=>{
+                            if(!storage[cmd.guild.id].filter.blacklist.includes(word)){
+                                storage[cmd.guild.id].filter.blacklist.push(word);
+                                addedWords.push(word);
+                            }
+                        });
+                        cmd.reply(addedWords.length>0?ll(`Added the following words to the blacklist:\n- ||${addedWords.join("||\n- ||")}||`):`Unable to add any of the words to the filter. Either there aren't any in the CSV, it's not formatted right, or all of the words are in the blacklist already.`);
+                    });
+                break;
             }
         break;
         case 'view_filter':
@@ -1030,7 +1044,7 @@ client.on("interactionCreate",async cmd=>{
             cmd.message.react("✅");
         break;
         case "view_filter":
-            cmd.user.send({"content":`The following is the blacklist for **${cmd.guild.name}** as requested.\n\n||${storage[cmd.guild.id].filter.blacklist.join("||, ||")}||`,"components":[new ActionRowBuilder().addComponents(inps.delete)]});
+            cmd.user.send({"content":`The following is the blacklist for **${cmd.guild.name}** as requested.\n\n||${storage[cmd.guild.id].filter.blacklist.join("||, ||")}||`,"components":[new ActionRowBuilder().addComponents(inps.delete,inps.export)]});
             cmd.deferUpdate();
         break;
         case "delete-all":
@@ -1098,6 +1112,13 @@ client.on("interactionCreate",async cmd=>{
                 return;
             }
             cmd.update(getRACBoard());
+        break;
+        case "export":
+            var bad=cmd.message.content.match(/\|\|\w+\|\|/gi).map(a=>a.split("||")[1]);
+            fs.writeFileSync("./badExport.csv",bad.join(","));
+            cmd.reply({ephemeral:true,files:["./badExport.csv"]}).then(()=>{
+                fs.unlinkSync("./badExport.csv");
+            });
         break;
 
         //Modals
