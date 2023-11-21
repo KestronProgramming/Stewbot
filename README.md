@@ -2,7 +2,7 @@
 Currently being rewritten, you can see progress here.
 
 ## Current Working Features
- - Swear Filter - Import wordlists
+ - Swear Filter
  - Definitions - Use AI to define words not in database?
  - Polls - Add list of voters
  - AI Ping Response
