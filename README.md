@@ -15,10 +15,11 @@ Currently being rewritten, you can see progress here.
  - Memes
  - Starboard
  - Counting
+ - Message embed previews for linked messages
+ - Message moving
 ## Planned Features
  - Logging
  - Jokes
- - Message embed previews for linked messages
  - Rows and Columns
  - Moderator actions with better logging
  - Translations
@@ -26,7 +27,6 @@ Currently being rewritten, you can see progress here.
  - Personal and Server configs for general options
  - Staff tickets
  - Auto join messages
- - Message moving
  - Automatic permission checking
  - Better error correction
  - Seasonal fun
