@@ -211,6 +211,12 @@ const defaultGuild={
     "config":{
         "embedPreviews":true,
         "ai":true
+    },
+    "ajm":{
+        "message":"",
+        "dm":true,
+        "channel":"",
+        "active":false
     }
 };
 const defaultGuildUser={
@@ -640,6 +646,11 @@ client.on("interactionCreate",async cmd=>{
                         msg.react("🅰️").then(msg.react("🅱️"));
                     });
                 break;
+                case 'joke':
+                    fetch("https://v2.jokeapi.dev/joke/Pun?blacklistFlags=nsfw,religious,political,racist,sexist,explicit&safe-mode").then(d=>d.json()).then(d=>{
+                        cmd.reply(d.type==="single"?`${d.joke}`:`${d.setup}\n\n||${d.delivery}||`);
+                    });
+                break;
                 case 'craiyon':
                     await cmd.reply({content:`Your request is now loading. Expected finish time <t:${Math.round(Date.now()/1000)+60}:R>`,files:["./loading.gif"]});
                     try{
@@ -696,7 +707,15 @@ client.on("interactionCreate",async cmd=>{
             notify(1,`**${cmd.options.getString("type")[0].toUpperCase()}${cmd.options.getString("type").slice(1)} Reported by ${cmd.user.username}** (${cmd.user.id})\n\n\`\`\`\n${cmd.options.getString("details")}\`\`\``);
             cmd.reply({content:"I have reported the issue. Thank you.",ephemeral:true});
         break;
-        
+        case 'auto-join-message':
+            storage[cmd.guild.id].ajm.active=cmd.options.getBoolean("active");
+            if(cmd.options.getChannel("channel")!==null) storage[cmd.guild.id].ajm.channel=cmd.options.getChannel("channel").id;
+            if(cmd.options.getString("channel_or_dm")!==null) storage[cmd.guild.id].ajm.dm=cmd.options.getString("channel_or_dm")==="dm";
+            if(cmd.options.getString("message")!==null) storage[cmd.guild.id].ajm.message=cmd.options.getString("message");
+            if(!storage[cmd.guild.id].ajm.dm&&storage[cmd.guild.id].ajm.channel===""||storage[cmd.guild.id].ajm.message==="") storage[cmd.guild.id].ajm.active=false;
+            cmd.reply(`Auto join messages configured.${storage[cmd.guild.id].ajm.active!==cmd.options.getBoolean("active")?` It looks like an invalid configuration was set. Make sure to specify a channel to post to if not posting to DMs, and to specify a message to send.`:""}`);
+        break;
+
         //Context Menu Commands
         case 'delete_message':
             if(cmd.guild.id!==null&&cmd.guild.id!=="0"){
@@ -1140,18 +1159,70 @@ client.on("messageUpdate",async (msgO,msg)=>{
         c.edit(resp);
     }
 });
+client.on("guildMemberAdd",async member=>{
+    if(!storage.hasOwnProperty(member.guild.id)){
+        storage[member.guild.id]=structuredClone(defaultGuild);
+        save();
+    }
+    if(!storage[member.guild.id].users.hasOwnProperty(member.id)){
+        storage[member.guild.id].users[member.id]=structuredClone(defaultGuildUser);
+        save();
+    }
+    if(!storage.hasOwnProperty(member.id)){
+        storage[member.id]=structuredClone(defaultUser);
+        save();
+    }
+
+    if(storage[member.guild.id].ajm.active){
+        if(storage[member.guild.id].ajm.dm){
+            member.send({embeds:[{
+                type: "rich",
+                title: member.guild.name,
+                description: storage[member.guild.id].ajm.message.replaceAll("${@USER}",`<@${member.id}>`),
+                color: 0x006400,
+                thumbnail: {
+                    url: member.guild.iconURL(),
+                    height: 0,
+                    width: 0,
+                },
+                footer: {text:`This message was sent from ${member.guild.name}`},
+            }]});
+        }
+        else{
+            var resp={
+                content:storage[member.guild.id].ajm.message.replaceAll("${@USER}",`<@${member.id}>`),
+                username:member.guild.name,
+                avatarURL:member.guild.iconURL()
+            };
+            var hook=await client.channels.cache.get(storage[member.guild.id].ajm.channel).fetchWebhooks();
+            hook=hook.find(h=>h.token);
+            if(hook){
+                hook.send(resp);
+            }
+            else{
+                client.channels.cache.get(storage[react.message.guild.id].starboard.channel).createWebhook({
+                    name:"Stewbot",
+                    avatar: "https://cdn.discordapp.com/attachments/1145432570104926234/1170273261704196127/kt.jpg",
+                }).then(d=>{
+                    d.send(resp);
+                });
+            }
+        }
+    }
+});
 
 client.on("rateLimit",async d=>{
     notify(1,"Ratelimited -\n\n"+d);
 });
 client.on("guildCreate",async guild=>{
-    storage[guild.id]=structuredClone(defaultGuild);
-    notify(1,`Added to a new server! ${guild.name}`);
-    save();
+    if(!storage.hasOwnProperty(guild.id)){
+        storage[guild.id]=structuredClone(defaultGuild);
+        save();
+    }
+    notify(1,`Added to **${guild.name}**!`);
 });
 client.on("guildDelete",async guild=>{
     notify(1,`Removed from **${guild.name}**.`);
-    save();
 });
 
 client.login(process.env.token);
