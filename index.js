@@ -22,7 +22,7 @@ function makeCall(toWhom,what){
 var client;
 const { createCanvas } = require('canvas');
 const { InworldClient, SessionToken, status } = require("@inworld/nodejs-sdk");
-const {Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder}=require("discord.js");
+const {Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType}=require("discord.js");
 const fs=require("fs");
 const express=require("express");
 const path=require("path");
@@ -238,6 +238,7 @@ const inps={
     "pollNum":new TextInputBuilder().setCustomId("poll-removedInp").setLabel("Which # option should I remove?").setStyle(TextInputStyle.Short).setMinLength(1).setMaxLength(2).setRequired(true),
 
     "roleAdd":new RoleSelectMenuBuilder().setCustomId("role-addOption").setMinValues(1).setMaxValues(20).setPlaceholder("Select all the roles you would like to offer"),
+    "channels":new ChannelSelectMenuBuilder().setCustomId("move-message").setChannelTypes(ChannelType.GuildText).setMaxValues(1).setMinValues(1),
 
     "delete":new ButtonBuilder().setCustomId("delete-all").setLabel("Delete message").setStyle(ButtonStyle.Danger),
 
@@ -247,6 +248,7 @@ const presets={
     "pollCreation":new ActionRowBuilder().addComponents(inps.pollAdd,inps.pollDel,inps.pollLaunch),
     "rolesCreation":new ActionRowBuilder().addComponents(inps.roleAdd),
     "meme":[new ActionRowBuilder().addComponents(inps.approve,inps.delete)],
+    "moveMessage":new ActionRowBuilder().addComponents(inps.channels),
 
     "pollAddModal":new ModalBuilder().setCustomId("poll-added").setTitle("Add a poll option").addComponents(new ActionRowBuilder().addComponents(inps.pollInp)),
     "pollRemModal":new ModalBuilder().setCustomId("poll-removed").setTitle("Remove a poll option").addComponents(new ActionRowBuilder().addComponents(inps.pollNum))
@@ -531,11 +533,11 @@ client.on("interactionCreate",async cmd=>{
             switch(cmd.options.getSubcommand()){
                 case "add":
                     if(storage[cmd.guild.id].filter.blacklist.includes(cmd.options.getString("word"))){
-                        cmd.reply({"ephemeral":true,"content":`The word ||${cmd.options.getString("word")}|| is already in the blacklist.${storage[cmd.guild.id].filter.active?"":`To begin filtering in this server, use ${cmds.filterConfig}.`}`});
+                        cmd.reply({"ephemeral":true,"content":`The word ||${cmd.options.getString("word")}|| is already in the blacklist.${storage[cmd.guild.id].filter.active?"":`To begin filtering in this server, use ${cmds['filter config']}.`}`});
                     }
                     else{
                         storage[cmd.guild.id].filter.blacklist.push(cmd.options.getString("word"));
-                        cmd.reply(`Added ||${cmd.options.getString("word")}|| to the filter for this server.${storage[cmd.guild.id].filter.active?"":`\n\nThe filter for this server is currently disabled. To enable it, use ${cmds.filterConfig}.`}`);
+                        cmd.reply(`Added ||${cmd.options.getString("word")}|| to the filter for this server.${storage[cmd.guild.id].filter.active?"":`\n\nThe filter for this server is currently disabled. To enable it, use ${cmds['filter config']}.`}`);
                         save();
                     }
                 break;
@@ -546,7 +548,7 @@ client.on("interactionCreate",async cmd=>{
                         save();
                     }
                     else{
-                        cmd.reply(`I'm sorry, but I don't appear to have that word in my blacklist. Are you sure you're spelling it right? You can use ${cmds.viewFilter} to see all filtered words.`);
+                        cmd.reply(`I'm sorry, but I don't appear to have that word in my blacklist. Are you sure you're spelling it right? You can use ${cmds.view_filter} to see all filtered words.`);
                     }
                 break;
                 case "config":
@@ -555,7 +557,7 @@ client.on("interactionCreate",async cmd=>{
                     if(cmd.options.getBoolean("log")!==null) storage[cmd.guild.id].filter.log=cmd.options.getBoolean("log");
                     if(cmd.options.getChannel("channel")!==null) storage[cmd.guild.id].filter.log=cmd.options.getChannel("channel").id;
                     if(storage[cmd.guild.id].filter.channel==="") storage[cmd.guild.id].filter.log=false;
-                    cmd.reply(`Filter configured.${(cmd.options.getBoolean("log")&&!storage[cmd.guild.id].filter.log)?`\n\nNo channel was set to log summaries of deleted messages to, so logging these is turned off. To reenable this, run ${cmds.filterConfig} again and set \`log\` to true and specify a \`channel\`.`:""}`);
+                    cmd.reply(`Filter configured.${(cmd.options.getBoolean("log")&&!storage[cmd.guild.id].filter.log)?`\n\nNo channel was set to log summaries of deleted messages to, so logging these is turned off. To reenable this, run ${cmds['filter config']} again and set \`log\` to true and specify a \`channel\`.`:""}`);
                     save();
                 break;
             }
@@ -565,7 +567,7 @@ client.on("interactionCreate",async cmd=>{
                 cmd.reply({"content":`**Warning!** There is no guarantee what kinds of words may be in the blacklist. There is a chance it could be heavily dirty or offensive. To continue, press the button below.`,"components":[new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('view_filter').setLabel('DM me the blacklist').setStyle(ButtonStyle.Danger))]});
             }
             else{
-                cmd.reply(`This server doesn't have any words blacklisted at the moment. To add some, you can use ${cmds.noSwear}.`);
+                cmd.reply(`This server doesn't have any words blacklisted at the moment. To add some, you can use ${cmds['filter add']}.`);
             }
         break;
         case 'starboard_config':
@@ -575,7 +577,7 @@ client.on("interactionCreate",async cmd=>{
             if(cmd.options.getString("emoji")!==null) storage[cmd.guild.id].starboard.emoji=cmd.options.getString("emoji").includes(":")?cmd.options.getString("emoji").split(":")[2].split(">")[0]:cmd.options.getString("emoji");
             if(cmd.options.getString("message_type")!==null) storage[cmd.guild.id].starboard.messType=cmd.options.getString("message_type");
             if(storage[cmd.guild.id].starboard.channel==="") storage[cmd.guild.id].starboard.active=false;
-            cmd.reply(`Starboard configured.${cmd.options.getBoolean("active")&&!storage[cmd.guild.id].starboard.active?`\n\nNo channel has been set for this server, so starboard is inactive. To enable starboard, run ${cmds.starboardConfig} again setting \`active\` to true and specify a \`channel\`.`:""}`);
+            cmd.reply(`Starboard configured.${cmd.options.getBoolean("active")&&!storage[cmd.guild.id].starboard.active?`\n\nNo channel has been set for this server, so starboard is inactive. To enable starboard, run ${cmds.starboard_config} again setting \`active\` to true and specify a \`channel\`.`:""}`);
             save();
         break;
         case 'counting':
@@ -587,7 +589,7 @@ client.on("interactionCreate",async cmd=>{
                     if(cmd.options.getInteger("posts_between_turns")!==null) storage[cmd.guild.id].counting.takeTurns=cmd.options.getInteger("posts_between_turns");
                     if(!storage[cmd.guild.id].counting.channel) storage[cmd.guild.id].counting.active=false;
                     if(!storage[cmd.guild.id].counting.reset||storage[cmd.guild.id].counting.takeTurns<1) storage[cmd.guild.id].counting.legit=false;
-                    cmd.reply(`Alright, I configured counting for this server.${storage[cmd.guild.id].counting.active!==cmd.options.getBoolean("active")?` It looks like no channel has been set to count in, so counting is currently disabled. Please run ${cmds.countingConfig} again and set the channel to activate counting.`:`${storage[cmd.guild.id].counting.legit?` Please be aware this server is currently inelegible for the leaderboard. To fix this, make sure that reset is set to true, that the posts between turns is at least 1, and that you don't set the number to anything higher than 1 manually.`:""}`}`);
+                    cmd.reply(`Alright, I configured counting for this server.${storage[cmd.guild.id].counting.active!==cmd.options.getBoolean("active")?` It looks like no channel has been set to count in, so counting is currently disabled. Please run ${cmds['counting config']} again and set the channel to activate counting.`:`${storage[cmd.guild.id].counting.legit?` Please be aware this server is currently inelegible for the leaderboard. To fix this, make sure that reset is set to true, that the posts between turns is at least 1, and that you don't set the number to anything higher than 1 manually.`:""}`}`);
                     save();
                 break;
                 case "set_number":
@@ -601,7 +603,7 @@ client.on("interactionCreate",async cmd=>{
             }
         break;
         case 'next_counting_number':
-            cmd.reply(storage[cmd.guild.id].counting.active?`The next number to enter ${cmd.channel.id!==storage[cmd.guild.id].counting.channel?`in <#${storage[cmd.guild.id].counting.channel}> `:""}is \`${storage[cmd.guild.id].counting.nextNum}\`.`:`Counting isn't active in this server! Use ${cmds.countingConfig} to set it up.`);
+            cmd.reply(storage[cmd.guild.id].counting.active?`The next number to enter ${cmd.channel.id!==storage[cmd.guild.id].counting.channel?`in <#${storage[cmd.guild.id].counting.channel}> `:""}is \`${storage[cmd.guild.id].counting.nextNum}\`.`:`Counting isn't active in this server! Use ${cmds['counting config']} to set it up.`);
         break;
         case 'counting_leaderboard':
             var leaders=[];
@@ -660,7 +662,7 @@ client.on("interactionCreate",async cmd=>{
                             "credentials": "omit"
                         }).then(d=>d.json()).then(d=>{
                             cmd.editReply({"content":`<@${cmd.user.id}>, your prompt has been completed. Images courtesy of <https://www.craiyon.com/>.`,files:d.images.map(i=>`https://img.craiyon.com/${i}`)});
-                            if(storage[cmd.user.id].config.dmNotifs) cmd.user.send(`Your ${cmds.craiyon} prompt \`${cmd.options.getString("prompt")}\` has completed. https://discord.com/channels/${cmd.guild.id?cmd.guild.id:"@me"}/${cmd.channelId}/${cmd.id}`);
+                            if(storage[cmd.user.id].config.dmNotifs) cmd.user.send(`Your ${cmds['fun craiyon']} prompt \`${cmd.options.getString("prompt")}\` has completed. https://discord.com/channels/${cmd.guild.id?cmd.guild.id:"@me"}/${cmd.channelId}/${cmd.id}`);
                         });
                     }
                     catch(e){
@@ -708,6 +710,9 @@ client.on("interactionCreate",async cmd=>{
                 cmd.targetMessage.delete();
                 cmd.reply({"content":"Success","ephemeral":true});
             }
+        break;
+        case 'move_message':
+            cmd.reply({"content":`Where do you want to move message \`${cmd.targetMessage.id}\` by **${cmd.targetMessage.author.username}**?`,"ephemeral":true,"components":[presets.moveMessage]});
         break;
         case 'submit_meme':
             if(cmd.targetMessage.attachments.size===0){
@@ -786,6 +791,7 @@ client.on("interactionCreate",async cmd=>{
                 storage[cmd.guild.id].polls[msg.id]=structuredClone(poll);
                 save();
             });
+            cmd.update({"content":"\u200b",components:[]});
         break;
 
         //Modals
@@ -869,11 +875,34 @@ client.on("interactionCreate",async cmd=>{
             if(tempRow.length>0) rows.push(new ActionRowBuilder().addComponents(...tempRow));
             if(badRoles.length===0){
                 cmd.channel.send({"content":`**Auto-Roles**\n${cmd.message.content}`,"components":rows});
-                cmd.deferUpdate();
+                cmd.update({"content":"\u200b",components:[]});
             }
             else{
                 cmd.reply({ephemeral:true,content:ll(`I'm sorry, but I can't help with the following roles as I don't have high enough permissions to. If you'd like me to offer these roles, visit Server Settings and make sure I have a role listed above the following roles. You can do this by dragging the order around or adding roles.\n\n${badRoles.map(a=>`- **${a}**`).join("\n")}`)});
             }
+        break;
+        case 'move-message':
+            var msg=await cmd.channel.messages.fetch(cmd.message.content.split("`")[1]);
+            var resp={};
+            resp.content=`\`\`\`\nThis message has been moved from ${cmd.channel.name} by Stewbot.\`\`\`${msg.content}`;
+            resp.username=msg.author.nickname||msg.author.globalName||msg.author.username;
+            resp.avatarURL=msg.author.displayAvatarURL();
+            var hook=await client.channels.cache.get(cmd.values[0]).fetchWebhooks();
+            hook=hook.find(h=>h.token);
+            if(hook){
+                hook.send(resp);
+            }
+            else{
+                client.channels.cache.get(cmd.values[0]).createWebhook({
+                    name:"Stewbot",
+                    avatar: "https://cdn.discordapp.com/attachments/1145432570104926234/1170273261704196127/kt.jpg",
+                }).then(d=>{
+                    d.send(resp).then(()=>{
+                        msg.delete();
+                    });
+                });
+            }
+            cmd.update({"content":"\u200b",components:[]});
         break;
     }
     if(cmd.customId?.startsWith("poll-closeOption")){

@@ -1,5 +1,6 @@
 process.env=require("./env.json");
 const { REST,Routes,PermissionFlagsBits,SlashCommandBuilder,ContextMenuCommandBuilder,ApplicationCommandType,ChannelType} = require('discord.js');
+const fs=require("fs");
 
 //Command permissions should be set to the level you would need to do it manually (so if the bot is deleting messages, the permission to set it up would be the permission to delete messages)
 //Don't enable anything in DMs that is unusable in DMs (server configurations, multiplayer reliant commands, etc)
@@ -187,6 +188,17 @@ const commands = [
 	.map(command => command.toJSON());
 
 const rest = new REST({ version: '9' }).setToken(process.env.token);
-rest.put(Routes.applicationCommands(process.env.clientId), { body: commands })
-	.then(() => console.log('Launched slash commands'))
-	.catch(console.error);
+var comms={};
+rest.put(Routes.applicationCommands(process.env.clientId),{body:commands}).then(d=>{
+	d.forEach(c=>{
+		comms[c.name]=`</${c.name}:${c.id}>`;
+		if(c.hasOwnProperty("options")){
+			c.options.forEach(o=>{
+				if(o.type===1){
+					comms[`${c.name} ${o.name}`]=`</${c.name} ${o.name}:${c.id}>`
+				}
+			});
+		}
+	});
+	fs.writeFileSync("./commands.json",JSON.stringify(comms));
+}).catch(console.error);
