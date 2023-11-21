@@ -154,8 +154,10 @@ const commands = [
 			option.setName("prompt").setDescription("The prompt (We'll set options in a minute)").setRequired(true)
 		).setDMPermission(false),
 	new SlashCommandBuilder().setName("ticket").setDescription("Set up a ticket system for users to contact mods").setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels).setDMPermission(false),
-	new SlashCommandBuilder().setName("auto-join-message").setDescription("Set up a message to be sent automatically when a user joins").addStringOption(option=>
-			option.setName("message").setDescription("The message to be sent").setRequired(true)
+	new SlashCommandBuilder().setName("auto-join-message").setDescription("Set up a message to be sent automatically when a user joins").addBooleanOption(option=>
+			option.setName("active").setDescription("Should I send a message when the user joins?").setRequired(true)
+		).addStringOption(option=>
+			option.setName("message").setDescription("The message to be sent (Use \"${@USER}\" to mention the user)")
 		).addStringOption(option=>
 			option.setName("channel_or_dm").setDescription("Should I post this message in a channel or the user's DMs?").addChoices(
 				{"name":"Channel","value":"channel"},
@@ -201,4 +203,5 @@ rest.put(Routes.applicationCommands(process.env.clientId),{body:commands}).then(
 		}
 	});
 	fs.writeFileSync("./commands.json",JSON.stringify(comms));
+	console.log("Updated commands and wrote command mentions to ./commands.json");
 }).catch(console.error);

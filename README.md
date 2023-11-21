@@ -17,16 +17,16 @@ Currently being rewritten, you can see progress here.
  - Counting
  - Message embed previews for linked messages
  - Message moving
+ - Jokes
+ - Auto join messages
 ## Planned Features
  - Logging
- - Jokes
  - Rows and Columns
  - Moderator actions with better logging
  - Translations
  - Search Engine integration
  - Personal and Server configs for general options
  - Staff tickets
- - Auto join messages
  - Automatic permission checking
  - Better error correction
  - Seasonal fun
