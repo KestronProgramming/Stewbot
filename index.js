@@ -184,14 +184,15 @@ const defaultGuild={
         "channel":"",
         "active":false,
         "events":{
-            "channel":false,
-            "user":false,
-            "server":false,
-            "pins":false,
-            "emojis":false,
-            "events":false,
-            "invites":false,
-            "roles":false
+            "active":false,
+            "channel":"",
+            "channel_events":false,
+            "emoji_events":false,
+            "user_change_events":false,
+            "joining_and_leaving":false,
+            "invite_events":false,
+            "message_events":false,
+            "role_events":false
         }
     },
     "counting":{
