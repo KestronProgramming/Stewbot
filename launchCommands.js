@@ -125,7 +125,7 @@ const commands = [
 			)
 		).addSubcommand(command=>
 			command.setName("set_number").setDescription("Set the next number to count at (Disqualifies from leaderboard)").addIntegerOption(option=>
-				option.setName("num").setDescription("The number to count at next")
+				option.setName("num").setDescription("The number to count at next").setRequired(true)
 			)
 		).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages).setDMPermission(false),
 	new SlashCommandBuilder().setName("next_counting_number").setDescription("View the next number to count at").setDMPermission(false),
@@ -133,11 +133,6 @@ const commands = [
 	new SlashCommandBuilder().setName("search").setDescription("Search the internet for a query").addStringOption(option=>
 			option.setName("query").setDescription("The query to search for").setRequired(true)
 		),
-	new SlashCommandBuilder().setName("invite_tracking_config").setDescription("Configure invite tracking").addBooleanOption(option=>
-			option.setName("active").setDescription("Track invites").setRequired(true)
-		).addChannelOption(option=>
-			option.setName("channel").setDescription("The channel to post updates to").setRequired(true)
-		).setDefaultMemberPermissions(PermissionFlagsBits.ViewAuditLog).setDMPermission(false),
 	new SlashCommandBuilder().setName("general_config").setDescription("Configure general behaviors").addBooleanOption(option=>
 			option.setName("ai_pings").setDescription("Have the bot post an AI message when pinging it?")
 		).addBooleanOption(option=>
@@ -183,6 +178,25 @@ const commands = [
 		).addStringOption(option=>
 			option.setName("details").setDescription("Can you please provide us some details?").setRequired(true)
 		),
+	new SlashCommandBuilder().setName("log_config").setDescription("Configure log events").addBooleanOption(option=>
+			option.setName("active").setDescription("Log server and user events to the designated channel?").setRequired(true)
+		).addChannelOption(option=>
+			option.setName("channel").setDescription("Which channel to post events to?").setRequired(true)
+		).addBooleanOption(option=>
+			option.setName("channel_events").setDescription("Log channel events?")
+		).addBooleanOption(option=>
+			option.setName("emoji_events").setDescription("Log emoji and sticker events?")
+		).addBooleanOption(option=>
+			option.setName("user_change_events").setDescription("Log user changes?")
+		).addBooleanOption(option=>
+			option.setName("joining_and_leaving").setDescription("Log when a user joins/leaves?")
+		).addBooleanOption(option=>
+			option.setName("invite_events").setDescription("Log when an invite is made or deleted?")
+		).addBooleanOption(option=>
+			option.setName("message_events").setDescription("Log notable message events?")
+		).addBooleanOption(option=>
+			option.setName("role_events").setDescription("Log role events?")
+		).setDefaultMemberPermissions(PermissionFlagsBits.ViewAuditLog).setDMPermission(false),
 
 	new ContextMenuCommandBuilder().setName("submit_meme").setType(ApplicationCommandType.Message),
 	new ContextMenuCommandBuilder().setName("delete_message").setType(ApplicationCommandType.Message).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),//Leaving this in DMs to delete undesirable bot DMs
