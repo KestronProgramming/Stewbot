@@ -802,6 +802,23 @@ client.on("interactionCreate",async cmd=>{
                 }
             }],components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId(`ticket-${cmd.options.getChannel("channel").id}`).setLabel("Create private ticket with staff").setStyle(ButtonStyle.Success))]});
         break;
+        case 'admin_message':
+            cmd.options.getUser("target").send({embeds:[{
+                type: "rich",
+                title: cmd.guild.name,
+                description: cmd.options.getString("what"),
+                color: 0x006400,
+                thumbnail: {
+                    url: cmd.guild.iconURL(),
+                    height: 0,
+                    width: 0,
+                },
+                footer: {
+                    text:`This message was sent by a moderator of ${cmd.guild.name}`
+                }
+            }]});
+            cmd.reply("Messaged them");
+        break;
 
         //Context Menu Commands
         case 'delete_message':
