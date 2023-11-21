@@ -202,6 +202,9 @@ const commands = [
 		).addStringOption(option=>
 			option.setName("what").setDescription("What to say").setRequired(true)
 		).setDefaultMemberPermissions(PermissionFlagsBits.KickMembers).setDMPermission(false),
+	new SlashCommandBuilder().setName("sticky-roles").setDescription("Add roles back to a user who left and rejoined").addBooleanOption(option=>
+			option.setName("active").setDescription("Should I add roles back to users who left and rejoined?").setRequired(true)
+		).setDefaultMemberPermissions(PermissionFlagsBits.ManageRoles).setDMPermission(false),
 
 	new ContextMenuCommandBuilder().setName("submit_meme").setType(ApplicationCommandType.Message),
 	new ContextMenuCommandBuilder().setName("delete_message").setType(ApplicationCommandType.Message).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),//Leaving this in DMs to delete undesirable bot DMs
