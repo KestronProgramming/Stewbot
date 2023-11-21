@@ -197,6 +197,11 @@ const commands = [
 		).addBooleanOption(option=>
 			option.setName("role_events").setDescription("Log role events?")
 		).setDefaultMemberPermissions(PermissionFlagsBits.ViewAuditLog).setDMPermission(false),
+	new SlashCommandBuilder().setName("admin_message").setDescription("Anonymously message a user in the server's name").addUserOption(option=>
+			option.setName("target").setDescription("The user to message").setRequired(true)
+		).addStringOption(option=>
+			option.setName("what").setDescription("What to say").setRequired(true)
+		).setDefaultMemberPermissions(PermissionFlagsBits.KickMembers).setDMPermission(false),
 
 	new ContextMenuCommandBuilder().setName("submit_meme").setType(ApplicationCommandType.Message),
 	new ContextMenuCommandBuilder().setName("delete_message").setType(ApplicationCommandType.Message).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),//Leaving this in DMs to delete undesirable bot DMs
