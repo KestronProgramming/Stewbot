@@ -270,6 +270,7 @@ const defaultInvite={//Indexed under inviteId
     "createdBy":""
 };
 const defaultGuild={
+    "stickyRoles":false,
     "filter":{
         "blacklist":[],
         "active":false,
@@ -325,7 +326,7 @@ const defaultGuild={
 const defaultGuildUser={
     "infractions":0,
     "stars":0,
-    "invited":0
+    "roles":[]
 };
 const defaultUser={
     "offenses":0,
@@ -956,6 +957,10 @@ client.on("interactionCreate",async cmd=>{
             cmd.reply("Configured log events");
             save();
         break;
+        case 'sticky-roles':
+            storage[cmd.guild.id].stickyRoles=cmd.options.getBoolean("active");
+            cmd.reply("Sticky roles configured. Please be aware I can only manage roles lower than my highest role in the server roles list.");
+        break;
 
         //Context Menu Commands
         case 'delete_message':
@@ -1548,6 +1553,32 @@ client.on("guildMemberAdd",async member=>{
             }
         }
     }
+    if(storage[member.guild.id].stickyRoles&&storage[member.guild.id].users[member.id]?.hasOwnProperty("roles")){
+        storage[member.guild.id].users[member.id].roles.forEach(role=>{
+            try{
+                var role=member.guild.roles.cache.find(r=>r.id===role);
+                if(role) member.roles.add(role);
+            }
+            catch(e){}
+        });
+    }
+});
+client.on("guildMemberRemove",async member=>{
+    if(!storage.hasOwnProperty(member.guild.id)){
+        storage[member.guild.id]=structuredClone(defaultGuild);
+        save();
+    }
+    if(!storage[member.guild.id].users.hasOwnProperty(member.id)){
+        storage[member.guild.id].users[member.id]=structuredClone(defaultGuildUser);
+        save();
+    }
+    if(!storage.hasOwnProperty(member.id)){
+        storage[member.id]=structuredClone(defaultUser);
+        save();
+    }
+
+    storage[member.guild.id].users[member.id].roles=member.roles.cache.map(r=>r.id);
+    save();
 });
 
 client.on("rateLimit",async d=>{

@@ -22,6 +22,7 @@ Currently being rewritten, you can see progress here.
  - Translations
  - Staff tickets
  - Rows and Columns
+ - Sticky Roles
 ## Planned Features
  - Logging
  - Moderator actions with better logging
@@ -29,3 +30,9 @@ Currently being rewritten, you can see progress here.
  - Personal and Server configs for general options
  - Automatic permission checking
  - Better error correction
+
+## Lost features over time: why
+ - GoombaSquad: Copyright
+ - SMOMusic: Copyright
+ - Customizable bot avatar via webhooks: Moved to slash commands
+ - Invite Tracking: Never worked perfectly, and Discord now has this natively
