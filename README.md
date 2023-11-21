@@ -21,12 +21,11 @@ Currently being rewritten, you can see progress here.
  - Auto join messages
  - Translations
  - Staff tickets
+ - Rows and Columns
 ## Planned Features
  - Logging
- - Rows and Columns
  - Moderator actions with better logging
  - Search Engine integration
  - Personal and Server configs for general options
  - Automatic permission checking
  - Better error correction
- - Seasonal fun

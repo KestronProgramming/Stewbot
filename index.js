@@ -78,6 +78,112 @@ var pieCols=[
     ["daa520","Goldenrod"]
 ];
 
+let rac = {
+    board: [],
+    lastPlayer: "Nobody",
+    timePlayed: 0,
+    players: [],
+    icons: "!@#$%^&*()_+=[]{};':`~,./<>?0123456789",
+};
+function getRACBoard() {
+    let racChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    let mess = [];
+    let temp = "  ";
+    for (var i=0; i<rac.board.length;i++) {
+        mess.push(`${racChars[i]} |${rac.board[i].join("|")}|`);
+        temp += ` ${racChars[i]}`;
+    }
+    mess.unshift(temp);
+    mess=`Last Moved: <@${rac.lastPlayer}> ${(rac.timePlayed!==0?`<t:${Math.round(rac.timePlayed/1000)}:R>`:"")}\`\`\`\n${mess.join("\n")}\`\`\`\nPlayers: `;
+    for (var i=0;i<rac.players.length;i++) {
+        mess+=`\n<@${rac.players[i]}>: \`${rac.icons[i]}\``;
+    }
+    return `**Rows & Columns**\n${mess}`;
+}
+function readRACBoard(toRead) {
+    rac.lastPlayer=toRead.split("<@")[1].split(">")[0];
+    try {
+        rac.timePlayed=Math.round(+toRead.split("<t:")[1].split(":R>")[0]*1000);
+    }
+    catch(e){
+        rac.timePlayed=0;
+    }
+    let board=toRead.split("```\n")[1].split("```")[0];
+    let rows=board.split("\n");
+    rac.rowsActive=rows[0].replaceAll(" ","");
+    rows.splice(0, 1);
+    for(var i=0; i<rows.length;i++) {
+        rows[i]=rows[i].slice(3, rows[i].length).replaceAll("|", "").split("");
+    }
+    rac.board=rows;
+    let tmpPlayers=toRead.split("Players: \n")[1].split("<@");
+    rac.players = [];
+    for(var i=1;i<tmpPlayers.length;i++) {
+        rac.players.push(tmpPlayers[i].split(">")[0]);
+    }
+}
+function scoreRows(game,char) {
+    var score = 0;
+    game.forEach((row)=>{
+        var search=char.repeat(row.length);
+        while (search.length>2&&row) {
+            if (row.includes(search)) {
+                row=row.substring(0,row.indexOf(search))+row.substring(row.indexOf(search)+search.length);
+                score+=search.length-2;
+            }
+            else{
+                search=search.substring(1);
+            }
+        }
+    });
+    return score;
+}
+function rotateGame(game) {
+    var newGame=[];
+    for (var i=0;i<game.length;i++) {
+        var newCol = "";
+        for (var j=0;j<game.length;j++) {
+            newCol+=game[j][i];
+        }
+        newGame.push(newCol);
+    }
+    return newGame;
+}
+function score(game,char) {
+    var score=scoreRows(game,char);
+    score+=scoreRows(rotateGame(game),char);
+    return score;
+}
+function tallyRac() {
+    let scores=[];
+    for (var i=0;i<rac.players.length;i++) {
+        scores[i]=score(rac.board,rac.icons[i]);
+    }
+    let mess=[];
+    let temp="  ";
+    let racChars="ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    for (var i=0;i<rac.board.length;i++) {
+        mess.push(`${racChars[i]} |${rac.board[i].join("|")}|`);
+        temp+=` ${racChars[i]}`;
+    }
+    mess.unshift(temp);
+    let tmpPlays=rac.players.slice(0);
+    for (var i=scores.length-1;i>-1;i--) {
+        for (var j=scores.length-1;j>-1;j--) {
+            if (scores[j]>scores[i]) {
+                scores.splice(i,1);
+                tmpPlays.splice(i,1);
+                j=-1;
+            }
+        }
+    }
+    mess=`Winner: <@${tmpPlays.join(">, <@")}>\`\`\`\n${mess.join("\n")}\`\`\`\nPlayers: `;
+    for (var i=0; i<rac.players.length;i++) {
+        mess+=`\n<@${rac.players[i]}>: \`${rac.icons[i]}\``;
+    }
+    return `**Rows & Columns**\n${mess}`;
+}
+
 //Inworld AI stuff
 var curText={};
 var conns = {};
@@ -183,17 +289,13 @@ const defaultGuild={
     "logs":{
         "channel":"",
         "active":false,
-        "events":{
-            "active":false,
-            "channel":"",
-            "channel_events":false,
-            "emoji_events":false,
-            "user_change_events":false,
-            "joining_and_leaving":false,
-            "invite_events":false,
-            "message_events":false,
-            "role_events":false
-        }
+        "channel_events":false,
+        "emoji_events":false,
+        "user_change_events":false,
+        "joining_and_leaving":false,
+        "invite_events":false,
+        "message_events":false,
+        "role_events":false
     },
     "counting":{
         "active":false,
@@ -759,6 +861,28 @@ client.on("interactionCreate",async cmd=>{
                     }
                     cmd.reply({content:`Meme #${meme.split(".")[0]}`,files:[`./memes/${meme}`]});
                 break;
+                case 'rac':
+                    if(cmd.options.getInteger("start")){
+                        rac={
+                            board: [],
+                            lastPlayer: "Nobody",
+                            timePlayed: 0,
+                            players: [],
+                            icons: "!@#$%^&*()_+=[]{};':`~,./<>?0123456789",
+                        };
+                        for(var k=0;k<cmd.options.getInteger("start");k++){
+                            rac.board.push([]);
+                            for(var j=0;j<cmd.options.getInteger("start");j++){
+                                rac.board[k].push("-");
+                            }
+                        }
+                        rac.players=[cmd.member.id];
+                        cmd.reply({content:getRACBoard(),components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId("racJoin").setLabel("Join Game").setStyle(ButtonStyle.Danger),new ButtonBuilder().setCustomId("racMove").setLabel("Make a Move").setStyle(ButtonStyle.Success))]});
+                    }
+                    else if(cmd.options.getBoolean("help")){
+                        cmd.reply("**Rows & Columns**\n\nIn this game your goal is to make as many of the longest rows as possible. Diagonal rows do not count. 3 in a row is 1 point, 4 in a row is 2 points, 5 in a row is 3 points, and so on. The game ends when all spots are filled.\n\nTo join the game, press the Join Game button.\nTo make a move, press the Make a Move button and input the grid location of the spot you want to move (So if you wanted to move in the third spot from the left on the top row, you would type `AC`).\n\nThis is not a turn-based game - you may move once every 15 minutes, or once _anybody else_ has moved. This is a game of skill, strategy, and speed.");
+                    }
+                break;
             }
         break;
         case 'poll':
@@ -818,6 +942,19 @@ client.on("interactionCreate",async cmd=>{
                 }
             }]});
             cmd.reply("Messaged them");
+        break;
+        case 'log_config':
+            storage[cmd.guild.id].logs.active=cmd.options.getBoolean("active");
+            storage[cmd.guild.id].logs.channel=cmd.options.getChannel("channel").id;
+            if(cmd.options.getBoolean("channel_events")) storage[cmd.guild.id].logs.channel_events=cmd.options.getBoolean("channel_events");
+            if(cmd.options.getBoolean("emoji_events")) storage[cmd.guild.id].logs.emoji_events=cmd.options.getBoolean("emoji_events");
+            if(cmd.options.getBoolean("user_change_events")) storage[cmd.guild.id].logs.user_change_events=cmd.options.getBoolean("user_change_events");
+            if(cmd.options.getBoolean("joining_and_leaving")) storage[cmd.guild.id].logs.joining_and_leaving=cmd.options.getBoolean("joining_and_leaving");
+            if(cmd.options.getBoolean("invite_events")) storage[cmd.guild.id].logs.invite_events=cmd.options.getBoolean("invite_events");
+            if(cmd.options.getBoolean("message_events")) storage[cmd.guild.id].logs.message_events=cmd.options.getBoolean("message_events");
+            if(cmd.options.getBoolean("role_events")) storage[cmd.guild.id].logs.role_events=cmd.options.getBoolean("role_events");
+            cmd.reply("Configured log events");
+            save();
         break;
 
         //Context Menu Commands
@@ -923,6 +1060,40 @@ client.on("interactionCreate",async cmd=>{
             });
             cmd.update({"content":"\u200b",components:[]});
         break;
+        case "racMove":
+            let moveModal=new ModalBuilder().setCustomId("moveModal").setTitle("Rows & Columns Move");
+            let moveModalInput=new TextInputBuilder().setCustomId("moveMade").setLabel("Where would you like to move? (Example: AC)").setStyle(TextInputStyle.Short).setMaxLength(2).setRequired(true);
+            let row=new ActionRowBuilder().addComponents(moveModalInput);
+            moveModal.addComponents(row);
+            await cmd.showModal(moveModal);
+        break;
+        case "racJoin":
+            readRACBoard(cmd.message.content);
+            var bad=false;
+            for(var i=0;i<rac.players.length;i++) {
+                if(rac.players[i]===cmd.member.id){
+                    cmd.reply({
+                        content: "You can't join more than once!",
+                        ephemeral: true,
+                    });
+                    bad=true;
+                }
+            }
+            if(bad) break;
+            rac.players.push(cmd.member.id);
+            if(rac.players.length>rac.icons.length){
+                cmd.reply({content:"I'm sorry, but this game has hit the limit of players. I don't have any more symbols to use.",ephemeral:true});
+                return;
+            }
+            if(getRACBoard().length>1999) {
+                rac.players.splice(rac.players.length-1,1);
+                cmd.reply({content:"Sadly the board can't handle any more players. This is a Discord character limit, and you can add more players by using less rows.",ephemeral:true});
+                let row=new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId("racJoin").setLabel("Join Game").setStyle(ButtonStyle.Danger).setDisabled(true),new ButtonBuilder().setCustomId("racMove").setLabel("Make a Move").setStyle(ButtonStyle.Success));
+                cmd.message.edit({content:getRACBoard(),components:[row]});
+                return;
+            }
+            cmd.update(getRACBoard());
+        break;
 
         //Modals
         case 'poll-added':
@@ -984,6 +1155,49 @@ client.on("interactionCreate",async cmd=>{
             });
             fs.writeFileSync("./tempPoll.png",canvas.toBuffer("image/png"));
             cmd.update({content:`<@${poll.starter}> asks: **${poll.title}**${poll.choices.map((a,i)=>`\n${i}. ${a} **${storage[cmd.guild.id].polls[cmd.message.id].options[a].length}**${finalResults.hasOwnProperty(a)?` - ${pieCols[i][1]}`:""}`).join("")}`,files:["./tempPoll.png"]});
+        break;
+        case "moveModal":
+            let cont=cmd.fields.getTextInputValue("moveMade").toUpperCase();
+            readRACBoard(cmd.message.content);
+            let foundOne=-1;
+            for(var i=0;i<rac.players.length;i++){
+                if(rac.players[i]===cmd.member.id){
+                    foundOne=i;
+                }
+            }
+            if(foundOne===-1){
+                cmd.reply({content:"I didn't find you in the player list, use the `Join Game` button first.",ephemeral: true});
+                break;
+            }
+            if(!rac.rowsActive.includes(cont[0])||!rac.rowsActive.includes(cont[1])){
+                cmd.reply({content:"That location isn't on the board",ephemeral:true});
+                break;
+            }
+            if((Date.now()-+rac.timePlayed)<900000&&cmd.member.id===rac.lastPlayer){
+                cmd.reply({content:`I'm sorry, you can make another move after somebody else does OR <t:${Math.round((rac.timePlayed+900000)/1000)}:R>`,ephemeral:true});
+                break;
+            }
+            if (rac.board[rac.rowsActive.indexOf(cont[0])][rac.rowsActive.indexOf(cont[1])]!=="-"){
+                cmd.reply({content: "That location is occupied.",ephemeral:true});
+                break;
+            }
+            rac.lastPlayer=cmd.member.id;
+            rac.timePlayed=Date.now();
+            rac.board[rac.rowsActive.indexOf(cont[0])][rac.rowsActive.indexOf(cont[1])]=rac.icons[foundOne];
+            await cmd.update(getRACBoard());
+
+            let foundZero=false;
+            for (var i=0;i<rac.board.length;i++) {
+                for(var j=0;j<rac.board[i].length;j++) {
+                    if(rac.board[i][j]==="-") {
+                        foundZero=true;
+                    }
+                }
+            }
+            if(!foundZero){
+                let row=new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId("racJoin").setLabel("Join Game").setStyle(ButtonStyle.Danger).setDisabled(true),new ButtonBuilder().setCustomId("racMove").setLabel("Make a Move").setStyle(ButtonStyle.Success).setDisabled(true));
+                cmd.message.edit({content:tallyRac(),components:[row]});
+            }
         break;
 
         //Select Menus
