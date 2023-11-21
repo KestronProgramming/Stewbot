@@ -20,13 +20,13 @@ Currently being rewritten, you can see progress here.
  - Jokes
  - Auto join messages
  - Translations
+ - Staff tickets
 ## Planned Features
  - Logging
  - Rows and Columns
  - Moderator actions with better logging
  - Search Engine integration
  - Personal and Server configs for general options
- - Staff tickets
  - Automatic permission checking
  - Better error correction
  - Seasonal fun

@@ -153,7 +153,9 @@ const commands = [
 	new SlashCommandBuilder().setName("poll").setDescription("Make a poll with automatically tracked options").addStringOption(option=>
 			option.setName("prompt").setDescription("The prompt (We'll set options in a minute)").setRequired(true)
 		).setDMPermission(false),
-	new SlashCommandBuilder().setName("ticket").setDescription("Set up a ticket system for users to contact mods").setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels).setDMPermission(false),
+	new SlashCommandBuilder().setName("ticket").setDescription("Set up a ticket system here for users to contact mods").addChannelOption(option=>
+			option.setName("channel").setDescription("The channel for tickets to be opened in on the staff end").setRequired(true)
+		).setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels).setDMPermission(false),
 	new SlashCommandBuilder().setName("auto-join-message").setDescription("Set up a message to be sent automatically when a user joins").addBooleanOption(option=>
 			option.setName("active").setDescription("Should I send a message when the user joins?").setRequired(true)
 		).addStringOption(option=>
