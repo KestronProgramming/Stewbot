@@ -26,7 +26,6 @@ Currently being rewritten, you can see progress here.
 ## Planned Features
  - Logging
  - Moderator actions with better logging
- - Search Engine integration
  - Personal and Server configs for general options
  - Automatic permission checking
  - Better error correction
