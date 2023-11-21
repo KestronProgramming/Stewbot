@@ -1553,7 +1553,7 @@ client.on("guildMemberAdd",async member=>{
             }
         }
     }
-    if(storage[member.guild.id].stickyRoles&&storage[member.guild.id].users[member.id]?.hasOwnProperty("roles")){
+    if(storage[member.guild.id].stickyRoles){
         storage[member.guild.id].users[member.id].roles.forEach(role=>{
             try{
                 var role=member.guild.roles.cache.find(r=>r.id===role);
@@ -1579,6 +1579,101 @@ client.on("guildMemberRemove",async member=>{
 
     storage[member.guild.id].users[member.id].roles=member.roles.cache.map(r=>r.id);
     save();
+});
+client.on("channelDelete",async channel=>{
+    if(!storage.hasOwnProperty(channel.guild.id)){
+        storage[channel.guild.id]=structuredClone(defaultGuild);
+        save();
+    }
+
+    if(storage[channel.guild.id].logs.active&&storage[channel.guild.id].logs.channel_events){
+        channel.guild.channels.cache.get(storage[channel.guild.id].logs.channel).send(`**Channel \`${channel.name}\` Deleted**`);
+    }
+});
+client.on("channelUpdate",async (channelO,channel)=>{
+    if(!storage.hasOwnProperty(channel.guild.id)){
+        storage[channel.guild.id]=structuredClone(defaultGuild);
+        save();
+    }
+
+    if(storage[channel.guild.id].logs.active&&storage[channel.guild.id].logs.channel_events){
+        var diffs=`**Channel \`${channel.name}\`${channelO.name!==channel.name?` (Previously known as \`${channelO.name}\`)`:""} Edited**`;
+        Object.keys(channelO).forEach(key=>{
+            if(key==="flags"||key==="permissionOverwrites") return;
+            if(channelO[key]!==channel[key]){
+                diffs+=`\n- \`${key}\``;
+            }
+        });
+        if(diffs.endsWith("**")){
+            diffs+="\n- `Permissions`";
+        }
+        channel.guild.channels.cache.get(storage[channel.guild.id].logs.channel).send(diffs);
+    }
+});
+client.on("emojiCreate",async emoji=>{
+    if(!storage.hasOwnProperty(emoji.guild.id)){
+        storage[emoji.guild.id]=structuredClone(defaultGuild);
+        save();
+    }
+
+    if(storage[emoji.guild.id].logs.active&&storage[emoji.guild.id].logs.emoji_events){
+        emoji.guild.channels.cache.get(storage[emoji.guild.id].logs.channel).send(`**Emoji :\`${emoji.name}\`: created:** <:${emoji.name}:${emoji.id}>`);
+    }
+});
+client.on("emojiDelete",async emoji=>{
+    if(!storage.hasOwnProperty(emoji.guild.id)){
+        storage[emoji.guild.id]=structuredClone(defaultGuild);
+        save();
+    }
+
+    if(storage[emoji.guild.id].logs.active&&storage[emoji.guild.id].logs.emoji_events){
+        emoji.guild.channels.cache.get(storage[emoji.guild.id].logs.channel).send(`**Emoji :\`${emoji.name}\`: deleted.**`);
+    }
+});
+client.on("emojiUpdate",async (emojiO,emoji)=>{
+    if(!storage.hasOwnProperty(emoji.guild.id)){
+        storage[emoji.guild.id]=structuredClone(defaultGuild);
+        save();
+    }
+
+    if(storage[emoji.guild.id].logs.active&&storage[emoji.guild.id].logs.emoji_events){
+        emoji.guild.channels.cache.get(storage[emoji.guild.id].logs.channel).send(`**Emoji :\`${emojiO.name}\`: is now :\`${emoji.name}\`:** <:${emoji.name}:${emoji.id}>`);
+    }
+});
+client.on("stickerCreate",async sticker=>{
+    if(!storage.hasOwnProperty(sticker.guild.id)){
+        storage[sticker.guild.id]=structuredClone(defaultGuild);
+        save();
+    }
+
+    if(storage[sticker.guild.id].logs.active&&storage[sticker.guild.id].logs.emoji_events){
+        sticker.guild.channels.cache.get(storage[sticker.guild.id].logs.channel).send({content:`**Sticker \`${sticker.name}\` created**\n- **Name**: ${sticker.name}\n- **Related Emoji**: ${/^\d{19}$/.test(sticker.tags)?`<:${client.emojis.cache.get(sticker.tags).name}:${sticker.tags}>`:sticker.tags}\n- **Description**: ${sticker.description}`,stickers:[sticker]});
+    }
+});
+client.on("stickerDelete",async sticker=>{
+    if(!storage.hasOwnProperty(sticker.guild.id)){
+        storage[sticker.guild.id]=structuredClone(defaultGuild);
+        save();
+    }
+
+    if(storage[sticker.guild.id].logs.active&&storage[sticker.guild.id].logs.emoji_events){
+        sticker.guild.channels.cache.get(storage[sticker.guild.id].logs.channel).send(`**Sticker \`${sticker.name}\` Deleted**`);
+    }
+});
+client.on("stickerUpdate",async (stickerO,sticker)=>{
+    if(!storage.hasOwnProperty(sticker.guild.id)){
+        storage[sticker.guild.id]=structuredClone(defaultGuild);
+        save();
+    }
+
+    if(storage[sticker.guild.id].logs.active&&storage[sticker.guild.id].logs.emoji_events){
+        let diffs=`**Sticker \`${sticker.name}\`${stickerO.name!==stickername?` (Previously known as \`${stickerO.name}\`)`:""} Updated**`;
+        Object.keys(stickerO).forEach(key=>{
+            if(stickerO[key]!==sticker.key){
+                diffs+=`\n- **\`${key}\`**`;
+            }
+        });
+    }
 });
 
 client.on("rateLimit",async d=>{
