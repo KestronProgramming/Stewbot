@@ -20,6 +20,7 @@ function makeCall(toWhom,what){
     })
 }
 var client;
+const translate=require("@vitalets/google-translate-api").translate;
 const { createCanvas } = require('canvas');
 const { InworldClient, SessionToken, status } = require("@inworld/nodejs-sdk");
 const {Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType}=require("discord.js");
@@ -30,7 +31,6 @@ const site=new express();
 site.listen(80);
 site.use(express.static(path.join(__dirname,"./static")));
 var storage=require("./storage.json");
-const { EsimProfilePage } = require("twilio/lib/rest/supersim/v1/esimProfile");
 function save(){
     fs.writeFileSync("./storage.json",JSON.stringify(storage));
 }
@@ -673,7 +673,7 @@ client.on("interactionCreate",async cmd=>{
                             "credentials": "omit"
                         }).then(d=>d.json()).then(d=>{
                             cmd.editReply({"content":`<@${cmd.user.id}>, your prompt has been completed. Images courtesy of <https://www.craiyon.com/>.`,files:d.images.map(i=>`https://img.craiyon.com/${i}`)});
-                            if(storage[cmd.user.id].config.dmNotifs) cmd.user.send(`Your ${cmds['fun craiyon']} prompt \`${cmd.options.getString("prompt")}\` has completed. https://discord.com/channels/${cmd.guild.id?cmd.guild.id:"@me"}/${cmd.channelId}/${cmd.id}`);
+                            if(storage[cmd.user.id].config.dmNotifs) cmd.user.send(`Your ${cmds['fun craiyon']} prompt \`${cmd.options.getString("prompt")}\` has completed. https://discord.com/channels/${cmd.guild?.id?cmd.guild.id:"@me"}/${cmd.channelId}/${cmd.id}`);
                         });
                     }
                     catch(e){
@@ -715,10 +715,17 @@ client.on("interactionCreate",async cmd=>{
             if(!storage[cmd.guild.id].ajm.dm&&storage[cmd.guild.id].ajm.channel===""||storage[cmd.guild.id].ajm.message==="") storage[cmd.guild.id].ajm.active=false;
             cmd.reply(`Auto join messages configured.${storage[cmd.guild.id].ajm.active!==cmd.options.getBoolean("active")?` It looks like an invalid configuration was set. Make sure to specify a channel to post to if not posting to DMs, and to specify a message to send.`:""}`);
         break;
+        case 'translate':
+            translate(cmd.options.getString("what"),Object.assign({
+                to:cmd.options.getString("language_to")||cmd.locale.slice(0,2)
+            },cmd.options.getString("language_from")?cmd.options.getString("languageFrom"):{})).then(t=>{
+                cmd.reply(`Attempted to translate${t.text!==cmd.options.getString("what")?`: \`${t.text}\`. If this is incorrect, try using ${cmds.translate} again and specify more.`:`, but I was unable to. Try using ${cmds.translate} again and specify more.`}`);
+            });
+        break;
 
         //Context Menu Commands
         case 'delete_message':
-            if(cmd.guild.id!==null&&cmd.guild.id!=="0"){
+            if(cmd.guild?.id){
                 cmd.targetMessage.delete();
                 if(storage[cmd.guild.id].filter.log&&storage[cmd.guild.id].filter.channel){
                     client.channels.cache.get(storage[cmd.guild.id]).send(`Message from **${cmd.targetMessage.author.id}** deleted by **${cmd.user.username}**.\n\n${cmd.targetMessage.content}`);
@@ -755,6 +762,13 @@ client.on("interactionCreate",async cmd=>{
             await client.channels.cache.get(process.env.noticeChannel).send({content:ll(`User ${cmd.user.username} submitted a meme for evaluation.`),files:fs.readdirSync("./tempMemes").map(a=>`./tempMemes/${a}`),components:presets.meme});
             fs.readdirSync("./tempMemes").forEach(file=>{
                 fs.unlinkSync("./tempMemes/"+file);
+            });
+        break;
+        case 'translate_message':
+            translate(cmd.targetMessage.content,{
+                to:cmd.locale.slice(0,2)
+            }).then(t=>{
+                cmd.reply(`Attempted to translate${t.text!==cmd.targetMessage.content?`: \`${t.text}\`. If this is incorrect, try using ${cmds.translate}.`:`, but I was unable to. Try using ${cmds.translate}.`}`);
             });
         break;
     }

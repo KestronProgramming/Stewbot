@@ -19,11 +19,11 @@ Currently being rewritten, you can see progress here.
  - Message moving
  - Jokes
  - Auto join messages
+ - Translations
 ## Planned Features
  - Logging
  - Rows and Columns
  - Moderator actions with better logging
- - Translations
  - Search Engine integration
  - Personal and Server configs for general options
  - Staff tickets
