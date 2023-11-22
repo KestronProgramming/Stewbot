@@ -3,8 +3,8 @@ Currently being rewritten, you can see progress here.
 
 ## Current Working Features
  - Swear Filter
- - Definitions - Use AI to define words not in database?
- - Polls - Add list of voters
+ - Definitions
+ - Polls
  - AI Ping Response
  - AI Person Generation
  - AI Image Generation via Dall-E Mini
@@ -24,14 +24,11 @@ Currently being rewritten, you can see progress here.
  - Rows and Columns
  - Sticky Roles
  - Logging
+ - Moderator actions
 ## Planned Features
- - Moderator actions with better logging
  - Personal and Server configs for general options
- - Automatic permission checking
- - Better error correction
 
 ## Lost features over time: why
  - GoombaSquad: Copyright
  - SMOMusic: Copyright
  - Customizable bot avatar via webhooks: Moved to slash commands
- - Invite Tracking: Never worked perfectly, and Discord now has this natively
