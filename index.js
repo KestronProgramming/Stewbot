@@ -1925,7 +1925,7 @@ client.on("channelUpdate",async (channelO,channel)=>{
     if(storage[channel.guild.id].logs.active&&storage[channel.guild.id].logs.channel_events){
         var diffs=`**Channel \`${channel.name}\`${channelO.name!==channel.name?` (Previously known as \`${channelO.name}\`)`:""} Edited**`;
         Object.keys(channelO).forEach(key=>{
-            if(key==="flags"||key==="permissionOverwrites") return;
+            if(key==="flags"||key==="permissionOverwrites"||key==="rawPosition") return;
             if(channelO[key]!==channel[key]){
                 diffs+=`\n- \`${key}\``;
             }
