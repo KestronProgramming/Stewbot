@@ -531,7 +531,7 @@ function notify(urgencyLevel,what){
 var uptime=0;
 client.once("ready",()=>{
     uptime=Math.round(Date.now()/1000);
-    notify(0,`Started <t:${uptime}:R>`);
+    notify(1,`Started <t:${uptime}:R>`);
     console.log(`Logged Stewbot handles into ${client.user.tag}`);
     save();
     client.user.setActivity("𝐒omething 𝐓o 𝐄xpedite 𝐖ork",{type:ActivityType.Custom},1000*60*60*24*31*12);
@@ -552,12 +552,6 @@ client.on("messageCreate",async msg=>{
             });
         }
     }
-    if(msg.content==="clearStorage"&&msg.author.username==="kestron06"){
-        storage={};
-        save();
-        msg.reply("Cleared");
-        return;
-    }//qk
     if(msg.author.id===client.user.id) return;
     msg.guildId=msg.guildId||"0";
     if(msg.guildId!=="0"){
@@ -943,7 +937,7 @@ client.on("interactionCreate",async cmd=>{
                     storage[cmd.guild.id].filter.active=cmd.options.getBoolean("active");
                     if(cmd.options.getBoolean("censor")!==null) storage[cmd.guild.id].filter.censor=cmd.options.getBoolean("censor");
                     if(cmd.options.getBoolean("log")!==null) storage[cmd.guild.id].filter.log=cmd.options.getBoolean("log");
-                    if(cmd.options.getChannel("channel")!==null) storage[cmd.guild.id].filter.log=cmd.options.getChannel("channel").id;
+                    if(cmd.options.getChannel("channel")!==null) storage[cmd.guild.id].filter.channel=cmd.options.getChannel("channel").id;
                     if(storage[cmd.guild.id].filter.channel==="") storage[cmd.guild.id].filter.log=false;
                     cmd.reply(`Filter configured.${(cmd.options.getBoolean("log")&&!storage[cmd.guild.id].filter.log)?`\n\nNo channel was set to log summaries of deleted messages to, so logging these is turned off. To reenable this, run ${cmds['filter config']} again and set \`log\` to true and specify a \`channel\`.`:""}`);
                     save();
@@ -979,10 +973,6 @@ client.on("interactionCreate",async cmd=>{
             if(cmd.options.getString("message_type")!==null) storage[cmd.guild.id].starboard.messType=cmd.options.getString("message_type");
             if(storage[cmd.guild.id].starboard.channel==="") storage[cmd.guild.id].starboard.active=false;
             cmd.reply(`Starboard configured.${cmd.options.getBoolean("active")&&!storage[cmd.guild.id].starboard.active?`\n\nNo channel has been set for this server, so starboard is inactive. To enable starboard, run ${cmds.starboard_config} again setting \`active\` to true and specify a \`channel\`.`:""}`);
-            storage[msg.guild.id].counting.nextNum=1;
-            for(let a in storage[msg.guild.id].users){
-                storage[msg.guild.id].users[a].countTurns=0;
-            }
             save();
         break;
         case 'counting':
@@ -994,6 +984,10 @@ client.on("interactionCreate",async cmd=>{
                     if(cmd.options.getInteger("posts_between_turns")!==null) storage[cmd.guild.id].counting.takeTurns=cmd.options.getInteger("posts_between_turns");
                     if(!storage[cmd.guild.id].counting.channel) storage[cmd.guild.id].counting.active=false;
                     if(!storage[cmd.guild.id].counting.reset||storage[cmd.guild.id].counting.takeTurns<1) storage[cmd.guild.id].counting.legit=false;
+                    storage[cmd.guild.id].counting.nextNum=1;
+                    for(let a in storage[cmd.guild.id].users){
+                        storage[cmd.guild.id].users[a].countTurns=0;
+                    }
                     cmd.reply(`Alright, I configured counting for this server.${storage[cmd.guild.id].counting.active!==cmd.options.getBoolean("active")?` It looks like no channel has been set to count in, so counting is currently disabled. Please run ${cmds['counting config']} again and set the channel to activate counting.`:`${storage[cmd.guild.id].counting.legit?"":` Please be aware this server is currently inelegible for the leaderboard. To fix this, make sure that reset is set to true, that the posts between turns is at least 1, and that you don't set the number to anything higher than 1 manually.`}`}`);
                     save();
                 break;
@@ -1909,7 +1903,7 @@ client.on("guildMemberRemove",async member=>{
 
     if(storage[member.guild.id].logs.active&&storage[member.guild.id].logs.joining_and_leaving){
         var bans=await member.guild.bans.fetch();
-        client.channels.cache.get(storage[member.guild.id].logs.channel).send({content:`**<@${member.id}> has ${bans.find(b=>b.user.id===member.id)?"been banned from":"left"} the server.**${bans.find(b=>b.user.id===member.id)?.reason!==null?`\n${bans.find(b=>b.user.id===member.id).reason}`:""}`,allowedMentions:{parse:[]}});
+        client.channels.cache.get(storage[member.guild.id].logs.channel).send({content:`**<@${member.id}> has ${bans.find(b=>b.user.id===member.id)?"been banned from":"left"} the server.**${bans.find(b=>b.user.id===member.id)?.reason!==null?`\n${bans.find(b=>b.user.id===member.id)?.reason}`:""}`,allowedMentions:{parse:[]}});
     }
 });
 client.on("channelDelete",async channel=>{
