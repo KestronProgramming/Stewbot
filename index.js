@@ -1,36 +1,12 @@
 process.env=require("./env.json");
-const twilioClient = require('twilio')(process.env.twilioSid, process.env.twilioToken);
-function sendText(toWhom,what){
-    twilioClient.messages.create({
-        body: what.replaceAll("<","\\<"),
-        from: twilio.num,
-        to: toWhom
-    });
-}
-function makeCall(toWhom,what){
-    fs.writeFileSync("./static/msg.xml",`<?xml version="1.0" encoding="UTF-8"?>
-<Response>
-  <Say voice="man">${what.replaceAll("<","\\<")}</Say>
-</Response>`);
-    twilioClient.calls.create({
-        url:process.env.hostedUrl+"/msg.xml",
-        method:"GET",
-        to:toWhom,
-        from:twilio.num
-    })
-}
 var client;
 const translate=require("@vitalets/google-translate-api").translate;
 const { createCanvas } = require('canvas');
 const { InworldClient, SessionToken, status } = require("@inworld/nodejs-sdk");
 const {Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType}=require("discord.js");
 const fs=require("fs");
-const express=require("express");
-const path=require("path");
-const site=new express();
-site.listen(80);
-site.use(express.static(path.join(__dirname,"./static")));
 var storage=require("./storage.json");
+const cmds=require("./commands.json");
 function save(){
     fs.writeFileSync("./storage.json",JSON.stringify(storage));
 }
@@ -38,22 +14,25 @@ function ll(s){
     return s.length>1999?s.slice(0,1996)+"...":s;
 }
 function parsePoll(c,published){
-    var ret={};
-    ret.title=c.split("**")[1];
-    ret.options=c.match(/(?:^\d\d?\.\s).+(?:$)/gm)?.map(a=>a.slice(2).trim())||[];
-    if(published){
-        var temp={};
-        ret.choices=[];
-        ret.options.forEach(a=>{
-            var t=+a.split("**")[a.split("**").length-1];
-            a=a.split("**")[0].trim();
-            ret.choices.push(a);
-            temp[a]=t;
-        });
-        ret.options=structuredClone(temp);
-        ret.starter=c.split("<@")[1].split(">")[0];
+    try{
+        var ret={};
+        ret.title=c.split("**")[1];
+        ret.options=c.match(/(?:^\d\d?\.\s).+(?:$)/gm)?.map(a=>a.slice(2).trim())||[];
+        if(published){
+            var temp={};
+            ret.choices=[];
+            ret.options.forEach(a=>{
+                var t=+a.split("**")[a.split("**").length-1];
+                a=a.split("**")[0].trim();
+                ret.choices.push(a);
+                temp[a]=t;
+            });
+            ret.options=structuredClone(temp);
+            ret.starter=c.split("<@")[1].split(">")[0];
+        }
+        return ret;
     }
-    return ret;
+    catch(e){}
 }
 var pieCols=[
     ["00ff00","Green"],
@@ -77,6 +56,165 @@ var pieCols=[
     ["f5deb3","Wheat"],
     ["daa520","Goldenrod"]
 ];
+var helpPages=[
+    {
+        name:"General",
+        commands:[
+            {
+                name:cmds.help,
+                desc:"This help menu"
+            },
+            {
+                name:cmds.ping,
+                desc:"View uptime stats"
+            },
+            {
+                name:cmds.personal_config,
+                desc:"Set some options for your personal interactions with the bot"
+            },
+            {
+                name:cmds.report_problem,
+                desc:"If anything goes wrong with the bot, an error, profanity, exploit, or even just a suggestion, use this command"
+            }
+        ]
+    },
+    {
+        name:"Administration",
+        commands:[
+            {
+                name:cmds.filter,
+                desc:"Configure different options for the filter, which will remove configurably blacklisted words"
+            },
+            {
+                name:cmds.starboard_config,
+                desc:"Configure starboard, which is like a highlights reel of messages with a certain amount of a specific reaction"
+            },
+            {
+                name:`${cmds.timeout}/${cmds.kick}/${cmds.ban}`,
+                desc:"Moderate a user"
+            },
+            {
+                name:cmds.counting,
+                desc:"Configure counting, so that the bot manages a collaborative count starting at 1"
+            },
+            {
+                name:cmds.auto_roles,
+                desc:"Configure automatic roles so that users can pick roles from a list and have them automatically applied"
+            },
+            {
+                name:cmds.ticket,
+                desc:"Setup a ticket system so that users can communicate directly and privately with moderators"
+            },
+            {
+                name:cmds["auto-join-message"],
+                desc:"Configure a message to be sent either in a channel or the user's DMs whenever a user joins"
+            },
+            {
+                name:cmds.log_config,
+                desc:"Automatically be notified of different server and user events you may need to know about for moderation purposes"
+            },
+            {
+                name:cmds.admin_message,
+                desc:"DM a user anonymously in the server's name"
+            },
+            {
+                name:cmds["sticky-roles"],
+                desc:"Automatically reapply roles if a user leaves and then rejoins"
+            },
+            {
+                name:cmds.move_message,
+                desc:"Move a user's message from one channel to another"
+            }
+        ]
+    },
+    {
+        name:"Entertainment",
+        commands:[
+            {
+                name:cmds["fun dne"],
+                desc:"Posts a picture of a person who never existed using AI"
+            },
+            {
+                name:cmds["fun craiyon"],
+                desc:"Make an image from a prompt using Dall-E Mini"
+            },
+            {
+                name:cmds["fun rac"],
+                desc:"Play a game of Rows & Columns (use command for further help)"
+            },
+            {
+                name:cmds["fun wyr"],
+                desc:"Posts a Would-You-Rather Question"
+            },
+            {
+                name:cmds["fun joke"],
+                desc:"Posts a joke"
+            },
+            {
+                name:cmds["fun meme"],
+                desc:"Posts an approved meme"
+            },
+            {
+                name:cmds.poll,
+                desc:"Helps you to make and run a poll"
+            },
+            {
+                name:cmds.submit_meme,
+                desc:"Submit a meme to be approved for the bot to post"
+            }
+        ]
+    },
+    {
+        name:"Informational",
+        commands:[
+            {
+                name:cmds.define,
+                desc:"Defines a word"
+            },
+            {
+                name:cmds.translate,
+                desc:"Translates a word or phrase"
+            },
+            {
+                name:cmds.view_filter,
+                desc:"Posts a list of blacklisted words in this server"
+            },
+            {
+                name:cmds.next_counting_number,
+                desc:"If counting is active, the next number to post to keep it going"
+            }
+        ]
+    }
+];
+function noPerms(where,what){
+    if(where===false||where===undefined) return;
+    switch(what){
+        case "ManageMessages":
+            storage[where].filter.active=false;
+        break;
+        case "SendMessages":
+            storage[where].starboard.active=false;
+            storage[where].logs.active=false;
+            storage[where].counting.active=false;
+            storage[where].config.ai=false;
+            storage[where].config.embedPreviews=false;
+        break;
+        case "ManageRoles":
+            storage[where].stickyRoles=false;
+        break;
+    }
+    save();
+}
+function checkDirty(where,what){
+    if(where===false||where===undefined) return false;
+    var dirty=false;
+    storage[where].filter.blacklist.forEach(blockedWord=>{
+        if(new RegExp(`([^\\D]|\\b)${blockedWord}(ing|s|ed|er|ism|ist|es|ual)?([^\\D]|\\b)`,"ig").test(what)){
+            dirty=true;
+        }
+    });
+    return dirty;
+}
 
 let rac = {
     board: [],
@@ -254,21 +392,17 @@ const handleError = (msg, dm) => {
         switch (err.code) {
             case status.ABORTED:
             case status.CANCELLED:
-                break;
+            break;
             case status.FAILED_PRECONDITION:
                 sendMessage(msg, dm);
-                break;
+            break;
             default:
                 console.error(err);
-                break;
+            break;
         }
     }
 };
 
-const defaultInvite={//Indexed under inviteId
-    "uses":0,
-    "createdBy":""
-};
 const defaultGuild={
     "stickyRoles":false,
     "filter":{
@@ -326,19 +460,18 @@ const defaultGuildUser={
     "infractions":0,
     "stars":0,
     "roles":[],
-    "inServer":true
+    "inServer":true,
+    "countTurns":0
 };
 const defaultUser={
     "offenses":0,
-    "countTurns":0,
     "config":{
         "dmOffenses":true,
         "returnFiltered":true,
-        "dmNotifs":true,
-        "embedPreviews":true
+        "embedPreviews":true,
+        "aiPings":true
     }
 };
-const cmds=require("./commands.json");
 const inps={
     "pollAdd":new ButtonBuilder().setCustomId("poll-addOption").setLabel("Add a poll option").setStyle(ButtonStyle.Primary),
     "pollDel":new ButtonBuilder().setCustomId("poll-delOption").setLabel("Remove a poll option").setStyle(ButtonStyle.Danger),
@@ -393,12 +526,6 @@ function notify(urgencyLevel,what){
         case 1:
             client.channels.cache.get(process.env.noticeChannel).send(what);//Notify the staff of the Kestron Support server
         break;
-        case 2:
-            sendText(what);//Text Kestron06
-        break;
-        case 3:
-            makeCall(what);//Call Kestron06
-        break;
     }
 }
 var uptime=0;
@@ -430,7 +557,7 @@ client.on("messageCreate",async msg=>{
         save();
         msg.reply("Cleared");
         return;
-    }
+    }//qk
     if(msg.author.id===client.user.id) return;
     msg.guildId=msg.guildId||"0";
     if(msg.guildId!=="0"){
@@ -447,6 +574,14 @@ client.on("messageCreate",async msg=>{
         storage[msg.author.id]=structuredClone(defaultUser);
         save();
     }
+    if(msg.guild){
+        Object.keys(PermissionFlagsBits).forEach(perm=>{
+            if(!msg.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits[perm])){
+                noPerms(msg.guild.id,perm);
+            }
+        });
+    }
+
     if(storage[msg.guildId]?.filter.active){
         var foundWords=[];
         storage[msg.guildId].filter.blacklist.forEach(blockedWord=>{
@@ -525,8 +660,10 @@ client.on("messageCreate",async msg=>{
     }
 
     var links=msg.content.match(discordMessageRegex)||[];
+    var progs=msg.content.match(kaProgramRegex)||[];
     if(!storage[msg.author.id].config.embedPreviews||!storage[msg.guildId]?.config.embedPreviews){
         links=[];
+        progs=[];
     }
     var embs=[];
     var fils=[];
@@ -534,6 +671,18 @@ client.on("messageCreate",async msg=>{
         let slashes=links[i].split("channels/")[1].split("/");
         try{
             var mes=await client.channels.cache.get(slashes[slashes.length-2]).messages.fetch(slashes[slashes.length-1]);
+            if(checkDirty(msg.guild?.id,mes.content)||checkDirty(msg.guild?.id,mes.author.nickname||mes.author.globalName||mes.author.username)||checkDirty(msg.guild?.id,mes.guild.name)||checkDirty(msg.guild?.id,mes.channel.name)){
+                embs.push(
+                    new EmbedBuilder()
+                        .setColor("#006400")
+                        .setTitle("Blocked by this server's filter")
+                        .setDescription(`This server has blocked words that are contained in the linked message.`)
+                        .setFooter({
+                            text: `Blocked by this server's filter`
+                        })
+                );
+                continue;
+            }
             let messEmbed = new EmbedBuilder()
                 .setColor("#006400")
                 .setTitle("(Jump to message)")
@@ -562,11 +711,68 @@ client.on("messageCreate",async msg=>{
             });
             embs.push(messEmbed);
         }
-        catch(e){
-            console.log(e);
-        }
+        catch(e){}
     }
-    if(embs.length>0) msg.reply({content:`Embedded linked message${embs.length>1?"s":""}. You can prevent this behavior by surrounding message links in \`<\` and \`>\`.`,embeds:embs,files:fils});
+    if(embs.length>0) msg.reply({content:`Embedded linked message${embs.length>1?"s":""}. You can prevent this behavior by surrounding message links in \`<\` and \`>\`.`,embeds:embs,files:fils,allowedMentions:{parse:[]}});
+    for(var i=0;i<progs.length;i++){
+        let prog=progs[i];
+        var embds=[];
+        await fetch(`https://kap-archive.shipment22.repl.co/s/${prog.split("/")[prog.split("/").length-1].split("?")[0]}`).then(d=>d.json()).then(d=>{
+            embds.push({
+                type: "rich",
+                title: d.title,
+                description: `\u200b`,
+                color: 0x00ff00,
+                author: {
+                    name: `Made by ${d.creator.nickname}`,
+                    url: `https://www.khanacademy.org/profile/${d.creator.kaid}`,
+                },
+                fields: [
+                    {
+                        name: `Created`,
+                        value: `${new Date(d.created).toDateString()}`,
+                        inline: true
+                    },
+                    {
+                        name: `Last Updated in Archive`,
+                        value: `${new Date(d.updated).toDateString()}`,
+                        inline: true
+                    },
+                    {
+                        name: `Width/Height`,
+                        value: `${d.width}/${d.height}`,
+                        inline: true
+                    },
+                    {
+                        name: `Votes`,
+                        value: `${d.votes}`,
+                        inline: true
+                    },
+                    {
+                        name: `Spin-Offs`,
+                        value: `${d.spinoffs}`,
+                        inline: true
+                    },
+                ],
+                image: {
+                    url: `https://www.khanacademy.org/computer-programming/i/${d.id}/latest.png`,
+                    height: 0,
+                    width: 0,
+                },
+                thumbnail: {
+                    url: `https://media.discordapp.net/attachments/810540153294684195/994417360737935410/ka-logo-zoomedout.png`,
+                    height: 0,
+                    width: 0,
+                },
+                footer: {
+                    text: `Backed up to https://kap-archive.shipment22.repl.co/`,
+                    icon_url: `https://media.discordapp.net/attachments/810540153294684195/994417360737935410/ka-logo-zoomedout.png`,
+                },
+                url: `https://www.khanacademy.org/cs/i/${d.id}`
+            });
+        });
+    }
+    if(embds?.length>0) msg.reply({content:`Backed program${embds.length>1?"s":""} up to the KAP Archive, which you can visit [here](https://kap-archive.shipment22.repl.co/).`,embeds:embds,allowedMentions:{parse:[]}});
 
     if(msg.channel.name?.startsWith("Ticket with ")&&!msg.author.bot){
         var resp={files:[],content:`Ticket response from **${msg.guild.name}**. To respond, make sure to reply to this message.\nTicket ID: ${msg.channel.name.split("Ticket with ")[1].split(" in ")[1]}/${msg.channel.id}`};
@@ -631,14 +837,16 @@ client.on("messageCreate",async msg=>{
         }
     }
 
-    if (msg.channel instanceof DMChannel&&!msg.author.bot) {
+    if(msg.channel instanceof DMChannel&&!msg.author.bot&&storage[msg.author.id].config.aiPings) {
         sendMessage(msg, true);
     }
-    else if (msg.mentions.users.has(client.user.id)&&!msg.author.bot) {
+    else if(msg.mentions.users.has(client.user.id)&&!msg.author.bot&&storage[msg.author.id].config.aiPings) {
         if (/^<[@|#|@&].*?>$/g.test(msg.content.replace(/\s+/g, ''))) {
             msg.content = "*User says nothing*";
         }
-        sendMessage(msg);
+        if(storage[msg.guild?.id]?.config.ai){
+            sendMessage(msg);
+        }
     }
 });
 client.on("interactionCreate",async cmd=>{
@@ -661,6 +869,13 @@ client.on("interactionCreate",async cmd=>{
         storage[cmd.user.id]=structuredClone(defaultUser);
         save();
     }
+    if(cmd.guild){
+        Object.keys(PermissionFlagsBits).forEach(perm=>{
+            if(!cmd.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits[perm])){
+                noPerms(cmd.guild.id,perm);
+            }
+        });
+    }
 
     //Slash Commands and Context Menu Commands
     switch(cmd.commandName){
@@ -674,31 +889,30 @@ client.on("interactionCreate",async cmd=>{
                     let defs = [];
                     for (var i = 0; i < d.meanings.length; i++) {
                         for (var j = 0;j < d.meanings[i].definitions.length;j++) {
-                            let foundOne=false;
-                            if(storage[cmd.guild.id.filter.active]){
-                                storage[cmd.guild.id].filter.blacklist.forEach(blockedWord=>{
-                                    if(new RegExp(`([^\\D]|\\b)${blockedWord}(ing|s|ed|er|ism|ist|es|ual)?([^\\D]|\\b)`,"ig").test(`${cmd.meanings[i].definitions[j]}`)){
-                                        foundOne=true;
-                                    }
+                            if(checkDirty(cmd.guild?.id,d.meanings[i].definitions[j].example)||checkDirty(cmd.guild?.id,d.meanings[i].definitions[j].definition)){
+                                defs.push({
+                                    name:"Type: " +d.meanings[i].partOfSpeech,
+                                    value:foundOne?"Blocked by this server's filter":d.meanings[i].definitions[j].definition+(d.meanings[i].definitions[j].example?"\nExample: " +d.meanings[i].definitions[j].example:""),
+                                    inline: true
                                 });
                             }
-                            defs.push({
-                                name:"Type: " +d.meanings[i].partOfSpeech,
-                                value:foundOne?"Blocked by this server's filter":d.meanings[i].definitions[j].definition+(d.meanings[i].definitions[j].example?"\nExample: " +d.meanings[i].definitions[j].example:""),
-                                inline: true
-                            });
                         }
                     }
-                    cmd.reply({embeds:[{
-                        type: "rich",
-                        title: "Definition of "+d.word,
-                        description: d.origin,
-                        color: 0x00ff00,
-                        fields: defs,
-                        footer: {
-                            text: d.phonetic,
-                        }
-                    }]});
+                    if(checkDirty(cmd.guild?.id,d.word)){
+                        cmd.reply({content:"That word is blocked by this server's filter",ephemeral:true});
+                    }
+                    else{
+                        cmd.reply({embeds:[{
+                            type: "rich",
+                            title: "Definition of "+d.word,
+                            description: d.origin,
+                            color: 0x00ff00,
+                            fields: defs,
+                            footer: {
+                                text: d.phonetic,
+                            }
+                        }]});
+                    }
                 }).catch(e=>{
                     cmd.reply("I'm sorry, I didn't find a definition for that");
                 });
@@ -765,6 +979,10 @@ client.on("interactionCreate",async cmd=>{
             if(cmd.options.getString("message_type")!==null) storage[cmd.guild.id].starboard.messType=cmd.options.getString("message_type");
             if(storage[cmd.guild.id].starboard.channel==="") storage[cmd.guild.id].starboard.active=false;
             cmd.reply(`Starboard configured.${cmd.options.getBoolean("active")&&!storage[cmd.guild.id].starboard.active?`\n\nNo channel has been set for this server, so starboard is inactive. To enable starboard, run ${cmds.starboard_config} again setting \`active\` to true and specify a \`channel\`.`:""}`);
+            storage[msg.guild.id].counting.nextNum=1;
+            for(let a in storage[msg.guild.id].users){
+                storage[msg.guild.id].users[a].countTurns=0;
+            }
             save();
         break;
         case 'counting':
@@ -776,7 +994,7 @@ client.on("interactionCreate",async cmd=>{
                     if(cmd.options.getInteger("posts_between_turns")!==null) storage[cmd.guild.id].counting.takeTurns=cmd.options.getInteger("posts_between_turns");
                     if(!storage[cmd.guild.id].counting.channel) storage[cmd.guild.id].counting.active=false;
                     if(!storage[cmd.guild.id].counting.reset||storage[cmd.guild.id].counting.takeTurns<1) storage[cmd.guild.id].counting.legit=false;
-                    cmd.reply(`Alright, I configured counting for this server.${storage[cmd.guild.id].counting.active!==cmd.options.getBoolean("active")?` It looks like no channel has been set to count in, so counting is currently disabled. Please run ${cmds['counting config']} again and set the channel to activate counting.`:`${storage[cmd.guild.id].counting.legit?` Please be aware this server is currently inelegible for the leaderboard. To fix this, make sure that reset is set to true, that the posts between turns is at least 1, and that you don't set the number to anything higher than 1 manually.`:""}`}`);
+                    cmd.reply(`Alright, I configured counting for this server.${storage[cmd.guild.id].counting.active!==cmd.options.getBoolean("active")?` It looks like no channel has been set to count in, so counting is currently disabled. Please run ${cmds['counting config']} again and set the channel to activate counting.`:`${storage[cmd.guild.id].counting.legit?"":` Please be aware this server is currently inelegible for the leaderboard. To fix this, make sure that reset is set to true, that the posts between turns is at least 1, and that you don't set the number to anything higher than 1 manually.`}`}`);
                     save();
                 break;
                 case "set_number":
@@ -796,7 +1014,7 @@ client.on("interactionCreate",async cmd=>{
             var leaders=[];
             for(let a in storage){
                 if(storage[a].counting?.public){
-                    leaders.push([client.guilds.cache.get(a).name,storage[a].counting.highestNum,a]);
+                    leaders.push([checkDirty(cmd.guild?.id,client.guilds.cache.get(a).name)?"[Blocked name]":client.guilds.cache.get(a).name,storage[a].counting.highestNum,a]);
                 }
             }
             leaders.sort((a,b)=>b[1]-a[1]);
@@ -833,6 +1051,10 @@ client.on("interactionCreate",async cmd=>{
                     });
                 break;
                 case 'craiyon':
+                    if(checkDirty(cmd.guild?.id,cmd.options.getString("prompt"))||checkDirty(cmd.guild?.id,cmd.options.getString("negative"))){
+                        cmd.reply({content:`This server has blocked words in your prompt`,ephemeral:true});
+                        break;
+                    }
                     await cmd.reply({content:`Your request is now loading. Expected finish time <t:${Math.round(Date.now()/1000)+60}:R>`,files:["./loading.gif"]});
                     try{
                         fetch("https://api.craiyon.com/v3", {
@@ -901,6 +1123,9 @@ client.on("interactionCreate",async cmd=>{
             }
         break;
         case 'poll':
+            if(checkDirty(cmd.guild.id,cmd.options.getString("prompt"))){
+                cmd.reply({content:"This server doesn't want me to process that prompt.","ephemeral":true});
+            }
             cmd.reply({"content":`**${cmd.options.getString("prompt")}**`,"ephemeral":true,"components":[presets.pollCreation]});
         break;
         case 'auto_roles':
@@ -922,6 +1147,10 @@ client.on("interactionCreate",async cmd=>{
             translate(cmd.options.getString("what"),Object.assign({
                 to:cmd.options.getString("language_to")||cmd.locale.slice(0,2)
             },cmd.options.getString("language_from")?cmd.options.getString("languageFrom"):{})).then(t=>{
+                if(checkDirty(cmd.guild?.id,t.text)||checkDirty(cmd.guild?.id,cmd.options.getString("what"))){
+                    cmd.reply({content:`I have been asked not to translate that by this server`,ephemeral:true});
+                    return;
+                }
                 cmd.reply(`Attempted to translate${t.text!==cmd.options.getString("what")?`: \`${t.text}\`. If this is incorrect, try using ${cmds.translate} again and specify more.`:`, but I was unable to. Try using ${cmds.translate} again and specify more.`}`);
             });
         break;
@@ -973,6 +1202,53 @@ client.on("interactionCreate",async cmd=>{
         case 'sticky-roles':
             storage[cmd.guild.id].stickyRoles=cmd.options.getBoolean("active");
             cmd.reply("Sticky roles configured. Please be aware I can only manage roles lower than my highest role in the server roles list.");
+        break;
+        case 'kick':
+            cmd.guild.members.cache.get(cmd.options.getUser("target")).kick(`Instructed to kick by ${cmd.user.username}: ${cmd.options.getString("reason")}`);
+        break;
+        case 'timeout':
+            var time=(cmd.options.getInteger("hours")*60000*60)+(cmd.options.getInteger("minutes")*60000)+(cmd.options.getInteger("seconds")*1000);
+            cmd.guild.members.cache.get(cmd.options.getUser("target")).timeout(time>0?time:60000,`Instructed to timeout by ${cmd.user.username}: ${cmd.options.getString("reason")}`);
+        break;
+        case 'ban':
+            cmd.guild.members.cache.get(cmd.options.getUser("target")).ban({reason:`Instructed to ban by ${cmd.user.username}: ${cmd.options.getString("reason")}`});
+        break;
+        case 'help':
+            cmd.reply({content:`**General**`,embeds:[{
+                "type": "rich",
+                "title": `General`,
+                "description": `Help Menu General Category`,
+                "color": 0x006400,
+                "fields": helpPages[0].commands.map(a=>{
+                    return {
+                        "name":a.name,
+                        "value":a.desc,
+                        "inline":true
+                    };
+                }),
+                "thumbnail": {
+                    "url": `https://cdn.discordapp.com/attachments/1145432570104926234/1170273261704196127/kt.jpg`,
+                    "height": 0,
+                    "width": 0
+                },
+                "footer": {
+                    "text": `Help Menu for Stewbot`
+                }
+            }],components:[new ActionRowBuilder().addComponents(...helpPages.map(a=>
+                new ButtonBuilder().setCustomId(`switch-${a.name}`).setLabel(a.name).setStyle(ButtonStyle.Primary)
+            ))]});
+        break;
+        case 'personal_config':
+            if(cmd.options.getBoolean("ai_pings")!==null) storage[cmd.user.id].config.aiPings=cmd.options.getBoolean("ai_pings");
+            if(cmd.options.getBoolean("dm_infractions")!==null) storage[cmd.user.id].config.dmOffenses=cmd.options.getBoolean("dm_infractions");
+            if(cmd.options.getBoolean("dm_infraction_content")!==null) storage[cmd.user.id].config.returnFiltered=cmd.options.getBoolean("dm_infraction_content");
+            if(cmd.options.getBoolean("embeds")!==null) storage[cmd.user.id].config.embedPreviews=cmd.options.getBoolean("embeds");
+            cmd.reply("Configured your personal setup");
+        break;
+        case 'general_config':
+            if(cmd.options.getBoolean("ai_pings")!==null) storage[cmd.guild.id].config.ai=cmd.options.getBoolean("ai_pings");
+            if(cmd.options.getBoolean("embeds")!==null) storage[cmd.guild.id].config.embedPreviews=cmd.options.getBoolean("embeds");
+            cmd.reply("Configured your personal setup");
         break;
 
         //Context Menu Commands
@@ -1119,31 +1395,6 @@ client.on("interactionCreate",async cmd=>{
                 fs.unlinkSync("./badExport.csv");
             });
         break;
-
-        //Modals
-        case 'poll-added':
-            var poll=parsePoll(cmd.message.content);
-            if(poll.options.length>=20){
-                cmd.reply("It looks like you've already generated the maximum amount of options!");
-                return;
-            }
-            poll.options.push(cmd.fields.getTextInputValue("poll-addedInp"));
-            cmd.update(`**${poll.title}**${poll.options.map((a,i)=>`\n${i}. ${a}`).join("")}`);
-        break;
-        case 'poll-removed':
-            var i=cmd.fields.getTextInputValue("poll-removedInp");
-            if(!/^\d+$/.test(i)){
-                cmd.deferUpdate();
-                return;
-            }
-            var poll=parsePoll(cmd.message.content);
-            if(+i>poll.options.length||+i<1){
-                cmd.deferUpdate();
-                return;
-            }
-            poll.options.splice(+i-1,1);
-            cmd.update(`**${poll.title}**${poll.options.map((a,i)=>`\n${i}. ${a}`).join("")}`);
-        break;
         case 'poll-removeVote':
             var poll=parsePoll(cmd.message.content,true);
             var keys=Object.keys(storage[cmd.guild.id].polls[cmd.message.id].options);
@@ -1180,6 +1431,35 @@ client.on("interactionCreate",async cmd=>{
             });
             fs.writeFileSync("./tempPoll.png",canvas.toBuffer("image/png"));
             cmd.update({content:`<@${poll.starter}> asks: **${poll.title}**${poll.choices.map((a,i)=>`\n${i}. ${a} **${storage[cmd.guild.id].polls[cmd.message.id].options[a].length}**${finalResults.hasOwnProperty(a)?` - ${pieCols[i][1]}`:""}`).join("")}`,files:["./tempPoll.png"]});
+        break;
+
+        //Modals
+        case 'poll-added':
+            var poll=parsePoll(cmd.message.content);
+            if(poll.options.length>=20){
+                cmd.reply({content:"It looks like you've already generated the maximum amount of options!",ephemeral:true});
+                break;
+            }
+            if(checkDirty(cmd.fields.getTextInputValue("poll-addedInp"))){
+                cmd.reply({ephemeral:true,content:"I have been asked not to add this option by this server"});
+                break;
+            }
+            poll.options.push(cmd.fields.getTextInputValue("poll-addedInp"));
+            cmd.update(`**${poll.title}**${poll.options.map((a,i)=>`\n${i}. ${a}`).join("")}`);
+        break;
+        case 'poll-removed':
+            var i=cmd.fields.getTextInputValue("poll-removedInp");
+            if(!/^\d+$/.test(i)){
+                cmd.deferUpdate();
+                return;
+            }
+            var poll=parsePoll(cmd.message.content);
+            if(+i>poll.options.length||+i<1){
+                cmd.deferUpdate();
+                return;
+            }
+            poll.options.splice(+i-1,1);
+            cmd.update(`**${poll.title}**${poll.options.map((a,i)=>`\n${i}. ${a}`).join("")}`);
         break;
         case "moveModal":
             let cont=cmd.fields.getTextInputValue("moveMade").toUpperCase();
@@ -1373,6 +1653,30 @@ client.on("interactionCreate",async cmd=>{
             cmd.user.send(`Ticket opened in **${cmd.guild.name}**. You can reply to this message to converse in the ticket. Note that any messages not a reply will not be sent to the ticket.\n\nTicket ID: ${cmd.customId.split("-")[1]}/${msg.id}`);
         });
         cmd.deferUpdate();
+    }
+    if(cmd.customId?.startsWith("switch-")){
+        var newPage=helpPages.filter(a=>a.name===cmd.customId.split("switch-")[1])[0];
+        cmd.update({content:`**${newPage.name}**`,embeds:[{
+            "type": "rich",
+            "title": newPage.name,
+            "description": `Help Menu ${newPage.name} Category`,
+            "color": 0x006400,
+            "fields": newPage.commands.map(a=>{
+                return {
+                    "name":a.name,
+                    "value":a.desc,
+                    "inline":true
+                };
+            }),
+            "thumbnail": {
+                "url": `https://cdn.discordapp.com/attachments/1145432570104926234/1170273261704196127/kt.jpg`,
+                "height": 0,
+                "width": 0
+            },
+            "footer": {
+                "text": `Help Menu for Stewbot`
+            }
+        }]});
     }
 });
 client.on("messageReactionAdd",async (react,user)=>{
@@ -1806,6 +2110,13 @@ client.on("guildCreate",async guild=>{
 });
 client.on("guildDelete",async guild=>{
     notify(1,`Removed from **${guild.name}**.`);
+});
+
+process.on('unhandledRejection',e=>{
+    notify(1,e.toString());
+});
+process.on('unhandledException',e=>{
+    notify(1,e.toString());
 });
 
 client.login(process.env.token);
