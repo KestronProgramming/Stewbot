@@ -295,7 +295,6 @@ const defaultGuild={
         "user_change_events":false,
         "joining_and_leaving":false,
         "invite_events":false,
-        "message_events":false,
         "role_events":false
     },
     "counting":{
@@ -326,7 +325,8 @@ const defaultGuild={
 const defaultGuildUser={
     "infractions":0,
     "stars":0,
-    "roles":[]
+    "roles":[],
+    "inServer":true
 };
 const defaultUser={
     "offenses":0,
@@ -966,7 +966,6 @@ client.on("interactionCreate",async cmd=>{
             if(cmd.options.getBoolean("user_change_events")) storage[cmd.guild.id].logs.user_change_events=cmd.options.getBoolean("user_change_events");
             if(cmd.options.getBoolean("joining_and_leaving")) storage[cmd.guild.id].logs.joining_and_leaving=cmd.options.getBoolean("joining_and_leaving");
             if(cmd.options.getBoolean("invite_events")) storage[cmd.guild.id].logs.invite_events=cmd.options.getBoolean("invite_events");
-            if(cmd.options.getBoolean("message_events")) storage[cmd.guild.id].logs.message_events=cmd.options.getBoolean("message_events");
             if(cmd.options.getBoolean("role_events")) storage[cmd.guild.id].logs.role_events=cmd.options.getBoolean("role_events");
             cmd.reply("Configured log events");
             save();
@@ -1068,7 +1067,7 @@ client.on("interactionCreate",async cmd=>{
                 }
             }
             if(comp2.length>0) comp.push(new ActionRowBuilder().addComponents(...comp2));
-            cmd.channel.send({content:`<@${cmd.user.id}> asks: **${poll.title}**${poll.options.map((a,i)=>`\n${i}. ${a} **0**`).join("")}`,components:[...comp,new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId("poll-removeVote").setLabel("Remove vote").setStyle(ButtonStyle.Danger),new ButtonBuilder().setCustomId("poll-closeOption"+cmd.user.id).setLabel("Close poll").setStyle(ButtonStyle.Danger))],allowedMentions:[]}).then(msg=>{
+            cmd.channel.send({content:`<@${cmd.user.id}> asks: **${poll.title}**${poll.options.map((a,i)=>`\n${i}. ${a} **0**`).join("")}`,components:[...comp,new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId("poll-removeVote").setLabel("Remove vote").setStyle(ButtonStyle.Danger),new ButtonBuilder().setCustomId("poll-closeOption"+cmd.user.id).setLabel("Close poll").setStyle(ButtonStyle.Danger))],allowedMentions:{"users":[]}}).then(msg=>{
                 var t={};
                 poll.options.forEach(option=>{
                     t[option]=[];
@@ -1305,7 +1304,7 @@ client.on("interactionCreate",async cmd=>{
                 ctx.stroke();
             });
             fs.writeFileSync("./tempPoll.png",canvas.toBuffer("image/png"));
-            cmd.update({content:`**Poll Closed**\n<@${poll.starter}> asked: **${poll.title}**${poll.choices.map((a,i)=>`\n${i}. ${a} **${storage[cmd.guild.id].polls[cmd.message.id].options[a].length}** - ${pieCols[i][1]}`).join("")}`,components:[],allowedMentions:[],files:["./tempPoll.png"]});
+            cmd.update({content:`**Poll Closed**\n<@${poll.starter}> asked: **${poll.title}**${poll.choices.map((a,i)=>`\n${i}. ${a} **${storage[cmd.guild.id].polls[cmd.message.id].options[a].length}** - ${pieCols[i][1]}`).join("")}`,components:[],allowedMentions:{"parse":[]},files:["./tempPoll.png"]});
             delete storage[cmd.guild.id].polls[cmd.message.id];
             save();
         }
@@ -1527,16 +1526,15 @@ client.on("messageUpdate",async (msgO,msg)=>{
 client.on("guildMemberAdd",async member=>{
     if(!storage.hasOwnProperty(member.guild.id)){
         storage[member.guild.id]=structuredClone(defaultGuild);
-        save();
     }
     if(!storage[member.guild.id].users.hasOwnProperty(member.id)){
         storage[member.guild.id].users[member.id]=structuredClone(defaultGuildUser);
-        save();
     }
     if(!storage.hasOwnProperty(member.id)){
         storage[member.id]=structuredClone(defaultUser);
-        save();
     }
+    storage[member.guild.id].users[member.id].inServer=true;
+    save();
 
     if(storage[member.guild.id].ajm.active){
         if(storage[member.guild.id].ajm.dm){
@@ -1583,6 +1581,9 @@ client.on("guildMemberAdd",async member=>{
             catch(e){}
         });
     }
+    if(storage[member.guild.id].logs.active&&storage[member.guild.id].logs.joining_and_leaving){
+        client.channels.cache.get(storage[member.guild.id].logs.channel).send({content:`**<@${member.id}> has joined the server.**`,allowedMentions:{parse:[]}});
+    }
 });
 client.on("guildMemberRemove",async member=>{
     if(!storage.hasOwnProperty(member.guild.id)){
@@ -1599,7 +1600,13 @@ client.on("guildMemberRemove",async member=>{
     }
 
     storage[member.guild.id].users[member.id].roles=member.roles.cache.map(r=>r.id);
+    storage[member.guild.id].users[member.id].inServer=false;
     save();
+
+    if(storage[member.guild.id].logs.active&&storage[member.guild.id].logs.joining_and_leaving){
+        var bans=await member.guild.bans.fetch();
+        client.channels.cache.get(storage[member.guild.id].logs.channel).send({content:`**<@${member.id}> has ${bans.find(b=>b.user.id===member.id)?"been banned from":"left"} the server.**${bans.find(b=>b.user.id===member.id)?.reason!==null?`\n${bans.find(b=>b.user.id===member.id).reason}`:""}`,allowedMentions:{parse:[]}});
+    }
 });
 client.on("channelDelete",async channel=>{
     if(!storage.hasOwnProperty(channel.guild.id)){
@@ -1694,6 +1701,96 @@ client.on("stickerUpdate",async (stickerO,sticker)=>{
                 diffs+=`\n- **\`${key}\`**`;
             }
         });
+        sticker.guild.channels.cache.get(storage[sticker.guild.id].logs.channel).send(diffs);
+    }
+});
+client.on("inviteCreate",async invite=>{
+    if(!storage.hasOwnProperty(invite.guild.id)){
+        storage[invite.guild.id]=structuredClone(defaultGuild);
+        save();
+    }
+
+    if(storage[invite.guild.id].logs.active&&storage[invite.guild.id].logs.invite_events){
+        invite.guild.channels.cache.get(storage[invite.guild.id].logs.channel).send({content:`**Invite \`${invite.code}\` Created**\n- Code: ${invite.code}\n- Created by <@${invite.inviterId}>\n- Channel: <#${invite.channelId}>${invite._expiresTimestamp?`\n- Expires <t:${Math.round(invite._expiresTimestamp/1000)}:R>`:``}\n- Max uses: ${invite.maxUses>0?invite.maxUses:"Infinite"}`,allowedMentions:{parse:[]}});
+    }
+});
+client.on("inviteDelete",async invite=>{
+    if(!storage.hasOwnProperty(invite.guild.id)){
+        storage[invite.guild.id]=structuredClone(defaultGuild);
+        save();
+    }
+
+    if(storage[invite.guild.id].logs.active&&storage[invite.guild.id].logs.invite_events){
+        invite.guild.channels.cache.get(storage[invite.guild.id].logs.channel).send({content:`**Invite \`${invite.code}\` Deleted**`,allowedMentions:{parse:[]}});
+    }
+});
+client.on("roleCreate",async role=>{
+    if(!storage.hasOwnProperty(role.guild.id)){
+        storage[role.guild.id]=structuredClone(defaultGuild);
+        save();
+    }
+
+    if(storage[role.guild.id].logs.active&&storage[role.guild.id].logs.role_events){
+        role.guild.channels.cache.get(storage[role.guild.id].logs.channel).send({content:`**Role <@&${role.id}> created**`,allowedMentions:{parse:[]}});
+    }
+});
+client.on("roleDelete",async role=>{
+    if(!storage.hasOwnProperty(role.guild.id)){
+        storage[role.guild.id]=structuredClone(defaultGuild);
+        save();
+    }
+
+    if(storage[role.guild.id].logs.active&&storage[role.guild.id].logs.role_events){
+        role.guild.channels.cache.get(storage[role.guild.id].logs.channel).send(`**Role \`${role.name}\` Deleted**`);
+    }
+});
+client.on("roleUpdate",async (roleO,role)=>{
+    if(!storage.hasOwnProperty(role.guild.id)){
+        storage[role.guild.id]=structuredClone(defaultGuild);
+        save();
+    }
+
+    if(storage[role.guild.id].logs.active&&storage[role.guild.id].logs.role_events){
+        var diffs=`**Role <@&${role.id}> Edited**`;
+        Object.keys(roleO).forEach(key=>{
+            if(key==="tags"||key==="permissions"||key==="flags") return;
+            if(roleO[key]!==role[key]){
+                diffs+=`\n- \`${key}\``;
+            }
+        });
+        if(diffs.endsWith(`**\n- \`rawPosition\``)){
+            return;
+        }
+        if(diffs.endsWith("**")){
+            diffs+="\n- `Permissions`";
+        }
+        role.guild.channels.cache.get(storage[role.guild.id].logs.channel).send({content:diffs,allowedMentions:{parse:[]}});
+    }
+});
+client.on("userUpdate",async (userO,user)=>{
+    var diffs=`**User <@${user.id}> Edited Globally**`;
+    Object.keys(userO).forEach(key=>{
+        if(key==="tags"||key==="permissions"||key==="flags") return;
+        if(userO[key]!==user[key]){
+            diffs+=`\n- \`${key}\``;
+        }
+    });
+    Object.keys(storage).forEach(entry=>{
+        if(storage[entry]?.users?.[user.id]?.inServer&&storage[entry].logs.active&&storage[entry].logs.user_change_events){
+            client.channels.cache.get(storage[entry].logs.channel).send({content:diffs,allowedMentions:{parse:[]}});
+        }
+    });
+});
+client.on("guildMemberUpdate",async (memberO,member)=>{
+    if(storage[member.guild.id].logs.active&&storage[member.guild.id].logs.user_change_events){
+        var diffs=`**User <@${member.id}> Edited For This Server**`;
+        Object.keys(memberO).forEach(key=>{
+            if(key==="tags"||key==="permissions"||key==="flags"||key==="_roles") return;
+            if(memberO[key]!==member[key]){
+                diffs+=`\n- \`${key}\``;
+            }
+        });
+        client.channels.cache.get(storage[member.guild.id].logs.channel).send({content:diffs,allowedMentions:{parse:[]}});
     }
 });
 

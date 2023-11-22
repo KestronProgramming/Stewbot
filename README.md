@@ -23,8 +23,8 @@ Currently being rewritten, you can see progress here.
  - Staff tickets
  - Rows and Columns
  - Sticky Roles
-## Planned Features
  - Logging
+## Planned Features
  - Moderator actions with better logging
  - Personal and Server configs for general options
  - Automatic permission checking
