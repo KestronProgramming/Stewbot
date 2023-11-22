@@ -13,7 +13,8 @@ To run this code with your own tokens, make sure you have node installed, and th
     "inworldKey": "Inworld AI Key",
     "inworldSecret": "Inworld AI Secret",
     "inworldScene":"Inworld AI Character link"
-}```
+}
+```
 Make sure to `npm install` @discordjs/builders, @inworld/nodejs-sdk, @vitalets/google-translate-api, canvas, discord.js, and fs.
 You will also need to run `node launchCommands.js` before you start the bot, which will automatically fill commands.json.
 Then simply use either run.bat or run.sh depending on your system, or just node index.js.
