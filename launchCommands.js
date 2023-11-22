@@ -126,9 +126,6 @@ const commands = [
 		).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages).setDMPermission(false),
 	new SlashCommandBuilder().setName("next_counting_number").setDescription("View the next number to count at").setDMPermission(false),
 	new SlashCommandBuilder().setName("counting_leaderboard").setDescription("View the top ten counting servers"),
-	new SlashCommandBuilder().setName("search").setDescription("Search the internet for a query").addStringOption(option=>
-			option.setName("query").setDescription("The query to search for").setRequired(true)
-		),
 	new SlashCommandBuilder().setName("general_config").setDescription("Configure general behaviors").addBooleanOption(option=>
 			option.setName("ai_pings").setDescription("Have the bot post an AI message when pinging it?")
 		).addBooleanOption(option=>
@@ -137,7 +134,9 @@ const commands = [
 	new SlashCommandBuilder().setName("personal_config").setDescription("Configure the bot for you personally").addBooleanOption(option=>
 			option.setName("ai_pings").setDescription("Respond with an AI message to pings or DMs")
 		).addBooleanOption(option=>
-			option.setName("dm_infractions").setDescription("If you get filtered, should I DM you what was filtered?")
+			option.setName("dm_infractions").setDescription("If you get filtered, should I DM you?")
+		).addBooleanOption(option=>
+			option.setName("dm_infraction_content").setDescription("If dm_infractions is true, should I include the content of the filtered message?")
 		).addBooleanOption(option=>
 			option.setName("embeds").setDescription("If you link a Discord message, should I embed a preview for you?")
 		),
