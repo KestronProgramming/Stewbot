@@ -25,8 +25,6 @@ Currently being rewritten, you can see progress here.
  - Sticky Roles
  - Logging
  - Moderator actions
-## Planned Features
- - Personal and Server configs for general options
 
 ## Lost features over time: why
  - GoombaSquad: Copyright
