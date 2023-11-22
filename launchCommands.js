@@ -189,8 +189,6 @@ const commands = [
 		).addBooleanOption(option=>
 			option.setName("invite_events").setDescription("Log when an invite is made or deleted?")
 		).addBooleanOption(option=>
-			option.setName("message_events").setDescription("Log notable message events?")
-		).addBooleanOption(option=>
 			option.setName("role_events").setDescription("Log role events?")
 		).setDefaultMemberPermissions(PermissionFlagsBits.ViewAuditLog).setDMPermission(false),
 	new SlashCommandBuilder().setName("admin_message").setDescription("Anonymously message a user in the server's name").addUserOption(option=>
