@@ -766,7 +766,10 @@ client.on("messageCreate",async msg=>{
             });
         });
     }
-    if(embds?.length>0) msg.reply({content:`Backed program${embds.length>1?"s":""} up to the KAP Archive, which you can visit [here](https://kap-archive.shipment22.repl.co/).`,embeds:embds,allowedMentions:{parse:[]}});
+    if(embds?.length>0){
+        msg.suppressEmbeds(true);
+        msg.reply({content:`Backed program${embds.length>1?"s":""} up to the KAP Archive, which you can visit [here](https://kap-archive.shipment22.repl.co/).`,embeds:embds,allowedMentions:{parse:[]}});
+    }
 
     if(msg.channel.name?.startsWith("Ticket with ")&&!msg.author.bot){
         var resp={files:[],content:`Ticket response from **${msg.guild.name}**. To respond, make sure to reply to this message.\nTicket ID: ${msg.channel.name.split("Ticket with ")[1].split(" in ")[1]}/${msg.channel.id}`};
@@ -1008,7 +1011,10 @@ client.on("interactionCreate",async cmd=>{
             var leaders=[];
             for(let a in storage){
                 if(storage[a].counting?.public){
-                    leaders.push([checkDirty(cmd.guild?.id,client.guilds.cache.get(a).name)?"[Blocked name]":client.guilds.cache.get(a).name,storage[a].counting.highestNum,a]);
+                    try{
+                        leaders.push([checkDirty(cmd.guild?.id,client.guilds.cache.get(a).name)?"[Blocked name]":client.guilds.cache.get(a).name,storage[a].counting.highestNum,a]);
+                    }
+                    catch(e){}
                 }
             }
             leaders.sort((a,b)=>b[1]-a[1]);
@@ -1434,7 +1440,7 @@ client.on("interactionCreate",async cmd=>{
                 cmd.reply({content:"It looks like you've already generated the maximum amount of options!",ephemeral:true});
                 break;
             }
-            if(checkDirty(cmd.fields.getTextInputValue("poll-addedInp"))){
+            if(checkDirty(cmd.guild.id,cmd.fields.getTextInputValue("poll-addedInp"))){
                 cmd.reply({ephemeral:true,content:"I have been asked not to add this option by this server"});
                 break;
             }
