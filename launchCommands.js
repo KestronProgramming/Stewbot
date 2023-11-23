@@ -111,7 +111,7 @@ const commands = [
 			command.setName("config").setDescription("Configure counting for this server").addBooleanOption(option=>
 				option.setName("active").setDescription("Do counting things in this server?").setRequired(true)
 			).addChannelOption(option=>
-				option.setName("channel").setDescription("Channel to count in")
+				option.setName("channel").setDescription("Channel to count in").addChannelTypes(ChannelType.GuildText)
 			).addBooleanOption(option=>
 				option.setName("reset").setDescription("Reset the count if a wrong number is posted (True to be on leaderboard)")
 			).addBooleanOption(option=>
@@ -144,7 +144,7 @@ const commands = [
 			option.setName("prompt").setDescription("The prompt (We'll set options in a minute)").setRequired(true)
 		).setDMPermission(false),
 	new SlashCommandBuilder().setName("ticket").setDescription("Set up a ticket system here for users to contact mods").addChannelOption(option=>
-			option.setName("channel").setDescription("The channel for tickets to be opened in on the staff end").setRequired(true)
+			option.setName("channel").setDescription("The channel for tickets to be opened in on the staff end").addChannelTypes(ChannelType.GuildText).setRequired(true)
 		).setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels).setDMPermission(false),
 	new SlashCommandBuilder().setName("auto-join-message").setDescription("Set up a message to be sent automatically when a user joins").addBooleanOption(option=>
 			option.setName("active").setDescription("Should I send a message when the user joins?").setRequired(true)
@@ -156,7 +156,7 @@ const commands = [
 				{"name":"DM","value":"dm"}
 			)
 		).addChannelOption(option=>
-			option.setName("channel").setDescription("The channel to post the message to")
+			option.setName("channel").setDescription("The channel to post the message to").addChannelTypes(ChannelType.GuildText)
 		).setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers).setDMPermission(false),
 	new SlashCommandBuilder().setName("auto_roles").setDescription("Setup a message with auto roles").addStringOption(option=>
 			option.setName("message").setDescription("The message to be sent with the role options").setRequired(true)
@@ -176,7 +176,7 @@ const commands = [
 	new SlashCommandBuilder().setName("log_config").setDescription("Configure log events").addBooleanOption(option=>
 			option.setName("active").setDescription("Log server and user events to the designated channel?").setRequired(true)
 		).addChannelOption(option=>
-			option.setName("channel").setDescription("Which channel to post events to?").setRequired(true)
+			option.setName("channel").setDescription("Which channel to post events to?").addChannelTypes(ChannelType.GuildText).setRequired(true)
 		).addBooleanOption(option=>
 			option.setName("channel_events").setDescription("Log channel events?")
 		).addBooleanOption(option=>
