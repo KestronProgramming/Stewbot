@@ -601,7 +601,7 @@ client.on("messageCreate",async msg=>{
                 msg.author.send(ll(`Your message in **${msg.guild.name}** was ${storage[msg.guildId].filter.censor?"censored":"deleted"} due to the following word${foundWords.length>1?"s":""} being in the filter: ||${foundWords.join("||, ||")}||${storage[msg.author.id].config.returnFiltered?"```\n"+msg.ogContent.replaceAll("`","\\`")+"```":""}`));
             }
             if(storage[msg.guildId].filter.log&&storage[msg.guildId].filter.channel){
-                client.channels.cache.get(ll(storage[msg.guildId].filter.channel).send(`I have ${storage[msg.guildId].filter.censor?"censored":"deleted"} a message from **${msg.author.username}** in <#${msg.channel.id}> for the following blocked word${foundWords.length>1?"s":""}": ||${foundWords.join("||, ||")}||\`\`\`\n${msg.ogContent.replaceAll("`","\\`")}\`\`\``));
+                client.channels.cache.get(storage[msg.guildId].filter.channel).send(ll(`I have ${storage[msg.guildId].filter.censor?"censored":"deleted"} a message from **${msg.author.username}** in <#${msg.channel.id}> for the following blocked word${foundWords.length>1?"s":""}": ||${foundWords.join("||, ||")}||\`\`\`\n${msg.ogContent.replaceAll("`","\\`")}\`\`\``));
             }
             save();
             return;
@@ -1204,14 +1204,14 @@ client.on("interactionCreate",async cmd=>{
             cmd.reply("Sticky roles configured. Please be aware I can only manage roles lower than my highest role in the server roles list.");
         break;
         case 'kick':
-            cmd.guild.members.cache.get(cmd.options.getUser("target")).kick(`Instructed to kick by ${cmd.user.username}: ${cmd.options.getString("reason")}`);
+            cmd.guild.members.cache.get(cmd.options.getUser("target").id).kick(`Instructed to kick by ${cmd.user.username}: ${cmd.options.getString("reason")}`);
         break;
         case 'timeout':
             var time=(cmd.options.getInteger("hours")*60000*60)+(cmd.options.getInteger("minutes")*60000)+(cmd.options.getInteger("seconds")*1000);
-            cmd.guild.members.cache.get(cmd.options.getUser("target")).timeout(time>0?time:60000,`Instructed to timeout by ${cmd.user.username}: ${cmd.options.getString("reason")}`);
+            cmd.guild.members.cache.get(cmd.options.getUser("target").id).timeout(time>0?time:60000,`Instructed to timeout by ${cmd.user.username}: ${cmd.options.getString("reason")}`);
         break;
         case 'ban':
-            cmd.guild.members.cache.get(cmd.options.getUser("target")).ban({reason:`Instructed to ban by ${cmd.user.username}: ${cmd.options.getString("reason")}`});
+            cmd.guild.members.cache.get(cmd.options.getUser("target").id).ban({reason:`Instructed to ban by ${cmd.user.username}: ${cmd.options.getString("reason")}`});
         break;
         case 'help':
             cmd.reply({content:`**General**`,embeds:[{
@@ -1695,7 +1695,7 @@ client.on("messageReactionAdd",async (react,user)=>{
         storage[user.id]=structuredClone(defaultUser);
         save();
     }
-    if((storage[react.message.guildId].starboard.emoji===react._emoji.name||storage[react.message.guildId].starboard.emoji===react._emoji.id)&&storage[react.message.guildId].starboard.active&&storage[react.message.guildId].starboard.channel&&!storage[react.message.guildId].starboard.posted.hasOwnProperty(react.message.id)){
+    if(react.message.channel.id!==storage[react.message.guildId].starboard.channel&&(storage[react.message.guildId].starboard.emoji===react._emoji.name||storage[react.message.guildId].starboard.emoji===react._emoji.id)&&storage[react.message.guildId].starboard.active&&storage[react.message.guildId].starboard.channel&&!storage[react.message.guildId].starboard.posted.hasOwnProperty(react.message.id)){
         var msg=await react.message.channel.messages.fetch(react.message.id);
         if(msg.reactions.cache.get(storage[msg.guildId].starboard.emoji).count>=storage[msg.guildId].starboard.threshold){
             var resp={files:[]};
