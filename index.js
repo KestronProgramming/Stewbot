@@ -2112,11 +2112,11 @@ client.on("guildDelete",async guild=>{
     notify(1,`Removed from **${guild.name}**.`);
 });
 
-process.on('unhandledRejection',e=>{
-    notify(1,e.toString());
-});
-process.on('unhandledException',e=>{
-    notify(1,e.toString());
-});
+function handleException(e) {
+    notify(1, e.toString());
+    notify(1, e.stack);
+}
+process.on('unhandledRejection', handleException);
+process.on('unhandledException', handleException);
 
 client.login(process.env.token);
