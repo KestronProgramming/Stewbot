@@ -534,7 +534,7 @@ client.once("ready",()=>{
     notify(1,`Started <t:${uptime}:R>`);
     console.log(`Logged Stewbot handles into ${client.user.tag}`);
     save();
-    client.user.setActivity("𝐒omething 𝐓o 𝐄xpedite 𝐖ork",{type:ActivityType.Custom},1000*60*60*24*31*12);
+    setInterval(()=>{client.user.setActivity("𝐒omething 𝐓o 𝐄xpedite 𝐖ork",{type:ActivityType.Custom},1000*60*60*24*31*12)},60000*60*24);
 });
 client.on("messageCreate",async msg=>{
     async function sendHook(what){
