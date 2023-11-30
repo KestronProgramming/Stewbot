@@ -56,6 +56,89 @@ var pieCols=[
     ["f5deb3","Wheat"],
     ["daa520","Goldenrod"]
 ];
+function checkHoliday(){
+    function Easter(Y) {//Thanks StackOverflow :) https://stackoverflow.com/questions/1284314/easter-date-in-javascript
+        var C = Math.floor(Y/100);
+        var N = Y - 19*Math.floor(Y/19);
+        var K = Math.floor((C - 17)/25);
+        var I = C - Math.floor(C/4) - Math.floor((C - K)/3) + 19*N + 15;
+        I = I - 30*Math.floor((I/30));
+        I = I - Math.floor(I/28)*(1 - Math.floor(I/28)*Math.floor(29/(I + 1))*Math.floor((21 - N)/11));
+        var J = Y + Math.floor(Y/4) + I + 2 - C + Math.floor(C/4);
+        J = J - 7*Math.floor(J/7);
+        var L = I - J;
+        var M = 3 + Math.floor((L + 40)/44);
+        var D = L + 28 - 31*Math.floor(M/4);
+        return M+'/'+D;
+    }
+    var ret="";
+    var n=new Date();
+    var setDates=[
+        {
+            "pfp":"fireworks.jpg",
+            "days":["12/31","1/1"]
+        },
+        {
+            "pfp":"valentine.jpg",
+            "days":["2/14"]
+        },
+        {
+            "pfp":"clover.jpg",
+            "days":["3/17"]
+        },
+        {
+            "pfp":"hacker.png",
+            "days":["4/1"]
+        },
+        {
+            "pfp":"birthday.jpg",
+            "days":["4/19"]
+        },
+        {
+            "pfp":"patriot.jpg",
+            "days":["6/14","7/4","11/11"]
+        },
+        {
+            "pfp":"pumpkin.jpg",
+            "days":["10/31"]
+        },
+        {
+            "pfp":"santa.jpg",
+            "days":["12/1","12/2","12/3","12/4","12/5","12/6","12/7","12/8","12/9","12/10","12/11","12/12","12/13","12/14","12/15","12/16","12/17","12/18","12/19","12/20","12/21","12/22","12/23","12/24"]
+        },
+        {
+            "pfp":"manger.png",
+            "days":["12/25"]
+        },
+        {
+            "pfp":"turkey.jpg",
+            "days":["11/26"]
+        }
+    ];
+    setDates.forEach(holiday=>{
+        if(holiday.days.includes(`${n.getMonth()+1}/${n.getDate()-1}`)){
+            ret="main.jpg";
+        }
+        if(holiday.days.includes(`${n.getMonth()+1}/${n.getDate()}`)){
+            ret=holiday.pfp;
+        }
+    });
+    if(n.getMonth()===10&&n.getDay()===4&&Math.floor(n.getDate()/7)===3){
+        ret="turkey.jpg";
+    }
+    if(n.getMonth()===4&&n.getDay()===1&&n.getDate()+7>31){
+        ret="patriot.jpg";
+    }
+    if(n.getMonth()+1===Easter(n.getFullYear()).split("/")[0]&&n.getDate()===Easter(n.getFullYear()).split("/")[1]){
+        ret="easter.jpg";
+    }
+    if((n.getMonth()===10&&n.getDay()===5&&Math.floor((n.getDate()-1)/7)===3)||n.getMonth()===4&&n.getDay()===2&&(n.getDate()-1)+7>31||n.getMonth()+1===Easter(n.getFullYear()).split("/")[0]&&n.getDate()-1===Easter(n.getFullYear()).split("/")[1]){
+        ret="main.jpg"
+    }
+    if(ret!==""){
+        client.user.setAvatar(`./pfps/${ret}`);
+    }
+}
 var helpPages=[
     {
         name:"General",
@@ -534,7 +617,10 @@ client.once("ready",()=>{
     notify(1,`Started <t:${uptime}:R>`);
     console.log(`Logged Stewbot handles into ${client.user.tag}`);
     save();
-    setInterval(()=>{client.user.setActivity("𝐒omething 𝐓o 𝐄xpedite 𝐖ork",{type:ActivityType.Custom},1000*60*60*24*31*12)},60000*60*24);
+    client.user.setActivity("𝐒omething 𝐓o 𝐄xpedite 𝐖ork",{type:ActivityType.Custom},1000*60*60*24*31*12);
+    setInterval(()=>{client.user.setActivity("𝐒omething 𝐓o 𝐄xpedite 𝐖ork",{type:ActivityType.Custom},1000*60*60*24*31*12)},60000*60*23);
+    checkHoliday();
+    setInterval(checkHoliday,60000*60*24);
 });
 client.on("messageCreate",async msg=>{
     async function sendHook(what){
@@ -601,7 +687,7 @@ client.on("messageCreate",async msg=>{
                 msg.author.send(ll(`Your message in **${msg.guild.name}** was ${storage[msg.guildId].filter.censor?"censored":"deleted"} due to the following word${foundWords.length>1?"s":""} being in the filter: ||${foundWords.join("||, ||")}||${storage[msg.author.id].config.returnFiltered?"```\n"+msg.ogContent.replaceAll("`","\\`")+"```":""}`));
             }
             if(storage[msg.guildId].filter.log&&storage[msg.guildId].filter.channel){
-                client.channels.cache.get(storage[msg.guildId].filter.channel).send(ll(`I have ${storage[msg.guildId].filter.censor?"censored":"deleted"} a message from **${msg.author.username}** in <#${msg.channel.id}> for the following blocked word${foundWords.length>1?"s":""}": ||${foundWords.join("||, ||")}||\`\`\`\n${msg.ogContent.replaceAll("`","\\`")}\`\`\``));
+                client.channels.cache.get(storage[msg.guildId].filter.channel).send(ll(`I have ${storage[msg.guildId].filter.censor?"censored":"deleted"} a message from **${msg.author.username}** in <#${msg.channel.id}> for the following blocked word${foundWords.length>1?"s":""}: ||${foundWords.join("||, ||")}||\`\`\`\n${msg.ogContent.replaceAll("`","\\`")}\`\`\``));
             }
             save();
             return;
@@ -875,10 +961,13 @@ client.on("interactionCreate",async cmd=>{
     }
 
     //Slash Commands and Context Menu Commands
+    if(cmd.isChatInputCommand()){
+        await cmd.deferReply();
+    }
     switch(cmd.commandName){
         //Slash Commands
         case 'ping':
-            cmd.reply(`**Online**\n- Latency: ${client.ws.ping} milliseconds\n- Last Started: <t:${uptime}:f>, <t:${uptime}:R>\n- Uptime: ${((Math.round(Date.now()/1000)-uptime)/(60*60)).toFixed(2)} hours\n- Server Count: ${client.guilds.cache.size} Servers`);
+            cmd.followUp(`**Online**\n- Latency: ${client.ws.ping} milliseconds\n- Last Started: <t:${uptime}:f>, <t:${uptime}:R>\n- Uptime: ${((Math.round(Date.now()/1000)-uptime)/(60*60)).toFixed(2)} hours\n- Server Count: ${client.guilds.cache.size} Servers`);
         break;
         case 'define':
             fetch("https://api.dictionaryapi.dev/api/v2/entries/en/"+cmd.options.getString("what")).then(d=>d.json()).then(d=>{
@@ -896,10 +985,10 @@ client.on("interactionCreate",async cmd=>{
                         }
                     }
                     if(checkDirty(cmd.guild?.id,d.word)){
-                        cmd.reply({content:"That word is blocked by this server's filter",ephemeral:true});
+                        cmd.followUp({content:"That word is blocked by this server's filter",ephemeral:true});
                     }
                     else{
-                        cmd.reply({embeds:[{
+                        cmd.followUp({embeds:[{
                             type: "rich",
                             title: "Definition of "+d.word,
                             description: d.origin,
@@ -911,29 +1000,29 @@ client.on("interactionCreate",async cmd=>{
                         }]});
                     }
                 }).catch(e=>{
-                    cmd.reply("I'm sorry, I didn't find a definition for that");
+                    cmd.followUp("I'm sorry, I didn't find a definition for that");
                 });
         break;
         case "filter":
             switch(cmd.options.getSubcommand()){
                 case "add":
                     if(storage[cmd.guild.id].filter.blacklist.includes(cmd.options.getString("word"))){
-                        cmd.reply({"ephemeral":true,"content":`The word ||${cmd.options.getString("word")}|| is already in the blacklist.${storage[cmd.guild.id].filter.active?"":`To begin filtering in this server, use ${cmds['filter config']}.`}`});
+                        cmd.followUp({"ephemeral":true,"content":`The word ||${cmd.options.getString("word")}|| is already in the blacklist.${storage[cmd.guild.id].filter.active?"":`To begin filtering in this server, use ${cmds['filter config']}.`}`});
                     }
                     else{
                         storage[cmd.guild.id].filter.blacklist.push(cmd.options.getString("word"));
-                        cmd.reply(`Added ||${cmd.options.getString("word")}|| to the filter for this server.${storage[cmd.guild.id].filter.active?"":`\n\nThe filter for this server is currently disabled. To enable it, use ${cmds['filter config']}.`}`);
+                        cmd.followUp(`Added ||${cmd.options.getString("word")}|| to the filter for this server.${storage[cmd.guild.id].filter.active?"":`\n\nThe filter for this server is currently disabled. To enable it, use ${cmds['filter config']}.`}`);
                         save();
                     }
                 break;
                 case "remove":
                     if(storage[cmd.guild.id].filter.blacklist.includes(cmd.options.getString("word"))){
                         storage[cmd.guild.id].filter.blacklist.splice(storage[cmd.guild.id].filter.blacklist.indexOf(cmd.options.getString("word")),1);
-                        cmd.reply(`Alright, I have removed ||${cmd.options.getString("word")}|| from the filter.`);
+                        cmd.followUp(`Alright, I have removed ||${cmd.options.getString("word")}|| from the filter.`);
                         save();
                     }
                     else{
-                        cmd.reply(`I'm sorry, but I don't appear to have that word in my blacklist. Are you sure you're spelling it right? You can use ${cmds.view_filter} to see all filtered words.`);
+                        cmd.followUp(`I'm sorry, but I don't appear to have that word in my blacklist. Are you sure you're spelling it right? You can use ${cmds.view_filter} to see all filtered words.`);
                     }
                 break;
                 case "config":
@@ -942,7 +1031,7 @@ client.on("interactionCreate",async cmd=>{
                     if(cmd.options.getBoolean("log")!==null) storage[cmd.guild.id].filter.log=cmd.options.getBoolean("log");
                     if(cmd.options.getChannel("channel")!==null) storage[cmd.guild.id].filter.channel=cmd.options.getChannel("channel").id;
                     if(storage[cmd.guild.id].filter.channel==="") storage[cmd.guild.id].filter.log=false;
-                    cmd.reply(`Filter configured.${(cmd.options.getBoolean("log")&&!storage[cmd.guild.id].filter.log)?`\n\nNo channel was set to log summaries of deleted messages to, so logging these is turned off. To reenable this, run ${cmds['filter config']} again and set \`log\` to true and specify a \`channel\`.`:""}`);
+                    cmd.followUp(`Filter configured.${(cmd.options.getBoolean("log")&&!storage[cmd.guild.id].filter.log)?`\n\nNo channel was set to log summaries of deleted messages to, so logging these is turned off. To reenable this, run ${cmds['filter config']} again and set \`log\` to true and specify a \`channel\`.`:""}`);
                     save();
                 break;
                 case "import":
@@ -955,17 +1044,18 @@ client.on("interactionCreate",async cmd=>{
                                 addedWords.push(word);
                             }
                         });
-                        cmd.reply(addedWords.length>0?ll(`Added the following words to the blacklist:\n- ||${addedWords.join("||\n- ||")}||`):`Unable to add any of the words to the filter. Either there aren't any in the CSV, it's not formatted right, or all of the words are in the blacklist already.`);
+                        cmd.followUp(addedWords.length>0?ll(`Added the following words to the blacklist:\n- ||${addedWords.join("||\n- ||")}||`):`Unable to add any of the words to the filter. Either there aren't any in the CSV, it's not formatted right, or all of the words are in the blacklist already.`);
+                        save();
                     });
                 break;
             }
         break;
         case 'view_filter':
             if(storage[cmd.guild.id].filter.blacklist.length>0){
-                cmd.reply({"content":`**Warning!** There is no guarantee what kinds of words may be in the blacklist. There is a chance it could be heavily dirty or offensive. To continue, press the button below.`,"components":[new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('view_filter').setLabel('DM me the blacklist').setStyle(ButtonStyle.Danger))]});
+                cmd.followUp({"content":`**Warning!** There is no guarantee what kinds of words may be in the blacklist. There is a chance it could be heavily dirty or offensive. To continue, press the button below.`,"components":[new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('view_filter').setLabel('DM me the blacklist').setStyle(ButtonStyle.Danger))]});
             }
             else{
-                cmd.reply(`This server doesn't have any words blacklisted at the moment. To add some, you can use ${cmds['filter add']}.`);
+                cmd.followUp(`This server doesn't have any words blacklisted at the moment. To add some, you can use ${cmds['filter add']}.`);
             }
         break;
         case 'starboard_config':
@@ -975,7 +1065,7 @@ client.on("interactionCreate",async cmd=>{
             if(cmd.options.getString("emoji")!==null) storage[cmd.guild.id].starboard.emoji=cmd.options.getString("emoji").includes(":")?cmd.options.getString("emoji").split(":")[2].split(">")[0]:cmd.options.getString("emoji");
             if(cmd.options.getString("message_type")!==null) storage[cmd.guild.id].starboard.messType=cmd.options.getString("message_type");
             if(storage[cmd.guild.id].starboard.channel==="") storage[cmd.guild.id].starboard.active=false;
-            cmd.reply(`Starboard configured.${cmd.options.getBoolean("active")&&!storage[cmd.guild.id].starboard.active?`\n\nNo channel has been set for this server, so starboard is inactive. To enable starboard, run ${cmds.starboard_config} again setting \`active\` to true and specify a \`channel\`.`:""}`);
+            cmd.followUp(`Starboard configured.${cmd.options.getBoolean("active")&&!storage[cmd.guild.id].starboard.active?`\n\nNo channel has been set for this server, so starboard is inactive. To enable starboard, run ${cmds.starboard_config} again setting \`active\` to true and specify a \`channel\`.`:""}`);
             save();
         break;
         case 'counting':
@@ -991,7 +1081,7 @@ client.on("interactionCreate",async cmd=>{
                     for(let a in storage[cmd.guild.id].users){
                         storage[cmd.guild.id].users[a].countTurns=0;
                     }
-                    cmd.reply(`Alright, I configured counting for this server.${storage[cmd.guild.id].counting.active!==cmd.options.getBoolean("active")?` It looks like no channel has been set to count in, so counting is currently disabled. Please run ${cmds['counting config']} again and set the channel to activate counting.`:`${storage[cmd.guild.id].counting.legit?"":` Please be aware this server is currently inelegible for the leaderboard. To fix this, make sure that reset is set to true, that the posts between turns is at least 1, and that you don't set the number to anything higher than 1 manually.`}`}`);
+                    cmd.followUp(`Alright, I configured counting for this server.${storage[cmd.guild.id].counting.active!==cmd.options.getBoolean("active")?` It looks like no channel has been set to count in, so counting is currently disabled. Please run ${cmds['counting config']} again and set the channel to activate counting.`:`${storage[cmd.guild.id].counting.legit?"":` Please be aware this server is currently inelegible for the leaderboard. To fix this, make sure that reset is set to true, that the posts between turns is at least 1, and that you don't set the number to anything higher than 1 manually.`}`}`);
                     save();
                 break;
                 case "set_number":
@@ -999,13 +1089,13 @@ client.on("interactionCreate",async cmd=>{
                     if(storage[cmd.guild.id].counting.nextNum>1){
                         storage[cmd.guild.id].counting.legit=false;
                     }
-                    cmd.reply(`Alright, I've set the next number to be counted to \`${storage[cmd.guild.id].counting.nextNum}\`.${storage[cmd.guild.id].counting.legit?"":`\n\nPlease be aware that this server is currently ineligible for the leaderboard. To fix this, make sure that the number you start from is less than 2, that the posts between turns is at least 1, and that counting is configured to reset upon any mistakes.`}`);
+                    cmd.followUp(`Alright, I've set the next number to be counted to \`${storage[cmd.guild.id].counting.nextNum}\`.${storage[cmd.guild.id].counting.legit?"":`\n\nPlease be aware that this server is currently ineligible for the leaderboard. To fix this, make sure that the number you start from is less than 2, that the posts between turns is at least 1, and that counting is configured to reset upon any mistakes.`}`);
                     save();
                 break;
             }
         break;
         case 'next_counting_number':
-            cmd.reply(storage[cmd.guild.id].counting.active?`The next number to enter ${cmd.channel.id!==storage[cmd.guild.id].counting.channel?`in <#${storage[cmd.guild.id].counting.channel}> `:""}is \`${storage[cmd.guild.id].counting.nextNum}\`.`:`Counting isn't active in this server! Use ${cmds['counting config']} to set it up.`);
+            cmd.followUp(storage[cmd.guild.id].counting.active?`The next number to enter ${cmd.channel.id!==storage[cmd.guild.id].counting.channel?`in <#${storage[cmd.guild.id].counting.channel}> `:""}is \`${storage[cmd.guild.id].counting.nextNum}\`.`:`Counting isn't active in this server! Use ${cmds['counting config']} to set it up.`);
         break;
         case 'counting_leaderboard':
             var leaders=[];
@@ -1018,14 +1108,14 @@ client.on("interactionCreate",async cmd=>{
                 }
             }
             leaders.sort((a,b)=>b[1]-a[1]);
-            cmd.reply(`**Counting Leaderboard**${leaders.slice(0,10).map((a,i)=>`\n${i+1}. ${a[0]}: \`${a[1]}\``).join("")}${cmd.guild?`\n\nYour server is in \`${leaders.map(a=>a[2]).indexOf(cmd.guild.id)+1}${leaders.map(a=>a[2]).indexOf(cmd.guild.id)===0?"st":leaders.map(a=>a[2]).indexOf(cmd.guild.id)===1?"nd":leaders.map(a=>a[2]).indexOf(cmd.guild.id)===2?"rd":"th"}\` place.`:""}`);
+            cmd.followUp(`**Counting Leaderboard**${leaders.slice(0,10).map((a,i)=>`\n${i+1}. ${a[0]}: \`${a[1]}\``).join("")}${cmd.guild?`\n\nYour server is in \`${leaders.map(a=>a[2]).indexOf(cmd.guild.id)+1}${leaders.map(a=>a[2]).indexOf(cmd.guild.id)===0?"st":leaders.map(a=>a[2]).indexOf(cmd.guild.id)===1?"nd":leaders.map(a=>a[2]).indexOf(cmd.guild.id)===2?"rd":"th"}\` place.`:""}`);
         break;
         case 'fun':
             switch(cmd.options.getSubcommand()){
                 case 'dne':
                     fetch("https://thispersondoesnotexist.com").then(d=>d.arrayBuffer()).then(d=>{
                         fs.writeFileSync("./tempDne.jpg",Buffer.from(d));
-                        cmd.reply({content:`Image courtesy of <https://thispersondoesnotexist.com>`,files:["./tempDne.jpg"]});
+                        cmd.followUp({content:`Image courtesy of <https://thispersondoesnotexist.com>`,files:["./tempDne.jpg"]});
                     });
                 break;
                 case 'wyr':
@@ -1040,22 +1130,22 @@ client.on("interactionCreate",async cmd=>{
                         let firstQuest=firstQues[0].toUpperCase()+firstQues.slice(1,firstQues.length).split(" or ")[0];
                         let nextQues=firstQues.split(" or ")[1];
                         let nextQuest=nextQues[0].toUpperCase()+nextQues.slice(1,nextQues.length).split("?")[0];
-                        cmd.reply(`**Would you Rather**\n🅰️: ${firstQuest}\n🅱️: ${nextQuest}`);
+                        cmd.followUp(`**Would you Rather**\n🅰️: ${firstQuest}\n🅱️: ${nextQuest}`);
                         let msg = await cmd.fetchReply();
                         msg.react("🅰️").then(msg.react("🅱️"));
                     });
                 break;
                 case 'joke':
                     fetch("https://v2.jokeapi.dev/joke/Pun?blacklistFlags=nsfw,religious,political,racist,sexist,explicit&safe-mode").then(d=>d.json()).then(d=>{
-                        cmd.reply(d.type==="single"?`${d.joke}`:`${d.setup}\n\n||${d.delivery}||`);
+                        cmd.followUp(d.type==="single"?`${d.joke}`:`${d.setup}\n\n||${d.delivery}||`);
                     });
                 break;
                 case 'craiyon':
                     if(checkDirty(cmd.guild?.id,cmd.options.getString("prompt"))||checkDirty(cmd.guild?.id,cmd.options.getString("negative"))){
-                        cmd.reply({content:`This server has blocked words in your prompt`,ephemeral:true});
+                        cmd.followUp({content:`This server has blocked words in your prompt`,ephemeral:true});
                         break;
                     }
-                    await cmd.reply({content:`Your request is now loading. Expected finish time <t:${Math.round(Date.now()/1000)+60}:R>`,files:["./loading.gif"]});
+                    await cmd.followUp({content:`Your request is now loading. Expected finish time <t:${Math.round(Date.now()/1000)+60}:R>`,files:["./loading.gif"]});
                     try{
                         fetch("https://api.craiyon.com/v3", {
                             "headers": {
@@ -1086,7 +1176,7 @@ client.on("interactionCreate",async cmd=>{
                 case 'meme':
                     var memes=fs.readdirSync("./memes");
                     if(memes.length===0){
-                        cmd.reply("I'm sorry, but I don't appear to have any at the moment.");
+                        cmd.followUp("I'm sorry, but I don't appear to have any at the moment.");
                         break;
                     }
                     var meme;
@@ -1096,7 +1186,7 @@ client.on("interactionCreate",async cmd=>{
                     catch(e){
                         meme=memes[Math.floor(Math.random()*memes.length)];
                     }
-                    cmd.reply({content:`Meme #${meme.split(".")[0]}`,files:[`./memes/${meme}`]});
+                    cmd.followUp({content:`Meme #${meme.split(".")[0]}`,files:[`./memes/${meme}`]});
                 break;
                 case 'rac':
                     if(cmd.options.getInteger("start")){
@@ -1114,26 +1204,26 @@ client.on("interactionCreate",async cmd=>{
                             }
                         }
                         rac.players=[cmd.member.id];
-                        cmd.reply({content:getRACBoard(),components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId("racJoin").setLabel("Join Game").setStyle(ButtonStyle.Danger),new ButtonBuilder().setCustomId("racMove").setLabel("Make a Move").setStyle(ButtonStyle.Success))]});
+                        cmd.followUp({content:getRACBoard(),components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId("racJoin").setLabel("Join Game").setStyle(ButtonStyle.Danger),new ButtonBuilder().setCustomId("racMove").setLabel("Make a Move").setStyle(ButtonStyle.Success))]});
                     }
                     else if(cmd.options.getBoolean("help")){
-                        cmd.reply("**Rows & Columns**\n\nIn this game your goal is to make as many of the longest rows as possible. Diagonal rows do not count. 3 in a row is 1 point, 4 in a row is 2 points, 5 in a row is 3 points, and so on. The game ends when all spots are filled.\n\nTo join the game, press the Join Game button.\nTo make a move, press the Make a Move button and input the grid location of the spot you want to move (So if you wanted to move in the third spot from the left on the top row, you would type `AC`).\n\nThis is not a turn-based game - you may move once every 15 minutes, or once _anybody else_ has moved. This is a game of skill, strategy, and speed.");
+                        cmd.followUp("**Rows & Columns**\n\nIn this game your goal is to make as many of the longest rows as possible. Diagonal rows do not count. 3 in a row is 1 point, 4 in a row is 2 points, 5 in a row is 3 points, and so on. The game ends when all spots are filled.\n\nTo join the game, press the Join Game button.\nTo make a move, press the Make a Move button and input the grid location of the spot you want to move (So if you wanted to move in the third spot from the left on the top row, you would type `AC`).\n\nThis is not a turn-based game - you may move once every 15 minutes, or once _anybody else_ has moved. This is a game of skill, strategy, and speed.");
                     }
                 break;
             }
         break;
         case 'poll':
             if(checkDirty(cmd.guild.id,cmd.options.getString("prompt"))){
-                cmd.reply({content:"This server doesn't want me to process that prompt.","ephemeral":true});
+                cmd.followUp({content:"This server doesn't want me to process that prompt.","ephemeral":true});
             }
-            cmd.reply({"content":`**${cmd.options.getString("prompt")}**`,"ephemeral":true,"components":[presets.pollCreation]});
+            cmd.followUp({"content":`**${cmd.options.getString("prompt")}**`,"ephemeral":true,"components":[presets.pollCreation]});
         break;
         case 'auto_roles':
-            cmd.reply({"content":`${cmd.options.getString("message")}`,"ephemeral":true,"components":[presets.rolesCreation]});
+            cmd.followUp({"content":`${cmd.options.getString("message")}`,"ephemeral":true,"components":[presets.rolesCreation]});
         break;
         case 'report_problem':
             notify(1,`**${cmd.options.getString("type")[0].toUpperCase()}${cmd.options.getString("type").slice(1)} Reported by ${cmd.user.username}** (${cmd.user.id})\n\n\`\`\`\n${cmd.options.getString("details")}\`\`\``);
-            cmd.reply({content:"I have reported the issue. Thank you.",ephemeral:true});
+            cmd.followUp({content:"I have reported the issue. Thank you.",ephemeral:true});
         break;
         case 'auto-join-message':
             storage[cmd.guild.id].ajm.active=cmd.options.getBoolean("active");
@@ -1141,21 +1231,21 @@ client.on("interactionCreate",async cmd=>{
             if(cmd.options.getString("channel_or_dm")!==null) storage[cmd.guild.id].ajm.dm=cmd.options.getString("channel_or_dm")==="dm";
             if(cmd.options.getString("message")!==null) storage[cmd.guild.id].ajm.message=cmd.options.getString("message");
             if(!storage[cmd.guild.id].ajm.dm&&storage[cmd.guild.id].ajm.channel===""||storage[cmd.guild.id].ajm.message==="") storage[cmd.guild.id].ajm.active=false;
-            cmd.reply(`Auto join messages configured.${storage[cmd.guild.id].ajm.active!==cmd.options.getBoolean("active")?` It looks like an invalid configuration was set. Make sure to specify a channel to post to if not posting to DMs, and to specify a message to send.`:""}`);
+            cmd.followUp(`Auto join messages configured.${storage[cmd.guild.id].ajm.active!==cmd.options.getBoolean("active")?` It looks like an invalid configuration was set. Make sure to specify a channel to post to if not posting to DMs, and to specify a message to send.`:""}`);
         break;
         case 'translate':
             translate(cmd.options.getString("what"),Object.assign({
                 to:cmd.options.getString("language_to")||cmd.locale.slice(0,2)
             },cmd.options.getString("language_from")?cmd.options.getString("languageFrom"):{})).then(t=>{
                 if(checkDirty(cmd.guild?.id,t.text)||checkDirty(cmd.guild?.id,cmd.options.getString("what"))){
-                    cmd.reply({content:`I have been asked not to translate that by this server`,ephemeral:true});
+                    cmd.followUp({content:`I have been asked not to translate that by this server`,ephemeral:true});
                     return;
                 }
-                cmd.reply(`Attempted to translate${t.text!==cmd.options.getString("what")?`: \`${t.text}\`. If this is incorrect, try using ${cmds.translate} again and specify more.`:`, but I was unable to. Try using ${cmds.translate} again and specify more.`}`);
+                cmd.followUp(`Attempted to translate${t.text!==cmd.options.getString("what")?`: \`${t.text}\`. If this is incorrect, try using ${cmds.translate} again and specify more.`:`, but I was unable to. Try using ${cmds.translate} again and specify more.`}`);
             });
         break;
         case 'ticket':
-            cmd.reply({embeds:[{
+            cmd.followUp({embeds:[{
                 "type": "rich",
                 "title": `${cmd.guild.name} Moderator Tickets`,
                 "description": `Press the button below to open up a private ticket with ${cmd.guild.name} moderators.`,
@@ -1185,7 +1275,7 @@ client.on("interactionCreate",async cmd=>{
                     text:`This message was sent by a moderator of ${cmd.guild.name}`
                 }
             }]});
-            cmd.reply("Messaged them");
+            cmd.followUp("Messaged them");
         break;
         case 'log_config':
             storage[cmd.guild.id].logs.active=cmd.options.getBoolean("active");
@@ -1196,12 +1286,12 @@ client.on("interactionCreate",async cmd=>{
             if(cmd.options.getBoolean("joining_and_leaving")) storage[cmd.guild.id].logs.joining_and_leaving=cmd.options.getBoolean("joining_and_leaving");
             if(cmd.options.getBoolean("invite_events")) storage[cmd.guild.id].logs.invite_events=cmd.options.getBoolean("invite_events");
             if(cmd.options.getBoolean("role_events")) storage[cmd.guild.id].logs.role_events=cmd.options.getBoolean("role_events");
-            cmd.reply("Configured log events");
+            cmd.followUp("Configured log events");
             save();
         break;
         case 'sticky-roles':
             storage[cmd.guild.id].stickyRoles=cmd.options.getBoolean("active");
-            cmd.reply("Sticky roles configured. Please be aware I can only manage roles lower than my highest role in the server roles list.");
+            cmd.followUp("Sticky roles configured. Please be aware I can only manage roles lower than my highest role in the server roles list.");
         break;
         case 'kick':
             cmd.guild.members.cache.get(cmd.options.getUser("target").id).kick(`Instructed to kick by ${cmd.user.username}: ${cmd.options.getString("reason")}`);
@@ -1214,7 +1304,7 @@ client.on("interactionCreate",async cmd=>{
             cmd.guild.members.cache.get(cmd.options.getUser("target").id).ban({reason:`Instructed to ban by ${cmd.user.username}: ${cmd.options.getString("reason")}`});
         break;
         case 'help':
-            cmd.reply({content:`**General**`,embeds:[{
+            cmd.followUp({content:`**General**`,embeds:[{
                 "type": "rich",
                 "title": `General`,
                 "description": `Help Menu General Category`,
@@ -1243,12 +1333,12 @@ client.on("interactionCreate",async cmd=>{
             if(cmd.options.getBoolean("dm_infractions")!==null) storage[cmd.user.id].config.dmOffenses=cmd.options.getBoolean("dm_infractions");
             if(cmd.options.getBoolean("dm_infraction_content")!==null) storage[cmd.user.id].config.returnFiltered=cmd.options.getBoolean("dm_infraction_content");
             if(cmd.options.getBoolean("embeds")!==null) storage[cmd.user.id].config.embedPreviews=cmd.options.getBoolean("embeds");
-            cmd.reply("Configured your personal setup");
+            cmd.followUp("Configured your personal setup");
         break;
         case 'general_config':
             if(cmd.options.getBoolean("ai_pings")!==null) storage[cmd.guild.id].config.ai=cmd.options.getBoolean("ai_pings");
             if(cmd.options.getBoolean("embeds")!==null) storage[cmd.guild.id].config.embedPreviews=cmd.options.getBoolean("embeds");
-            cmd.reply("Configured your personal setup");
+            cmd.followUp("Configured your personal setup");
         break;
 
         //Context Menu Commands
@@ -1699,11 +1789,13 @@ client.on("messageReactionAdd",async (react,user)=>{
         var msg=await react.message.channel.messages.fetch(react.message.id);
         if(msg.reactions.cache.get(storage[msg.guildId].starboard.emoji).count>=storage[msg.guildId].starboard.threshold){
             var resp={files:[]};
-            react.message.attachments.forEach((attached,i) => {
+            var i=0;
+            react.message.attachments.forEach((attached) => {
                 let url=attached.proxyURL.toLowerCase();
-                if(i!==0||(!url.includes(".jpg")&&!url.includes(".png")&&!url.includes(".jpeg")&&!url.includes(".gif"))||storage[cmd.guild.id].starboard.messType==="0"){
+                if(i!==0||(!url.includes(".jpg")&&!url.includes(".png")&&!url.includes(".jpeg")&&!url.includes(".gif"))||storage[react.message.guild.id].starboard.messType==="0"){
                     resp.files.push(attached.proxyURL);
                 }
+                i++;
             });
             if(storage[react.message.guild.id].starboard.messType==="0"){
                 resp.content=react.message.content;
@@ -1771,7 +1863,7 @@ client.on("messageDelete",async msg=>{
     }
 });
 client.on("messageUpdate",async (msgO,msg)=>{
-    if(!msg.guild?.id) return;
+    if(!msg.guild?.id||client.user.id===msg.author.id) return;
     if(storage[msg.guild.id]?.filter.active){
         var foundWords=[];
         storage[msg.guildId].filter.blacklist.forEach(blockedWord=>{
@@ -1780,7 +1872,7 @@ client.on("messageUpdate",async (msgO,msg)=>{
             }
         });
         if(foundWords.length>0){
-            storage[msg.guildId].users[msg.author.id].infractions++;
+            storage[msg.guild.id].users[msg.author.id].infractions++;
             if(storage[msg.guildId].filter.censor){
                 msg.reply(`This post by **${msg.author.globalName||msg.author.username}** sent <t:${msg.createdTimestamp}:f> has been deleted due to retroactively editing a blocked word into the message.`);
             }
@@ -1789,7 +1881,7 @@ client.on("messageUpdate",async (msgO,msg)=>{
                 msg.author.send(ll(`Your message in **${msg.guild.name}** was ${storage[msg.guildId].filter.censor?"censored":"deleted"} due to editing in the following word${foundWords.length>1?"s":""} that are in the filter: ||${foundWords.join("||, ||")}||${storage[msg.author.id].config.returnFiltered?"```\n"+msg.content.replaceAll("`","\\`")+"```":""}`));
             }
             if(storage[msg.guildId].filter.log&&storage[msg.guildId].filter.channel){
-                client.channels.cache.get(ll(storage[msg.guildId].filter.channel).send(`I have deleted a message from **${msg.author.username}** in <#${msg.channel.id}> for editing in the following blocked word${foundWords.length>1?"s":""}": ||${foundWords.join("||, ||")}||\`\`\`\n${msg.content.replaceAll("`","\\`")}\`\`\``));
+                client.channels.cache.get(storage[msg.guildId].filter.channel).send(ll(`I have deleted a message from **${msg.author.username}** in <#${msg.channel.id}> for editing in the following blocked word${foundWords.length>1?"s":""}": ||${foundWords.join("||, ||")}||\`\`\`\n${msg.content.replaceAll("`","\\`")}\`\`\``));
             }
             save();
             return;
@@ -1909,7 +2001,7 @@ client.on("guildMemberRemove",async member=>{
 
     if(storage[member.guild.id].logs.active&&storage[member.guild.id].logs.joining_and_leaving){
         var bans=await member.guild.bans.fetch();
-        client.channels.cache.get(storage[member.guild.id].logs.channel).send({content:`**<@${member.id}> has ${bans.find(b=>b.user.id===member.id)?"been banned from":"left"} the server.**${bans.find(b=>b.user.id===member.id)?.reason!==null?`\n${bans.find(b=>b.user.id===member.id)?.reason}`:""}`,allowedMentions:{parse:[]}});
+        client.channels.cache.get(storage[member.guild.id].logs.channel).send({content:`**<@${member.id}> has ${bans.find(b=>b.user.id===member.id)?"been banned from":"left"} the server.**${bans.find(b=>b.user.id===member.id)?.reason!==undefined?`\n${bans.find(b=>b.user.id===member.id)?.reason}`:""}`,allowedMentions:{parse:[]}});
     }
 });
 client.on("channelDelete",async channel=>{
@@ -2113,7 +2205,6 @@ client.on("guildDelete",async guild=>{
 });
 
 function handleException(e) {
-    notify(1, e.toString());
     notify(1, e.stack);
 }
 process.on('unhandledRejection', handleException);
