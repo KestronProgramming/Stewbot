@@ -270,7 +270,7 @@ var helpPages=[
     }
 ];
 function noPerms(where,what){
-    if(where===false||where===undefined) return;
+    if(where===false||where===undefined) return false;
     switch(what){
         case "ManageMessages":
             storage[where].filter.active=false;
@@ -281,12 +281,17 @@ function noPerms(where,what){
             storage[where].counting.active=false;
             storage[where].config.ai=false;
             storage[where].config.embedPreviews=false;
+            return true;
         break;
         case "ManageRoles":
             storage[where].stickyRoles=false;
         break;
+        case "ReadMessageHistory"://Needed for cmd.followUp which allows me to respond to commands after the 3 second window and is more stable
+            return true;
+        break;
     }
     save();
+    return false;
 }
 function checkDirty(where,what){
     if(where===false||where===undefined) return false;
@@ -933,6 +938,7 @@ client.on("messageCreate",async msg=>{
     }
 });
 client.on("interactionCreate",async cmd=>{
+    let stop=false;
     try{
         if(cmd.guild.id!==0){
             if(!storage.hasOwnProperty(cmd.guild.id)){
@@ -955,15 +961,18 @@ client.on("interactionCreate",async cmd=>{
     if(cmd.guild){
         Object.keys(PermissionFlagsBits).forEach(perm=>{
             if(!cmd.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits[perm])){
-                noPerms(cmd.guild.id,perm);
+                stop=noPerms(cmd.guild.id,perm);
             }
         });
     }
-
-    //Slash Commands and Context Menu Commands
-    if(cmd.isChatInputCommand()){
-        await cmd.deferReply();
+    if(stop){
+        return;
     }
+    try{
+        if(!cmd.customId&&!cmd.targetMessage) await cmd.deferReply();
+    }
+    catch(e){}
+    //Slash Commands and Context Menus
     switch(cmd.commandName){
         //Slash Commands
         case 'ping':
@@ -975,13 +984,12 @@ client.on("interactionCreate",async cmd=>{
                     let defs = [];
                     for (var i = 0; i < d.meanings.length; i++) {
                         for (var j = 0;j < d.meanings[i].definitions.length;j++) {
-                            if(checkDirty(cmd.guild?.id,d.meanings[i].definitions[j].example)||checkDirty(cmd.guild?.id,d.meanings[i].definitions[j].definition)){
-                                defs.push({
-                                    name:"Type: " +d.meanings[i].partOfSpeech,
-                                    value:foundOne?"Blocked by this server's filter":d.meanings[i].definitions[j].definition+(d.meanings[i].definitions[j].example?"\nExample: " +d.meanings[i].definitions[j].example:""),
-                                    inline: true
-                                });
-                            }
+                            let foundOne=checkDirty(cmd.guild?.id,d.meanings[i].definitions[j].example)||checkDirty(cmd.guild?.id,d.meanings[i].definitions[j].definition);
+                            defs.push({
+                                name:"Type: " +d.meanings[i].partOfSpeech,
+                                value:foundOne?"Blocked by this server's filter":d.meanings[i].definitions[j].definition+(d.meanings[i].definitions[j].example?"\nExample: " +d.meanings[i].definitions[j].example:""),
+                                inline: true
+                            });
                         }
                     }
                     if(checkDirty(cmd.guild?.id,d.word)){
