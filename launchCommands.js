@@ -203,6 +203,7 @@ const commands = [
 		).addIntegerOption(option=>
 			option.setName("high").setDescription("Upper bound of the random number? (Default: 10)")
 		),
+	new SlashCommandBuilder().setName("auto-join-roles").setDescription("Automatically add roles to a user when they join the server").setDefaultMemberPermissions(PermissionFlagsBits.ManageRoles).setDMPermission(false),
 
 	new ContextMenuCommandBuilder().setName("submit_meme").setType(ApplicationCommandType.Message),
 	new ContextMenuCommandBuilder().setName("delete_message").setType(ApplicationCommandType.Message).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),//Leaving this in DMs to delete undesirable bot DMs
