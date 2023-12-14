@@ -244,6 +244,10 @@ var helpPages=[
             {
                 name:cmds.submit_meme,
                 desc:"Submit a meme to be approved for the bot to post"
+            },
+            {
+                name:cmds.rng,
+                desc:"Generate a random number"
             }
         ]
     },
@@ -623,7 +627,7 @@ client.once("ready",()=>{
     console.log(`Logged Stewbot handles into ${client.user.tag}`);
     save();
     client.user.setActivity("𝐒omething 𝐓o 𝐄xpedite 𝐖ork",{type:ActivityType.Custom},1000*60*60*24*31*12);
-    setInterval(()=>{client.user.setActivity("𝐒omething 𝐓o 𝐄xpedite 𝐖ork",{type:ActivityType.Custom},1000*60*60*24*31*12)},60000*60*23);
+    setInterval(()=>{client.user.setActivity("𝐒omething 𝐓o 𝐄xpedite 𝐖ork",{type:ActivityType.Custom},1000*60*60*24*31*12)},60000*60);
     checkHoliday();
     setInterval(checkHoliday,60000*60*24);
 });
@@ -940,6 +944,9 @@ client.on("messageCreate",async msg=>{
 client.on("interactionCreate",async cmd=>{
     let stop=false;
     try{
+	if(!cmd.isButton()&&!cmd.isModalSubmit()) await cmd.deferReply({ephemeral:["poll","auto_roles","report_problem","submit_meme","delete_message","move_message"].includes(cmd.commandName)});
+    }catch(e){}
+    try{
         if(cmd.guild.id!==0){
             if(!storage.hasOwnProperty(cmd.guild.id)){
                 storage[cmd.guild.id]=structuredClone(defaultGuild);
@@ -969,9 +976,10 @@ client.on("interactionCreate",async cmd=>{
         return;
     }
     try{
-        if(!cmd.customId&&!cmd.targetMessage) await cmd.deferReply();
+        var ephemCmds=["poll","auto_roles","report_problem"];
+        if(!cmd.isButton()&&!cmd.isModalSubmit()) await cmd.deferReply({ephemeral:ephemCmds.includes(cmd.commandName)});
     }
-    catch(e){}
+    catch(e){notify(1, e.stack)}
     //Slash Commands and Context Menus
     switch(cmd.commandName){
         //Slash Commands
@@ -1102,6 +1110,9 @@ client.on("interactionCreate",async cmd=>{
                 break;
             }
         break;
+        case 'rng':
+            cmd.followUp(`I have selected a random number between **${cmd.options.getInteger("low")||1}** and **${cmd.options.getInteger("high")||10}**: **${Math.round(Math.random()*((cmd.options.getInteger("high")||10)-(cmd.options.getInteger("low")||1))+(cmd.options.getInteger("low")||1))}**`);
+        break;
         case 'next_counting_number':
             cmd.followUp(storage[cmd.guild.id].counting.active?`The next number to enter ${cmd.channel.id!==storage[cmd.guild.id].counting.channel?`in <#${storage[cmd.guild.id].counting.channel}> `:""}is \`${storage[cmd.guild.id].counting.nextNum}\`.`:`Counting isn't active in this server! Use ${cmds['counting config']} to set it up.`);
         break;
@@ -1189,7 +1200,7 @@ client.on("interactionCreate",async cmd=>{
                     }
                     var meme;
                     try{
-                        meme=cmd.options.getInteger("number")?memes.filter(m=>m.split(".")[0]===cmd.options.getInteger("number").toString()):memes[Math.floor(Math.random()*memes.length)];
+                        meme=cmd.options.getInteger("number")?memes.filter(m=>m.split(".")[0]===cmd.options.getInteger("number").toString())[0]:memes[Math.floor(Math.random()*memes.length)];
                     }
                     catch(e){
                         meme=memes[Math.floor(Math.random()*memes.length)];
@@ -1356,22 +1367,22 @@ client.on("interactionCreate",async cmd=>{
                 if(storage[cmd.guild.id].filter.log&&storage[cmd.guild.id].filter.channel){
                     client.channels.cache.get(storage[cmd.guild.id]).send(`Message from **${cmd.targetMessage.author.id}** deleted by **${cmd.user.username}**.\n\n${cmd.targetMessage.content}`);
                 }
-                cmd.reply({"content":"Success","ephemeral":true});
+                cmd.followUp({"content":"Success","ephemeral":true});
             }
             else if(cmd.targetMessage.author.id===client.user.id){
                 cmd.targetMessage.delete();
-                cmd.reply({"content":"Success","ephemeral":true});
+                cmd.followUp({"content":"Success","ephemeral":true});
             }
         break;
         case 'move_message':
-            cmd.reply({"content":`Where do you want to move message \`${cmd.targetMessage.id}\` by **${cmd.targetMessage.author.username}**?`,"ephemeral":true,"components":[presets.moveMessage]});
+            cmd.followUp({"content":`Where do you want to move message \`${cmd.targetMessage.id}\` by **${cmd.targetMessage.author.username}**?`,"ephemeral":true,"components":[presets.moveMessage]});
         break;
         case 'submit_meme':
             if(cmd.targetMessage.attachments.size===0){
-                cmd.reply({ephemeral:true,content:"I'm sorry, but I didn't detect any attachments on that message. Note that it has to be attached (uploaded), and that I don't visit embedded links."});
+                cmd.followUp({ephemeral:true,content:"I'm sorry, but I didn't detect any attachments on that message. Note that it has to be attached (uploaded), and that I don't visit embedded links."});
                 break;
             }
-            cmd.reply({content:`Submitted for evaluation`,ephemeral:true});
+            cmd.followUp({content:`Submitted for evaluation`,ephemeral:true});
             let i=0;
             for(a of cmd.targetMessage.attachments){
                 var dots=a[1].proxyURL.split("?")[0].split(".");
@@ -1394,7 +1405,7 @@ client.on("interactionCreate",async cmd=>{
             translate(cmd.targetMessage.content,{
                 to:cmd.locale.slice(0,2)
             }).then(t=>{
-                cmd.reply(`Attempted to translate${t.text!==cmd.targetMessage.content?`: \`${t.text}\`. If this is incorrect, try using ${cmds.translate}.`:`, but I was unable to. Try using ${cmds.translate}.`}`);
+                cmd.followUp(`Attempted to translate${t.text!==cmd.targetMessage.content?`: \`${t.text}\`. If this is incorrect, try using ${cmds.translate}.`:`, but I was unable to. Try using ${cmds.translate}.`}`);
             });
         break;
     }
