@@ -7,9 +7,12 @@ const {Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, Gatew
 const fs=require("fs");
 var storage=require("./storage.json");
 const cmds=require("./commands.json");
+var needToSave=false;
 function save(){
-    fs.writeFileSync("./storage.json",JSON.stringify(storage));
+    needToSave=true;
+    //fs.writeFileSync("./storage.json",JSON.stringify(storage));
 }
+setInterval(()=>{if(needToSave){fs.writeFileSync("./storage.json",JSON.stringify(storage))};needToSave=false;},10000);
 function ll(s){
     return s.length>1999?s.slice(0,1996)+"...":s;
 }
@@ -207,6 +210,10 @@ var helpPages=[
             {
                 name:cmds.move_message,
                 desc:"Move a user's message from one channel to another"
+            },
+            {
+                name:cmds["auto-join-roles"],
+                desc:"Add one or more roles to every user that joins"
             }
         ]
     },
@@ -573,6 +580,7 @@ const inps={
     "pollNum":new TextInputBuilder().setCustomId("poll-removedInp").setLabel("Which # option should I remove?").setStyle(TextInputStyle.Short).setMinLength(1).setMaxLength(2).setRequired(true),
 
     "roleAdd":new RoleSelectMenuBuilder().setCustomId("role-addOption").setMinValues(1).setMaxValues(20).setPlaceholder("Select all the roles you would like to offer"),
+    "joinRoleAdd":new RoleSelectMenuBuilder().setCustomId("join-roleOption").setMinValues(1).setMaxValues(20).setPlaceholder("Select all the roles you would like to add to new users"),
     "channels":new ChannelSelectMenuBuilder().setCustomId("move-message").setChannelTypes(ChannelType.GuildText).setMaxValues(1).setMinValues(1),
 
     "delete":new ButtonBuilder().setCustomId("delete-all").setLabel("Delete message").setStyle(ButtonStyle.Danger),
@@ -583,6 +591,7 @@ const inps={
 const presets={
     "pollCreation":new ActionRowBuilder().addComponents(inps.pollAdd,inps.pollDel,inps.pollLaunch),
     "rolesCreation":new ActionRowBuilder().addComponents(inps.roleAdd),
+    "autoJoinRoles":[new ActionRowBuilder().addComponents(inps.joinRoleAdd)],
     "meme":[new ActionRowBuilder().addComponents(inps.approve,inps.delete)],
     "moveMessage":new ActionRowBuilder().addComponents(inps.channels),
 
@@ -626,8 +635,8 @@ client.once("ready",()=>{
     notify(1,`Started <t:${uptime}:R>`);
     console.log(`Logged Stewbot handles into ${client.user.tag}`);
     save();
-    client.user.setActivity("𝐒omething 𝐓o 𝐄xpedite 𝐖ork",{type:ActivityType.Custom},1000*60*60*24*31*12);
-    setInterval(()=>{client.user.setActivity("𝐒omething 𝐓o 𝐄xpedite 𝐖ork",{type:ActivityType.Custom},1000*60*60*24*31*12)},60000*60);
+    client.user.setActivity("𝐒omething 𝐓o 𝐄xpedite 𝐖ork",{type:ActivityType.Custom},1000*60*60*4);
+    setInterval(()=>{client.user.setActivity("𝐒omething 𝐓o 𝐄xpedite 𝐖ork",{type:ActivityType.Custom},1000*60*60*4)},60000*60);
     checkHoliday();
     setInterval(checkHoliday,60000*60*24);
 });
@@ -944,7 +953,7 @@ client.on("messageCreate",async msg=>{
 client.on("interactionCreate",async cmd=>{
     let stop=false;
     try{
-	if(!cmd.isButton()&&!cmd.isModalSubmit()) await cmd.deferReply({ephemeral:["poll","auto_roles","report_problem","submit_meme","delete_message","move_message"].includes(cmd.commandName)});
+	if(!cmd.isButton()&&!cmd.isModalSubmit()) await cmd.deferReply({ephemeral:["poll","auto_roles","report_problem","submit_meme","delete_message","move_message","auto-join-roles","join-roleOption"].includes(cmd.commandName)});
     }catch(e){}
     try{
         if(cmd.guild.id!==0){
@@ -977,7 +986,7 @@ client.on("interactionCreate",async cmd=>{
     }
     try{
         var ephemCmds=["poll","auto_roles","report_problem"];
-        if(!cmd.isButton()&&!cmd.isModalSubmit()) await cmd.deferReply({ephemeral:ephemCmds.includes(cmd.commandName)});
+        //if(!cmd.isButton()&&!cmd.isModalSubmit()) await cmd.deferReply({ephemeral:ephemCmds.includes(cmd.commandName)});
     }
     catch(e){notify(1, e.stack)}
     //Slash Commands and Context Menus
@@ -1239,6 +1248,9 @@ client.on("interactionCreate",async cmd=>{
         break;
         case 'auto_roles':
             cmd.followUp({"content":`${cmd.options.getString("message")}`,"ephemeral":true,"components":[presets.rolesCreation]});
+        break;
+        case 'auto-join-roles':
+            cmd.followUp({"content":`Select all of the roles you'd like the user to have upon joining`,'ephemeral':true,"components":presets.autoJoinRoles});
         break;
         case 'report_problem':
             notify(1,`**${cmd.options.getString("type")[0].toUpperCase()}${cmd.options.getString("type").slice(1)} Reported by ${cmd.user.username}** (${cmd.user.id})\n\n\`\`\`\n${cmd.options.getString("details")}\`\`\``);
@@ -1639,6 +1651,27 @@ client.on("interactionCreate",async cmd=>{
                 cmd.reply({ephemeral:true,content:ll(`I'm sorry, but I can't help with the following roles as I don't have high enough permissions to. If you'd like me to offer these roles, visit Server Settings and make sure I have a role listed above the following roles. You can do this by dragging the order around or adding roles.\n\n${badRoles.map(a=>`- **${a}**`).join("\n")}`)});
             }
         break;
+        case 'join-roleOption':
+            let myHighestRole=cmd.guild.members.cache.get(client.user.id).roles.highest.position;
+            let goodRoles=[];
+            let cantRoles=[];
+            cmd.values.forEach(role=>{
+                if(myHighestRole<=cmd.roles.get(role).rawPosition){
+                    cantRoles.push(cmd.roles.get(role).id);
+                }
+                else{
+                    goodRoles.push(cmd.roles.get(role).id);
+                }
+            });
+            if(cantRoles.length>0){
+                cmd.followUp({ephemeral:true,content:`I'm sorry, but I don't have a high enough permission to handle the following roles. If you'd like my help with these, go into Roles in the Server Settings, and drag a role I have above the roles you want me to manage.\n<@&${cantRoles.join(">, <@&")}>`,allowedMentions:{parse:[]}});
+            }
+            else{
+                storage[cmd.guild.id].autoJoinRoles=goodRoles;
+                cmd.followUp({content:`Alright, I will add these roles to new members: <@&${goodRoles.join(">, <@&")}>`,allowedMentions:{parse:[]},ephemeral:true});
+                save();
+            }
+        break;
         case 'move-message':
             var msg=await cmd.channel.messages.fetch(cmd.message.content.split("`")[1]);
             var resp={};
@@ -1882,7 +1915,7 @@ client.on("messageDelete",async msg=>{
     }
 });
 client.on("messageUpdate",async (msgO,msg)=>{
-    if(!msg.guild?.id||client.user.id===msg.author.id) return;
+    if(!msg.guild?.id||client.user.id===msg.author?.id) return;
     if(storage[msg.guild.id]?.filter.active){
         var foundWords=[];
         storage[msg.guildId].filter.blacklist.forEach(blockedWord=>{
@@ -1987,14 +2020,28 @@ client.on("guildMemberAdd",async member=>{
             }
         }
     }
+    var addedStickyRoles=0;
     if(storage[member.guild.id].stickyRoles){
         storage[member.guild.id].users[member.id].roles.forEach(role=>{
             try{
                 var role=member.guild.roles.cache.find(r=>r.id===role);
-                if(role) member.roles.add(role);
+                if(role){
+                    member.roles.add(role);
+                    addedStickyRoles++;
+                }
             }
             catch(e){}
         });
+    }
+    if(addedStickyRoles===0&&storage[member.guild.id].autoJoinRoles){
+        if(storage[member.guild.id].autoJoinRoles.length>0){
+            storage[member.guild.id].autoJoinRoles.forEach(role=>{
+                var role=member.guild.roles.cache.find(r=>r.id===role);
+                if(role){
+                    member.roles.add(role);
+                }
+            });
+        }
     }
     if(storage[member.guild.id].logs.active&&storage[member.guild.id].logs.joining_and_leaving){
         client.channels.cache.get(storage[member.guild.id].logs.channel).send({content:`**<@${member.id}> has joined the server.**`,allowedMentions:{parse:[]}});
