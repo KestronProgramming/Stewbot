@@ -198,6 +198,11 @@ const commands = [
 	new SlashCommandBuilder().setName("sticky-roles").setDescription("Add roles back to a user who left and rejoined").addBooleanOption(option=>
 			option.setName("active").setDescription("Should I add roles back to users who left and rejoined?").setRequired(true)
 		).setDefaultMemberPermissions(PermissionFlagsBits.ManageRoles).setDMPermission(false),
+	new SlashCommandBuilder().setName("rng").setDescription("Generate a random number").addIntegerOption(option=>
+			option.setName("low").setDescription("Lower bound of the random number? (Default: 1)")
+		).addIntegerOption(option=>
+			option.setName("high").setDescription("Upper bound of the random number? (Default: 10)")
+		),
 
 	new ContextMenuCommandBuilder().setName("submit_meme").setType(ApplicationCommandType.Message),
 	new ContextMenuCommandBuilder().setName("delete_message").setType(ApplicationCommandType.Message).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),//Leaving this in DMs to delete undesirable bot DMs
