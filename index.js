@@ -953,7 +953,7 @@ client.on("messageCreate",async msg=>{
 client.on("interactionCreate",async cmd=>{
     let stop=false;
     try{
-	if(!cmd.isButton()&&!cmd.isModalSubmit()) await cmd.deferReply({ephemeral:["poll","auto_roles","report_problem","submit_meme","delete_message","move_message","auto-join-roles","join-roleOption"].includes(cmd.commandName)});
+	if(!cmd.isButton()&&!cmd.isModalSubmit()&&!cmd.isChannelSelectMenu()) await cmd.deferReply({ephemeral:["poll","auto_roles","report_problem","submit_meme","delete_message","move_message","auto-join-roles","join-roleOption"].includes(cmd.commandName)});
     }catch(e){}
     try{
         if(cmd.guild.id!==0){
@@ -1674,15 +1674,28 @@ client.on("interactionCreate",async cmd=>{
         break;
         case 'move-message':
             var msg=await cmd.channel.messages.fetch(cmd.message.content.split("`")[1]);
-            var resp={};
+            var resp={files:[]};
             resp.content=`\`\`\`\nThis message has been moved from ${cmd.channel.name} by Stewbot.\`\`\`${msg.content}`;
             resp.username=msg.author.nickname||msg.author.globalName||msg.author.username;
             resp.avatarURL=msg.author.displayAvatarURL();
+            var p=0;
+            for(a of msg.attachments){
+                var dots=a[1].proxyURL.split("?")[0].split(".");
+                dots=dots[dots.length-1];
+                await fetch(a[1].proxyURL.split("?")[0]).then(d=>d.arrayBuffer()).then(d=>{
+                    fs.writeFileSync(`./tempMove/${p}.${dots}`,Buffer.from(d));
+                });
+                p++;
+            }
+            resp.files=fs.readdirSync("tempMove").map(a=>`./tempMove/${a}`);
             var hook=await client.channels.cache.get(cmd.values[0]).fetchWebhooks();
             hook=hook.find(h=>h.token);
             if(hook){
                 hook.send(resp).then(()=>{
                     msg.delete();
+                    fs.readdirSync("./tempMove").forEach(file=>{
+                        fs.unlinkSync("./tempMove/"+file);
+                    });
                 });
             }
             else{
@@ -1692,6 +1705,9 @@ client.on("interactionCreate",async cmd=>{
                 }).then(d=>{
                     d.send(resp).then(()=>{
                         msg.delete();
+                        fs.readdirSync("./tempMove").forEach(file=>{
+                            fs.unlinkSync("./tempMove/"+file);
+                        });
                     });
                 });
             }
