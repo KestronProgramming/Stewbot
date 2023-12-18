@@ -308,7 +308,7 @@ function checkDirty(where,what){
     if(where===false||where===undefined) return false;
     var dirty=false;
     storage[where].filter.blacklist.forEach(blockedWord=>{
-        if(new RegExp(`([^\\D]|\\b)${blockedWord}(ing|s|ed|er|ism|ist|es|ual)?([^\\D]|\\b)`,"ig").test(what)){
+        if(new RegExp(`\\b${blockedWord}(ing|s|ed|er|ism|ist|es|ual)?\\b`,"ig").test(what)){
             dirty=true;
         }
     });
@@ -683,12 +683,12 @@ client.on("messageCreate",async msg=>{
     if(storage[msg.guildId]?.filter.active){
         var foundWords=[];
         storage[msg.guildId].filter.blacklist.forEach(blockedWord=>{
-            if(new RegExp(`([^\\D]|\\b)${blockedWord}(ing|s|ed|er|ism|ist|es|ual)?([^\\D]|\\b)`,"ig").test(msg.content)){
+            if(new RegExp(`\\b${blockedWord}(ing|s|ed|er|ism|ist|es|ual)?\\b`,"ig").test(msg.content)){
                 foundWords.push(blockedWord);
                 if(foundWords.length===1){
                     msg.ogContent=msg.content;
                 }
-                msg.content=msg.content.replace(new RegExp(`([^\\D]|\\b)${blockedWord}(ing|s|ed|er|ism|ist|es|ual)?([^\\D]|\\b)`,"ig"),"[\\_]");
+                msg.content=msg.content.replace(new RegExp(`\\b${blockedWord}(ing|s|ed|er|ism|ist|es|ual)?\\b`,"ig"),"[\\_]");
             }
         });
         if(foundWords.length>0){
@@ -1935,7 +1935,7 @@ client.on("messageUpdate",async (msgO,msg)=>{
     if(storage[msg.guild.id]?.filter.active){
         var foundWords=[];
         storage[msg.guildId].filter.blacklist.forEach(blockedWord=>{
-            if(new RegExp(`([^\\D]|\\b)${blockedWord}(ing|s|ed|er|ism|ist|es|ual)?([^\\D]|\\b)`,"ig").test(msg.content)){
+            if(new RegExp(`\\b${blockedWord}(ing|s|ed|er|ism|ist|es|ual)?\\b`,"ig").test(msg.content)){
                 foundWords.push(blockedWord);
             }
         });
