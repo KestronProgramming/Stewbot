@@ -4,6 +4,13 @@ const translate=require("@vitalets/google-translate-api").translate;
 const { createCanvas } = require('canvas');
 const { InworldClient, SessionToken, status } = require("@inworld/nodejs-sdk");
 const {Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType}=require("discord.js");
+const bible=require("./kjv.json");
+var Bible={};
+var properNames={};
+Object.keys(bible).forEach(book=>{
+    properNames[book.toLowerCase()]=book;
+    Bible[book.toLowerCase()]=bible[book];//Make everything lowercase for compatibility with sanitizing user input
+});
 const fs=require("fs");
 var storage=require("./storage.json");
 const cmds=require("./commands.json");
@@ -1370,6 +1377,34 @@ client.on("interactionCreate",async cmd=>{
             if(cmd.options.getBoolean("ai_pings")!==null) storage[cmd.guild.id].config.ai=cmd.options.getBoolean("ai_pings");
             if(cmd.options.getBoolean("embeds")!==null) storage[cmd.guild.id].config.embedPreviews=cmd.options.getBoolean("embeds");
             cmd.followUp("Configured your personal setup");
+        break;
+        case 'bible':
+            let book=cmd.options.getString("book").toLowerCase();
+            if(cmd.options.getString("verse").includes("-")&&+cmd.options.getString("verse").split("-")[1]>+cmd.options.getString("verse")[0]){
+                try{
+                    let verses=[];
+                    for(var v=+cmd.options.getString("verse").split("-")[0];v<+cmd.options.getString("verse").split("-")[0]+5&&v<+cmd.options.getString("verse").split("-")[1];v++){
+                        verses.push(Bible[book][cmd.options.getInteger("chapter")][v]);
+                    }
+                    if(verses.join(" ")===undefined){ 
+                        cmd.followUp(`I'm sorry, I don't think that passage exists - at least, I couldn't find it. Perhaps something is typoed?`);
+                    }
+                    else{
+                        cmd.followUp(`${properNames[book]} ${cmd.options.getInteger("chapter")}:${cmd.options.getString("verse")}\`\`\`\n${verses.join(" ")}\`\`\``);
+                    }
+                }
+                catch(e){
+                    cmd.followUp(`I'm sorry, I don't think that passage exists - at least, I couldn't find it. Perhaps something is typoed?`);
+                }
+            }
+            else{
+                try{
+                    cmd.followUp(`**${properNames[book]} ${cmd.options.getInteger("chapter")}:${cmd.options.getString("verse")}**\`\`\`\n${Bible[book][cmd.options.getInteger("chapter")][+cmd.options.getString("verse")]}\`\`\``);
+                }
+                catch(e){
+                    cmd.followUp(`I'm sorry, I couldn't find \`${properNames[book]} ${cmd.options.getInteger("chapter")}:${cmd.options.getString("verse")}\`. Are you sure it exists? Perhaps something is typoed.`);
+                }
+            }
         break;
 
         //Context Menu Commands
