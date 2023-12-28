@@ -204,6 +204,13 @@ const commands = [
 			option.setName("high").setDescription("Upper bound of the random number? (Default: 10)")
 		),
 	new SlashCommandBuilder().setName("auto-join-roles").setDescription("Automatically add roles to a user when they join the server").setDefaultMemberPermissions(PermissionFlagsBits.ManageRoles).setDMPermission(false),
+	new SlashCommandBuilder().setName("bible").setDescription("Look up a verse or verses in the King James version of the Bible").addStringOption(option=>
+			option.setName("book").setDescription("What book of the Bible do you wish to look up?").setRequired(true)
+		).addIntegerOption(option=>
+			option.setName("chapter").setDescription("Which chapter do you want to look up?").setRequired(true)
+		).addStringOption(option=>
+			option.setName("verse").setDescription("What verse or verses do you want to look up? (Proper format for multiple verses is '1-3')").setRequired(true)
+		),
 
 	new ContextMenuCommandBuilder().setName("submit_meme").setType(ApplicationCommandType.Message),
 	new ContextMenuCommandBuilder().setName("delete_message").setType(ApplicationCommandType.Message).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),//Leaving this in DMs to delete undesirable bot DMs
