@@ -586,6 +586,7 @@ const inps={
     "pollAdd":new ButtonBuilder().setCustomId("poll-addOption").setLabel("Add a poll option").setStyle(ButtonStyle.Primary),
     "pollDel":new ButtonBuilder().setCustomId("poll-delOption").setLabel("Remove a poll option").setStyle(ButtonStyle.Danger),
     "pollLaunch":new ButtonBuilder().setCustomId("poll-publish").setLabel("Publish the poll").setStyle(ButtonStyle.Success),
+    "pollVoters":new ButtonBuilder().setCustomId("poll-voters").setLabel("View voters").setStyle(ButtonStyle.Primary),
 
     "pollInp":new TextInputBuilder().setCustomId("poll-addedInp").setLabel("What should the option be?").setStyle(TextInputStyle.Short).setMinLength(1).setMaxLength(70).setRequired(true),
     "pollNum":new TextInputBuilder().setCustomId("poll-removedInp").setLabel("Which # option should I remove?").setStyle(TextInputStyle.Short).setMinLength(1).setMaxLength(2).setRequired(true),
@@ -1524,7 +1525,7 @@ client.on("interactionCreate",async cmd=>{
                 }
             }
             if(comp2.length>0) comp.push(new ActionRowBuilder().addComponents(...comp2));
-            cmd.channel.send({content:`<@${cmd.user.id}> asks: **${poll.title}**${poll.options.map((a,i)=>`\n${i}. ${a} **0**`).join("")}`,components:[...comp,new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId("poll-removeVote").setLabel("Remove vote").setStyle(ButtonStyle.Danger),new ButtonBuilder().setCustomId("poll-closeOption"+cmd.user.id).setLabel("Close poll").setStyle(ButtonStyle.Danger))],allowedMentions:{"users":[]}}).then(msg=>{
+                cmd.channel.send({content:`<@${cmd.user.id}> asks: **${poll.title}**${poll.options.map((a,i)=>`\n${i}. ${a} **0**`).join("")}`,components:[...comp,new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId("poll-removeVote").setLabel("Remove vote").setStyle(ButtonStyle.Danger),inps.pollVoters,new ButtonBuilder().setCustomId("poll-closeOption"+cmd.user.id).setLabel("Close poll").setStyle(ButtonStyle.Danger))],allowedMentions:{"users":[]}}).then(msg=>{
                 var t={};
                 poll.options.forEach(option=>{
                     t[option]=[];
@@ -1534,6 +1535,9 @@ client.on("interactionCreate",async cmd=>{
                 save();
             });
             cmd.update({"content":"\u200b",components:[]});
+        break;
+        case 'poll-voters':
+            cmd.reply({content:ll(`**Voters**\n${Object.keys(storage[cmd.guild.id].polls[cmd.message.id].options).map(opt=>`\n${opt}${storage[cmd.guild.id].polls[cmd.message.id].options[opt].map(a=>`\n- <@${a}>`).join("")}`).join("")}`),ephemeral:true,allowedMentions:{parse:[]}});
         break;
         case "racMove":
             let moveModal=new ModalBuilder().setCustomId("moveModal").setTitle("Rows & Columns Move");
@@ -1802,7 +1806,7 @@ client.on("interactionCreate",async cmd=>{
                 ctx.stroke();
             });
             fs.writeFileSync("./tempPoll.png",canvas.toBuffer("image/png"));
-            cmd.update({content:`**Poll Closed**\n<@${poll.starter}> asked: **${poll.title}**${poll.choices.map((a,i)=>`\n${i}. ${a} **${storage[cmd.guild.id].polls[cmd.message.id].options[a].length}** - ${pieCols[i][1]}`).join("")}`,components:[],allowedMentions:{"parse":[]},files:["./tempPoll.png"]});
+            cmd.update({content:ll(`**Poll Closed**\n<@${poll.starter}> asked: **${poll.title}**${poll.choices.map((a,i)=>`\n${i}. ${a} **${storage[cmd.guild.id].polls[cmd.message.id].options[a].length}** - ${pieCols[i][1]}`).join("")}\n\n**Voters**${Object.keys(storage[cmd.guild.id].polls[cmd.message.id].options).map(opt=>`\n${opt}${storage[cmd.guild.id].polls[cmd.message.id].options[opt].map(a=>`\n- <@${a}>`).join("")}`).join("")}`),components:[],allowedMentions:{"parse":[]},files:["./tempPoll.png"]});
             delete storage[cmd.guild.id].polls[cmd.message.id];
             save();
         }
