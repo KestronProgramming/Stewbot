@@ -283,6 +283,10 @@ var helpPages=[
             {
                 name:cmds.next_counting_number,
                 desc:"If counting is active, the next number to post to keep it going"
+            },
+            {
+                name:cmds.bible,
+                desc:"Look up one or more verses in the King James Bible "
             }
         ]
     }
@@ -960,7 +964,7 @@ client.on("messageCreate",async msg=>{
 client.on("interactionCreate",async cmd=>{
     let stop=false;
     try{
-	if(!cmd.isButton()&&!cmd.isModalSubmit()&&!cmd.isChannelSelectMenu()) await cmd.deferReply({ephemeral:["poll","auto_roles","report_problem","submit_meme","delete_message","move_message","auto-join-roles","join-roleOption"].includes(cmd.commandName)});
+	if(!cmd.isButton()&&!cmd.isModalSubmit()&&!cmd.isChannelSelectMenu()&&!cmd.isRoleSelectMenu()) await cmd.deferReply({ephemeral:["poll","auto_roles","report_problem","submit_meme","delete_message","move_message","auto-join-roles","join-roleOption"].includes(cmd.commandName)});
     }catch(e){}
     try{
         if(cmd.guild.id!==0){
@@ -1390,7 +1394,15 @@ client.on("interactionCreate",async cmd=>{
                         cmd.followUp(`I'm sorry, I don't think that passage exists - at least, I couldn't find it. Perhaps something is typoed?`);
                     }
                     else{
-                        cmd.followUp(`${properNames[book]} ${cmd.options.getInteger("chapter")}:${cmd.options.getString("verse")}\`\`\`\n${verses.join(" ")}\`\`\``);
+                        cmd.followUp({content:`${properNames[book]} ${cmd.options.getInteger("chapter")}:${cmd.options.getString("verse")}`,embeds:[{
+                            "type": "rich",
+                            "title": `${properNames[book]} ${cmd.options.getInteger("chapter")}:${cmd.options.getString("verse")}`,
+                            "description": verses.join(" "),
+                            "color": 0x773e09,
+                            "footer": {
+                                "text": `King James Version`
+                            }
+                        }]});
                     }
                 }
                 catch(e){
@@ -1399,7 +1411,20 @@ client.on("interactionCreate",async cmd=>{
             }
             else{
                 try{
-                    cmd.followUp(`**${properNames[book]} ${cmd.options.getInteger("chapter")}:${cmd.options.getString("verse")}**\`\`\`\n${Bible[book][cmd.options.getInteger("chapter")][+cmd.options.getString("verse")]}\`\`\``);
+                    if(Bible[book][cmd.options.getInteger("chapter")][+cmd.options.getString("verse")]!==undefined){
+                        cmd.followUp({content:`${properNames[book]} ${cmd.options.getInteger("chapter")}:${cmd.options.getString("verse")}`,embeds:[{
+                            "type": "rich",
+                            "title": `${properNames[book]} ${cmd.options.getInteger("chapter")}:${cmd.options.getString("verse")}`,
+                            "description": Bible[book][cmd.options.getInteger("chapter")][+cmd.options.getString("verse")],
+                            "color": 0x773e09,
+                            "footer": {
+                                "text": `King James Version`
+                            }
+                        }]});
+                    }
+                    else{
+                        cmd.followUp(`I'm sorry, I couldn't find \`${properNames[book]} ${cmd.options.getInteger("chapter")}:${cmd.options.getString("verse")}\`. Are you sure it exists? Perhaps something is typoed.`);
+                    }
                 }
                 catch(e){
                     cmd.followUp(`I'm sorry, I couldn't find \`${properNames[book]} ${cmd.options.getInteger("chapter")}:${cmd.options.getString("verse")}\`. Are you sure it exists? Perhaps something is typoed.`);
