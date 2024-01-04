@@ -1544,7 +1544,7 @@ client.on("interactionCreate",async cmd=>{
             if(cmd.guild?.id){
                 cmd.targetMessage.delete();
                 if(storage[cmd.guild.id].filter.log&&storage[cmd.guild.id].filter.channel){
-                    client.channels.cache.get(storage[cmd.guild.id]).send(`Message from **${cmd.targetMessage.author.id}** deleted by **${cmd.user.username}**.\n\n${cmd.targetMessage.content}`);
+                    client.channels.cache.get(storage[cmd.guild.id].filter.channel).send({content:`Message from <@${cmd.targetMessage.author.id}> deleted by **${cmd.user.username}**.\n\n${cmd.targetMessage.content}`,allowedMentions:{parse:[]}});
                 }
                 cmd.followUp({"content":"Success","ephemeral":true});
             }
