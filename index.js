@@ -225,10 +225,6 @@ function checkHoliday(){
         {
             "pfp":"manger.png",
             "days":["12/25"]
-        },
-        {
-            "pfp":"turkey.jpg",
-            "days":["11/26"]
         }
     ];
     setDates.forEach(holiday=>{
