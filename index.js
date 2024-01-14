@@ -120,6 +120,7 @@ function getClosest(input) {
 const fs=require("fs");
 var storage=require("./storage.json");
 const cmds=require("./commands.json");
+const m8ballResponses=["So it would seem","Yes","No","Perhaps","Absolutely","Positively","Unfortunately","I am unsure","I do not know","Absolutely not","Possibly","More likely than not","Unlikely","Probably not","Probably","Maybe","Random answers is not the answer"];
 var needToSave=false;
 function save(){
     needToSave=true;
@@ -133,7 +134,7 @@ function parsePoll(c,published){
     try{
         var ret={};
         ret.title=c.split("**")[1];
-        ret.options=c.match(/(?:^\d\d?\.\s).+(?:$)/gm)?.map(a=>a.slice(2).trim())||[];
+        ret.options=c.match(/(?<=^\d\.\s|\d\d\.\s).+(?:$)/gm)||[];
         if(published){
             var temp={};
             ret.choices=[];
@@ -225,6 +226,10 @@ function checkHoliday(){
         {
             "pfp":"manger.png",
             "days":["12/25"]
+        },
+        {
+            "pfp":"turkey.jpg",
+            "days":["11/26"]
         }
     ];
     setDates.forEach(holiday=>{
@@ -364,6 +369,14 @@ var helpPages=[
             {
                 name:cmds.rng,
                 desc:"Generate a random number"
+            },
+            {
+                name:cmds["coin-flip"],
+                desc:"Flip a number of coins"
+            },
+            {
+                name:cmds["8-ball"],
+                desc:"Receive a random answer to a question"
             }
         ]
     },
@@ -872,7 +885,7 @@ client.on("messageCreate",async msg=>{
     }
 
     var links=msg.content.match(discordMessageRegex)||[];
-    var progs=msg.content.match(kaProgramRegex)||[];
+    var progs=[];//msg.content.match(kaProgramRegex)||[];
     if(!storage[msg.author.id].config.embedPreviews||!storage[msg.guildId]?.config.embedPreviews){
         links=[];
         progs=[];
@@ -1534,6 +1547,17 @@ client.on("interactionCreate",async cmd=>{
                 }
             }
         break;
+        case 'coin-flip':
+            let coinsToFlip=cmd.options.getInteger("number")||1;
+            let coins=[];
+            for(var coinOn=0;coinOn<coinsToFlip;coinOn++){
+                coins.push(Math.floor(Math.random()*2));
+            }
+            cmd.followUp(`I have flipped the coin${coinsToFlip>1?"s":""}.\n${coins.map(a=>`\n- **${a===0?"Heads":"Tails"}**`).join("")}`);
+        break;
+        case '8-ball':
+            cmd.followUp(`I have generated a random response to the question "**${cmd.options.getString("question")}**".\nThe answer is **${m8ballResponses[Math.floor(Math.random()*m8ballResponses.length)]}**.`);
+        break;
 
         //Context Menu Commands
         case 'delete_message':
@@ -2078,7 +2102,7 @@ client.on("messageReactionAdd",async (react,user)=>{
                     storage[react.message.guild.id].starboard.posted[react.message.id]=d.id;
                 });
             }
-            storage[react.message.guild.id].users[react.message.author.id].stars++;
+            try{storage[react.message.guild.id].users[react.message.author.id].stars++;}catch(e){}
             save();
         }
     }
