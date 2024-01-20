@@ -609,7 +609,7 @@ async function sendMessage(msg, dm) {
         conns[msg.author.id] = createInWorldClient({ dm: dm, msg: msg });
         lastChannels[msg.author.id]=msg.channel.id;
     }
-    conns[msg.author.id].sendText(`Message from ${msg.author.globalName||msg.author.username}: ${msg.content.replaceAll("<@" + client.user.id + ">", "")}`);
+    conns[msg.author.id].sendText(`Message from ${msg.author.globalName||msg.author.username}: ${msg.content.replaceAll(`<@${client.user.id}>`, "Stewbot")}`);
     msgs[msg.author.id]=msg;
 }
 const handleError = (msg, dm) => {
