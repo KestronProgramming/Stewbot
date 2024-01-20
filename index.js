@@ -152,7 +152,7 @@ function parsePoll(c,published){
     catch(e){}
 }
 var pieCols=[
-    ["00ff00","Green"],
+    ["006400","Green"],
     ["00d7ff","Cyan"],
     ["ff0000","Red"],
     ["964b00","Brown"],
@@ -1066,6 +1066,7 @@ client.on("messageCreate",async msg=>{
     }
 
     if(msg.channel instanceof DMChannel&&!msg.author.bot&&storage[msg.author.id].config.aiPings) {
+        msg.channel.sendTyping();
         sendMessage(msg, true);
     }
     else if(msg.mentions.users.has(client.user.id)&&!msg.author.bot&&storage[msg.author.id].config.aiPings) {
@@ -1073,6 +1074,7 @@ client.on("messageCreate",async msg=>{
             msg.content = "*User says nothing*";
         }
         if(storage[msg.guild?.id]?.config.ai){
+            msg.channel.sendTyping();
             sendMessage(msg);
         }
     }
@@ -1144,8 +1146,8 @@ client.on("interactionCreate",async cmd=>{
                             type: "rich",
                             title: "Definition of "+d.word,
                             description: d.origin,
-                            color: 0x00ff00,
-                            fields: defs,
+                            color: 0x773e09,
+                            fields: defs.slice(0,25),
                             footer: {
                                 text: d.phonetic,
                             }
