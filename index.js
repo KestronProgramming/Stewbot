@@ -885,7 +885,7 @@ client.on("messageCreate",async msg=>{
     }
 
     var links=msg.content.match(discordMessageRegex)||[];
-    var progs=[];//msg.content.match(kaProgramRegex)||[];
+    var progs=msg.content.match(kaProgramRegex)||[];
     if(!storage[msg.author.id].config.embedPreviews||!storage[msg.guildId]?.config.embedPreviews){
         links=[];
         progs=[];
@@ -895,7 +895,8 @@ client.on("messageCreate",async msg=>{
     for(var i=0;i<links.length;i++){
         let slashes=links[i].split("channels/")[1].split("/");
         try{
-            var mes=await client.channels.cache.get(slashes[slashes.length-2]).messages.fetch(slashes[slashes.length-1]);
+            var channelLinked=await client.channels.cache.get(slashes[slashes.length-2]);
+            var mes=await channelLinked.messages.fetch(slashes[slashes.length-1]);
             if(checkDirty(msg.guild?.id,mes.content)||checkDirty(msg.guild?.id,mes.author.nickname||mes.author.globalName||mes.author.username)||checkDirty(msg.guild?.id,mes.guild.name)||checkDirty(msg.guild?.id,mes.channel.name)){
                 embs.push(
                     new EmbedBuilder()
@@ -934,14 +935,16 @@ client.on("messageCreate",async msg=>{
                     attachedImg=true;
                 }
             });
-            embs.push(messEmbed);
+            if(channelLinked.permissionsFor(msg.author.id).has(PermissionFlagsBits.ViewChannel)){
+                embs.push(messEmbed);
+            }
         }
         catch(e){}
     }
     if(embs.length>0) msg.reply({content:`Embedded linked message${embs.length>1?"s":""}. You can prevent this behavior by surrounding message links in \`<\` and \`>\`.`,embeds:embs,files:fils,allowedMentions:{parse:[]}});
     for(var i=0;i<progs.length;i++){
         let prog=progs[i];
-        var embds=[];
+        var embds=[];/*
         await fetch(`https://kap-archive.shipment22.repl.co/s/${prog.split("/")[prog.split("/").length-1].split("?")[0]}`).then(d=>d.json()).then(d=>{
             embds.push({
                 type: "rich",
@@ -995,11 +998,11 @@ client.on("messageCreate",async msg=>{
                 },
                 url: `https://www.khanacademy.org/cs/i/${d.id}`
             });
-        });
+        });*/
     }
     if(embds?.length>0){
         msg.suppressEmbeds(true);
-        msg.reply({content:`Backed program${embds.length>1?"s":""} up to the KAP Archive, which you can visit [here](https://kap-archive.shipment22.repl.co/).`,embeds:embds,allowedMentions:{parse:[]}});
+        //msg.reply({content:`Backed program${embds.length>1?"s":""} up to the KAP Archive, which you can visit [here](https://kap-archive.shipment22.repl.co/).`,embeds:embds,allowedMentions:{parse:[]}});
     }
 
     if(msg.channel.name?.startsWith("Ticket with ")&&!msg.author.bot){
@@ -1067,14 +1070,14 @@ client.on("messageCreate",async msg=>{
 
     if(msg.channel instanceof DMChannel&&!msg.author.bot&&storage[msg.author.id].config.aiPings) {
         msg.channel.sendTyping();
-        sendMessage(msg, true);
+	sendMessage(msg, true);
     }
     else if(msg.mentions.users.has(client.user.id)&&!msg.author.bot&&storage[msg.author.id].config.aiPings) {
         if (/^<[@|#|@&].*?>$/g.test(msg.content.replace(/\s+/g, ''))) {
             msg.content = "*User says nothing*";
         }
         if(storage[msg.guild?.id]?.config.ai){
-            msg.channel.sendTyping();
+	    msg.channel.sendTyping();
             sendMessage(msg);
         }
     }
@@ -2160,7 +2163,7 @@ client.on("messageUpdate",async (msgO,msg)=>{
             .setTitle("(Jump to message)")
             .setURL(`https://www.discord.com/channels/${msg.guild.id}/${msg.channel.id}/${msg.id}`)
             .setAuthor({
-                name: msg.author.globalName||msg.author.username,
+                name: msg.author?.globalName||msg.author?.username,
                 iconURL:msg.author.displayAvatarURL(),
                 url:`https://discord.com/users/${msg.author.id}`
             })
