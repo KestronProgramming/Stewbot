@@ -440,6 +440,14 @@ function checkDirty(where,what){
     });
     return dirty;
 }
+function getLvl(lvl){
+    var total=0;
+    while(lvl>-1){
+        total+=5*(lvl*lvl)+(50*lvl)+100;
+        lvl--;
+    }
+    return total;
+}
 
 let rac = {
     board: [],
@@ -630,6 +638,12 @@ const handleError = (msg, dm) => {
 
 const defaultGuild={
     "stickyRoles":false,
+    "levels":{
+        "active":false,
+        "channel":"",
+        "msg":"Congratulations ${USERNAME}, you have leveled up to level ${LVL}!",
+        "channelOrDM":"DM"
+    },
     "filter":{
         "blacklist":[],
         "active":false,
@@ -686,7 +700,10 @@ const defaultGuildUser={
     "stars":0,
     "roles":[],
     "inServer":true,
-    "countTurns":0
+    "countTurns":0,
+    "exp":0,
+    "expTimeout":0,
+    "lvl":0
 };
 const defaultUser={
     "offenses":0,
@@ -694,7 +711,8 @@ const defaultUser={
         "dmOffenses":true,
         "returnFiltered":true,
         "embedPreviews":true,
-        "aiPings":true
+        "aiPings":true,
+        "levelUpMsgs":true
     }
 };
 const inps={
@@ -757,7 +775,7 @@ function notify(urgencyLevel,what){
     }
 }
 var uptime=0;
-client.once("ready",()=>{
+client.once("ready",async ()=>{
     uptime=Math.round(Date.now()/1000);
     notify(1,`Started <t:${uptime}:R>`);
     console.log(`Logged Stewbot handles into ${client.user.tag}`);
@@ -838,7 +856,52 @@ client.on("messageCreate",async msg=>{
             return;
         }
     }
-
+    if(storage[msg.guildId]?.levels.active&&storage[msg.guildId]?.users[msg.author.id].expTimeout<Date.now()&&!msg.author.bot){
+        storage[msg.guildId].users[msg.author.id].expTimeout=Date.now()+60000;
+        storage[msg.guildId].users[msg.author.id].exp+=Math.floor(Math.random()*11)+15;//Between 15 and 25
+        if(storage[msg.guild.id].users[msg.author.id].exp>getLvl(storage[msg.guild.id].users[msg.author.id].lvl)){
+            storage[msg.guild.id].users[msg.author.id].lvl++;
+            if(storage[msg.author.id].config.levelUpMsgs){
+                if(storage[msg.guild.id].levels.channelOrDM==="DM"){
+                    msg.author.send({embeds:[{
+                        "type": "rich",
+                        "title": `Level Up`,
+                        "description": storage[msg.guild.id].levels.msg.replaceAll("${USERNAME}",`**${msg.author.username}**`).replaceAll("${USER}",`<@${msg.author.id}>`).replaceAll("${LVL}",storage[msg.guild.id].users[msg.author.id].lvl),
+                        "color": 0x006400,
+                        "thumbnail": {
+                            "url": msg.guild.iconURL(),
+                            "height": 0,
+                            "width": 0
+                        },
+                        "footer": {
+                            "text": `Sent from ${msg.guild.name}. To disable these messages, use /personal_config.`
+                        }
+                    }]});
+                }
+                else{
+                    var resp={
+                        "content":storage[msg.guildId].levels.msg.replaceAll("${USERNAME}",`**${msg.author.username}**`).replaceAll("${USER}",`<@${msg.author.id}>`).replaceAll("${LVL}",storage[msg.guild.id].users[msg.author.id].lvl),
+                        "avatarURL":msg.guild.iconURL(),
+                        "username":msg.guild.name
+                    };
+                    var hook=await client.channels.cache.get(storage[msg.guild.id].levels.channel).fetchWebhooks();
+                    hook=hook.find(h=>h.token);
+                    if(hook){
+                        hook.send(resp);
+                    }
+                    else{
+                        client.channels.cache.get(storage[msg.guild.id].levels.channel).createWebhook({
+                            name:"Stewbot",
+                            avatar: "https://cdn.discordapp.com/attachments/1145432570104926234/1170273261704196127/kt.jpg",
+                        }).then(d=>{
+                            d.send(resp);
+                        });
+                    }
+                }
+            }
+        }
+        save();
+    }
     if(storage[msg.guildId]?.counting.active&&msg.channel.id===storage[msg.guildId]?.counting.channel&&!msg.author.bot){
         var num=msg.content.match(/^(\d|,)+(?:\b)/i);
         if(num!==null){
@@ -1225,6 +1288,15 @@ client.on("interactionCreate",async cmd=>{
             cmd.followUp(`Starboard configured.${cmd.options.getBoolean("active")&&!storage[cmd.guild.id].starboard.active?`\n\nNo channel has been set for this server, so starboard is inactive. To enable starboard, run ${cmds.starboard_config} again setting \`active\` to true and specify a \`channel\`.`:""}`);
             save();
         break;
+        case 'levels_config':
+            storage[cmd.guild.id].levels.active=cmd.options.getBoolean("active");
+            if(cmd.options.getChannel("channel")!==null) storage[cmd.guild.id].levels.channel=cmd.options.getChannel("channel").id;
+            if(cmd.options.getString("channel_or_dm")!==null) storage[cmd.guild.id].levels.channelOrDM=cmd.options.getString("channel_or_dm");
+            if(cmd.options.getString("message")!==null) storage[cmd.guild.id].levels.msg=cmd.options.getString("message");
+            if(storage[cmd.guild.id].levels.channel===""&&storage[cmd.guild.id].levels.channelOrDM!=="DM") storage[cmd.guild.id].levels.active=false;
+            cmd.followUp(`Level ups configured.${cmd.options.getBoolean("active")&&!storage[cmd.guild.id].levels.active?`\n\nNo channel has been set for this server, so level ups is now inactive. To enable level ups, run ${cmds.levels_config} again setting \`active\` to true and specify a \`channel\`.`:""}`);
+            save();
+        break;
         case 'counting':
             switch(cmd.options.getSubcommand()){
                 case "config":
@@ -1496,6 +1568,7 @@ client.on("interactionCreate",async cmd=>{
             if(cmd.options.getBoolean("dm_infractions")!==null) storage[cmd.user.id].config.dmOffenses=cmd.options.getBoolean("dm_infractions");
             if(cmd.options.getBoolean("dm_infraction_content")!==null) storage[cmd.user.id].config.returnFiltered=cmd.options.getBoolean("dm_infraction_content");
             if(cmd.options.getBoolean("embeds")!==null) storage[cmd.user.id].config.embedPreviews=cmd.options.getBoolean("embeds");
+            if(cmd.options.getBoolean("level_up_messages"!==null)) storage[cmd.user.id].config.levelUpMsgs=cmd.options.getBoolean("level_up_messages");
             cmd.followUp("Configured your personal setup");
         break;
         case 'general_config':
@@ -1562,6 +1635,73 @@ client.on("interactionCreate",async cmd=>{
         break;
         case '8-ball':
             cmd.followUp(`I have generated a random response to the question "**${cmd.options.getString("question")}**".\nThe answer is **${m8ballResponses[Math.floor(Math.random()*m8ballResponses.length)]}**.`);
+        break;
+        case 'rank':
+            if(!storage[cmd.guild.id].levels.active){
+                cmd.followUp(`This server doesn't use level ups at the moment. It can be configured using ${cmds.levels_config}.`);
+                return;
+            }
+            var usr=cmd.options.getUser("target")?.id||cmd.user.id;
+            if(!storage[cmd.guild.id].users.hasOwnProperty(usr)){
+                cmd.followUp(`I am unaware of this user presently`);
+                return;
+            }
+            cmd.followUp({content:`Server rank card for <@${usr}>`,embeds:[{
+                "type": "rich",
+                "title": `Rank for ${cmd.guild.name}`,
+                "description": "",
+                "color": 0x006400,
+                "fields": [
+                    {
+                        "name": `Level`,
+                        "value": storage[cmd.guild.id].users[usr].lvl+"",
+                        "inline": true
+                    },
+                    {
+                        "name": `EXP`,
+                        "value": `${storage[cmd.guild.id].users[usr].exp}`.replace(/\B(?=(\d{3})+(?!\d))/g, ","),
+                        "inline": true
+                    },
+                    {
+                        "name": `Server Rank`,
+                        "value": `#${Object.keys(storage[cmd.guild.id].users).map(a=>Object.assign(storage[cmd.guild.id].users[a],{"id":a})).sort((a,b)=>b.exp-a.exp).map(a=>a.id).indexOf(usr)+1}`,
+                        "inline": true
+                    }
+                ],
+                "thumbnail": {
+                    "url": cmd.guild.iconURL(),
+                    "height": 0,
+                    "width": 0
+                },
+                "author": {
+                    "name": client.users.cache.get(usr)?client.users.cache.get(usr).username:"Unknown",
+                    "icon_url": client.users.cache.get(usr)?.displayAvatarURL()
+                },
+                "footer": {
+                    "text": `Next rank up at ${(getLvl(storage[cmd.guild.id].users[usr].lvl)+"").replace(/\B(?=(\d{3})+(?!\d))/g, ",")}`
+                }
+            }],allowedMentions:{parse:[]}});
+        break;
+        case 'levels-leaderboard':
+            if(!storage[cmd.guild.id].levels.active){
+                cmd.followUp(`This server doesn't use level ups at the moment. It can be configured using ${cmds.levels_config}.`);
+                return;
+            }
+            cmd.followUp({content:`**Leaderboard**`,embeds:[{
+                "type": "rich",
+                "title": `${cmd.guild.name} Leaderboard`,
+                "description": Object.keys(storage[cmd.guild.id].users).map(a=>Object.assign(storage[cmd.guild.id].users[a],{"id":a})).sort((a,b)=>b.exp-a.exp).slice(0,10).map((a,i)=>`\n${["🥇","🥈","🥉","4️⃣","5️⃣","6️⃣","7️⃣","8️⃣","9️⃣","🔟"][i]}. <@${a.id}>, level ${a.lvl}`).join(""),
+                "color": 0x006400,
+                "thumbnail": {
+                  "url": cmd.guild.iconURL(),
+                  "height": 0,
+                  "width": 0
+                },
+                "footer": {
+                  "text": `${cmd.guild.name} Leaderboard`
+                }
+              }]});
+            //cmd.followUp({content:`**Level-Up Leaderboard for ${cmd.guild.name}**${Object.keys(storage[cmd.guild.id].users).map(a=>Object.assign(storage[cmd.guild.id].users[a],{"id":a})).sort((a,b)=>b.exp-a.exp).slice(0,10).map((a,i)=>`\n${i}. <@${a.id}> at level ${a.lvl} with ${a.exp}.`).join("")}`,allowedMentions:{parse:[]}});
         break;
 
         //Context Menu Commands
@@ -2475,10 +2615,10 @@ client.on("guildCreate",async guild=>{
         storage[guild.id]=structuredClone(defaultGuild);
         save();
     }
-    notify(1,`Added to **${guild.name}**!`);
+    notify(1,`Added to **a new server**!`);
 });
 client.on("guildDelete",async guild=>{
-    notify(1,`Removed from **${guild.name}**.`);
+    notify(1,`Removed from **a server**.`);
 });
 
 function handleException(e) {
