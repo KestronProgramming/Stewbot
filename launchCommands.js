@@ -139,6 +139,8 @@ const commands = [
 			option.setName("dm_infraction_content").setDescription("If dm_infractions is true, should I include the content of the filtered message?")
 		).addBooleanOption(option=>
 			option.setName("embeds").setDescription("If you link a Discord message, should I embed a preview for you?")
+		).addBooleanOption(option=>
+			option.setName("level_up_messages").setDescription("Do you want to receive a message letting you know you leveled up?")
 		),
 	new SlashCommandBuilder().setName("poll").setDescription("Make a poll with automatically tracked options").addStringOption(option=>
 			option.setName("prompt").setDescription("The prompt (We'll set options in a minute)").setRequired(true)
@@ -211,6 +213,28 @@ const commands = [
 		).addStringOption(option=>
 			option.setName("verse").setDescription("What verse or verses do you want to look up? (Proper format for multiple verses is '1-3')").setRequired(true)
 		),
+	new SlashCommandBuilder().setName("coin-flip").setDescription("Flip a number of coins").addIntegerOption(option=>
+			option.setName("number").setDescription("How many coins should I flip?").setMinValue(1).setMaxValue(10)
+		),
+	new SlashCommandBuilder().setName("8-ball").setDescription("Ask a question and receive an entirely random response").addStringOption(option=>
+			option.setName("question").setDescription("What question are you asking?").setRequired(true)
+		),
+	new SlashCommandBuilder().setName("levels_config").setDescription("Configure level ups").addBooleanOption(option=>
+			option.setName("active").setDescription("Should level ups be active?").setRequired(true)
+		).addChannelOption(option=>
+			option.setName("channel").setDescription("Which channel should level ups go to, if set to channel?")
+		).addStringOption(option=>
+			option.setName("message").setDescription("What gets sent at a new level. Use ${USER} for ping, ${USERNAME} for username, ${LVL} for level.").setMinLength(1)
+		).addStringOption(option=>
+			option.addChoices(
+				{"name":"Channel",value:"channel"},
+				{"name":"DM",value:"DM"}
+			).setName("channel_or_dm").setDescription("Where should level up messages be sent?")
+		).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages).setDMPermission(false),
+	new SlashCommandBuilder().setName("levels-leaderboard").setDescription("View leaderboard").setDMPermission(false),
+	new SlashCommandBuilder().setName("rank").setDescription("Your rank for this server's level ups").addUserOption(option=>
+			option.setName("target").setDescription("Who's rank are you trying to view?")
+		).setDMPermission(false),
 
 	new ContextMenuCommandBuilder().setName("submit_meme").setType(ApplicationCommandType.Message),
 	new ContextMenuCommandBuilder().setName("delete_message").setType(ApplicationCommandType.Message).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),//Leaving this in DMs to delete undesirable bot DMs
