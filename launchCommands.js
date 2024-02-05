@@ -192,10 +192,10 @@ const commands = [
 		).addBooleanOption(option=>
 			option.setName("role_events").setDescription("Log role events?")
 		).setDefaultMemberPermissions(PermissionFlagsBits.ViewAuditLog).setDMPermission(false),
-	new SlashCommandBuilder().setName("admin_message").setDescription("Anonymously message a user in the server's name").addUserOption(option=>
-			option.setName("target").setDescription("The user to message").setRequired(true)
-		).addStringOption(option=>
+	new SlashCommandBuilder().setName("admin_message").setDescription("Anonymously make a post in the server's name").addStringOption(option=>
 			option.setName("what").setDescription("What to say").setRequired(true)
+		).addUserOption(option=>
+			option.setName("target").setDescription("The user to message")
 		).setDefaultMemberPermissions(PermissionFlagsBits.KickMembers).setDMPermission(false),
 	new SlashCommandBuilder().setName("sticky-roles").setDescription("Add roles back to a user who left and rejoined").addBooleanOption(option=>
 			option.setName("active").setDescription("Should I add roles back to users who left and rejoined?").setRequired(true)
