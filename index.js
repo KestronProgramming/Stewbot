@@ -435,7 +435,7 @@ function checkDirty(where,what){
     var dirty=false;
     storage[where].filter.blacklist.forEach(blockedWord=>{
         if(new RegExp(`\\b${blockedWord}(ing|s|ed|er|ism|ist|es|ual)?\\b`,"ig").test(what)){
-            dirty=true;
+            dirty=dirty?dirty.replace(new RegExp(`\\b${blockedWord}(ing|s|ed|er|ism|ist|es|ual)?\\b`,"ig"),"[\\_]"):what.replace(new RegExp(`\\b${blockedWord}(ing|s|ed|er|ism|ist|es|ual)?\\b`,"ig"),"[\\_]");
         }
     });
     return dirty;
@@ -598,7 +598,7 @@ function createInWorldClient(args) {
             if(packet.control){
                 if(packet.control.type==="INTERACTION_END"){
                     if(curText[args.msg.author.username].length>0){
-                        msgs[args.msg.author.id].reply(curText[args.msg.author.username].join("\n").replaceAll("@","\\@"));
+                        msgs[args.msg.author.id].reply(checkDirty(args.msg.guild.id,curText[args.msg.author.username].join("\n"))?checkDirty(args.msg.guild.id,curText[args.msg.author.username].join("\n").replaceAll("@","\\@")):curText[args.msg.author.username].join("\n").replaceAll("@","\\@"));
                     }
                     else{
                         msgs[args.msg.author.id].reply("No comment");
@@ -828,26 +828,31 @@ client.on("messageCreate",async msg=>{
     if(storage[msg.guildId]?.filter.active){
         var foundWords=[];
         storage[msg.guildId].filter.blacklist.forEach(blockedWord=>{
-            if(new RegExp(`\\b${blockedWord}(ing|s|ed|er|ism|ist|es|ual)?\\b`,"ig").test(msg.content)){
+            if(new RegExp(`\\b${blockedWord}(ing|s|ed|er|ism|ist|es|ual|y)?\\b`,"ig").test(msg.content)){
                 foundWords.push(blockedWord);
                 if(foundWords.length===1){
                     msg.ogContent=msg.content;
                 }
-                msg.content=msg.content.replace(new RegExp(`\\b${blockedWord}(ing|s|ed|er|ism|ist|es|ual)?\\b`,"ig"),"[\\_]");
+                msg.content=msg.content.replace(new RegExp(`\\b${blockedWord}(ing|s|ed|er|ism|ist|es|ual|y)?\\b`,"ig"),"[\\_]");
             }
         });
-        if(foundWords.length>0){
+        if(foundWords.length>0&&msg.webhookId===null){
             storage[msg.guildId].users[msg.author.id].infractions++;
             msg.delete();
             if(storage[msg.guildId].filter.censor){
+                var replyBlip="";
+                if(msg.type===19){
+                    var rMsg=await msg.fetchReference();
+                    replyBlip=`_[Reply to **${rMsg.author.username}**: ${rMsg.content.slice(0,22).replaceAll("https://","")}${rMsg.content.length>22?"...":""}](<https://discord.com/channels/${rMsg.guild.id}/${rMsg.channel.id}/${rMsg.id}>)_\n`;
+                }
                 sendHook({
-                    username:msg.member.nickname||msg.author.globalName||msg.author.username,
-                    avatarURL:msg.member.displayAvatarURL(),
-                    content:ll(`\`\`\`\nThe following message from ${msg.author.username} has been censored by Stewbot.\`\`\`${msg.content}`)
+                    username:msg.member?.nickname||msg.author.globalName||msg.author.username,
+                    avatarURL:msg.member?.displayAvatarURL(),
+                    content:ll(`\`\`\`\nThe following message from ${msg.author.username} has been censored by Stewbot.\`\`\`${replyBlip}${msg.content}`)
                 });
             }
-            if(storage[msg.author.id].config.dmOffenses){
-                msg.author.send(ll(`Your message in **${msg.guild.name}** was ${storage[msg.guildId].filter.censor?"censored":"deleted"} due to the following word${foundWords.length>1?"s":""} being in the filter: ||${foundWords.join("||, ||")}||${storage[msg.author.id].config.returnFiltered?"```\n"+msg.ogContent.replaceAll("`","\\`")+"```":""}`));
+            if(storage[msg.author.id].config.dmOffenses&&msg.webhookId===null){
+                try{msg.author.send(ll(`Your message in **${msg.guild.name}** was ${storage[msg.guildId].filter.censor?"censored":"deleted"} due to the following word${foundWords.length>1?"s":""} being in the filter: ||${foundWords.join("||, ||")}||${storage[msg.author.id].config.returnFiltered?"```\n"+msg.ogContent.replaceAll("`","\\`")+"```":""}`));}catch(e){}
             }
             if(storage[msg.guildId].filter.log&&storage[msg.guildId].filter.channel){
                 client.channels.cache.get(storage[msg.guildId].filter.channel).send(ll(`I have ${storage[msg.guildId].filter.censor?"censored":"deleted"} a message from **${msg.author.username}** in <#${msg.channel.id}> for the following blocked word${foundWords.length>1?"s":""}: ||${foundWords.join("||, ||")}||\`\`\`\n${msg.ogContent.replaceAll("`","\\`")}\`\`\``));
@@ -1148,7 +1153,7 @@ client.on("messageCreate",async msg=>{
 client.on("interactionCreate",async cmd=>{
     let stop=false;
     try{
-	if(!cmd.isButton()&&!cmd.isModalSubmit()&&!cmd.isChannelSelectMenu()&&!cmd.isRoleSelectMenu()) await cmd.deferReply({ephemeral:["poll","auto_roles","report_problem","submit_meme","delete_message","move_message","auto-join-roles","join-roleOption"].includes(cmd.commandName)});
+	if(!cmd.isButton()&&!cmd.isModalSubmit()&&!cmd.isChannelSelectMenu()&&!cmd.isRoleSelectMenu()) await cmd.deferReply({ephemeral:["poll","auto_roles","report_problem","submit_meme","delete_message","move_message","auto-join-roles","join-roleOption","admin_message"].includes(cmd.commandName)});
     }catch(e){}
     try{
         if(cmd.guild.id!==0){
@@ -1496,21 +1501,44 @@ client.on("interactionCreate",async cmd=>{
             }],components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId(`ticket-${cmd.options.getChannel("channel").id}`).setLabel("Create private ticket with staff").setStyle(ButtonStyle.Success))]});
         break;
         case 'admin_message':
-            cmd.options.getUser("target").send({embeds:[{
-                type: "rich",
-                title: cmd.guild.name,
-                description: cmd.options.getString("what"),
-                color: 0x006400,
-                thumbnail: {
-                    url: cmd.guild.iconURL(),
-                    height: 0,
-                    width: 0,
-                },
-                footer: {
-                    text:`This message was sent by a moderator of ${cmd.guild.name}`
+            if(cmd.options.getUser("target")?.id){
+                cmd.options.getUser("target").send({embeds:[{
+                    type: "rich",
+                    title: cmd.guild.name,
+                    description: cmd.options.getString("what").replaceAll("\\n","\n"),
+                    color: 0x006400,
+                    thumbnail: {
+                        url: cmd.guild.iconURL(),
+                        height: 0,
+                        width: 0,
+                    },
+                    footer: {
+                        text:`This message was sent by a moderator of ${cmd.guild.name}`
+                    }
+                }]});
+                cmd.followUp("Messaged them");
+            }
+            else{
+                var resp={
+                    "content":cmd.options.getString("what").replaceAll("\\n","\n"),
+                    "avatarURL":cmd.guild.iconURL(),
+                    "username":cmd.guild.name
+                };
+                var hook=await cmd.channel.fetchWebhooks();
+                hook=hook.find(h=>h.token);
+                if(hook){
+                    hook.send(resp);
                 }
-            }]});
-            cmd.followUp("Messaged them");
+                else{
+                    cmd.channel.createWebhook({
+                        name:"Stewbot",
+                        avatar: "https://cdn.discordapp.com/attachments/1145432570104926234/1170273261704196127/kt.jpg",
+                    }).then(d=>{
+                        d.send(resp);
+                    });
+                }
+                cmd.followUp({content:"Posted",ephemeral:true});
+            }
         break;
         case 'log_config':
             storage[cmd.guild.id].logs.active=cmd.options.getBoolean("active");
@@ -2010,7 +2038,12 @@ client.on("interactionCreate",async cmd=>{
         case 'move-message':
             var msg=await cmd.channel.messages.fetch(cmd.message.content.split("`")[1]);
             var resp={files:[]};
-            resp.content=`\`\`\`\nThis message has been moved from ${cmd.channel.name} by Stewbot.\`\`\`${msg.content}`;
+            var replyBlip="";
+            if(msg.type===19){
+                var rMsg=await msg.fetchReference();
+                replyBlip=`_[Reply to **${rMsg.author.username}**: ${rMsg.content.slice(0,22).replaceAll("https://","")}${rMsg.content.length>22?"...":""}](<https://discord.com/channels/${rMsg.guild.id}/${rMsg.channel.id}/${rMsg.id}>)_\n`;
+            }
+            resp.content=`\`\`\`\nThis message has been moved from ${cmd.channel.name} by Stewbot.\`\`\`${replyBlip}${msg.content}`;
             resp.username=msg.author.nickname||msg.author.globalName||msg.author.username;
             resp.avatarURL=msg.author.displayAvatarURL();
             var p=0;
@@ -2191,6 +2224,11 @@ client.on("messageReactionAdd",async (react,user)=>{
     if(react.message.channel.id!==storage[react.message.guildId].starboard.channel&&(storage[react.message.guildId].starboard.emoji===react._emoji.name||storage[react.message.guildId].starboard.emoji===react._emoji.id)&&storage[react.message.guildId].starboard.active&&storage[react.message.guildId].starboard.channel&&!storage[react.message.guildId].starboard.posted.hasOwnProperty(react.message.id)){
         var msg=await react.message.channel.messages.fetch(react.message.id);
         if(msg.reactions.cache.get(storage[msg.guildId].starboard.emoji).count>=storage[msg.guildId].starboard.threshold){
+            var replyBlip="";
+            if(msg.type===19){
+                var rMsg=await msg.fetchReference();
+                replyBlip=`_[Reply to **${rMsg.author.username}**: ${rMsg.content.slice(0,22).replaceAll("https://","")}${rMsg.content.length>22?"...":""}](<https://discord.com/channels/${rMsg.guild.id}/${rMsg.channel.id}/${rMsg.id}>)_`;
+            }
             var resp={files:[]};
             var i=0;
             react.message.attachments.forEach((attached) => {
@@ -2232,7 +2270,7 @@ client.on("messageReactionAdd",async (react,user)=>{
                         iconURL:react.message.author.displayAvatarURL(),
                         url:`https://discord.com/users/${react.message.author.id}`
                     })
-                    .setDescription(react.message.content?react.message.content:"⠀")
+                    .setDescription(`${replyBlip?`${replyBlip}\n`:""}${react.message.content?react.message.content:"⠀"}`)
                     .setTimestamp(new Date(react.message.createdTimestamp))
                     .setFooter({
                         text: react.message.channel.name,
@@ -2292,6 +2330,11 @@ client.on("messageUpdate",async (msgO,msg)=>{
     }
     if(storage[msg.guild.id]?.starboard.posted.hasOwnProperty(msg.id)&&!storage[msg.guild.id].starboard.posted[msg.id]?.startsWith("webhook")){
         var resp={files:[]};
+        var replyBlip="";
+        if(msg.type===19){
+            var rMsg=await msg.fetchReference();
+            replyBlip=`_[Reply to **${rMsg.author.username}**: ${rMsg.content.slice(0,22).replaceAll("https://","")}${rMsg.content.length>22?"...":""}](<https://discord.com/channels/${rMsg.guild.id}/${rMsg.channel.id}/${rMsg.id}>)_`;
+        }
         msg.attachments.forEach((attached,i) => {
             let url=attached.proxyURL.toLowerCase();
             if(i!==0||(!url.includes(".jpg")&&!url.includes(".png")&&!url.includes(".jpeg")&&!url.includes(".gif"))||storage[cmd.guild.id].starboard.messType==="0"){
@@ -2307,7 +2350,7 @@ client.on("messageUpdate",async (msgO,msg)=>{
                 iconURL:msg.author.displayAvatarURL(),
                 url:`https://discord.com/users/${msg.author.id}`
             })
-            .setDescription(msg.content?msg.content:"⠀")
+            .setDescription(`${replyBlip?`${replyBlip}\n`:""}${msg.content?msg.content:"⠀"}`)
             .setTimestamp(new Date(msg.createdTimestamp))
             .setFooter({
                 text: msg.channel.name,
@@ -2395,7 +2438,7 @@ client.on("guildMemberAdd",async member=>{
         }
     }
     if(storage[member.guild.id].logs.active&&storage[member.guild.id].logs.joining_and_leaving){
-        client.channels.cache.get(storage[member.guild.id].logs.channel).send({content:`**<@${member.id}> has joined the server.**`,allowedMentions:{parse:[]}});
+        client.channels.cache.get(storage[member.guild.id].logs.channel).send({content:`**<@${member.id}> (${member.user.username}) has joined the server.**`,allowedMentions:{parse:[]}});
     }
 });
 client.on("guildMemberRemove",async member=>{
@@ -2418,7 +2461,7 @@ client.on("guildMemberRemove",async member=>{
 
     if(storage[member.guild.id].logs.active&&storage[member.guild.id].logs.joining_and_leaving){
         var bans=await member.guild.bans.fetch();
-        client.channels.cache.get(storage[member.guild.id].logs.channel).send({content:`**<@${member.id}> has ${bans.find(b=>b.user.id===member.id)?"been banned from":"left"} the server.**${bans.find(b=>b.user.id===member.id)?.reason!==undefined?`\n${bans.find(b=>b.user.id===member.id)?.reason}`:""}`,allowedMentions:{parse:[]}});
+        client.channels.cache.get(storage[member.guild.id].logs.channel).send({content:`**<@${member.id}> (${member.user.username}) has ${bans.find(b=>b.user.id===member.id)?"been banned from":"left"} the server.**${bans.find(b=>b.user.id===member.id)?.reason!==undefined?`\n${bans.find(b=>b.user.id===member.id)?.reason}`:""}`,allowedMentions:{parse:[]}});
     }
 });
 client.on("channelDelete",async channel=>{
@@ -2581,7 +2624,7 @@ client.on("roleUpdate",async (roleO,role)=>{
     }
 });
 client.on("userUpdate",async (userO,user)=>{
-    var diffs=`**User <@${user.id}> Edited Globally**`;
+    var diffs=`**User <@${user.id}> (${user.username}) Edited Globally**`;
     Object.keys(userO).forEach(key=>{
         if(key==="tags"||key==="permissions"||key==="flags") return;
         if(userO[key]!==user[key]){
@@ -2596,7 +2639,7 @@ client.on("userUpdate",async (userO,user)=>{
 });
 client.on("guildMemberUpdate",async (memberO,member)=>{
     if(storage[member.guild.id].logs.active&&storage[member.guild.id].logs.user_change_events){
-        var diffs=`**User <@${member.id}> Edited For This Server**`;
+        var diffs=`**User <@${member.id}> (${member.user.username}) Edited For This Server**`;
         Object.keys(memberO).forEach(key=>{
             if(key==="tags"||key==="permissions"||key==="flags"||key==="_roles") return;
             if(memberO[key]!==member[key]){
