@@ -125,7 +125,6 @@ const commands = [
 			)
 		).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages).setDMPermission(false),
 	new SlashCommandBuilder().setName("next_counting_number").setDescription("View the next number to count at").setDMPermission(false),
-	new SlashCommandBuilder().setName("counting_leaderboard").setDescription("View the top ten counting servers"),
 	new SlashCommandBuilder().setName("general_config").setDescription("Configure general behaviors").addBooleanOption(option=>
 			option.setName("ai_pings").setDescription("Have the bot post an AI message when pinging it?")
 		).addBooleanOption(option=>
@@ -193,7 +192,7 @@ const commands = [
 			option.setName("role_events").setDescription("Log role events?")
 		).setDefaultMemberPermissions(PermissionFlagsBits.ViewAuditLog).setDMPermission(false),
 	new SlashCommandBuilder().setName("admin_message").setDescription("Anonymously make a post in the server's name").addStringOption(option=>
-			option.setName("what").setDescription("What to say").setRequired(true)
+			option.setName("what").setDescription("What to say").setMaxLength(2000).setRequired(true)
 		).addUserOption(option=>
 			option.setName("target").setDescription("The user to message")
 		).setDefaultMemberPermissions(PermissionFlagsBits.KickMembers).setDMPermission(false),
@@ -231,7 +230,16 @@ const commands = [
 				{"name":"DM",value:"DM"}
 			).setName("channel_or_dm").setDescription("Where should level up messages be sent?")
 		).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages).setDMPermission(false),
-	new SlashCommandBuilder().setName("levels-leaderboard").setDescription("View leaderboard").setDMPermission(false),
+	new SlashCommandBuilder().setName("leaderboard").setDescription("View a leaderboard").addStringOption(option=>
+			option.setName("which").setDescription("Which leaderboard do you want to see?").setChoices(
+				{name:"Counting",value:"counting"},
+				{name:"Starboard",value:"starboard"},
+				{name:"Cleanliness",value:"cleanliness"},
+				{name:"Level-Ups",value:"levels"}
+			).setRequired(true)
+		).addUserOption(option=>
+			option.setName("who").setDescription("If applicable, who's spot on the leaderboard do you wish to highlight?")
+		).setDMPermission(false),
 	new SlashCommandBuilder().setName("rank").setDescription("Your rank for this server's level ups").addUserOption(option=>
 			option.setName("target").setDescription("Who's rank are you trying to view?")
 		).setDMPermission(false),
