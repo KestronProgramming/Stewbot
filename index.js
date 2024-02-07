@@ -377,6 +377,10 @@ var helpPages=[
             {
                 name:cmds["8-ball"],
                 desc:"Receive a random answer to a question"
+            },
+            {
+                name:cmds.leaderboard,
+                desc:"View one of the leaderboards or rank cards"
             }
         ]
     },
@@ -598,7 +602,7 @@ function createInWorldClient(args) {
             if(packet.control){
                 if(packet.control.type==="INTERACTION_END"){
                     if(curText[args.msg.author.username].length>0){
-                        msgs[args.msg.author.id].reply(checkDirty(args.msg.guild.id,curText[args.msg.author.username].join("\n"))?checkDirty(args.msg.guild.id,curText[args.msg.author.username].join("\n").replaceAll("@","\\@")):curText[args.msg.author.username].join("\n").replaceAll("@","\\@"));
+                        msgs[args.msg.author.id].reply(checkDirty(args.msg.guild?.id,curText[args.msg.author.username].join("\n"))?checkDirty(args.msg.guild?.id,curText[args.msg.author.username].join("\n").replaceAll("@","\\@")):curText[args.msg.author.username].join("\n").replaceAll("@","\\@"));
                     }
                     else{
                         msgs[args.msg.author.id].reply("No comment");
@@ -1334,19 +1338,6 @@ client.on("interactionCreate",async cmd=>{
         case 'next_counting_number':
             cmd.followUp(storage[cmd.guild.id].counting.active?`The next number to enter ${cmd.channel.id!==storage[cmd.guild.id].counting.channel?`in <#${storage[cmd.guild.id].counting.channel}> `:""}is \`${storage[cmd.guild.id].counting.nextNum}\`.`:`Counting isn't active in this server! Use ${cmds['counting config']} to set it up.`);
         break;
-        case 'counting_leaderboard':
-            var leaders=[];
-            for(let a in storage){
-                if(storage[a].counting?.public){
-                    try{
-                        leaders.push([checkDirty(cmd.guild?.id,client.guilds.cache.get(a).name)?"[Blocked name]":client.guilds.cache.get(a).name,storage[a].counting.highestNum,a]);
-                    }
-                    catch(e){}
-                }
-            }
-            leaders.sort((a,b)=>b[1]-a[1]);
-            cmd.followUp(`**Counting Leaderboard**${leaders.slice(0,10).map((a,i)=>`\n${i+1}. ${a[0]}: \`${a[1]}\``).join("")}${cmd.guild?`\n\nYour server is in \`${leaders.map(a=>a[2]).indexOf(cmd.guild.id)+1}${leaders.map(a=>a[2]).indexOf(cmd.guild.id)===0?"st":leaders.map(a=>a[2]).indexOf(cmd.guild.id)===1?"nd":leaders.map(a=>a[2]).indexOf(cmd.guild.id)===2?"rd":"th"}\` place.`:""}`);
-        break;
         case 'fun':
             switch(cmd.options.getSubcommand()){
                 case 'dne':
@@ -1710,26 +1701,184 @@ client.on("interactionCreate",async cmd=>{
                 }
             }],allowedMentions:{parse:[]}});
         break;
-        case 'levels-leaderboard':
-            if(!storage[cmd.guild.id].levels.active){
-                cmd.followUp(`This server doesn't use level ups at the moment. It can be configured using ${cmds.levels_config}.`);
-                return;
+        case 'leaderboard':
+            switch(cmd.options.getString("which")){
+                case "levels":
+                    if(!storage[cmd.guild.id].levels.active){
+                        cmd.followUp(`This server doesn't use level ups at the moment. It can be configured using ${cmds.levels_config}.`);
+                        return;
+                    }
+                    if(cmd.options.getUser("who")?.id){
+                        var usr=cmd.options.getUser("who")?.id||cmd.user.id;
+                        if(!storage[cmd.guild.id].users.hasOwnProperty(usr)){
+                            cmd.followUp(`I am unaware of this user presently`);
+                            return;
+                        }
+                        cmd.followUp({content:`Server rank card for <@${usr}>`,embeds:[{
+                            "type": "rich",
+                            "title": `Rank for ${cmd.guild.name}`,
+                            "description": "",
+                            "color": 0x006400,
+                            "fields": [
+                                {
+                                    "name": `Level`,
+                                    "value": storage[cmd.guild.id].users[usr].lvl+"",
+                                    "inline": true
+                                },
+                                {
+                                    "name": `EXP`,
+                                    "value": `${storage[cmd.guild.id].users[usr].exp}`.replace(/\B(?=(\d{3})+(?!\d))/g, ","),
+                                    "inline": true
+                                },
+                                {
+                                    "name": `Server Rank`,
+                                    "value": `#${Object.keys(storage[cmd.guild.id].users).map(a=>Object.assign(storage[cmd.guild.id].users[a],{"id":a})).sort((a,b)=>b.exp-a.exp).map(a=>a.id).indexOf(usr)+1}`,
+                                    "inline": true
+                                }
+                            ],
+                            "thumbnail": {
+                                "url": cmd.guild.iconURL(),
+                                "height": 0,
+                                "width": 0
+                            },
+                            "author": {
+                                "name": client.users.cache.get(usr)?client.users.cache.get(usr).username:"Unknown",
+                                "icon_url": client.users.cache.get(usr)?.displayAvatarURL()
+                            },
+                            "footer": {
+                                "text": `Next rank up at ${(getLvl(storage[cmd.guild.id].users[usr].lvl)+"").replace(/\B(?=(\d{3})+(?!\d))/g, ",")}`
+                            }
+                        }],allowedMentions:{parse:[]}});
+                        break;
+                    }
+                    cmd.followUp({content:`**Levels Leaderboard**`,embeds:[{
+                        "type": "rich",
+                        "title": `${cmd.guild.name} Leaderboard`,
+                        "description": Object.keys(storage[cmd.guild.id].users).map(a=>Object.assign(storage[cmd.guild.id].users[a],{"id":a})).sort((a,b)=>b.exp-a.exp).slice(0,10).map((a,i)=>`\n${["🥇","🥈","🥉","4️⃣","5️⃣","6️⃣","7️⃣","8️⃣","9️⃣","🔟"][i]}. <@${a.id}>, level ${a.lvl}`).join(""),
+                        "color": 0x006400,
+                        "thumbnail": {
+                          "url": cmd.guild.iconURL(),
+                          "height": 0,
+                          "width": 0
+                        },
+                        "footer": {
+                          "text": `${cmd.guild.name} Levels Leaderboard`
+                        }
+                      }]});
+                break;
+                case "starboard":
+                    if(!storage[cmd.guild.id].starboard.active){
+                        cmd.followUp(`This server doesn't use starboard at the moment. It can be configured using ${cmds.starboard_config}.`);
+                        return;
+                    }
+                    var searchId=cmd.options.getUser("who")?.id||cmd.user.id;
+                    if(searchId!==cmd.user.id){
+                        if(!storage[cmd.guild.id].users.hasOwnProperty(searchId)){
+                            cmd.followUp(`I am unaware of this user presently`);
+                            return;
+                        }
+                    }
+                    var place=Object.keys(storage[cmd.guild.id].users).map(a=>Object.assign(storage[cmd.guild.id].users[a],{"id":a})).sort((a,b)=>b.stars-a.stars).map(a=>a.id).indexOf(searchId);
+                    cmd.followUp({content:`**Starboard Leaderboard**`,embeds:[{
+                        "type": "rich",
+                        "title": `${cmd.guild.name} Stars Leaderboard`,
+                        "description": Object.keys(storage[cmd.guild.id].users).map(a=>Object.assign(storage[cmd.guild.id].users[a],{"id":a})).sort((a,b)=>b.stars-a.stars).slice(0,10).map((a,i)=>`\n${["🌠","🌟","⭐","4️⃣","5️⃣","6️⃣","7️⃣","8️⃣","9️⃣","🔟"][i]}. <@${a.id}> ${a.stars} starboards`).join(""),
+                        "color": 0x006400,
+                        "thumbnail": {
+                          "url": cmd.guild.iconURL(),
+                          "height": 0,
+                          "width": 0
+                        },
+                        "footer": {
+                          "text": `${searchId===cmd.user.id?"You are":`<@${searchId}> is`} in ${place+1}${place===0?"st":place===1?"nd":place===2?"rd":"th"} place with ${storage[cmd.guild.id].users[searchId].stars} starboards.`
+                        }
+                      }]});
+                break;
+                case "counting":
+                    var leaders=[];
+                    for(let a in storage){
+                        if(storage[a].counting?.public){
+                            try{
+                                leaders.push([checkDirty(cmd.guild?.id,client.guilds.cache.get(a).name)?"[Blocked name]":client.guilds.cache.get(a).name,storage[a].counting.highestNum,a]);
+                            }
+                            catch(e){}
+                        }
+                    }
+                    leaders.sort((a,b)=>b[1]-a[1]);
+                    cmd.followUp({"content":`**Counting Leaderboard**`,embeds:[{
+                        "type":"rich",
+                        "title":`Counting Leaderboard`,
+                        "description":`${leaders.slice(0,10).map((a,i)=>`\n${["🥇","🥈","🥉","4️⃣","5️⃣","6️⃣","7️⃣","8️⃣","9️⃣","🔟"][i]}. ${a[0]}: \`${a[1]}\``).join("")}`,
+                        "color":0x006400,
+                        "thumbnail":{
+                            "url":"https://stewbot.kestron.software/roboabacus.jpg",
+                            "height":0,
+                            "width":0
+                        },
+                        "footer":{
+                            "text":`${cmd.guild&&storage[cmd.guild?.id]?.counting?.active?`${cmd.guild.name} is in ${leaders.map(a=>a[2]).indexOf(cmd.guild.id)+1}${leaders.map(a=>a[2]).indexOf(cmd.guild.id)===0?"st":leaders.map(a=>a[2]).indexOf(cmd.guild.id)===1?"nd":leaders.map(a=>a[2]).indexOf(cmd.guild.id)===2?"rd":"th"} place.`:""}`
+                        } 
+                    }]});
+                break;
+                case "cleanliness":
+                    if(!storage[cmd.guild.id].filter.active){
+                        cmd.followUp(`This server doesn't use the at the moment. It can be configured using ${cmds["filter config"]}.`);
+                        return;
+                    }
+                    if(cmd.options.getUser("who")?.id){
+                        var usr=cmd.options.getUser("who")?.id||cmd.user.id;
+                        if(!storage[cmd.guild.id].users.hasOwnProperty(usr)){
+                            cmd.followUp(`I am unaware of this user presently`);
+                            return;
+                        }
+                        cmd.followUp({content:`Server cleanliness card for <@${usr}>`,embeds:[{
+                            "type": "rich",
+                            "title": `Cleanliness rank for ${cmd.guild.name}`,
+                            "description": "",
+                            "color": 0x006400,
+                            "fields": [
+                                {
+                                    "name": `Times Filtered`,
+                                    "value": storage[cmd.guild.id].users[usr].infractions+"",
+                                    "inline": true
+                                },
+                                {
+                                    "name": `Cleanliness Rank`,
+                                    "value": `#${Object.keys(storage[cmd.guild.id].users).map(a=>Object.assign(storage[cmd.guild.id].users[a],{"id":a})).sort((a,b)=>a.infractions-b.infractions).map(a=>a.id).indexOf(usr)+1}`,
+                                    "inline": true
+                                }
+                            ],
+                            "thumbnail": {
+                                "url": cmd.guild.iconURL(),
+                                "height": 0,
+                                "width": 0
+                            },
+                            "author": {
+                                "name": client.users.cache.get(usr)?client.users.cache.get(usr).username:"Unknown",
+                                "icon_url": client.users.cache.get(usr)?.displayAvatarURL()
+                            },
+                            "footer": {
+                                "text": `Cleanliness Leaderboard`
+                            }
+                        }],allowedMentions:{parse:[]}});
+                        break;
+                    }
+                    cmd.followUp({content:`**Cleanliness Leaderboard**`,embeds:[{
+                        "type": "rich",
+                        "title": `${cmd.guild.name} Cleanliness Leaderboard`,
+                        "description": Object.keys(storage[cmd.guild.id].users).map(a=>Object.assign(storage[cmd.guild.id].users[a],{"id":a})).sort((a,b)=>a.infractions-b.infractions).slice(0,10).map((a,i)=>`\n${["🥇","🥈","🥉","4️⃣","5️⃣","6️⃣","7️⃣","8️⃣","9️⃣","🔟"][i]}. <@${a.id}>, ${a.infractions} times filtered`).join(""),
+                        "color": 0x006400,
+                        "thumbnail": {
+                          "url": cmd.guild.iconURL(),
+                          "height": 0,
+                          "width": 0
+                        },
+                        "footer": {
+                          "text": `${cmd.guild.name} Cleanliness Leaderboard`
+                        }
+                      }]});
+                break;
             }
-            cmd.followUp({content:`**Leaderboard**`,embeds:[{
-                "type": "rich",
-                "title": `${cmd.guild.name} Leaderboard`,
-                "description": Object.keys(storage[cmd.guild.id].users).map(a=>Object.assign(storage[cmd.guild.id].users[a],{"id":a})).sort((a,b)=>b.exp-a.exp).slice(0,10).map((a,i)=>`\n${["🥇","🥈","🥉","4️⃣","5️⃣","6️⃣","7️⃣","8️⃣","9️⃣","🔟"][i]}. <@${a.id}>, level ${a.lvl}`).join(""),
-                "color": 0x006400,
-                "thumbnail": {
-                  "url": cmd.guild.iconURL(),
-                  "height": 0,
-                  "width": 0
-                },
-                "footer": {
-                  "text": `${cmd.guild.name} Leaderboard`
-                }
-              }]});
-            //cmd.followUp({content:`**Level-Up Leaderboard for ${cmd.guild.name}**${Object.keys(storage[cmd.guild.id].users).map(a=>Object.assign(storage[cmd.guild.id].users[a],{"id":a})).sort((a,b)=>b.exp-a.exp).slice(0,10).map((a,i)=>`\n${i}. <@${a.id}> at level ${a.lvl} with ${a.exp}.`).join("")}`,allowedMentions:{parse:[]}});
         break;
 
         //Context Menu Commands
