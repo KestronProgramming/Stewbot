@@ -12,7 +12,8 @@ To run this code with your own tokens, make sure you have node installed, and th
     "noticeChannel":"A CHANNEL ID TO POST NOTIFICATIONS TO",
     "inworldKey": "Inworld AI Key",
     "inworldSecret": "Inworld AI Secret",
-    "inworldScene":"Inworld AI Character link"
+    "inworldScene":"Inworld AI Character link",
+    "logWebhook":"A webhook for errors to be posted to"
 }
 ```
 Make sure to `npm install` @discordjs/builders, @inworld/nodejs-sdk, @vitalets/google-translate-api, canvas, discord.js, and fs.
