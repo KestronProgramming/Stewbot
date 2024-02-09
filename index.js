@@ -1881,6 +1881,14 @@ client.on("interactionCreate",async cmd=>{
             }
         break;
 
+        case 'restart':
+            if(cmd.guild?.id==="983074750165299250"&&cmd.channel.id==="986097382267715604"){
+                notify(1,{content:`Bot restarted by <@${cmd.user.id}>`,allowedMentions:{parse:[]}});
+                cmd.followUp("Restarting...");
+                setTimeout(()=>{process.exit(0)},5000);
+            }
+        break;
+
         //Context Menu Commands
         case 'delete_message':
             if(cmd.guild?.id){
@@ -2440,7 +2448,7 @@ client.on("messageReactionAdd",async (react,user)=>{
     }
 });
 client.on("messageDelete",async msg=>{
-    if(!msg.guild?.id) return;
+    if(msg.guild?.id===undefined) return;
     if(storage[msg.guild.id]?.starboard.posted.hasOwnProperty(msg.id)){
         if(storage[msg.guild.id].starboard.posted[msg.id].startsWith("webhook")){
             var c=await client.channels.cache.get(storage[msg.guild.id].starboard.channel).messages.fetch(storage[msg.guild.id].starboard.posted[msg.id].split("webhook")[1]);
@@ -2451,9 +2459,17 @@ client.on("messageDelete",async msg=>{
             c.edit({content:`I'm sorry, but it looks like this post by **${msg.author.globalName||msg.author.username}** was deleted.`,embeds:[],files:[]});
         }
     }
+    if(storage[msg.guild.id]?.counting.active&&storage[msg.guild.id]?.counting.channel===msg.channel.id){
+        var num=msg.content.match(/^(\d|,)+(?:\b)/i);
+        if(num!==null){
+            if(+num[0]===storage[msg.guild.id].counting.nextNum-1){
+                msg.channel.send(num[0]);
+            }
+        }
+    }
 });
 client.on("messageUpdate",async (msgO,msg)=>{
-    if(!msg.guild?.id||client.user.id===msg.author?.id) return;
+    if(msg.guild?.id===undefined||client.user.id===msg.author?.id) return;
     if(storage[msg.guild.id]?.filter.active){
         var foundWords=[];
         storage[msg.guildId].filter.blacklist.forEach(blockedWord=>{
@@ -2512,6 +2528,14 @@ client.on("messageUpdate",async (msgO,msg)=>{
         }
         var c=await client.channels.cache.get(storage[msg.guild.id].starboard.channel).messages.fetch(storage[msg.guild.id].starboard.posted[msg.id]);
         c.edit(resp);
+    }
+    if(storage[msg.guild.id]?.counting.active&&storage[msg.guild.id]?.counting.channel===msg.channel.id){
+        var num=msgO.content.match(/^(\d|,)+(?:\b)/i);
+        if(num!==null){
+            if(+num[0]===storage[msg.guild.id].counting.nextNum-1){
+                msg.channel.send(num[0]);
+            }
+        }
     }
 });
 client.on("guildMemberAdd",async member=>{
