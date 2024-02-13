@@ -173,7 +173,10 @@ var pieCols=[
     ["f5deb3","Wheat"],
     ["daa520","Goldenrod"]
 ];
-function checkHoliday(){
+function checkHoliday(loop){
+    if(loop){
+        setInterval(checkHoliday,60000*60*24);
+    }
     function Easter(Y) {//Thanks StackOverflow :) https://stackoverflow.com/questions/1284314/easter-date-in-javascript
         var C = Math.floor(Y/100);
         var N = Y - 19*Math.floor(Y/19);
@@ -438,7 +441,13 @@ function checkDirty(where,what){
     if(where===false||where===undefined) return false;
     var dirty=false;
     storage[where].filter.blacklist.forEach(blockedWord=>{
-        if(new RegExp(`\\b${blockedWord}(ing|s|ed|er|ism|ist|es|ual)?\\b`,"ig").test(what)){
+        if(blockedWord.match(/^\<\:\w+\:\d+\>$/)){//Reduce custom emojis to their base
+            var blockedWord2=`:${blockedWord.split(":")[1]}:`;
+            if(new RegExp(`\\b${blockedWord2}(ing|s|ed|er|ism|ist|es|ual)?\\b`,"ig").test(what)||what===blockedWord2){
+                dirty=dirty?dirty.replace(new RegExp(`\\b${blockedWord2}(ing|s|ed|er|ism|ist|es|ual)?\\b`,"ig"),"[\\_]"):what.replace(new RegExp(`\\b${blockedWord2}(ing|s|ed|er|ism|ist|es|ual)?\\b`,"ig"),"[\\_]");
+            }
+        }
+        if(new RegExp(`\\b${blockedWord}(ing|s|ed|er|ism|ist|es|ual)?\\b`,"ig").test(what)||what===blockedWord){
             dirty=dirty?dirty.replace(new RegExp(`\\b${blockedWord}(ing|s|ed|er|ism|ist|es|ual)?\\b`,"ig"),"[\\_]"):what.replace(new RegExp(`\\b${blockedWord}(ing|s|ed|er|ism|ist|es|ual)?\\b`,"ig"),"[\\_]");
         }
     });
@@ -602,7 +611,7 @@ function createInWorldClient(args) {
             if(packet.control){
                 if(packet.control.type==="INTERACTION_END"){
                     if(curText[args.msg.author.username].length>0){
-                        msgs[args.msg.author.id].reply(checkDirty(args.msg.guild?.id,curText[args.msg.author.username].join("\n"))?checkDirty(args.msg.guild?.id,curText[args.msg.author.username].join("\n").replaceAll("@","\\@")):curText[args.msg.author.username].join("\n").replaceAll("@","\\@"));
+                        msgs[args.msg.author.id].reply({content:checkDirty(args.msg.guild?.id,curText[args.msg.author.username].join("\n"))?checkDirty(args.msg.guild?.id,curText[args.msg.author.username].join("\n").replaceAll("@","\\@")):curText[args.msg.author.username].join("\n").replaceAll("@","\\@"),allowedMentions:{parse:[]}});
                     }
                     else{
                         msgs[args.msg.author.id].reply("No comment");
@@ -617,7 +626,6 @@ function createInWorldClient(args) {
 async function sendMessage(msg, dm) {
     curText[msg.author.username]=[];
     if (conns[msg.author.id] === null || conns[msg.author.id] === undefined || lastChannels[msg.author.id]!==msg.channel.id) {
-        console.log("Made new connection for " + msg.author.tag);
         conns[msg.author.id] = createInWorldClient({ dm: dm, msg: msg });
         lastChannels[msg.author.id]=msg.channel.id;
     }
@@ -763,12 +771,15 @@ function getStarMsg(msg){
     return `**${msgs[Math.floor(Math.random()*msgs.length)].replaceAll("@",msg.author.globalName||msg.author.username)}**`;
 }
 
+var ints=Object.keys(GatewayIntentBits).map(a=>GatewayIntentBits[a]);
+ints.splice(ints.indexOf(GatewayIntentBits.GuildPresences),1);
+ints.splice(ints.indexOf("GuildPresences"),1);
 client=new Client({
-    intents:Object.keys(GatewayIntentBits).map(a=>GatewayIntentBits[a]),
+    intents:ints,
     partials:Object.keys(Partials).map(a=>Partials[a])
 });
 function notify(urgencyLevel,what){
-    switch(urgencyLevel){
+    try{switch(urgencyLevel){
         default:
         case 0:
             client.users.cache.get(process.env.ownerId).send(what);//Notify Kestron06 directly
@@ -776,8 +787,9 @@ function notify(urgencyLevel,what){
         case 1:
             client.channels.cache.get(process.env.noticeChannel).send(what);//Notify the staff of the Kestron Support server
         break;
-    }
+    }}catch(e){}
 }
+var logQueue={};
 var uptime=0;
 client.once("ready",async ()=>{
     uptime=Math.round(Date.now()/1000);
@@ -786,8 +798,7 @@ client.once("ready",async ()=>{
     save();
     client.user.setActivity("𝐒teward 𝐓o 𝐄xpedite 𝐖ork",{type:ActivityType.Custom},1000*60*60*4);
     setInterval(()=>{client.user.setActivity("𝐒teward 𝐓o 𝐄xpedite 𝐖ork",{type:ActivityType.Custom},1000*60*60*4)},60000*60);
-    checkHoliday();
-    setInterval(checkHoliday,60000*60*24);
+    checkHoliday(true);
 });
 client.on("messageCreate",async msg=>{
     async function sendHook(what){
@@ -945,7 +956,7 @@ client.on("messageCreate",async msg=>{
             }
             else if(storage[msg.guild.id].counting.reset&&storage[msg.guild.id].counting.nextNum!==1){
                 msg.react("❌");
-                msg.reply(`Oh no, that was incorrect! The next number to post was going to be \`${storage[msg.guild.id].counting.nextNum}\`, but now it's \`1\`.`);
+                msg.reply(`Nope, that was incorrect! The next number to post was going to be \`${storage[msg.guild.id].counting.nextNum}\`, but now it's \`1\`.`);
                 storage[msg.guild.id].counting.nextNum=1;
                 storage[msg.guild.id].counting.legit=true;
                 for(let a in storage[msg.guild.id].users){
@@ -1016,16 +1027,16 @@ client.on("messageCreate",async msg=>{
     if(embs.length>0) msg.reply({content:`Embedded linked message${embs.length>1?"s":""}. You can prevent this behavior by surrounding message links in \`<\` and \`>\`.`,embeds:embs,files:fils,allowedMentions:{parse:[]}});
     for(var i=0;i<progs.length;i++){
         let prog=progs[i];
-        var embds=[];/*
-        await fetch(`https://kap-archive.shipment22.repl.co/s/${prog.split("/")[prog.split("/").length-1].split("?")[0]}`).then(d=>d.json()).then(d=>{
+        var embds=[];
+        await fetch(`https://kap-archive.bhavjit.com/s/${prog.split("/")[prog.split("/").length-1].split("?")[0]}`).then(d=>d.json()).then(d=>{
             embds.push({
                 type: "rich",
                 title: d.title,
                 description: `\u200b`,
                 color: 0x00ff00,
                 author: {
-                    name: `Made by ${d.creator.nickname}`,
-                    url: `https://www.khanacademy.org/profile/${d.creator.kaid}`,
+                    name: `Made by ${d.author.nick}`,
+                    url: `https://www.khanacademy.org/profile/${d.author.id}`,
                 },
                 fields: [
                     {
@@ -1065,16 +1076,16 @@ client.on("messageCreate",async msg=>{
                     width: 0,
                 },
                 footer: {
-                    text: `Backed up to https://kap-archive.shipment22.repl.co/`,
+                    text: `Backed up to https://kap-archive.bhavjit.com/`,
                     icon_url: `https://media.discordapp.net/attachments/810540153294684195/994417360737935410/ka-logo-zoomedout.png`,
                 },
                 url: `https://www.khanacademy.org/cs/i/${d.id}`
             });
-        });*/
+        });
     }
     if(embds?.length>0){
         msg.suppressEmbeds(true);
-        //msg.reply({content:`Backed program${embds.length>1?"s":""} up to the KAP Archive, which you can visit [here](https://kap-archive.shipment22.repl.co/).`,embeds:embds,allowedMentions:{parse:[]}});
+        msg.reply({content:`Backed program${embds.length>1?"s":""} up to the KAP Archive, which you can visit [here](https://kap-archive.bhavjit.com/).`,embeds:embds,allowedMentions:{parse:[]}});
     }
 
     if(msg.channel.name?.startsWith("Ticket with ")&&!msg.author.bot){
@@ -1155,9 +1166,8 @@ client.on("messageCreate",async msg=>{
     }
 });
 client.on("interactionCreate",async cmd=>{
-    let stop=false;
     try{
-	if(!cmd.isButton()&&!cmd.isModalSubmit()&&!cmd.isChannelSelectMenu()&&!cmd.isRoleSelectMenu()) await cmd.deferReply({ephemeral:["poll","auto_roles","report_problem","submit_meme","delete_message","move_message","auto-join-roles","join-roleOption","admin_message"].includes(cmd.commandName)});
+	    if(!cmd.isButton()&&!cmd.isModalSubmit()&&!cmd.isChannelSelectMenu()&&!cmd.isRoleSelectMenu()) await cmd.deferReply({ephemeral:["poll","auto_roles","report_problem","submit_meme","delete_message","move_message","auto-join-roles","join-roleOption","admin_message"].includes(cmd.commandName)});
     }catch(e){}
     try{
         if(cmd.guild.id!==0){
@@ -1185,14 +1195,6 @@ client.on("interactionCreate",async cmd=>{
             }
         });
     }
-    if(stop){
-        return;
-    }
-    try{
-        var ephemCmds=["poll","auto_roles","report_problem"];
-        //if(!cmd.isButton()&&!cmd.isModalSubmit()) await cmd.deferReply({ephemeral:ephemCmds.includes(cmd.commandName)});
-    }
-    catch(e){notify(1, e.stack)}
     //Slash Commands and Context Menus
     switch(cmd.commandName){
         //Slash Commands
@@ -1315,11 +1317,10 @@ client.on("interactionCreate",async cmd=>{
                     if(cmd.options.getInteger("posts_between_turns")!==null) storage[cmd.guild.id].counting.takeTurns=cmd.options.getInteger("posts_between_turns");
                     if(!storage[cmd.guild.id].counting.channel) storage[cmd.guild.id].counting.active=false;
                     if(!storage[cmd.guild.id].counting.reset||storage[cmd.guild.id].counting.takeTurns<1) storage[cmd.guild.id].counting.legit=false;
-                    storage[cmd.guild.id].counting.nextNum=1;
                     for(let a in storage[cmd.guild.id].users){
                         storage[cmd.guild.id].users[a].countTurns=0;
                     }
-                    cmd.followUp(`Alright, I configured counting for this server.${storage[cmd.guild.id].counting.active!==cmd.options.getBoolean("active")?` It looks like no channel has been set to count in, so counting is currently disabled. Please run ${cmds['counting config']} again and set the channel to activate counting.`:`${storage[cmd.guild.id].counting.legit?"":` Please be aware this server is currently inelegible for the leaderboard. To fix this, make sure that reset is set to true, that the posts between turns is at least 1, and that you don't set the number to anything higher than 1 manually.`}`}`);
+                    cmd.followUp(`Alright, I configured counting for this server.${storage[cmd.guild.id].counting.active!==cmd.options.getBoolean("active")?`\n\nIt looks like no channel has been set to count in, so counting is currently disabled. Please run ${cmds['counting config']} again and set the channel to activate counting.`:`${storage[cmd.guild.id].counting.legit?"":`\n\nPlease be aware this server is currently inelegible for the leaderboard. To fix this, make sure that reset is set to true, that the posts between turns is at least 1, and that you don't set the number to anything higher than 1 manually.`}`}`);
                     save();
                 break;
                 case "set_number":
@@ -1816,7 +1817,7 @@ client.on("interactionCreate",async cmd=>{
                             "width":0
                         },
                         "footer":{
-                            "text":`${cmd.guild&&storage[cmd.guild?.id]?.counting?.active?`${cmd.guild.name} is in ${leaders.map(a=>a[2]).indexOf(cmd.guild.id)+1}${leaders.map(a=>a[2]).indexOf(cmd.guild.id)===0?"st":leaders.map(a=>a[2]).indexOf(cmd.guild.id)===1?"nd":leaders.map(a=>a[2]).indexOf(cmd.guild.id)===2?"rd":"th"} place.`:""}`
+                            "text":`${cmd.guild&&storage[cmd.guild?.id]?.counting?.active?`${cmd.guild.name} is in ${leaders.map(a=>a[2]).indexOf(cmd.guild.id)+1}${leaders.map(a=>a[2]).indexOf(cmd.guild.id)===0?"st":leaders.map(a=>a[2]).indexOf(cmd.guild.id)===1?"nd":leaders.map(a=>a[2]).indexOf(cmd.guild.id)===2?"rd":"th"} place with a high score of ${storage[cmd.guild.id].counting.highestNum}.`:""}`
                         } 
                     }]});
                 break;
@@ -2378,6 +2379,12 @@ client.on("messageReactionAdd",async (react,user)=>{
         storage[user.id]=structuredClone(defaultUser);
         save();
     }
+    if(storage[react.message.guild.id].filter.active){
+        if(checkDirty(react.message.guild.id,`${react._emoji.name.trim()}`)){
+            react.remove();
+            return;
+        }
+    }
     if(react.message.channel.id!==storage[react.message.guildId].starboard.channel&&(storage[react.message.guildId].starboard.emoji===react._emoji.name||storage[react.message.guildId].starboard.emoji===react._emoji.id)&&storage[react.message.guildId].starboard.active&&storage[react.message.guildId].starboard.channel&&!storage[react.message.guildId].starboard.posted.hasOwnProperty(react.message.id)){
         var msg=await react.message.channel.messages.fetch(react.message.id);
         if(msg.reactions.cache.get(storage[msg.guildId].starboard.emoji).count>=storage[msg.guildId].starboard.threshold){
@@ -2460,10 +2467,10 @@ client.on("messageDelete",async msg=>{
         }
     }
     if(storage[msg.guild.id]?.counting.active&&storage[msg.guild.id]?.counting.channel===msg.channel.id){
-        var num=msg.content.match(/^(\d|,)+(?:\b)/i);
-        if(num!==null){
+        var num=msg.content?.match(/^(\d|,)+(?:\b)/i);
+        if(num!==null&&num!==undefined){
             if(+num[0]===storage[msg.guild.id].counting.nextNum-1){
-                msg.channel.send(num[0]);
+                msg.channel.send(num[0]).then(m=>m.react("✅"));
             }
         }
     }
@@ -2480,10 +2487,10 @@ client.on("messageUpdate",async (msgO,msg)=>{
         if(foundWords.length>0){
             storage[msg.guild.id].users[msg.author.id].infractions++;
             if(storage[msg.guildId].filter.censor){
-                msg.reply(`This post by **${msg.author.globalName||msg.author.username}** sent <t:${msg.createdTimestamp}:f> has been deleted due to retroactively editing a blocked word into the message.`);
+                msg.reply(`This post by **${msg.author.globalName||msg.author.username}** sent <t:${Math.round(msg.createdTimestamp/1000)}:f> has been deleted due to retroactively editing a blocked word into the message.`);
             }
             msg.delete();
-            if(storage[msg.author.id].config.dmOffenses){
+            if(storage[msg.author.id].config.dmOffenses&&!msg.author.bot){
                 msg.author.send(ll(`Your message in **${msg.guild.name}** was ${storage[msg.guildId].filter.censor?"censored":"deleted"} due to editing in the following word${foundWords.length>1?"s":""} that are in the filter: ||${foundWords.join("||, ||")}||${storage[msg.author.id].config.returnFiltered?"```\n"+msg.content.replaceAll("`","\\`")+"```":""}`));
             }
             if(storage[msg.guildId].filter.log&&storage[msg.guildId].filter.channel){
@@ -2530,10 +2537,10 @@ client.on("messageUpdate",async (msgO,msg)=>{
         c.edit(resp);
     }
     if(storage[msg.guild.id]?.counting.active&&storage[msg.guild.id]?.counting.channel===msg.channel.id){
-        var num=msgO.content.match(/^(\d|,)+(?:\b)/i);
-        if(num!==null){
+        var num=msgO.content?.match(/^(\d|,)+(?:\b)/i);
+        if(num!==null&&num!==undefined){
             if(+num[0]===storage[msg.guild.id].counting.nextNum-1){
-                msg.channel.send(num[0]);
+                msg.channel.send(num[0]).then(m=>m.react("✅"));
             }
         }
     }
@@ -2656,15 +2663,12 @@ client.on("channelUpdate",async (channelO,channel)=>{
     if(storage[channel.guild.id].logs.active&&storage[channel.guild.id].logs.channel_events){
         var diffs=`**Channel \`${channel.name}\`${channelO.name!==channel.name?` (Previously known as \`${channelO.name}\`)`:""} Edited**`;
         Object.keys(channelO).forEach(key=>{
-            if(key==="flags"||key==="permissionOverwrites"||key==="rawPosition") return;
+            if(key==="flags") return;
             if(channelO[key]!==channel[key]){
                 diffs+=`\n- \`${key}\``;
             }
         });
-        if(diffs.endsWith("**")){
-            diffs+="\n- `Permissions`";
-        }
-        channel.guild.channels.cache.get(storage[channel.guild.id].logs.channel).send(diffs);
+        //logQueue[storage[channel.guild.id].logs.channel].push(diffs);
     }
 });
 client.on("emojiCreate",async emoji=>{
@@ -2782,18 +2786,12 @@ client.on("roleUpdate",async (roleO,role)=>{
     if(storage[role.guild.id].logs.active&&storage[role.guild.id].logs.role_events){
         var diffs=`**Role <@&${role.id}> Edited**`;
         Object.keys(roleO).forEach(key=>{
-            if(key==="tags"||key==="permissions"||key==="flags") return;
+            if(key==="tags"||key==="permissions"||key==="flags"||key==="rawPosition") return;
             if(roleO[key]!==role[key]){
                 diffs+=`\n- \`${key}\``;
             }
         });
-        if(diffs.endsWith(`**\n- \`rawPosition\``)){
-            return;
-        }
-        if(diffs.endsWith("**")){
-            diffs+="\n- `Permissions`";
-        }
-        role.guild.channels.cache.get(storage[role.guild.id].logs.channel).send({content:diffs,allowedMentions:{parse:[]}});
+        if(!diffs.endsWith("**")) role.guild.channels.cache.get(storage[role.guild.id].logs.channel).send({content:diffs,allowedMentions:{parse:[]}});
     }
 });
 client.on("userUpdate",async (userO,user)=>{
@@ -2819,7 +2817,7 @@ client.on("guildMemberUpdate",async (memberO,member)=>{
                 diffs+=`\n- \`${key}\``;
             }
         });
-        client.channels.cache.get(storage[member.guild.id].logs.channel).send({content:diffs,allowedMentions:{parse:[]}});
+        if(!diffs.endsWith("**")) client.channels.cache.get(storage[member.guild.id].logs.channel).send({content:diffs,allowedMentions:{parse:[]}});
     }
 });
 
