@@ -2,6 +2,11 @@
 This is the open source page for Stewbot, an advanced Discord bot with the intention of helping keep your server running smoothly while also providing entertainment.
 Stewbot is completely open source and free.
 
+##Links
+- [App Directory](https://discord.com/application-directory/966167746243076136)
+- [Website](https://stewbot.kestron.software)
+- [Support Server](https://discord.gg/k3yVkrrvez)
+
 ## Running Locally
 To run this code with your own tokens, make sure you have node installed, and then you need to make a file called "env.json" in the same directory, and add the following fields:
 ```json
