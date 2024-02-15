@@ -27,28 +27,33 @@ Then simply use either run.bat or run.sh depending on your system, or just node 
 
 ## Current Working Features
 All of the following work completely for free
- - Swear Filter
+ - Swear Filter, with censoring as opposed to just deletion
  - Definitions
  - Polls
  - AI Ping Response
  - AI Person Generation
  - AI Image Generation via Dall-E Mini
- - Would you Rather
- - Message Deletion via Context Menu
+ - Would you Rathers
  - Notifications of important bot events
- - Auto roles
+ - Auto roles (commonly known as Reaction Roles)
  - Memes
  - Starboard
- - Counting
+ - Counting Game
  - Message embed previews for linked messages
- - Message moving
+ - Moving messages from one channel to another
  - Jokes
- - Auto join messages
+ - Auto join greetings
  - Translations
- - Staff tickets
- - Rows and Columns
+ - Moderator ticket system
+ - Rows and Columns game
  - Sticky Roles
  - Logging
- - Moderator actions
+ - Moderator actions with better logging
  - Personal and Server configs for general options
  - Admin messaging
+ - EXP Level up system
+ - Random number generator
+ - Coin flips
+ - Magic 8-Ball Responses
+ - KJV Bible Lookup
+ - Roles applied upon joining the server
