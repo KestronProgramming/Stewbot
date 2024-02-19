@@ -1009,7 +1009,7 @@ client.on("messageCreate",async msg=>{
                 });
             var attachedImg=false;
             mes.attachments.forEach((attached,i) => {
-                let url = attached.proxyURL;
+                let url = attached.url;
                 if(attachedImg||!(/(png|jpe?g)/i.test(url))){
                     fils.push(url);
                 }
@@ -1091,9 +1091,9 @@ client.on("messageCreate",async msg=>{
     if(msg.channel.name?.startsWith("Ticket with ")&&!msg.author.bot){
         var resp={files:[],content:`Ticket response from **${msg.guild.name}**. To respond, make sure to reply to this message.\nTicket ID: ${msg.channel.name.split("Ticket with ")[1].split(" in ")[1]}/${msg.channel.id}`};
         msg.attachments.forEach((attached,i) => {
-            let url=attached.proxyURL.toLowerCase();
+            let url=attached.url.toLowerCase();
             if(i!==0||(!url.includes(".jpg")&&!url.includes(".png")&&!url.includes(".jpeg"))){
-                resp.files.push(attached.proxyURL);
+                resp.files.push(attached.url);
             }
         });
         resp.embeds=[new EmbedBuilder()
@@ -1110,7 +1110,7 @@ client.on("messageCreate",async msg=>{
             .setFooter({
                 text: "Make sure to reply to this message to respond",
             })
-            .setImage(msg.attachments.first()?msg.attachments.first().proxyURL:null)
+            .setImage(msg.attachments.first()?msg.attachments.first().url:null)
         ];
         client.users.cache.get(msg.channel.name.split("Ticket with ")[1].split(" in ")[0]).send(resp);
     }
@@ -1915,13 +1915,13 @@ client.on("interactionCreate",async cmd=>{
             cmd.followUp({content:`Submitted for evaluation`,ephemeral:true});
             let i=0;
             for(a of cmd.targetMessage.attachments){
-                var dots=a[1].proxyURL.split("?")[0].split(".");
+                var dots=a[1].url.split("?")[0].split(".");
                 dots=dots[dots.length-1];
                 if(!["mov","png","jpg","jpeg","gif","mp4","mp3","wav","webm","ogg"].includes(dots)){
                     cmd.reply({content:`I don't support/recognize the file extension \`.${dots}\``,ephemeral:true});
                     return;
                 }
-                await fetch(a[1].proxyURL.split("?")[0]).then(d=>d.arrayBuffer()).then(d=>{
+                await fetch(a[1].url.split("?")[0]).then(d=>d.arrayBuffer()).then(d=>{
                     fs.writeFileSync(`./tempMemes/${i}.${dots}`,Buffer.from(d));
                 });
                 i++;
@@ -1944,13 +1944,13 @@ client.on("interactionCreate",async cmd=>{
         //Buttons
         case "save_meme":
             cmd.message.attachments.forEach(a=>{
-                var dots=a.proxyURL.split("?")[0].split(".");
+                var dots=a.url.split("?")[0].split(".");
                 dots=dots[dots.length-1];
                 if(!["mov","png","jpg","jpeg","gif","mp4","mp3","wav","webm","ogg"].includes(dots)){
                     cmd.reply({content:`I don't support or recognize that format (\`.${dots}\`)`,ephemeral:true});
                     return;
                 }
-                fetch(a.proxyURL.split("?")[0]).then(d=>d.arrayBuffer()).then(d=>{
+                fetch(a.url.split("?")[0]).then(d=>d.arrayBuffer()).then(d=>{
                     fs.writeFileSync(`./memes/${fs.readdirSync("./memes").length}.${dots}`,Buffer.from(d));
                 });
             });
@@ -2206,9 +2206,9 @@ client.on("interactionCreate",async cmd=>{
             resp.avatarURL=msg.author.displayAvatarURL();
             var p=0;
             for(a of msg.attachments){
-                var dots=a[1].proxyURL.split("?")[0].split(".");
+                var dots=a[1].url.split("?")[0].split(".");
                 dots=dots[dots.length-1];
-                await fetch(a[1].proxyURL.split("?")[0]).then(d=>d.arrayBuffer()).then(d=>{
+                await fetch(a[1].url.split("?")[0]).then(d=>d.arrayBuffer()).then(d=>{
                     fs.writeFileSync(`./tempMove/${p}.${dots}`,Buffer.from(d));
                 });
                 p++;
@@ -2396,9 +2396,10 @@ client.on("messageReactionAdd",async (react,user)=>{
             var resp={files:[]};
             var i=0;
             react.message.attachments.forEach((attached) => {
-                let url=attached.proxyURL.toLowerCase();
+                let url=attached.url.toLowerCase();
+                console.log(attached.url);
                 if(i!==0||(!url.includes(".jpg")&&!url.includes(".png")&&!url.includes(".jpeg")&&!url.includes(".gif"))||storage[react.message.guild.id].starboard.messType==="0"){
-                    resp.files.push(attached.proxyURL);
+                    resp.files.push(attached.url);
                 }
                 i++;
             });
@@ -2440,7 +2441,7 @@ client.on("messageReactionAdd",async (react,user)=>{
                         text: react.message.channel.name,
                         iconURL:"https://cdn.discordapp.com/attachments/1052328722860097538/1069496476687945748/141d49436743034a59dec6bd5618675d.png",
                     })
-                    .setImage(react.message.attachments.first()?react.message.attachments.first().proxyURL:null)
+                    .setImage(react.message.attachments.first()?react.message.attachments.first().url:null)
                 ];
                 if(storage[react.message.guild.id].starboard.messType==="1"){
                     resp.content=getStarMsg(react.message);
@@ -2508,9 +2509,9 @@ client.on("messageUpdate",async (msgO,msg)=>{
             replyBlip=`_[Reply to **${rMsg.author.username}**: ${rMsg.content.slice(0,22).replaceAll("https://","")}${rMsg.content.length>22?"...":""}](<https://discord.com/channels/${rMsg.guild.id}/${rMsg.channel.id}/${rMsg.id}>)_`;
         }
         msg.attachments.forEach((attached,i) => {
-            let url=attached.proxyURL.toLowerCase();
+            let url=attached.url.toLowerCase();
             if(i!==0||(!url.includes(".jpg")&&!url.includes(".png")&&!url.includes(".jpeg")&&!url.includes(".gif"))||storage[cmd.guild.id].starboard.messType==="0"){
-                resp.files.push(attached.proxyURL);
+                resp.files.push(attached.url);
             }
         });
         resp.embeds=[new EmbedBuilder()
@@ -2528,7 +2529,7 @@ client.on("messageUpdate",async (msgO,msg)=>{
                 text: msg.channel.name,
                 iconURL:"https://cdn.discordapp.com/attachments/1052328722860097538/1069496476687945748/141d49436743034a59dec6bd5618675d.png",
             })
-            .setImage(msg.attachments.first()?msg.attachments.first().proxyURL:null)
+            .setImage(msg.attachments.first()?msg.attachments.first().url:null)
         ];
         if(storage[msg.guild.id].starboard.messType==="1"){
             resp.content=getStarMsg(msg);
