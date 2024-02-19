@@ -1550,13 +1550,28 @@ client.on("interactionCreate",async cmd=>{
         break;
         case 'kick':
             cmd.guild.members.cache.get(cmd.options.getUser("target").id).kick(`Instructed to kick by ${cmd.user.username}: ${cmd.options.getString("reason")}`);
+            cmd.followUp({content:`I have attempted to kick <@${cmd.user.username}>`,allowedMentions:{parse:[]}});
         break;
         case 'timeout':
             var time=(cmd.options.getInteger("hours")*60000*60)+(cmd.options.getInteger("minutes")*60000)+(cmd.options.getInteger("seconds")*1000);
             cmd.guild.members.cache.get(cmd.options.getUser("target").id).timeout(time>0?time:60000,`Instructed to timeout by ${cmd.user.username}: ${cmd.options.getString("reason")}`);
+            cmd.followUp({content:`I have attempted to timeout <@${cmd.user.username}>`,allowedMentions:{parse:[]}});
         break;
         case 'ban':
-            cmd.guild.members.cache.get(cmd.options.getUser("target").id).ban({reason:`Instructed to ban by ${cmd.user.username}: ${cmd.options.getString("reason")}`});
+            if(cmd.user.id===client.id){
+                cmd.followUp(`I cannot ban myself. I apologize for any inconveniences I may have caused. You can use ${cmds.report_problem} if there's something that needs improvement.`);
+            }
+            if(cmd.user.id===cmd.options.getUser("target").id){
+                cmd.followUp(`I cannot ban you as the one invoking the command. If you feel the need to ban yourself, consider changing your actions and mindset instead.`);
+            }
+            var b=cmd.guild.members.cache.get(cmd.options.getUser("target").id);
+            if(b.bannable){
+                b.ban({reason:`Instructed to ban by ${cmd.user.username}: ${cmd.options.getString("reason")}`});
+                cmd.followUp(`I have banned <@${cmd.user.username}>`);
+            }
+            else{
+                cmd.followUp(`I cannot ban this person. Make sure that I have a role higher than their highest role in the server settings before running this command.`);
+            }
         break;
         case 'help':
             cmd.followUp({content:`**General**`,embeds:[{
