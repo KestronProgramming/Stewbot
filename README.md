@@ -57,3 +57,6 @@ All of the following work completely for free
  - Magic 8-Ball Responses
  - KJV Bible Lookup
  - Roles applied upon joining the server
+
+## I found a command, but there's nothing in the code for it
+There is currently a treasure hunt within the bot going on! This is being run via a second smaller script. It will not be made available so as to preserve the hunt aspect. Once the hunt is over, this treasure hunt file will be provided. All bot functions still adhere to the [Privacy Policy](https://stewbot.kestron.software/privacy). You should join the hunt and see what you can uncover.
