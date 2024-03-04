@@ -173,10 +173,7 @@ var pieCols=[
     ["f5deb3","Wheat"],
     ["daa520","Goldenrod"]
 ];
-function checkHoliday(loop){
-    if(loop){
-        setInterval(checkHoliday,60000*60*24);
-    }
+function checkHoliday(){
     function Easter(Y) {//Thanks StackOverflow :) https://stackoverflow.com/questions/1284314/easter-date-in-javascript
         var C = Math.floor(Y/100);
         var N = Y - 19*Math.floor(Y/19);
@@ -462,6 +459,56 @@ function getLvl(lvl){
     return total;
 }
 
+var started24=false;
+function daily(){
+    if(!started24){
+        setInterval(daily,60000*60*24);
+        started24=true;
+    }
+    checkHoliday();
+    var dailyDevo=[];
+    fetch("https://www.biblegateway.com/devotionals/niv-365-devotional/today").then(d=>d.text()).then(d=>{
+        var temp=d.split(`<div class="col-xs-12">`)[1].split("</div>")[0].trim().replace(/\<\/?h2\>/ig,"**").replace(/\<\/?p\>/ig,"\n").replace(/\<\/?ul\>/ig,"").replace(/\<li\>/ig,"\n- ").replaceAll("</li>","").replace(/\<a.*\<\/a\>/ig,a=>`[${a.match(/(?<=\>).*(?=\<)/)}](<${a.split(`href="`)[1].split(`"`)[0]}>)`).split("\n");
+        var cc=0;
+        var cOn=0;
+        var now=new Date();
+        temp.forEach(t=>{
+            if(cc+t.length>4000){
+                dailyDevo[cOn]={
+                    "type": "rich",
+                    "title": `The NIV 365 Day Devotional`,
+                    "description": dailyDevo[cOn].startsWith("undefined")?dailyDevo[cOn].slice(9):dailyDevo[cOn],
+                    "color": 0x773e09,
+                    "url": `https://www.biblegateway.com/devotionals/niv-365-devotional/2024/03/04`,
+                    "footer":{
+                        "text":`Bible Gateway, ${now.getMonth()+1}/${now.getDate()}/${now.getFullYear()}`
+                    }
+                };
+                cOn++;
+                dailyDevo.push("");
+                cc=0;
+            }
+            cc+=t.length;
+            dailyDevo[cOn]+=`${t}\n`;
+        });
+        dailyDevo[dailyDevo.length-1]={
+            "type": "rich",
+            "title": `The NIV 365 Day Devotional`,
+            "description": dailyDevo[cOn].startsWith("undefined")?dailyDevo[cOn].slice(9):dailyDevo[cOn],
+            "color": 0x773e09,
+            "url": `https://www.biblegateway.com/devotionals/niv-365-devotional/2024/03/04`,
+            "footer":{
+                "text":`Bible Gateway, ${now.getMonth()+1}/${now.getDate()}/${now.getFullYear()}`
+            }
+        }
+        Object.keys(storage).forEach(s=>{
+            if(storage[s].daily?.devos.active){
+                client.channels.cache.get(storage[s].daily.devos.channel).send({embeds:dailyDevo});
+            }
+        });
+    });
+}
+
 let rac = {
     board: [],
     lastPlayer: "Nobody",
@@ -625,11 +672,12 @@ function createInWorldClient(args) {
 }
 async function sendMessage(msg, dm) {
     curText[msg.author.username]=[];
-    if (conns[msg.author.id] === null || conns[msg.author.id] === undefined || lastChannels[msg.author.id]!==msg.channel.id) {
+    if (conns[msg.author.id] === null || conns[msg.author.id] === undefined || lastChannels[msg.author.id]!==msg.channel.id||Date.now()-conns[msg.author.id].lastMsg<60000*30) {
         conns[msg.author.id] = createInWorldClient({ dm: dm, msg: msg });
         lastChannels[msg.author.id]=msg.channel.id;
     }
     conns[msg.author.id].sendText(`Message from ${msg.author.globalName||msg.author.username}: ${msg.content.replaceAll(`<@${client.user.id}>`, "Stewbot")}`);
+    conns[msg.author.id].lastMsg=Date.now();
     msgs[msg.author.id]=msg;
 }
 const handleError = (msg, dm) => {
@@ -649,6 +697,32 @@ const handleError = (msg, dm) => {
 };
 
 const defaultGuild={
+    "daily":{
+        "memes":{
+            "active":false,
+            "channel":""
+        },
+        "wyrs":{
+            "active":false,
+            "channel":""
+        },
+        "jokes":{
+            "active":false,
+            "channel":""
+        },
+        "devos":{
+            "active":false,
+            "channel":""
+        },
+        "verses":{
+            "active":false,
+            "channel":""
+        },
+        "qotd":{
+            "active":false,
+            "channel":""
+        }
+    },
     "stickyRoles":false,
     "levels":{
         "active":false,
@@ -755,8 +829,11 @@ const presets={
     "pollAddModal":new ModalBuilder().setCustomId("poll-added").setTitle("Add a poll option").addComponents(new ActionRowBuilder().addComponents(inps.pollInp)),
     "pollRemModal":new ModalBuilder().setCustomId("poll-removed").setTitle("Remove a poll option").addComponents(new ActionRowBuilder().addComponents(inps.pollNum))
 };
-var kaProgramRegex =/\b(?!<)https?:\/\/(?:www\.)?khanacademy\.org\/(cs|computer-programming)\/[a-z,\d,-]+\/\d{1,16}(?!>)\b/gi;
-var discordMessageRegex =/\b(?!<)https?:\/\/(ptb\.|canary\.)?discord(app)?.com\/channels\/(\@me|\d{1,25})\/\d{1,25}\/\d{1,25}(?!>)\b/gi;
+var kaProgramRegex =/\b(?!<)https?:\/\/(?:www\.)?khanacademy\.org\/(cs|computer-programming)\/[a-z,\d,-]+\/\d+(?!>)\b/gi;
+var discordMessageRegex =/\b(?!<)https?:\/\/(ptb\.|canary\.)?discord(app)?.com\/channels\/(\@me|\d+)\/\d+\/\d+(?!>)\b/gi;
+var spotifyTrackRegex=/\bhttps?:\/\/open\.spotify\.com\/track\/\w+(\b|\?)/gi;
+var spotifyAlbumRegex=/\bhttps?:\/\/open\.spotify\.com\/album\/\w+(\b|\?)/gi;
+var spotifyPlaylistRegex=/\bhttps?:\/\/open\.spotify\.com\/playlist\/\w+(\b|\?)/gi;
 function getStarMsg(msg){
     var msgs=[
         `Excuse me, there is a new message.`,
@@ -791,14 +868,27 @@ function notify(urgencyLevel,what){
 }
 var logQueue={};
 var uptime=0;
+var statTog=0;
 client.once("ready",async ()=>{
     uptime=Math.round(Date.now()/1000);
     notify(1,`Started <t:${uptime}:R>`);
     console.log(`Logged Stewbot handles into ${client.user.tag}`);
     save();
-    client.user.setActivity("𝐒teward 𝐓o 𝐄xpedite 𝐖ork",{type:ActivityType.Custom},1000*60*60*4);
-    setInterval(()=>{client.user.setActivity("𝐒teward 𝐓o 𝐄xpedite 𝐖ork",{type:ActivityType.Custom},1000*60*60*4)},60000*60);
-    checkHoliday(true);
+    client.user.setActivity("It's a `/secret` to everybody",{type:ActivityType.Custom},1000*60*60*4);
+    setInterval(()=>{
+        statTog++;
+        if(statTog>11){
+            client.user.setActivity("It's a `/secret` to everybody",{type:ActivityType.Custom},1000*60*60*4);
+            statTog=0;
+        }
+        else{
+            client.user.setActivity("𝐒teward 𝐓o 𝐄xpedite 𝐖ork",{type:ActivityType.Custom},1000*60*60*4);
+        }
+    },60000*5);
+    var now=new Date();
+    setTimeout(daily,((now.getHours()>18?18+24-now.getHours():18-now.getHours())*(60000*60))+((60-now.getMinutes())*60000));
+
+    daily();
 });
 client.on("messageCreate",async msg=>{
     async function sendHook(what){
@@ -946,7 +1036,7 @@ client.on("messageCreate",async msg=>{
                     msg.reply(`Nope, you need to wait for ${storage[msg.guild.id].counting.takeTurns} other ${storage[msg.guild.id].counting.takeTurns===1?"person":"people"} to post before you post again!${storage[msg.guild.id].counting.reset?` The next number to post was going to be \`${storage[msg.guild.id].counting.nextNum}\`, but now it's \`1\`.`:""}`);
                     if(storage[msg.guild.id].counting.reset){
                         storage[msg.guild.id].counting.nextNum=1;
-                        storage[msg.guild.id].counting.legit=true;
+                        if(storage[msg.guild.id].counting.reset&&storage[msg.guild.id].counting.takeTurns>0) storage[msg.guild.id].counting.legit=true;
                         for(let a in storage[msg.guild.id].users){
                             storage[msg.guild.id].users[a].countTurns=0;
                         }
@@ -958,7 +1048,7 @@ client.on("messageCreate",async msg=>{
                 msg.react("❌");
                 msg.reply(`Nope, that was incorrect! The next number to post was going to be \`${storage[msg.guild.id].counting.nextNum}\`, but now it's \`1\`.`);
                 storage[msg.guild.id].counting.nextNum=1;
-                storage[msg.guild.id].counting.legit=true;
+                if(storage[msg.guild.id].counting.reset&&storage[msg.guild.id].counting.takeTurns>0) storage[msg.guild.id].counting.legit=true;
                 for(let a in storage[msg.guild.id].users){
                     storage[msg.guild.id].users[a].countTurns=0;
                 }
@@ -969,6 +1059,7 @@ client.on("messageCreate",async msg=>{
 
     var links=msg.content.match(discordMessageRegex)||[];
     var progs=msg.content.match(kaProgramRegex)||[];
+    var spotTracks=msg.content.match(spotifyTrackRegex)||[];
     if(!storage[msg.author.id].config.embedPreviews||!storage[msg.guildId]?.config.embedPreviews){
         links=[];
         progs=[];
@@ -1045,8 +1136,13 @@ client.on("messageCreate",async msg=>{
                         inline: true
                     },
                     {
-                        name: `Last Updated in Archive`,
+                        name: `Last Updated`,
                         value: `${new Date(d.updated).toDateString()}`,
+                        inline: true
+                    },
+                    {
+                        name: `Last Updated in Archive`,
+                        value: `${new Date(d.archive.updated).toDateString()}`,
                         inline: true
                     },
                     {
@@ -1166,6 +1262,7 @@ client.on("messageCreate",async msg=>{
     }
 });
 client.on("interactionCreate",async cmd=>{
+    if(cmd.commandName==="secret") return;
     try{
 	    if(!cmd.isButton()&&!cmd.isModalSubmit()&&!cmd.isChannelSelectMenu()&&!cmd.isRoleSelectMenu()) await cmd.deferReply({ephemeral:["poll","auto_roles","report_problem","submit_meme","delete_message","move_message","auto-join-roles","join-roleOption","admin_message"].includes(cmd.commandName)});
     }catch(e){}
@@ -1328,6 +1425,9 @@ client.on("interactionCreate",async cmd=>{
                     if(storage[cmd.guild.id].counting.nextNum>1){
                         storage[cmd.guild.id].counting.legit=false;
                     }
+                    else if(storage[cmd.guild.id].counting.reset&&storage[cmd.guild.id].counting.takeTurns>0){
+                        storage[cmd.guild.id].counting.legit=true;
+                    }
                     cmd.followUp(`Alright, I've set the next number to be counted to \`${storage[cmd.guild.id].counting.nextNum}\`.${storage[cmd.guild.id].counting.legit?"":`\n\nPlease be aware that this server is currently ineligible for the leaderboard. To fix this, make sure that the number you start from is less than 2, that the posts between turns is at least 1, and that counting is configured to reset upon any mistakes.`}`);
                     save();
                 break;
@@ -1359,7 +1459,7 @@ client.on("interactionCreate",async cmd=>{
                         let firstQuest=firstQues[0].toUpperCase()+firstQues.slice(1,firstQues.length).split(" or ")[0];
                         let nextQues=firstQues.split(" or ")[1];
                         let nextQuest=nextQues[0].toUpperCase()+nextQues.slice(1,nextQues.length).split("?")[0];
-                        cmd.followUp(`**Would you Rather**\n🅰️: ${firstQuest}\n🅱️: ${nextQuest}`);
+                        cmd.followUp(`**Would you Rather**\n🅰️: ${firstQuest}\n🅱️: ${nextQuest}\n\n*\\*Disclaimer: All WYRs are provided by a third party API*`);
                         let msg = await cmd.fetchReply();
                         msg.react("🅰️").then(msg.react("🅱️"));
                     });
@@ -1896,11 +1996,46 @@ client.on("interactionCreate",async cmd=>{
                 break;
             }
         break;
+        case 'daily-config':
+            if(!storage[cmd.guild.id].hasOwnProperty("daily")){
+                storage[cmd.guild.id].daily={
+                    "memes":{
+                        "active":false,
+                        "channel":""
+                    },
+                    "wyrs":{
+                        "active":false,
+                        "channel":""
+                    },
+                    "jokes":{
+                        "active":false,
+                        "channel":""
+                    },
+                    "devos":{
+                        "active":false,
+                        "channel":""
+                    },
+                    "verses":{
+                        "active":false,
+                        "channel":""
+                    },
+                    "qotd":{
+                        "active":false,
+                        "channel":""
+                    }
+                };
+            }
+            storage[cmd.guild.id].daily.devos.active=cmd.options.getBoolean("active");
+            storage[cmd.guild.id].daily.devos.channel=cmd.options.getChannel("channel").id;
+            cmd.followUp(`${storage[cmd.guild.id].daily.devos.active?"A":"Dea"}ctivated daily \`devotions\` for this server in <#${storage[cmd.guild.id].daily.devos.channel}>.`);
+            save();
+        break;
 
         case 'restart':
             if(cmd.guild?.id==="983074750165299250"&&cmd.channel.id==="986097382267715604"){
                 notify(1,{content:`Bot restarted by <@${cmd.user.id}>`,allowedMentions:{parse:[]}});
                 cmd.followUp("Restarting...");
+                fs.writeFileSync("./storage.json",JSON.stringify(storage));
                 setTimeout(()=>{process.exit(0)},5000);
             }
         break;
@@ -2200,11 +2335,11 @@ client.on("interactionCreate",async cmd=>{
                 }
             });
             if(cantRoles.length>0){
-                cmd.followUp({ephemeral:true,content:`I'm sorry, but I don't have a high enough permission to handle the following roles. If you'd like my help with these, go into Roles in the Server Settings, and drag a role I have above the roles you want me to manage.\n<@&${cantRoles.join(">, <@&")}>`,allowedMentions:{parse:[]}});
+                cmd.reply({ephemeral:true,content:`I'm sorry, but I don't have a high enough permission to handle the following roles. If you'd like my help with these, go into Roles in the Server Settings, and drag a role I have above the roles you want me to manage.\n<@&${cantRoles.join(">, <@&")}>`,allowedMentions:{parse:[]}});
             }
             else{
                 storage[cmd.guild.id].autoJoinRoles=goodRoles;
-                cmd.followUp({content:`Alright, I will add these roles to new members: <@&${goodRoles.join(">, <@&")}>`,allowedMentions:{parse:[]},ephemeral:true});
+                cmd.reply({content:`Alright, I will add these roles to new members: <@&${goodRoles.join(">, <@&")}>`,allowedMentions:{parse:[]},ephemeral:true});
                 save();
             }
         break;
@@ -2405,14 +2540,15 @@ client.on("messageReactionAdd",async (react,user)=>{
         if(msg.reactions.cache.get(storage[msg.guildId].starboard.emoji).count>=storage[msg.guildId].starboard.threshold){
             var replyBlip="";
             if(msg.type===19){
-                var rMsg=await msg.fetchReference();
-                replyBlip=`_[Reply to **${rMsg.author.username}**: ${rMsg.content.slice(0,22).replaceAll("https://","")}${rMsg.content.length>22?"...":""}](<https://discord.com/channels/${rMsg.guild.id}/${rMsg.channel.id}/${rMsg.id}>)_`;
+                try{
+                    var rMsg=await msg.fetchReference();
+                    replyBlip=`_[Reply to **${rMsg.author.username}**: ${rMsg.content.slice(0,22).replaceAll("https://","")}${rMsg.content.length>22?"...":""}](<https://discord.com/channels/${rMsg.guild.id}/${rMsg.channel.id}/${rMsg.id}>)_`;
+                }catch(e){}
             }
             var resp={files:[]};
             var i=0;
             react.message.attachments.forEach((attached) => {
                 let url=attached.url.toLowerCase();
-                console.log(attached.url);
                 if(i!==0||(!url.includes(".jpg")&&!url.includes(".png")&&!url.includes(".jpeg")&&!url.includes(".gif"))||storage[react.message.guild.id].starboard.messType==="0"){
                     resp.files.push(attached.url);
                 }
