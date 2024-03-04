@@ -479,7 +479,7 @@ function daily(){
                     "title": `The NIV 365 Day Devotional`,
                     "description": dailyDevo[cOn].startsWith("undefined")?dailyDevo[cOn].slice(9):dailyDevo[cOn],
                     "color": 0x773e09,
-                    "url": `https://www.biblegateway.com/devotionals/niv-365-devotional/2024/03/04`,
+                    "url": `https://www.biblegateway.com/devotionals/niv-365-devotional/2024/today`,
                     "footer":{
                         "text":`Bible Gateway, ${now.getMonth()+1}/${now.getDate()}/${now.getFullYear()}`
                     }
@@ -496,7 +496,7 @@ function daily(){
             "title": `The NIV 365 Day Devotional`,
             "description": dailyDevo[cOn].startsWith("undefined")?dailyDevo[cOn].slice(9):dailyDevo[cOn],
             "color": 0x773e09,
-            "url": `https://www.biblegateway.com/devotionals/niv-365-devotional/2024/03/04`,
+            "url": `https://www.biblegateway.com/devotionals/niv-365-devotional/today`,
             "footer":{
                 "text":`Bible Gateway, ${now.getMonth()+1}/${now.getDate()}/${now.getFullYear()}`
             }
