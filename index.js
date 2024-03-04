@@ -887,8 +887,6 @@ client.once("ready",async ()=>{
     },60000*5);
     var now=new Date();
     setTimeout(daily,((now.getHours()>18?18+24-now.getHours():18-now.getHours())*(60000*60))+((60-now.getMinutes())*60000));
-
-    daily();
 });
 client.on("messageCreate",async msg=>{
     async function sendHook(what){
