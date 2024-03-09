@@ -468,7 +468,7 @@ function daily(){
     checkHoliday();
     var dailyDevo=[];
     fetch("https://www.biblegateway.com/devotionals/niv-365-devotional/today").then(d=>d.text()).then(d=>{
-        var temp=d.split(`<div class="col-xs-12">`)[1].split("</div>")[0].trim().replace(/\<\/?h2\>/ig,"**").replace(/\<\/?p\>/ig,"\n").replace(/\<\/?ul\>/ig,"").replace(/\<li\>/ig,"\n- ").replaceAll("</li>","").replace(/\<a.*?\<\/a\>/ig,a=>`[${a.match(/(?<=\>).*(?=\<\/a\>)/)}](<${a.split(`href="`)[1].split(`"`)[0]}>)`).split("\n");
+        var temp=d.split(`<div class="col-xs-12">`)[1].split("</div>")[0].trim().replace(/\<\/?h\d\>/ig,"**").replace(/\<\/?p\>/ig,"\n").replace(/\<\/?ul\>/ig,"").replace(/\<li\>/ig,"\n- ").replaceAll("</li>","").replace(/\<a.*?\<\/a\>/ig,a=>`[${a.match(/(?<=\>).*(?=\<\/a\>)/)}](<${a.split(`href="`)[1].split(`"`)[0]}>)`).split("\n");
         var cc=0;
         var cOn=0;
         var now=new Date();
@@ -886,7 +886,7 @@ client.once("ready",async ()=>{
         }
     },60000*5);
     var now=new Date();
-    setTimeout(daily,((now.getHours()>18?18+24-now.getHours():18-now.getHours())*(60000*60))+((60-now.getMinutes())*60000));
+    setTimeout(daily,((now.getHours()>11?11+24-now.getHours():11-now.getHours())*(60000*60))+((60-now.getMinutes())*60000));
 });
 client.on("messageCreate",async msg=>{
     async function sendHook(what){
@@ -1415,7 +1415,7 @@ client.on("interactionCreate",async cmd=>{
                     for(let a in storage[cmd.guild.id].users){
                         storage[cmd.guild.id].users[a].countTurns=0;
                     }
-                    cmd.followUp(`Alright, I configured counting for this server.${storage[cmd.guild.id].counting.active!==cmd.options.getBoolean("active")?`\n\nIt looks like no channel has been set to count in, so counting is currently disabled. Please run ${cmds['counting config']} again and set the channel to activate counting.`:`${storage[cmd.guild.id].counting.legit?"":`\n\nPlease be aware this server is currently inelegible for the leaderboard. To fix this, make sure that reset is set to true, that the posts between turns is at least 1, and that you don't set the number to anything higher than 1 manually.`}`}`);
+                    cmd.followUp(`Alright, I configured counting for this server.${storage[cmd.guild.id].counting.active!==cmd.options.getBoolean("active")?`\n\nIt looks like no channel has been set to count in, so counting is currently disabled. Please run ${cmds['counting config']} again and set the channel to activate counting.`:`${storage[cmd.guild.id].counting.legit?"":`\n\nPlease be aware this server is currently ineligible for the leaderboard. To fix this, make sure that reset is set to true, that the posts between turns is at least 1, and that you don't set the number to anything higher than 1 manually.`}`}`);
                     save();
                 break;
                 case "set_number":
@@ -1449,7 +1449,7 @@ client.on("interactionCreate",async cmd=>{
                     fetch("https://would-you-rather.p.rapidapi.com/wyr/random", {
                         method: "GET",
                         headers: {
-                            "X-RapidAPI-Key": "7bd6392ac6mshceb99882c34c39cp16b90cjsn985bc49d5ae1",
+                            "X-RapidAPI-Key": process.env.wyrKey,
                             "X-RapidAPI-Host": "would-you-rather.p.rapidapi.com",
                         },
                     }).then(d=>d.json()).then(async d=>{
