@@ -946,7 +946,7 @@ client.on("messageCreate",async msg=>{
                 var replyBlip="";
                 if(msg.type===19){
                     var rMsg=await msg.fetchReference();
-                    replyBlip=`_[Reply to **${rMsg.author.username}**: ${rMsg.content.slice(0,22).replaceAll("https://","")}${rMsg.content.length>22?"...":""}](<https://discord.com/channels/${rMsg.guild.id}/${rMsg.channel.id}/${rMsg.id}>)_\n`;
+                    replyBlip=`_[Reply to **${rMsg.author.username}**: ${rMsg.content.slice(0,22).replace(/(https?\:\/\/|\n)/ig,"")}${rMsg.content.length>22?"...":""}](<https://discord.com/channels/${rMsg.guild.id}/${rMsg.channel.id}/${rMsg.id}>)_\n`;
                 }
                 sendHook({
                     username:msg.member?.nickname||msg.author.globalName||msg.author.username,
@@ -2347,7 +2347,7 @@ client.on("interactionCreate",async cmd=>{
             var replyBlip="";
             if(msg.type===19){
                 var rMsg=await msg.fetchReference();
-                replyBlip=`_[Reply to **${rMsg.author.username}**: ${rMsg.content.slice(0,22).replaceAll("https://","")}${rMsg.content.length>22?"...":""}](<https://discord.com/channels/${rMsg.guild.id}/${rMsg.channel.id}/${rMsg.id}>)_\n`;
+                replyBlip=`_[Reply to **${rMsg.author.username}**: ${rMsg.content.slice(0,22).replace(/(https?\:\/\/|\n)/ig,"")}${rMsg.content.length>22?"...":""}](<https://discord.com/channels/${rMsg.guild.id}/${rMsg.channel.id}/${rMsg.id}>)_\n`;
             }
             resp.content=`\`\`\`\nThis message has been moved from ${cmd.channel.name} by Stewbot.\`\`\`${replyBlip}${msg.content}`;
             resp.username=msg.author.nickname||msg.author.globalName||msg.author.username;
@@ -2540,7 +2540,7 @@ client.on("messageReactionAdd",async (react,user)=>{
             if(msg.type===19){
                 try{
                     var rMsg=await msg.fetchReference();
-                    replyBlip=`_[Reply to **${rMsg.author.username}**: ${rMsg.content.slice(0,22).replaceAll("https://","")}${rMsg.content.length>22?"...":""}](<https://discord.com/channels/${rMsg.guild.id}/${rMsg.channel.id}/${rMsg.id}>)_`;
+                    replyBlip=`_[Reply to **${rMsg.author.username}**: ${rMsg.content.slice(0,22).replace(/(https?\:\/\/|\n)/ig,"")}${rMsg.content.length>22?"...":""}](<https://discord.com/channels/${rMsg.guild.id}/${rMsg.channel.id}/${rMsg.id}>)_`;
                 }catch(e){}
             }
             var resp={files:[]};
@@ -2655,7 +2655,7 @@ client.on("messageUpdate",async (msgO,msg)=>{
         var replyBlip="";
         if(msg.type===19){
             var rMsg=await msg.fetchReference();
-            replyBlip=`_[Reply to **${rMsg.author.username}**: ${rMsg.content.slice(0,22).replaceAll("https://","")}${rMsg.content.length>22?"...":""}](<https://discord.com/channels/${rMsg.guild.id}/${rMsg.channel.id}/${rMsg.id}>)_`;
+            replyBlip=`_[Reply to **${rMsg.author.username}**: ${rMsg.content.slice(0,22).replace(/(https?\:\/\/|\n)/ig,"")}${rMsg.content.length>22?"...":""}](<https://discord.com/channels/${rMsg.guild.id}/${rMsg.channel.id}/${rMsg.id}>)_`;
         }
         msg.attachments.forEach((attached,i) => {
             let url=attached.url.toLowerCase();
