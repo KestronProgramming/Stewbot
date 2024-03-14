@@ -502,7 +502,7 @@ function daily(){
             }
         }
         Object.keys(storage).forEach(s=>{
-            if(storage[s].daily?.devos.active){
+            if(storage[s]?.daily?.devos?.active){
                 client.channels.cache.get(storage[s].daily.devos.channel).send({embeds:dailyDevo});
             }
         });
