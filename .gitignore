@@ -6,3 +6,6 @@ storage.json
 memes/*
 tempMemes/*
 commands.json
+
+*.mp3
+hunt.js
