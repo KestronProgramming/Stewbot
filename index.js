@@ -468,7 +468,7 @@ function daily(){
     checkHoliday();
     var dailyDevo=[];
     fetch("https://www.biblegateway.com/devotionals/niv-365-devotional/today").then(d=>d.text()).then(d=>{
-        var temp=d.split(`<div class="col-xs-12">`)[1].split("</div>")[0].trim().replace(/\<\/?h\d\>/ig,"**").replace(/\<\/?p\>/ig,"\n").replace(/\<\/?ul\>/ig,"").replace(/\<li\>/ig,"\n- ").replaceAll("</li>","").replace(/\<a.*?\<\/a\>/ig,a=>`[${a.match(/(?<=\>).*(?=\<\/a\>)/)}](<${a.split(`href="`)[1].split(`"`)[0]}>)`).split("\n");
+        var temp=d.split(`<div class="col-xs-12">`)[1].split("</div>")[0].trim().replace(/\<\/?h\d\>/ig,"**").replace(/\<\/?p\>/ig,"\n").replace(/\<\/?(u|o)l\>/ig,"").replace(/\<li\>/ig,"\n- ").replaceAll(/\<\/(li|br)\>/,"").replace(/\<a.*?\<\/a\>/ig,a=>`[${a.match(/(?<=\>).*(?=\<\/a\>)/)}](<${a.split(`href="`)[1].split(`"`)[0]}>)`).split("\n");
         var cc=0;
         var cOn=0;
         var now=new Date();
