@@ -789,7 +789,8 @@ const defaultGuildUser={
     "countTurns":0,
     "exp":0,
     "expTimeout":0,
-    "lvl":0
+    "lvl":0,
+    "beenCountWarned":false
 };
 const defaultUser={
     "offenses":0,
@@ -1031,26 +1032,40 @@ client.on("messageCreate",async msg=>{
                 }
                 else{
                     msg.react("❌");
-                    msg.reply(`Nope, you need to wait for ${storage[msg.guild.id].counting.takeTurns} other ${storage[msg.guild.id].counting.takeTurns===1?"person":"people"} to post before you post again!${storage[msg.guild.id].counting.reset?` The next number to post was going to be \`${storage[msg.guild.id].counting.nextNum}\`, but now it's \`1\`.`:""}`);
-                    if(storage[msg.guild.id].counting.reset){
-                        storage[msg.guild.id].counting.nextNum=1;
-                        if(storage[msg.guild.id].counting.reset&&storage[msg.guild.id].counting.takeTurns>0) storage[msg.guild.id].counting.legit=true;
-                        for(let a in storage[msg.guild.id].users){
-                            storage[msg.guild.id].users[a].countTurns=0;
+                    if(storage[msg.guild.id].users[msg.author.id].beenCountWarned&&storage[msg.guild.id].counting.reset){
+                        msg.reply(`Nope, you need to wait for ${storage[msg.guild.id].counting.takeTurns} other ${storage[msg.guild.id].counting.takeTurns===1?"person":"people"} to post before you post again!${storage[msg.guild.id].counting.reset?` The next number to post was going to be \`${storage[msg.guild.id].counting.nextNum}\`, but now it's \`1\`.`:""}`);
+                        if(storage[msg.guild.id].counting.reset){
+                            storage[msg.guild.id].counting.nextNum=1;
+                            if(storage[msg.guild.id].counting.reset&&storage[msg.guild.id].counting.takeTurns>0) storage[msg.guild.id].counting.legit=true;
+                            for(let a in storage[msg.guild.id].users){
+                                storage[msg.guild.id].users[a].countTurns=0;
+                            }
+                            save();
                         }
+                    }
+                    else{
+                        msg.reply(`Nope, that's incorrect. You have been warned! Next time this will reset the count.\nNumbers entered must be the last number plus one, (so if the last entered number is 148, the next number is 149).${storage[msg.guild.id].counting.takeTurns>0?` You also need to make sure at least **${storage[msg.guild.id].counting.takeTurns}** other ${storage[msg.guild.id].counting.takeTurns===1?"person":"people"} take${storage[msg.guild.id].counting.takeTurns===1?"s":""} a turn before you take another turn.`:""}`);
+                        storage[msg.guild.id].users[msg.author.id].beenCountWarned=true;
                         save();
                     }
                 }
             }
             else if(storage[msg.guild.id].counting.reset&&storage[msg.guild.id].counting.nextNum!==1){
                 msg.react("❌");
-                msg.reply(`Nope, that was incorrect! The next number to post was going to be \`${storage[msg.guild.id].counting.nextNum}\`, but now it's \`1\`.`);
-                storage[msg.guild.id].counting.nextNum=1;
-                if(storage[msg.guild.id].counting.reset&&storage[msg.guild.id].counting.takeTurns>0) storage[msg.guild.id].counting.legit=true;
-                for(let a in storage[msg.guild.id].users){
-                    storage[msg.guild.id].users[a].countTurns=0;
+                if(storage[msg.guild.id].users[msg.author.id].beenCountWarned&&storage[msg.guild.id].counting.reset){
+                    msg.reply(`Nope, that was incorrect! The next number to post was going to be \`${storage[msg.guild.id].counting.nextNum}\`, but now it's \`1\`.`);
+                    storage[msg.guild.id].counting.nextNum=1;
+                    if(storage[msg.guild.id].counting.reset&&storage[msg.guild.id].counting.takeTurns>0) storage[msg.guild.id].counting.legit=true;
+                    for(let a in storage[msg.guild.id].users){
+                        storage[msg.guild.id].users[a].countTurns=0;
+                    }
+                    save();
                 }
-                save();
+                else{
+                    msg.reply(`Nope, that's incorrect. You have been warned! Next time this will reset the count.\nNumbers entered must be the last number plus one, (so if the last entered number is 148, the next number is 149).${storage[msg.guild.id].counting.takeTurns>0?` You also need to make sure at least **${storage[msg.guild.id].counting.takeTurns}** other ${storage[msg.guild.id].counting.takeTurns===1?"person":"people"} take${storage[msg.guild.id].counting.takeTurns===1?"s":""} a turn before you take another turn.`:""}`);
+                    storage[msg.guild.id].users[msg.author.id].beenCountWarned=true;
+                    save();
+                }
             }
         }
     }
@@ -1414,6 +1429,7 @@ client.on("interactionCreate",async cmd=>{
                     if(!storage[cmd.guild.id].counting.reset||storage[cmd.guild.id].counting.takeTurns<1) storage[cmd.guild.id].counting.legit=false;
                     for(let a in storage[cmd.guild.id].users){
                         storage[cmd.guild.id].users[a].countTurns=0;
+                        storage[cmd.guild.id].users[a].beenCountWarned=false;
                     }
                     cmd.followUp(`Alright, I configured counting for this server.${storage[cmd.guild.id].counting.active!==cmd.options.getBoolean("active")?`\n\nIt looks like no channel has been set to count in, so counting is currently disabled. Please run ${cmds['counting config']} again and set the channel to activate counting.`:`${storage[cmd.guild.id].counting.legit?"":`\n\nPlease be aware this server is currently ineligible for the leaderboard. To fix this, make sure that reset is set to true, that the posts between turns is at least 1, and that you don't set the number to anything higher than 1 manually.`}`}`);
                     save();
