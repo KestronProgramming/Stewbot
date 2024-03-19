@@ -3,7 +3,7 @@ var client;
 const translate=require("@vitalets/google-translate-api").translate;
 const { createCanvas } = require('canvas');
 const { InworldClient, SessionToken, status } = require("@inworld/nodejs-sdk");
-const {Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType}=require("discord.js");
+const {Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent }=require("discord.js");
 const bible=require("./kjv.json");
 var Bible={};
 var properNames={};
@@ -367,15 +367,15 @@ var helpPages=[
                 desc:"Submit a meme to be approved for the bot to post"
             },
             {
-                name:cmds.rng,
+                name:cmds["random rng"],
                 desc:"Generate a random number"
             },
             {
-                name:cmds["coin-flip"],
+                name:cmds["random coin-flip"],
                 desc:"Flip a number of coins"
             },
             {
-                name:cmds["8-ball"],
+                name:cmds["random 8-ball"],
                 desc:"Receive a random answer to a question"
             },
             {
@@ -643,20 +643,20 @@ function generateSessionToken(key) {
 }
 function createInWorldClient(args) {
     var inClient = new InworldClient()
-        .setGenerateSessionToken(generateSessionToken(`${args.msg.author.id}`))
+        .setGenerateSessionToken(generateSessionToken(`${args.cmd?args.msg.user.id:args.msg.author.id}`))
         .setConfiguration({
             capabilities: { audio: false },
             ...(args.dm ? {} : { connection: { disconnectTimeout: 60000 } })
         })
-        .setUser({ fullName: args.msg.author.globalName||args.msg.author.username})
+        .setUser({ fullName: args.cmd?args.msg.user.username:args.msg.author.globalName||args.msg.author.username})
         .setScene(process.env.inworldScene)
         .setOnError(handleError(args.msg))
         .setOnMessage((packet) => {
             if (packet.isText() && packet.text.final) {
-                curText[args.msg.author.username].push(packet.text.text.startsWith(" ")?packet.text.text.slice(1,packet.text.text.length):packet.text.text);
+                curText[args.cmd?args.msg.user.username:args.msg.author.username].push(packet.text.text.startsWith(" ")?packet.text.text.slice(1,packet.text.text.length):packet.text.text);
             }
             if(packet.control){
-                if(packet.control.type==="INTERACTION_END"){
+                if(packet.control.type==="INTERACTION_END"&&!args.cmd){
                     if(curText[args.msg.author.username].length>0){
                         msgs[args.msg.author.id].reply({content:checkDirty(args.msg.guild?.id,curText[args.msg.author.username].join("\n"))?checkDirty(args.msg.guild?.id,curText[args.msg.author.username].join("\n").replaceAll("@","\\@")):curText[args.msg.author.username].join("\n").replaceAll("@","\\@"),allowedMentions:{parse:[]}});
                     }
@@ -665,20 +665,41 @@ function createInWorldClient(args) {
                     }
                     inClient.close();
                 }
+                else if(packet.control.type==="INTERACTION_END"){
+                    if(curText[args.msg.user.username].length>0){
+                        msgs[args.msg.user.id].followUp({content:curText[args.msg.user.username].join("\n").replaceAll("@","\\@"),allowedMentions:{parse:[]}});
+                    }
+                    else{
+                        msgs[args.msg.user.id].followUp("No comment");
+                    }
+                    inClient.close();
+                }
             }
         })
         .build();
     return inClient;
 }
-async function sendMessage(msg, dm) {
-    curText[msg.author.username]=[];
-    if (conns[msg.author.id] === null || conns[msg.author.id] === undefined || lastChannels[msg.author.id]!==msg.channel.id||Date.now()-conns[msg.author.id].lastMsg<60000*30) {
-        conns[msg.author.id] = createInWorldClient({ dm: dm, msg: msg });
-        lastChannels[msg.author.id]=msg.channel.id;
+async function sendMessage(msg, dm, cmd) {
+    if(!cmd){
+        curText[msg.author.username]=[];
+        if (conns[msg.author.id] === null || conns[msg.author.id] === undefined || lastChannels[msg.author.id]!==(msg.channel?.id||"private")||Date.now()-conns[msg.author.id].lastMsg>60000*30) {
+            conns[msg.author.id] = createInWorldClient({ dm: dm, msg: msg });
+            lastChannels[msg.author.id]=msg.channel?.id||"private";
+        }
+        conns[msg.author.id].sendText(`Message from ${msg.author.globalName||msg.author.username}: ${msg.content.replaceAll(`<@${client.user.id}>`, client.user.username)}`);
+        conns[msg.author.id].lastMsg=Date.now();
+        msgs[msg.author.id]=msg;
     }
-    conns[msg.author.id].sendText(`Message from ${msg.author.globalName||msg.author.username}: ${msg.content.replaceAll(`<@${client.user.id}>`, "Stewbot")}`);
-    conns[msg.author.id].lastMsg=Date.now();
-    msgs[msg.author.id]=msg;
+    else{
+        curText[msg.user.username]=[];
+        if (conns[msg.user.id] === null || conns[msg.user.id] === undefined || lastChannels[msg.user.id]!=="private"||Date.now()-conns[msg.user.id].lastMsg>60000*30) {
+            conns[msg.user.id] = createInWorldClient({ cmd:cmd, msg:msg });
+            lastChannels[msg.user.id]="private";
+        }
+        conns[msg.user.id].sendText(`Message from ${msg.user.globalName||msg.user.username}: ${msg.options.getString("what").replaceAll(`<@${client.user.id}>`, client.user.username)}`);
+        conns[msg.user.id].lastMsg=Date.now();
+        msgs[msg.user.id]=msg;
+    }
 }
 const handleError = (msg, dm) => {
     return (err) => {
@@ -754,7 +775,8 @@ const defaultGuild={
         "user_change_events":false,
         "joining_and_leaving":false,
         "invite_events":false,
-        "role_events":false
+        "role_events":false,
+        "mod_actions":false
     },
     "counting":{
         "active":false,
@@ -1262,14 +1284,14 @@ client.on("messageCreate",async msg=>{
 
     if(msg.channel instanceof DMChannel&&!msg.author.bot&&storage[msg.author.id].config.aiPings) {
         msg.channel.sendTyping();
-	sendMessage(msg, true);
+	    sendMessage(msg, true);
     }
     else if(msg.mentions.users.has(client.user.id)&&!msg.author.bot&&storage[msg.author.id].config.aiPings) {
         if (/^<[@|#|@&].*?>$/g.test(msg.content.replace(/\s+/g, ''))) {
             msg.content = "*User says nothing*";
         }
         if(storage[msg.guild?.id]?.config.ai){
-	    msg.channel.sendTyping();
+	        msg.channel.sendTyping();
             sendMessage(msg);
         }
     }
@@ -1447,9 +1469,6 @@ client.on("interactionCreate",async cmd=>{
                 break;
             }
         break;
-        case 'rng':
-            cmd.followUp(`I have selected a random number between **${cmd.options.getInteger("low")||1}** and **${cmd.options.getInteger("high")||10}**: **${Math.round(Math.random()*((cmd.options.getInteger("high")||10)-(cmd.options.getInteger("low")||1))+(cmd.options.getInteger("low")||1))}**`);
-        break;
         case 'next_counting_number':
             cmd.followUp(storage[cmd.guild.id].counting.active?`The next number to enter ${cmd.channel.id!==storage[cmd.guild.id].counting.channel?`in <#${storage[cmd.guild.id].counting.channel}> `:""}is \`${storage[cmd.guild.id].counting.nextNum}\`.`:`Counting isn't active in this server! Use ${cmds['counting config']} to set it up.`);
         break;
@@ -1474,8 +1493,8 @@ client.on("interactionCreate",async cmd=>{
                         let nextQues=firstQues.split(" or ")[1];
                         let nextQuest=nextQues[0].toUpperCase()+nextQues.slice(1,nextQues.length).split("?")[0];
                         cmd.followUp(`**Would you Rather**\n🅰️: ${firstQuest}\n🅱️: ${nextQuest}\n\n*\\*Disclaimer: All WYRs are provided by a third party API*`);
-                        let msg = await cmd.fetchReply();
-                        msg.react("🅰️").then(msg.react("🅱️"));
+                        try{let msg = await cmd.fetchReply();
+                        msg.react("🅰️").then(msg.react("🅱️"));}catch(e){}
                     });
                 break;
                 case 'joke':
@@ -1532,32 +1551,33 @@ client.on("interactionCreate",async cmd=>{
                     cmd.followUp({content:`Meme #${meme.split(".")[0]}`,files:[`./memes/${meme}`]});
                 break;
                 case 'rac':
-                    if(cmd.options.getInteger("start")){
-                        rac={
-                            board: [],
-                            lastPlayer: "Nobody",
-                            timePlayed: 0,
-                            players: [],
-                            icons: "!@#$%^&*()_+=[]{};':`~,./<>?0123456789",
-                        };
-                        for(var k=0;k<cmd.options.getInteger("start");k++){
-                            rac.board.push([]);
-                            for(var j=0;j<cmd.options.getInteger("start");j++){
-                                rac.board[k].push("-");
-                            }
-                        }
-                        rac.players=[cmd.member.id];
-                        cmd.followUp({content:getRACBoard(),components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId("racJoin").setLabel("Join Game").setStyle(ButtonStyle.Danger),new ButtonBuilder().setCustomId("racMove").setLabel("Make a Move").setStyle(ButtonStyle.Success))]});
-                    }
-                    else if(cmd.options.getBoolean("help")){
+                    if(cmd.options.getBoolean("help")){
                         cmd.followUp("**Rows & Columns**\n\nIn this game your goal is to make as many of the longest rows as possible. Diagonal rows do not count. 3 in a row is 1 point, 4 in a row is 2 points, 5 in a row is 3 points, and so on. The game ends when all spots are filled.\n\nTo join the game, press the Join Game button.\nTo make a move, press the Make a Move button and input the grid location of the spot you want to move (So if you wanted to move in the third spot from the left on the top row, you would type `AC`).\n\nThis is not a turn-based game - you may move once every 15 minutes, or once _anybody else_ has moved. This is a game of skill, strategy, and speed.");
+                        break;
                     }
+                    var size=cmd.options.getInteger("size")||5;
+                    rac={
+                        board: [],
+                        lastPlayer: "Nobody",
+                        timePlayed: 0,
+                        players: [],
+                        icons: "!@$%^&()+=[]{};':~,./<>?0123456789",
+                    };
+                    for(var k=0;k<size;k++){
+                        rac.board.push([]);
+                        for(var j=0;j<size;j++){
+                            rac.board[k].push("-");
+                        }
+                    }
+                    rac.players=[cmd.user.id];
+                    cmd.followUp({content:getRACBoard(),components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId("racJoin").setLabel("Join Game").setStyle(ButtonStyle.Danger),new ButtonBuilder().setCustomId("racMove").setLabel("Make a Move").setStyle(ButtonStyle.Success))]});
                 break;
             }
         break;
         case 'poll':
-            if(checkDirty(cmd.guild.id,cmd.options.getString("prompt"))){
+            if(checkDirty(cmd.guild?.id,cmd.options.getString("prompt"))){
                 cmd.followUp({content:"This server doesn't want me to process that prompt.","ephemeral":true});
+                break;
             }
             cmd.followUp({"content":`**${cmd.options.getString("prompt")}**`,"ephemeral":true,"components":[presets.pollCreation]});
         break;
@@ -1655,6 +1675,7 @@ client.on("interactionCreate",async cmd=>{
             if(cmd.options.getBoolean("joining_and_leaving")) storage[cmd.guild.id].logs.joining_and_leaving=cmd.options.getBoolean("joining_and_leaving");
             if(cmd.options.getBoolean("invite_events")) storage[cmd.guild.id].logs.invite_events=cmd.options.getBoolean("invite_events");
             if(cmd.options.getBoolean("role_events")) storage[cmd.guild.id].logs.role_events=cmd.options.getBoolean("role_events");
+            if(cmd.options.getBoolean("mod_actions")) storage[cmd.guild.id].logs.mod_actions=cmd.options.getBoolean("mod_actions");
             cmd.followUp("Configured log events");
             save();
         break;
@@ -1774,17 +1795,6 @@ client.on("interactionCreate",async cmd=>{
                 }
             }
         break;
-        case 'coin-flip':
-            let coinsToFlip=cmd.options.getInteger("number")||1;
-            let coins=[];
-            for(var coinOn=0;coinOn<coinsToFlip;coinOn++){
-                coins.push(Math.floor(Math.random()*2));
-            }
-            cmd.followUp(`I have flipped the coin${coinsToFlip>1?"s":""}.\n${coins.map(a=>`\n- **${a===0?"Heads":"Tails"}**`).join("")}`);
-        break;
-        case '8-ball':
-            cmd.followUp(`I have generated a random response to the question "**${cmd.options.getString("question")}**".\nThe answer is **${m8ballResponses[Math.floor(Math.random()*m8ballResponses.length)]}**.`);
-        break;
         case 'rank':
             if(!storage[cmd.guild.id].levels.active){
                 cmd.followUp(`This server doesn't use level ups at the moment. It can be configured using ${cmds.levels_config}.`);
@@ -1832,6 +1842,10 @@ client.on("interactionCreate",async cmd=>{
             }],allowedMentions:{parse:[]}});
         break;
         case 'leaderboard':
+            if(cmd.guild?.id===undefined&&cmd.options.getString("which")!=="counting"){
+                cmd.followUp(`I can't find leaderboard content for that board at the moment. Try in a server that uses it!`);
+                return;
+            }
             switch(cmd.options.getString("which")){
                 case "levels":
                     if(!storage[cmd.guild.id].levels.active){
@@ -2044,6 +2058,76 @@ client.on("interactionCreate",async cmd=>{
             cmd.followUp(`${storage[cmd.guild.id].daily.devos.active?"A":"Dea"}ctivated daily \`devotions\` for this server in <#${storage[cmd.guild.id].daily.devos.channel}>.`);
             save();
         break;
+        case 'links':
+            cmd.followUp(`Here is a list of links in relation with this bot you may find useful.\n- [Stewbot's Website](<https://stewbot.kestron.software/>)\n- [Stewbot's Invite Link](<https://stewbot.kestron.software/addIt>)\n- [Support Server](<https://discord.gg/k3yVkrrvez>)\n- [Stewbot's Source Code on Github](<https://github.com/KestronProgramming/Stewbot>)\n- [The Developer](<https://discord.com/users/949401296404905995>)\n- [The Developer's Website](<https://kestron.software/>)`);
+        break;
+        case 'random':
+            switch(cmd.options.getSubcommand()){
+                case 'rng':
+                    cmd.followUp(`I have selected a random number between **${cmd.options.getInteger("low")||1}** and **${cmd.options.getInteger("high")||10}**: **${Math.round(Math.random()*((cmd.options.getInteger("high")||10)-(cmd.options.getInteger("low")||1))+(cmd.options.getInteger("low")||1))}**`);
+                break;
+                case '8-ball':
+                    cmd.followUp(`I have generated a random response to the question "**${cmd.options.getString("question")}**".\nThe answer is **${m8ballResponses[Math.floor(Math.random()*m8ballResponses.length)]}**.`);
+                break;
+                case 'coin-flip':
+                    let coinsToFlip=cmd.options.getInteger("number")||1;
+                    let coins=[];
+                    for(var coinOn=0;coinOn<coinsToFlip;coinOn++){
+                        coins.push(Math.floor(Math.random()*2));
+                    }
+                    cmd.followUp(`I have flipped the coin${coinsToFlip>1?"s":""}.\n${coins.map(a=>`\n- **${a===0?"Heads":"Tails"}**`).join("")}`);
+                break;
+            }
+        break;
+        case 'chat':
+            sendMessage(cmd,true,true);
+        break;
+        case 'embed_message':
+            let slashes=cmd.options.getString("link").split("channels/")[1].split("/");
+            let embs=[];
+            try{
+                var channelLinked=await client.channels.cache.get(slashes[slashes.length-2]);
+                var mes=await channelLinked.messages.fetch(slashes[slashes.length-1]);
+                if(checkDirty(cmd.guild?.id,mes.content)||checkDirty(cmd.guild?.id,mes.author.nickname||mes.author.globalName||mes.author.username)||checkDirty(cmd.guild?.id,mes.guild.name)||checkDirty(cmd.guild?.id,mes.channel.name)){
+                    cmd.followUp(`I'm sorry, that message is blocked by this server's filter.`);
+                    break;
+                }
+                let messEmbed = new EmbedBuilder()
+                    .setColor("#006400")
+                    .setTitle("(Jump to message)")
+                    .setURL(cmd.options.getString("link"))
+                    .setAuthor({
+                        name: mes.author.nickname||mes.author.globalName||mes.author.username,
+                        iconURL: "" + mes.author.displayAvatarURL(),
+                        url: "https://discord.com/users/" + mes.author.id,
+                    })
+                    .setDescription(mes.content||null)
+                    .setTimestamp(new Date(mes.createdTimestamp))
+                    .setFooter({
+                        text: mes.guild?.name?mes.guild.name + " / " + mes.channel.name:`DM with ${client.user.username}`,
+                        iconURL: mes.guild.iconURL(),
+                    });
+                var attachedImg=false;
+                mes.attachments.forEach((attached,i) => {
+                    let url = attached.url;
+                    if(attachedImg||!(/(png|jpe?g)/i.test(url))){
+                        fils.push(url);
+                    }
+                    else{
+                        messEmbed.setImage(url);
+                        attachedImg=true;
+                    }
+                });
+                if(channelLinked?.permissionsFor(cmd.user.id)?.has(PermissionFlagsBits.ViewChannel)){
+                    embs.push(messEmbed);
+                }
+                cmd.followUp({content:embs.length>0?`Embedded linked message`:`Failed to embed message`,embeds:embs});
+            }
+            catch(e){
+                console.log(e);
+                cmd.followUp(`I'm sorry, I can't access that message.`);
+            }
+        break;
 
         case 'restart':
             if(cmd.guild?.id==="983074750165299250"&&cmd.channel.id==="986097382267715604"){
@@ -2079,13 +2163,14 @@ client.on("interactionCreate",async cmd=>{
             cmd.followUp({content:`Submitted for evaluation`,ephemeral:true});
             let i=0;
             for(a of cmd.targetMessage.attachments){
+                console.log(a);
                 var dots=a[1].url.split("?")[0].split(".");
                 dots=dots[dots.length-1];
                 if(!["mov","png","jpg","jpeg","gif","mp4","mp3","wav","webm","ogg"].includes(dots)){
                     cmd.reply({content:`I don't support/recognize the file extension \`.${dots}\``,ephemeral:true});
                     return;
                 }
-                await fetch(a[1].url.split("?")[0]).then(d=>d.arrayBuffer()).then(d=>{
+                await fetch(a[1].url).then(d=>d.arrayBuffer()).then(d=>{
                     fs.writeFileSync(`./tempMemes/${i}.${dots}`,Buffer.from(d));
                 });
                 i++;
@@ -2114,7 +2199,7 @@ client.on("interactionCreate",async cmd=>{
                     cmd.reply({content:`I don't support or recognize that format (\`.${dots}\`)`,ephemeral:true});
                     return;
                 }
-                fetch(a.url.split("?")[0]).then(d=>d.arrayBuffer()).then(d=>{
+                fetch(a.url).then(d=>d.arrayBuffer()).then(d=>{
                     fs.writeFileSync(`./memes/${fs.readdirSync("./memes").length}.${dots}`,Buffer.from(d));
                 });
             });
@@ -2171,7 +2256,7 @@ client.on("interactionCreate",async cmd=>{
             readRACBoard(cmd.message.content);
             var bad=false;
             for(var i=0;i<rac.players.length;i++) {
-                if(rac.players[i]===cmd.member.id){
+                if(rac.players[i]===cmd.user.id){
                     cmd.reply({
                         content: "You can't join more than once!",
                         ephemeral: true,
@@ -2180,7 +2265,7 @@ client.on("interactionCreate",async cmd=>{
                 }
             }
             if(bad) break;
-            rac.players.push(cmd.member.id);
+            rac.players.push(cmd.user.id);
             if(rac.players.length>rac.icons.length){
                 cmd.reply({content:"I'm sorry, but this game has hit the limit of players. I don't have any more symbols to use.",ephemeral:true});
                 return;
@@ -2246,7 +2331,7 @@ client.on("interactionCreate",async cmd=>{
                 cmd.reply({content:"It looks like you've already generated the maximum amount of options!",ephemeral:true});
                 break;
             }
-            if(checkDirty(cmd.guild.id,cmd.fields.getTextInputValue("poll-addedInp"))){
+            if(checkDirty(cmd.guild?.id,cmd.fields.getTextInputValue("poll-addedInp"))){
                 cmd.reply({ephemeral:true,content:"I have been asked not to add this option by this server"});
                 break;
             }
@@ -2622,6 +2707,10 @@ client.on("messageReactionAdd",async (react,user)=>{
 });
 client.on("messageDelete",async msg=>{
     if(msg.guild?.id===undefined) return;
+    if(!storage.hasOwnProperty(msg.guild.id)){
+        storage[msg.guild.id]=structuredClone(defaultGuild);
+        save();
+    }
     if(storage[msg.guild.id]?.starboard.posted.hasOwnProperty(msg.id)){
         if(storage[msg.guild.id].starboard.posted[msg.id].startsWith("webhook")){
             var c=await client.channels.cache.get(storage[msg.guild.id].starboard.channel).messages.fetch(storage[msg.guild.id].starboard.posted[msg.id].split("webhook")[1]);
@@ -2639,6 +2728,18 @@ client.on("messageDelete",async msg=>{
                 msg.channel.send(num[0]).then(m=>m.react("✅"));
             }
         }
+    }
+    if(storage[msg.guild.id]?.logs.mod_actions&&storage[msg.guild.id]?.logs.active){
+        setTimeout(async ()=>{
+            const fetchedLogs = await msg.guild.fetchAuditLogs({
+                type: AuditLogEvent.MessageDelete,
+                limit: 1,
+            });
+            const firstEntry = fetchedLogs.entries.first();
+            if(firstEntry.target.id===msg?.author?.id){
+                msg.guild.channels.cache.get(storage[msg.guild.id].logs.channel).send({content:ll(`**Message from <@${firstEntry.target.id}> Deleted by <@${firstEntry.executor.id}> in <#${msg.channel.id}>**\n\n${msg.content.length>0?`\`\`\`\n${msg.content}\`\`\``:""}${msg.attachments?.size>0?`There were **${msg.attachments.size}** attachments on this message.`:""}`),allowedMentions:{parse:[]}});
+            }
+        },2000);
     }
 });
 client.on("messageUpdate",async (msgO,msg)=>{
@@ -2975,7 +3076,7 @@ client.on("userUpdate",async (userO,user)=>{
     });
 });
 client.on("guildMemberUpdate",async (memberO,member)=>{
-    if(storage[member.guild.id].logs.active&&storage[member.guild.id].logs.user_change_events){
+    if(storage[member.guild.id]?.logs.active&&storage[member.guild.id]?.logs.user_change_events){
         var diffs=`**User <@${member.id}> (${member.user.username}) Edited For This Server**`;
         Object.keys(memberO).forEach(key=>{
             if(key==="tags"||key==="permissions"||key==="flags"||key==="_roles") return;

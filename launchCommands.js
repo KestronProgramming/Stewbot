@@ -4,6 +4,57 @@ const fs=require("fs");
 
 //Command permissions should be set to the level you would need to do it manually (so if the bot is deleting messages, the permission to set it up would be the permission to delete messages)
 //Don't enable anything in DMs that is unusable in DMs (server configurations, multiplayer reliant commands, etc)
+
+//This is a temporary way of specifying what contexts and where the command should appear while we await Discord.js' official implementation
+/*
+Contexts
+0: Normal server usage
+1: DMs with the Bot directly
+2: User command from anywhere
+
+Integration Types
+0: Only as a server command
+1: Only as a user command
+*/
+const contexts={
+	"help":{"contexts":[0,1,2],"integration_types":[0,1]},
+	"ping":{"contexts":[0,1,2],"integration_types":[0,1]},
+	"filter":{"contexts":[0],"integration_types":[0]},
+	"view_filter":{"contexts":[0],"integration_types":[0]},
+	"starboard_config":{"contexts":[0],"integration_types":[0]},
+	"fun":{"contexts":[0,1,2],"integration_types":[0,1]},
+	"kick":{"contexts":[0],"integration_types":[0]},
+	"ban":{"contexts":[0],"integration_types":[0]},
+	"timeout":{"contexts":[0],"integration_types":[0]},
+	"translate":{"contexts":[0,1,2],"integration_types":[0,1]},
+	"define":{"contexts":[0,1,2],"integration_types":[0,1]},
+	"counting":{"contexts":[0],"integration_types":[0]},
+	"next_counting_number":{"contexts":[0],"integration_types":[0]},
+	"general_config":{"contexts":[0],"integration_types":[0]},
+	"personal_config":{"contexts":[0,1,2],"integration_types":[0,1]},
+	"poll":{"contexts":[0],"integration_types":[0]},
+	"ticket":{"contexts":[0],"integration_types":[0]},
+	"auto-join-message":{"contexts":[0],"integration_types":[0]},
+	"auto_roles":{"contexts":[0],"integration_types":[0]},
+	"report_problem":{"contexts":[0,1,2],"integration_types":[0,1]},
+	"log_config":{"contexts":[0],"integration_types":[0]},
+	"admin_message":{"contexts":[0],"integration_types":[0]},
+	"sticky-roles":{"contexts":[0],"integration_types":[0]},
+	"random":{"contexts":[0,1,2],"integration_types":[0,1]},
+	"auto-join-roles":{"contexts":[0],"integration_types":[0]},
+	"bible":{"contexts":[0,1,2],"integration_types":[0,1]},
+	"levels_config":{"contexts":[0],"integration_types":[0]},
+	"leaderboard":{"contexts":[0,1,2],"integration_types":[0,1]},
+	"rank":{"contexts":[0],"integration_types":[0]},
+	"links":{"contexts":[0,1,2],"integration_types":[0,1]},
+	"chat":{"contexts":[0,1,2],"integration_types":[0,1]},
+	"embed_message":{"contexts":[0,1,2],"integration_types":[0,1]},
+
+	"submit_meme":{"contexts":[0,1,2],"integration_types":[0,1]},
+	"translate_message":{"contexts":[0,1,2],"integration_types":[0,1]},
+	"move_message":{"contexts":[0],"integration_types":[0]},
+	"delete_message":{"contexts":[0,1],"integration_types":[0]}
+};
 const commands = [
 	new SlashCommandBuilder().setName("help").setDescription("View the help menu"),
 	new SlashCommandBuilder().setName('ping').setDescription('Check uptime stats'),
@@ -73,7 +124,7 @@ const commands = [
 			command.setName("rac").setDescription("Play a game of Rows & Columns").addBooleanOption(option=>
 				option.setName("help").setDescription("View the rules instead of playing?")
 			).addIntegerOption(option=>
-				option.setName("start").setDescription("Set your amount of rows and start playing!").setMinValue(3).setMaxValue(25)
+				option.setName("size").setDescription("Set your amount of rows and start playing!").setMinValue(3).setMaxValue(25)
 			)
 		),
 	new SlashCommandBuilder().setName("kick").setDescription("Kick a user").addUserOption(option=>
@@ -190,6 +241,8 @@ const commands = [
 			option.setName("invite_events").setDescription("Log when an invite is made or deleted?")
 		).addBooleanOption(option=>
 			option.setName("role_events").setDescription("Log role events?")
+		).addBooleanOption(option=>
+			option.setName("mod_actions").setDescription("Log when a moderator performs an action")
 		).setDefaultMemberPermissions(PermissionFlagsBits.ViewAuditLog).setDMPermission(false),
 	new SlashCommandBuilder().setName("admin_message").setDescription("Anonymously make a post in the server's name").addStringOption(option=>
 			option.setName("what").setDescription("What to say").setMaxLength(2000).setRequired(true)
@@ -199,10 +252,20 @@ const commands = [
 	new SlashCommandBuilder().setName("sticky-roles").setDescription("Add roles back to a user who left and rejoined").addBooleanOption(option=>
 			option.setName("active").setDescription("Should I add roles back to users who left and rejoined?").setRequired(true)
 		).setDefaultMemberPermissions(PermissionFlagsBits.ManageRoles).setDMPermission(false),
-	new SlashCommandBuilder().setName("rng").setDescription("Generate a random number").addIntegerOption(option=>
-			option.setName("low").setDescription("Lower bound of the random number? (Default: 1)")
-		).addIntegerOption(option=>
-			option.setName("high").setDescription("Upper bound of the random number? (Default: 10)")
+	new SlashCommandBuilder().setName("random").setDescription("Get something random").addSubcommand(command=>
+			command.setName("rng").setDescription("Generate a random number").addIntegerOption(option=>
+				option.setName("low").setDescription("Lower bound of the random number? (Default: 1)")
+			).addIntegerOption(option=>
+				option.setName("high").setDescription("Upper bound of the random number? (Default: 10)")
+			)
+		).addSubcommand(command=>
+			command.setName("coin-flip").setDescription("Flip a number of coins").addIntegerOption(option=>
+				option.setName("number").setDescription("How many coins should I flip?").setMinValue(1).setMaxValue(10)
+			)
+		).addSubcommand(command=>
+			command.setName("8-ball").setDescription("Ask a question and receive an entirely random response").addStringOption(option=>
+				option.setName("question").setDescription("What question are you asking?").setRequired(true)
+			)
 		),
 	new SlashCommandBuilder().setName("auto-join-roles").setDescription("Automatically add roles to a user when they join the server").setDefaultMemberPermissions(PermissionFlagsBits.ManageRoles).setDMPermission(false),
 	new SlashCommandBuilder().setName("bible").setDescription("Look up a verse or verses in the King James version of the Bible").addStringOption(option=>
@@ -211,12 +274,6 @@ const commands = [
 			option.setName("chapter").setDescription("Which chapter do you want to look up?").setRequired(true)
 		).addStringOption(option=>
 			option.setName("verse").setDescription("What verse or verses do you want to look up? (Proper format for multiple verses is '1-3')").setRequired(true)
-		),
-	new SlashCommandBuilder().setName("coin-flip").setDescription("Flip a number of coins").addIntegerOption(option=>
-			option.setName("number").setDescription("How many coins should I flip?").setMinValue(1).setMaxValue(10)
-		),
-	new SlashCommandBuilder().setName("8-ball").setDescription("Ask a question and receive an entirely random response").addStringOption(option=>
-			option.setName("question").setDescription("What question are you asking?").setRequired(true)
 		),
 	new SlashCommandBuilder().setName("levels_config").setDescription("Configure level ups").addBooleanOption(option=>
 			option.setName("active").setDescription("Should level ups be active?").setRequired(true)
@@ -243,13 +300,20 @@ const commands = [
 	new SlashCommandBuilder().setName("rank").setDescription("Your rank for this server's level ups").addUserOption(option=>
 			option.setName("target").setDescription("Who's rank are you trying to view?")
 		).setDMPermission(false),
+	new SlashCommandBuilder().setName("links").setDescription("Get a list of links relevant for the bot"),
+	new SlashCommandBuilder().setName("chat").setDescription("Chat with the bot").addStringOption(option=>
+			option.setName("what").setDescription("What to say").setRequired(true)
+		),
+	new SlashCommandBuilder().setName("embed_message").setDescription("Embed a message link from another channel or server").addStringOption(option=>
+			option.setName("link").setDescription("The message link").setRequired(true)
+		),
 
 	new ContextMenuCommandBuilder().setName("submit_meme").setType(ApplicationCommandType.Message),
 	new ContextMenuCommandBuilder().setName("delete_message").setType(ApplicationCommandType.Message).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),//Leaving this in DMs to delete undesirable bot DMs
 	new ContextMenuCommandBuilder().setName("translate_message").setType(ApplicationCommandType.Message),
 	new ContextMenuCommandBuilder().setName("move_message").setType(ApplicationCommandType.Message).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages).setDMPermission(false)
 ]
-	.map(command => command.toJSON());
+.map(command => Object.assign(command.toJSON(),contexts[command.toJSON().name]));
 
 const rest = new REST({ version: '9' }).setToken(process.env.token);
 var comms={};
