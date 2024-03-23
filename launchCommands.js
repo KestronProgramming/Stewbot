@@ -49,6 +49,7 @@ const contexts={
 	"links":{"contexts":[0,1,2],"integration_types":[0,1]},
 	"chat":{"contexts":[0,1,2],"integration_types":[0,1]},
 	"embed_message":{"contexts":[0,1,2],"integration_types":[0,1]},
+	"secret":{"contexts":[0,1,2],"integration_types":[0,1]},
 
 	"submit_meme":{"contexts":[0,1,2],"integration_types":[0,1]},
 	"translate_message":{"contexts":[0,1,2],"integration_types":[0,1]},
@@ -191,6 +192,8 @@ const commands = [
 			option.setName("embeds").setDescription("If you link a Discord message, should I embed a preview for you?")
 		).addBooleanOption(option=>
 			option.setName("level_up_messages").setDescription("Do you want to receive a message letting you know you leveled up?")
+		).addBooleanOption(option=>
+			option.setName("configure_timezone").setDescription("Open up a menu to configure your timezone?")
 		),
 	new SlashCommandBuilder().setName("poll").setDescription("Make a poll with automatically tracked options").addStringOption(option=>
 			option.setName("prompt").setDescription("The prompt (We'll set options in a minute)").setRequired(true)
@@ -306,6 +309,10 @@ const commands = [
 		),
 	new SlashCommandBuilder().setName("embed_message").setDescription("Embed a message link from another channel or server").addStringOption(option=>
 			option.setName("link").setDescription("The message link").setRequired(true)
+		),
+
+	new SlashCommandBuilder().setName("secret").setDescription("It's a secret to everybody").addStringOption(option=>
+			option.setName("code").setDescription("Do you have something for me?")
 		),
 
 	new ContextMenuCommandBuilder().setName("submit_meme").setType(ApplicationCommandType.Message),
