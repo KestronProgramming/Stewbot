@@ -821,7 +821,9 @@ const defaultUser={
         "returnFiltered":true,
         "embedPreviews":true,
         "aiPings":true,
-        "levelUpMsgs":true
+        "levelUpMsgs":true,
+        "timeOffset":0,
+        "hasSetTZ":false
     }
 };
 const inps={
@@ -840,7 +842,11 @@ const inps={
     "delete":new ButtonBuilder().setCustomId("delete-all").setLabel("Delete message").setStyle(ButtonStyle.Danger),
     "export":new ButtonBuilder().setCustomId("export").setLabel("Export to CSV").setStyle(ButtonStyle.Primary),
 
-    "approve":new ButtonBuilder().setCustomId("save_meme").setLabel("Approve meme").setStyle(ButtonStyle.Success)
+    "approve":new ButtonBuilder().setCustomId("save_meme").setLabel("Approve meme").setStyle(ButtonStyle.Success),
+
+    "tzUp":new ButtonBuilder().setCustomId("tzUp").setEmoji("⬆️").setStyle(ButtonStyle.Primary),
+    "tzDown":new ButtonBuilder().setCustomId("tzDown").setEmoji("⬇️").setStyle(ButtonStyle.Primary),
+    "tzSave":new ButtonBuilder().setCustomId("tzSave").setEmoji("✅").setStyle(ButtonStyle.Success)
 };
 const presets={
     "pollCreation":new ActionRowBuilder().addComponents(inps.pollAdd,inps.pollDel,inps.pollLaunch),
@@ -848,6 +854,7 @@ const presets={
     "autoJoinRoles":[new ActionRowBuilder().addComponents(inps.joinRoleAdd)],
     "meme":[new ActionRowBuilder().addComponents(inps.approve,inps.delete)],
     "moveMessage":new ActionRowBuilder().addComponents(inps.channels),
+    "tzConfig":[new ActionRowBuilder().addComponents(inps.tzUp,inps.tzDown,inps.tzSave)],
 
     "pollAddModal":new ModalBuilder().setCustomId("poll-added").setTitle("Add a poll option").addComponents(new ActionRowBuilder().addComponents(inps.pollInp)),
     "pollRemModal":new ModalBuilder().setCustomId("poll-removed").setTitle("Remove a poll option").addComponents(new ActionRowBuilder().addComponents(inps.pollNum))
@@ -1299,7 +1306,7 @@ client.on("messageCreate",async msg=>{
 client.on("interactionCreate",async cmd=>{
     if(cmd.commandName==="secret") return;
     try{
-	    if(!cmd.isButton()&&!cmd.isModalSubmit()&&!cmd.isChannelSelectMenu()&&!cmd.isRoleSelectMenu()) await cmd.deferReply({ephemeral:["poll","auto_roles","report_problem","submit_meme","delete_message","move_message","auto-join-roles","join-roleOption","admin_message"].includes(cmd.commandName)});
+	    if(!cmd.isButton()&&!cmd.isModalSubmit()&&!cmd.isChannelSelectMenu()&&!cmd.isRoleSelectMenu()) await cmd.deferReply({ephemeral:["poll","auto_roles","report_problem","submit_meme","delete_message","move_message","auto-join-roles","join-roleOption","admin_message","personal_config"].includes(cmd.commandName)});
     }catch(e){}
     try{
         if(cmd.guild.id!==0){
@@ -1739,7 +1746,12 @@ client.on("interactionCreate",async cmd=>{
             if(cmd.options.getBoolean("dm_infraction_content")!==null) storage[cmd.user.id].config.returnFiltered=cmd.options.getBoolean("dm_infraction_content");
             if(cmd.options.getBoolean("embeds")!==null) storage[cmd.user.id].config.embedPreviews=cmd.options.getBoolean("embeds");
             if(cmd.options.getBoolean("level_up_messages"!==null)) storage[cmd.user.id].config.levelUpMsgs=cmd.options.getBoolean("level_up_messages");
-            cmd.followUp("Configured your personal setup");
+            if(!cmd.options.getBoolean("configure_timezone")){
+                cmd.followUp("Configured your personal setup");
+            }
+            else{
+                cmd.followUp({content:`**Timezone Configuration**\n\nPlease use the buttons to make the following time the current time (You can ignore minutes)\n<t:${Math.round(Date.now()/1000)+((storage[cmd.user.id].config.hasSetTZ?storage[cmd.user.id].config.timeOffset:0)*60*60)}:t>`,components:presets.tzConfig});
+            }
         break;
         case 'general_config':
             if(cmd.options.getBoolean("ai_pings")!==null) storage[cmd.guild.id].config.ai=cmd.options.getBoolean("ai_pings");
@@ -2323,6 +2335,28 @@ client.on("interactionCreate",async cmd=>{
             fs.writeFileSync("./tempPoll.png",canvas.toBuffer("image/png"));
             cmd.update({content:`<@${poll.starter}> asks: **${poll.title}**${poll.choices.map((a,i)=>`\n${i}. ${a} **${storage[cmd.guild.id].polls[cmd.message.id].options[a].length}**${finalResults.hasOwnProperty(a)?` - ${pieCols[i][1]}`:""}`).join("")}`,files:["./tempPoll.png"]});
         break;
+        case 'tzUp':
+            if(!storage[cmd.user.id].config.hasOwnProperty("timeOffset")){
+                storage[cmd.user.id].config.timeOffset=0;
+                storage[cmd.user.id].config.hasSetTZ=false;
+            }
+            storage[cmd.user.id].config.timeOffset++;
+            var cur=new Date();
+            cmd.update(`## Timezone Configuration\n\nPlease use the buttons to make the following number your current time (you can ignore minutes)\n${(cur.getHours()+storage[cmd.user.id].config.timeOffset)===0?"12":(cur.getHours()+storage[cmd.user.id].config.timeOffset)>12?(cur.getHours()+storage[cmd.user.id].config.timeOffset)-12:(cur.getHours()+storage[cmd.user.id].config.timeOffset)}:${(cur.getMinutes()+"").padStart(2,"0")} ${(cur.getHours()+storage[cmd.user.id].config.timeOffset)>11?"PM":"AM"}\n${((cur.getHours()+storage[cmd.user.id].config.timeOffset)+"").padStart(2,"0")}${(cur.getMinutes()+"").padStart(2,"0")}`);
+        break;
+        case 'tzDown':
+            if(!storage[cmd.user.id].config.hasOwnProperty("timeOffset")){
+                storage[cmd.user.id].config.timeOffset=0;
+                storage[cmd.user.id].config.hasSetTZ=false;
+            }
+            storage[cmd.user.id].config.timeOffset--;
+            var cur=new Date();
+            cmd.update(`## Timezone Configuration\n\nPlease use the buttons to make the following number your current time (you can ignore minutes)\n${(cur.getHours()+storage[cmd.user.id].config.timeOffset)===0?"12":(cur.getHours()+storage[cmd.user.id].config.timeOffset)>12?(cur.getHours()+storage[cmd.user.id].config.timeOffset)-12:(cur.getHours()+storage[cmd.user.id].config.timeOffset)}:${(cur.getMinutes()+"").padStart(2,"0")} ${(cur.getHours()+storage[cmd.user.id].config.timeOffset)>11?"PM":"AM"}\n${((cur.getHours()+storage[cmd.user.id].config.timeOffset)+"").padStart(2,"0")}${(cur.getMinutes()+"").padStart(2,"0")}`);
+        break;
+        case 'tzSave':
+            save();
+            cmd.update({content:`## Timezone Configured\n\nUTC ${storage[cmd.user.id].config.timeOffset}`,components:[]});
+        break;
 
         //Modals
         case 'poll-added':
@@ -2852,7 +2886,7 @@ client.on("guildMemberAdd",async member=>{
                 hook.send(resp);
             }
             else{
-                client.channels.cache.get(storage[react.message.guild.id].starboard.channel).createWebhook({
+                client.channels.cache.get(storage[member.guild.id].ajm.channel).createWebhook({
                     name:"Stewbot",
                     avatar: "https://cdn.discordapp.com/attachments/1145432570104926234/1170273261704196127/kt.jpg",
                 }).then(d=>{
