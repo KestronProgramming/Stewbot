@@ -1643,7 +1643,7 @@ client.on("interactionCreate",async cmd=>{
             if(cmd.options.getUser("target")?.id){
                 cmd.options.getUser("target").send({embeds:[{
                     type: "rich",
-                    title: cmd.guild.name,
+                    title: cmd.guild.name.slice(0,80),
                     description: cmd.options.getString("what").replaceAll("\\n","\n"),
                     color: 0x006400,
                     thumbnail: {
@@ -1661,7 +1661,7 @@ client.on("interactionCreate",async cmd=>{
                 var resp={
                     "content":cmd.options.getString("what").replaceAll("\\n","\n"),
                     "avatarURL":cmd.guild.iconURL(),
-                    "username":cmd.guild.name
+                    "username":cmd.guild.name.slice(0,80)
                 };
                 var hook=await cmd.channel.fetchWebhooks();
                 hook=hook.find(h=>h.token);
