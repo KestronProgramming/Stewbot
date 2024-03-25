@@ -1500,8 +1500,10 @@ client.on("interactionCreate",async cmd=>{
                         let nextQues=firstQues.split(" or ")[1];
                         let nextQuest=nextQues[0].toUpperCase()+nextQues.slice(1,nextQues.length).split("?")[0];
                         cmd.followUp(`**Would you Rather**\n🅰️: ${firstQuest}\n🅱️: ${nextQuest}\n\n*\\*Disclaimer: All WYRs are provided by a third party API*`);
-                        try{let msg = await cmd.fetchReply();
-                        msg.react("🅰️").then(msg.react("🅱️"));}catch(e){}
+                        if(cmd.channel?.id){
+                            let msg = await cmd.fetchReply();
+                            msg.react("🅰️").then(msg.react("🅱️"));
+                        }
                     });
                 break;
                 case 'joke':
@@ -2770,7 +2772,8 @@ client.on("messageDelete",async msg=>{
                 limit: 1,
             });
             const firstEntry = fetchedLogs.entries.first();
-            if(firstEntry.target.id===msg?.author?.id){
+            firstEntry.timestamp=BigInt("0b"+BigInt(firstEntry.id).toString(2).slice(0,39))+BigInt(1420070400000);
+            if(firstEntry.target.id===msg?.author?.id&&Date.now()-firstEntry.timestamp<60000){
                 msg.guild.channels.cache.get(storage[msg.guild.id].logs.channel).send({content:ll(`**Message from <@${firstEntry.target.id}> Deleted by <@${firstEntry.executor.id}> in <#${msg.channel.id}>**\n\n${msg.content.length>0?`\`\`\`\n${msg.content}\`\`\``:""}${msg.attachments?.size>0?`There were **${msg.attachments.size}** attachments on this message.`:""}`),allowedMentions:{parse:[]}});
             }
         },2000);
