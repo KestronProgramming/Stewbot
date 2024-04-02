@@ -978,17 +978,22 @@ client.on("messageCreate",async msg=>{
                     var rMsg=await msg.fetchReference();
                     replyBlip=`_[Reply to **${rMsg.author.username}**: ${rMsg.content.slice(0,22).replace(/(https?\:\/\/|\n)/ig,"")}${rMsg.content.length>22?"...":""}](<https://discord.com/channels/${rMsg.guild.id}/${rMsg.channel.id}/${rMsg.id}>)_\n`;
                 }
+
+                // Quick patch to censor ping everyone exploit - WKoA. TODO: make it work better or whatever
+                var messageContent = msg.content.replaceAll("@", "[@]")
+
                 sendHook({
                     username:msg.member?.nickname||msg.author.globalName||msg.author.username,
                     avatarURL:msg.member?.displayAvatarURL(),
-                    content:ll(`\`\`\`\nThe following message from ${msg.author.username} has been censored by Stewbot.\`\`\`${replyBlip}${msg.content}`)
+                    content:ll(`\`\`\`\nThe following message from ${msg.author.username} has been censored by Stewbot.\`\`\`${replyBlip}${messageContent}`)
                 });
             }
             if(storage[msg.author.id].config.dmOffenses&&msg.webhookId===null){
                 try{msg.author.send(ll(`Your message in **${msg.guild.name}** was ${storage[msg.guildId].filter.censor?"censored":"deleted"} due to the following word${foundWords.length>1?"s":""} being in the filter: ||${foundWords.join("||, ||")}||${storage[msg.author.id].config.returnFiltered?"```\n"+msg.ogContent.replaceAll("`","\\`")+"```":""}`));}catch(e){}
             }
             if(storage[msg.guildId].filter.log&&storage[msg.guildId].filter.channel){
-                client.channels.cache.get(storage[msg.guildId].filter.channel).send(ll(`I have ${storage[msg.guildId].filter.censor?"censored":"deleted"} a message from **${msg.author.username}** in <#${msg.channel.id}> for the following blocked word${foundWords.length>1?"s":""}: ||${foundWords.join("||, ||")}||\`\`\`\n${msg.ogContent.replaceAll("`","\\`")}\`\`\``));
+                // TODO: format this ugly thing. It looks like it was completely written by Kestron or something - WKoA
+                client.channels.cache.get(storage[msg.guildId].filter.channel).send(ll(`I have ${storage[msg.guildId].filter.censor?"censored":"deleted"} a message from **${msg.author.username}** in <#${msg.channel.id}> for the following blocked word${foundWords.length>1?"s":""}: ||${foundWords.join("||, ||")}||\`\`\`\n${msg.ogContent.replaceAll("`","\\`").replaceAll(/(?<=https?:\/\/[^(\s|\/)]+)\./gi, "[.]").replaceAll(/(?<=https?):\/\//gi, "[://]")}\`\`\``));
             }
             save();
             return;
@@ -1062,7 +1067,7 @@ client.on("messageCreate",async msg=>{
                 else{
                     msg.react("❌");
                     if(storage[msg.guild.id].users[msg.author.id].beenCountWarned&&storage[msg.guild.id].counting.reset){
-                        msg.reply(`Nope, you need to wait for ${storage[msg.guild.id].counting.takeTurns} other ${storage[msg.guild.id].counting.takeTurns===1?"person":"people"} to post before you post again!${storage[msg.guild.id].counting.reset?` The next number to post was going to be \`${storage[msg.guild.id].counting.nextNum}\`, but now it's \`1\`.`:""}`);
+                        msg.reply(`⛔ **Reset**\nNope, you need to wait for ${storage[msg.guild.id].counting.takeTurns} other ${storage[msg.guild.id].counting.takeTurns===1?"person":"people"} to post before you post again!${storage[msg.guild.id].counting.reset?` The next number to post was going to be \`${storage[msg.guild.id].counting.nextNum}\`, but now it's \`1\`.`:""}`);
                         if(storage[msg.guild.id].counting.reset){
                             storage[msg.guild.id].counting.nextNum=1;
                             if(storage[msg.guild.id].counting.reset&&storage[msg.guild.id].counting.takeTurns>0) storage[msg.guild.id].counting.legit=true;
@@ -1073,7 +1078,7 @@ client.on("messageCreate",async msg=>{
                         }
                     }
                     else{
-                        msg.reply(`Nope, that's incorrect. You have been warned! Next time this will reset the count.\nNumbers entered must be the last number plus one, (so if the last entered number is 148, the next number is 149).${storage[msg.guild.id].counting.takeTurns>0?` You also need to make sure at least **${storage[msg.guild.id].counting.takeTurns}** other ${storage[msg.guild.id].counting.takeTurns===1?"person":"people"} take${storage[msg.guild.id].counting.takeTurns===1?"s":""} a turn before you take another turn.`:""}`);
+                        msg.reply(`⚠️ **Warning**\nNope, that's incorrect. You have been warned! Next time this will reset the count. The next number is **${storage[msg.guild.id].counting.nextNum}**.\`\`\`\nNumbers entered must be the last number plus one, (so if the last entered number is 148, the next number is 149).${storage[msg.guild.id].counting.takeTurns>0?` You also need to make sure at least ${storage[msg.guild.id].counting.takeTurns} other ${storage[msg.guild.id].counting.takeTurns===1?"person":"people"} take${storage[msg.guild.id].counting.takeTurns===1?"s":""} a turn before you take another turn.\`\`\``:""}`);
                         storage[msg.guild.id].users[msg.author.id].beenCountWarned=true;
                         save();
                     }
@@ -1082,7 +1087,7 @@ client.on("messageCreate",async msg=>{
             else if(storage[msg.guild.id].counting.reset&&storage[msg.guild.id].counting.nextNum!==1){
                 msg.react("❌");
                 if(storage[msg.guild.id].users[msg.author.id].beenCountWarned&&storage[msg.guild.id].counting.reset){
-                    msg.reply(`Nope, that was incorrect! The next number to post was going to be \`${storage[msg.guild.id].counting.nextNum}\`, but now it's \`1\`.`);
+                    msg.reply(`⛔ **Reset**\nNope, that was incorrect! The next number to post was going to be \`${storage[msg.guild.id].counting.nextNum}\`, but now it's \`1\`.`);
                     storage[msg.guild.id].counting.nextNum=1;
                     if(storage[msg.guild.id].counting.reset&&storage[msg.guild.id].counting.takeTurns>0) storage[msg.guild.id].counting.legit=true;
                     for(let a in storage[msg.guild.id].users){
@@ -1091,7 +1096,7 @@ client.on("messageCreate",async msg=>{
                     save();
                 }
                 else{
-                    msg.reply(`Nope, that's incorrect. You have been warned! Next time this will reset the count.\nNumbers entered must be the last number plus one, (so if the last entered number is 148, the next number is 149).${storage[msg.guild.id].counting.takeTurns>0?` You also need to make sure at least **${storage[msg.guild.id].counting.takeTurns}** other ${storage[msg.guild.id].counting.takeTurns===1?"person":"people"} take${storage[msg.guild.id].counting.takeTurns===1?"s":""} a turn before you take another turn.`:""}`);
+                    msg.reply(`⚠️ **Warning**\nNope, that's incorrect. You have been warned! Next time this will reset the count. The next number is **${storage[msg.guild.id].counting.nextNum}**.\`\`\`\nNumbers entered must be the last number plus one, (so if the last entered number is 148, the next number is 149).${storage[msg.guild.id].counting.takeTurns>0?` You also need to make sure at least ${storage[msg.guild.id].counting.takeTurns} other ${storage[msg.guild.id].counting.takeTurns===1?"person":"people"} take${storage[msg.guild.id].counting.takeTurns===1?"s":""} a turn before you take another turn.\`\`\``:""}`);
                     storage[msg.guild.id].users[msg.author.id].beenCountWarned=true;
                     save();
                 }
@@ -1252,7 +1257,7 @@ client.on("messageCreate",async msg=>{
         ];
         client.users.cache.get(msg.channel.name.split("Ticket with ")[1].split(" in ")[0]).send(resp);
     }
-    if(msg.reference&&msg.channel instanceof DMChannel){
+    if(msg.reference&&msg.channel instanceof DMChannel&&!msg.bot){
         var rmsg=await msg.channel.messages.fetch(msg.reference.messageId);
         if(rmsg.author.id===client.user.id&&rmsg.content.includes("Ticket ID: ")){
             var resp={
@@ -1341,7 +1346,8 @@ client.on("interactionCreate",async cmd=>{
             cmd.followUp(`**Online**\n- Latency: ${client.ws.ping} milliseconds\n- Last Started: <t:${uptime}:f>, <t:${uptime}:R>\n- Uptime: ${((Math.round(Date.now()/1000)-uptime)/(60*60)).toFixed(2)} hours\n- Server Count: ${client.guilds.cache.size} Servers`);
         break;
         case 'define':
-            fetch("https://api.dictionaryapi.dev/api/v2/entries/en/"+cmd.options.getString("what")).then(d=>d.json()).then(d=>{
+            fetch("https://api.dictionaryapi.dev/api/v2/entries/en/"+cmd.options.getString("what")).then(d=>d.text()).then(d=>{
+                    fs.writeFileSync("./test.txt",d);
                     d = d[0];
                     let defs = [];
                     for (var i = 0; i < d.meanings.length; i++) {
@@ -1370,6 +1376,7 @@ client.on("interactionCreate",async cmd=>{
                         }]});
                     }
                 }).catch(e=>{
+                    console.log(e);
                     cmd.followUp("I'm sorry, I didn't find a definition for that");
                 });
         break;
@@ -1504,7 +1511,7 @@ client.on("interactionCreate",async cmd=>{
                         let nextQues=firstQues.split(" or ")[1];
                         let nextQuest=nextQues[0].toUpperCase()+nextQues.slice(1,nextQues.length).split("?")[0];
                         cmd.followUp(`**Would you Rather**\n🅰️: ${firstQuest}\n🅱️: ${nextQuest}\n\n*\\*Disclaimer: All WYRs are provided by a third party API*`);
-                        if(cmd.channel?.id){
+                        if(cmd.guild?.id||cmd.channel?.id===client.user.id){
                             let msg = await cmd.fetchReply();
                             msg.react("🅰️").then(msg.react("🅱️"));
                         }
@@ -1701,24 +1708,35 @@ client.on("interactionCreate",async cmd=>{
             cmd.followUp({content:`I have attempted to kick <@${cmd.user.username}>`,allowedMentions:{parse:[]}});
         break;
         case 'timeout':
+            if(cmd.options.getUser("target").id===client.id){
+                cmd.followUp(`I cannot timeout myself. I apologize for any inconveniences I may have caused. You can use ${cmds.report_problem} if there's something that needs improvement.`);
+                break;
+            }
+            if(cmd.user.id===cmd.options.getUser("target").id){
+                cmd.followUp(`I cannot timeout you as the one invoking the command. If you feel the need to timeout yourself, consider changing your actions and mindset instead.`);
+            }
             var time=(cmd.options.getInteger("hours")*60000*60)+(cmd.options.getInteger("minutes")*60000)+(cmd.options.getInteger("seconds")*1000);
             cmd.guild.members.cache.get(cmd.options.getUser("target").id).timeout(time>0?time:60000,`Instructed to timeout by ${cmd.user.username}: ${cmd.options.getString("reason")}`);
-            cmd.followUp({content:`I have attempted to timeout <@${cmd.user.username}>`,allowedMentions:{parse:[]}});
+            cmd.followUp({content:`I have attempted to timeout <@${cmd.options.getUser("target").id}>`,allowedMentions:{parse:[]}});
         break;
         case 'ban':
-            if(cmd.user.id===client.id){
+            if(cmd.options.getUser("target").id===client.id){
                 cmd.followUp(`I cannot ban myself. I apologize for any inconveniences I may have caused. You can use ${cmds.report_problem} if there's something that needs improvement.`);
+                break;
             }
             if(cmd.user.id===cmd.options.getUser("target").id){
                 cmd.followUp(`I cannot ban you as the one invoking the command. If you feel the need to ban yourself, consider changing your actions and mindset instead.`);
+                break;
             }
             var b=cmd.guild.members.cache.get(cmd.options.getUser("target").id);
             if(b.bannable){
                 b.ban({reason:`Instructed to ban by ${cmd.user.username}: ${cmd.options.getString("reason")}`});
                 cmd.followUp(`I have banned <@${cmd.user.username}>`);
+                break;
             }
             else{
                 cmd.followUp(`I cannot ban this person. Make sure that I have a role higher than their highest role in the server settings before running this command.`);
+                break;
             }
         break;
         case 'help':
@@ -2101,49 +2119,54 @@ client.on("interactionCreate",async cmd=>{
             sendMessage(cmd,true,true);
         break;
         case 'embed_message':
-            let slashes=cmd.options.getString("link").split("channels/")[1].split("/");
-            let embs=[];
             try{
-                var channelLinked=await client.channels.cache.get(slashes[slashes.length-2]);
-                var mes=await channelLinked.messages.fetch(slashes[slashes.length-1]);
-                if(checkDirty(cmd.guild?.id,mes.content)||checkDirty(cmd.guild?.id,mes.author.nickname||mes.author.globalName||mes.author.username)||checkDirty(cmd.guild?.id,mes.guild.name)||checkDirty(cmd.guild?.id,mes.channel.name)){
-                    cmd.followUp(`I'm sorry, that message is blocked by this server's filter.`);
-                    break;
-                }
-                let messEmbed = new EmbedBuilder()
-                    .setColor("#006400")
-                    .setTitle("(Jump to message)")
-                    .setURL(cmd.options.getString("link"))
-                    .setAuthor({
-                        name: mes.author.nickname||mes.author.globalName||mes.author.username,
-                        iconURL: "" + mes.author.displayAvatarURL(),
-                        url: "https://discord.com/users/" + mes.author.id,
-                    })
-                    .setDescription(mes.content||null)
-                    .setTimestamp(new Date(mes.createdTimestamp))
-                    .setFooter({
-                        text: mes.guild?.name?mes.guild.name + " / " + mes.channel.name:`DM with ${client.user.username}`,
-                        iconURL: mes.guild.iconURL(),
+                let slashes=cmd.options.getString("link").split("channels/")[1].split("/");
+                let embs=[];
+                try{
+                    var channelLinked=await client.channels.cache.get(slashes[slashes.length-2]);
+                    var mes=await channelLinked.messages.fetch(slashes[slashes.length-1]);
+                    if(checkDirty(cmd.guild?.id,mes.content)||checkDirty(cmd.guild?.id,mes.author.nickname||mes.author.globalName||mes.author.username)||checkDirty(cmd.guild?.id,mes.guild.name)||checkDirty(cmd.guild?.id,mes.channel.name)){
+                        cmd.followUp(`I'm sorry, that message is blocked by this server's filter.`);
+                        break;
+                    }
+                    let messEmbed = new EmbedBuilder()
+                        .setColor("#006400")
+                        .setTitle("(Jump to message)")
+                        .setURL(cmd.options.getString("link"))
+                        .setAuthor({
+                            name: mes.author.nickname||mes.author.globalName||mes.author.username,
+                            iconURL: "" + mes.author.displayAvatarURL(),
+                            url: "https://discord.com/users/" + mes.author.id,
+                        })
+                        .setDescription(mes.content||null)
+                        .setTimestamp(new Date(mes.createdTimestamp))
+                        .setFooter({
+                            text: mes.guild?.name?mes.guild.name + " / " + mes.channel.name:`DM with ${client.user.username}`,
+                            iconURL: mes.guild.iconURL(),
+                        });
+                    var attachedImg=false;
+                    mes.attachments.forEach((attached,i) => {
+                        let url = attached.url;
+                        if(attachedImg||!(/(png|jpe?g)/i.test(url))){
+                            fils.push(url);
+                        }
+                        else{
+                            messEmbed.setImage(url);
+                            attachedImg=true;
+                        }
                     });
-                var attachedImg=false;
-                mes.attachments.forEach((attached,i) => {
-                    let url = attached.url;
-                    if(attachedImg||!(/(png|jpe?g)/i.test(url))){
-                        fils.push(url);
+                    if(channelLinked?.permissionsFor(cmd.user.id)?.has(PermissionFlagsBits.ViewChannel)){
+                        embs.push(messEmbed);
                     }
-                    else{
-                        messEmbed.setImage(url);
-                        attachedImg=true;
-                    }
-                });
-                if(channelLinked?.permissionsFor(cmd.user.id)?.has(PermissionFlagsBits.ViewChannel)){
-                    embs.push(messEmbed);
+                    cmd.followUp({content:embs.length>0?`Embedded linked message`:`Failed to embed message`,embeds:embs});
                 }
-                cmd.followUp({content:embs.length>0?`Embedded linked message`:`Failed to embed message`,embeds:embs});
+                catch(e){
+                    console.log(e);
+                    cmd.followUp(`I'm sorry, I can't access that message.`);
+                }
             }
             catch(e){
-                console.log(e);
-                cmd.followUp(`I'm sorry, I can't access that message.`);
+                cmd.followUp(`I didn't get that. Are you sure this is a valid message link? You can get one by accessing the context menu on a message, and pressing \`Copy Message Link\`.`);
             }
         break;
 
@@ -2777,7 +2800,7 @@ client.on("messageDelete",async msg=>{
             });
             const firstEntry = fetchedLogs.entries.first();
             firstEntry.timestamp=BigInt("0b"+BigInt(firstEntry.id).toString(2).slice(0,39))+BigInt(1420070400000);
-            if(firstEntry.target.id===msg?.author?.id&&Date.now()-firstEntry.timestamp<60000){
+            if(firstEntry.target.id===msg?.author?.id&&BigInt(Date.now())-firstEntry.timestamp<BigInt(60000)){
                 msg.guild.channels.cache.get(storage[msg.guild.id].logs.channel).send({content:ll(`**Message from <@${firstEntry.target.id}> Deleted by <@${firstEntry.executor.id}> in <#${msg.channel.id}>**\n\n${msg.content.length>0?`\`\`\`\n${msg.content}\`\`\``:""}${msg.attachments?.size>0?`There were **${msg.attachments.size}** attachments on this message.`:""}`),allowedMentions:{parse:[]}});
             }
         },2000);
