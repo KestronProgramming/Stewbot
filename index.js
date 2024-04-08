@@ -797,8 +797,13 @@ const defaultGuild={
         "ai":true
     },
     "ajm":{
-        "message":"",
+        "message":"Greetings ${@USER}! Welcome to the server!",
         "dm":true,
+        "channel":"",
+        "active":false
+    },
+    "alm":{
+        "message":"Farewell ${@USER}. We'll miss you.",
         "channel":"",
         "active":false
     }
@@ -1663,6 +1668,15 @@ client.on("interactionCreate",async cmd=>{
             if(cmd.options.getString("message")!==null) storage[cmd.guildId].ajm.message=cmd.options.getString("message");
             if(!storage[cmd.guildId].ajm.dm&&storage[cmd.guildId].ajm.channel===""||storage[cmd.guildId].ajm.message==="") storage[cmd.guildId].ajm.active=false;
             cmd.followUp(`Auto join messages configured.${storage[cmd.guildId].ajm.active!==cmd.options.getBoolean("active")?` It looks like an invalid configuration was set. Make sure to specify a channel to post to if not posting to DMs, and to specify a message to send.`:""}`);
+        break;
+        case 'auto-leave-message':
+            if(!storage[cmd.guildId].hasOwnProperty("alm")){
+                storage[cmd.guild.id].alm=structuredClone(defaultGuild.alm);
+            }
+            storage[cmd.guildId].alm.active=cmd.options.getBoolean("active");
+            storage[cmd.guildId].alm.channel=cmd.options.getChannel("channel").id;
+            if(cmd.options.getString("message")!==null) storage[cmd.guildId].alm.message=cmd.options.getString("message");
+            cmd.followUp(`Auto leave messages configured.`);
         break;
         case 'translate':
             translate(cmd.options.getString("what"),Object.assign({
@@ -3031,6 +3045,7 @@ client.on("guildMemberAdd",async member=>{
     save();
 
     if(storage[member.guild.id].ajm.active){
+        if(storage[member.guild.id].ajm.message==="") storage[member.guild.id].ajm.message=defaultGuild.ajm.message;
         if(storage[member.guild.id].ajm.dm){
             member.send({embeds:[{
                 type: "rich",
@@ -3114,6 +3129,27 @@ client.on("guildMemberRemove",async member=>{
     if(storage[member.guild.id].logs.active&&storage[member.guild.id].logs.joining_and_leaving){
         var bans=await member.guild.bans.fetch();
         client.channels.cache.get(storage[member.guild.id].logs.channel).send({content:`**<@${member.id}> (${member.user.username}) has ${bans.find(b=>b.user.id===member.id)?"been banned from":"left"} the server.**${bans.find(b=>b.user.id===member.id)?.reason!==undefined?`\n${bans.find(b=>b.user.id===member.id)?.reason}`:""}`,allowedMentions:{parse:[]}});
+    }
+    if(storage[member.guild.id].alm?.active){
+        if(storage[member.guild.id].alm.message==="") storage[member.guild.id].alm.message=defaultGuild.alm.message;
+        var resp={
+            content:storage[member.guild.id].alm.message.replaceAll("${@USER}",`**${member.user.username}**`),
+            username:member.guild.name,
+            avatarURL:member.guild.iconURL()
+        };
+        var hook=await client.channels.cache.get(storage[member.guild.id].alm.channel).fetchWebhooks();
+        hook=hook.find(h=>h.token);
+        if(hook){
+            hook.send(resp);
+        }
+        else{
+            client.channels.cache.get(storage[member.guild.id].alm.channel).createWebhook({
+                name:"Stewbot",
+                avatar: "https://cdn.discordapp.com/attachments/1145432570104926234/1170273261704196127/kt.jpg",
+            }).then(d=>{
+                d.send(resp);
+            });
+        }
     }
 });
 client.on("channelDelete",async channel=>{
