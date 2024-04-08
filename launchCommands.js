@@ -35,6 +35,7 @@ const contexts={
 	"poll":{"contexts":[0],"integration_types":[0]},
 	"ticket":{"contexts":[0],"integration_types":[0]},
 	"auto-join-message":{"contexts":[0],"integration_types":[0]},
+	"auto-leave-message":{"contexts":[0],"integration_types":[0]},
 	"auto_roles":{"contexts":[0],"integration_types":[0]},
 	"report_problem":{"contexts":[0,1,2],"integration_types":[0,1]},
 	"log_config":{"contexts":[0],"integration_types":[0]},
@@ -213,6 +214,13 @@ const commands = [
 			)
 		).addChannelOption(option=>
 			option.setName("channel").setDescription("The channel to post the message to").addChannelTypes(ChannelType.GuildText)
+		).setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers).setDMPermission(false),
+	new SlashCommandBuilder().setName("auto-leave-message").setDescription("Set up a message to be sent automatically when a user leaves").addBooleanOption(option=>
+			option.setName("active").setDescription("Should I send a message when the user leaves?").setRequired(true)
+		).addChannelOption(option=>
+			option.setName("channel").setDescription("The channel to post the message to").addChannelTypes(ChannelType.GuildText).setRequired(true)
+		).addStringOption(option=>
+			option.setName("message").setDescription("The message to be sent (Use \"${@USER}\" to use the user's username)")
 		).setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers).setDMPermission(false),
 	new SlashCommandBuilder().setName("auto_roles").setDescription("Setup a message with auto roles").addStringOption(option=>
 			option.setName("message").setDescription("The message to be sent with the role options").setRequired(true)
