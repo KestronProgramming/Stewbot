@@ -1124,7 +1124,7 @@ client.on("messageCreate",async msg=>{
         save();
     }
     if(storage[msg.guildId]?.counting.active&&msg.channel.id===storage[msg.guildId]?.counting.channel&&!msg.author.bot&&(!msg.channel.permissionsFor(client.user.id).has("ADD_REACTIONS")||!msg.channel.permissionsFor(client.user.id).has("SEND_MESSAGES"))){
-        storage[msg.guildId]?.counting.active=false;
+        storage[msg.guildId].counting.active=false;
     }
     if(storage[msg.guildId]?.counting.active&&msg.channel.id===storage[msg.guildId]?.counting.channel&&!msg.author.bot){
         var num=msg.content.match(/^(\d|,)+(?:\b)/i);
