@@ -3,7 +3,7 @@ var client;
 const translate=require("@vitalets/google-translate-api").translate;
 const { createCanvas } = require('canvas');
 const { InworldClient, SessionToken, status } = require("@inworld/nodejs-sdk");
-const {Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent }=require("discord.js");
+const {Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder}=require("discord.js");
 const bible=require("./kjv.json");
 var Bible={};
 var properNames={};
@@ -846,7 +846,46 @@ const inps={
 
     "tzUp":new ButtonBuilder().setCustomId("tzUp").setEmoji("⬆️").setStyle(ButtonStyle.Primary),
     "tzDown":new ButtonBuilder().setCustomId("tzDown").setEmoji("⬇️").setStyle(ButtonStyle.Primary),
-    "tzSave":new ButtonBuilder().setCustomId("tzSave").setEmoji("✅").setStyle(ButtonStyle.Success)
+    "tzSave":new ButtonBuilder().setCustomId("tzSave").setEmoji("✅").setStyle(ButtonStyle.Success),
+
+    "tsHour":new ButtonBuilder().setCustomId("tsHour").setLabel("Hour").setStyle(ButtonStyle.Primary),
+    "tsMinutes":new ButtonBuilder().setCustomId("tsMinutes").setLabel("Minutes").setStyle(ButtonStyle.Primary),
+    "tsSeconds":new ButtonBuilder().setCustomId("tsSeconds").setLabel("Seconds").setStyle(ButtonStyle.Primary),
+    "tsMonth":new StringSelectMenuBuilder().setCustomId("tsMonth").setPlaceholder("Month...").addOptions(
+            new StringSelectMenuOptionBuilder().setLabel("January").setDescription("January").setValue("0"),
+            new StringSelectMenuOptionBuilder().setLabel("February").setDescription("February").setValue("1"),
+            new StringSelectMenuOptionBuilder().setLabel("March").setDescription("March").setValue("2"),
+            new StringSelectMenuOptionBuilder().setLabel("April").setDescription("April").setValue("3"),
+            new StringSelectMenuOptionBuilder().setLabel("May").setDescription("May").setValue("4"),
+            new StringSelectMenuOptionBuilder().setLabel("June").setDescription("June").setValue("5"),
+            new StringSelectMenuOptionBuilder().setLabel("July").setDescription("July").setValue("6"),
+            new StringSelectMenuOptionBuilder().setLabel("August").setDescription("August").setValue("7"),
+            new StringSelectMenuOptionBuilder().setLabel("September").setDescription("September").setValue("8"),
+            new StringSelectMenuOptionBuilder().setLabel("October").setDescription("October").setValue("9"),
+            new StringSelectMenuOptionBuilder().setLabel("November").setDescription("November").setValue("10"),
+            new StringSelectMenuOptionBuilder().setLabel("December").setDescription("December").setValue("11")
+        ),
+    "tsDay":new ButtonBuilder().setCustomId("tsDay").setLabel("Day").setStyle(ButtonStyle.Primary),
+    "tsYear":new ButtonBuilder().setCustomId("tsYear").setLabel("Year").setStyle(ButtonStyle.Primary),
+    "tsType":new StringSelectMenuBuilder().setCustomId("tsType").setPlaceholder("Display Type...").addOptions(
+            new StringSelectMenuOptionBuilder().setLabel("Relative").setDescription("Example: 10 seconds ago").setValue("R"),
+            new StringSelectMenuOptionBuilder().setLabel("Short Time").setDescription("Example: 1:48 PM").setValue("t"),
+            new StringSelectMenuOptionBuilder().setLabel("Short Date").setDescription("Example: 4/19/22").setValue("d"),
+            new StringSelectMenuOptionBuilder().setLabel("Short Time w/ Seconds").setDescription("Example: 1:48:00 PM").setValue("T"),
+            new StringSelectMenuOptionBuilder().setLabel("Long Date").setDescription("Example: April 19, 2022").setValue("D"),
+            new StringSelectMenuOptionBuilder().setLabel("Long Date & Short Time").setDescription("April 19, 2022 at 1:48 PM").setValue("f"),
+            new StringSelectMenuOptionBuilder().setLabel("Full Date").setDescription("Example: Tuesday, April 19, 2022 at 1:48 PM").setValue("F")
+        ),
+
+    "howToCopy":new ButtonBuilder().setCustomId("howToCopy").setLabel("How to Copy").setStyle(ButtonStyle.Danger),
+    "onDesktop":new ButtonBuilder().setCustomId("onDesktop").setLabel("On Desktop").setStyle(ButtonStyle.Success),
+
+    "tsHourModal":new TextInputBuilder().setCustomId("tsHourInp").setLabel("The hour of day...").setStyle(TextInputStyle.Short).setMinLength(1).setMaxLength(4).setRequired(true),
+    "tsMinutesModal":new TextInputBuilder().setCustomId("tsMinutesInp").setLabel("The minutes...").setStyle(TextInputStyle.Short).setMinLength(1).setMaxLength(2).setRequired(true),
+    "tsSecondsModal":new TextInputBuilder().setCustomId("tsSecondsInp").setLabel("The seconds...").setStyle(TextInputStyle.Short).setMinLength(1).setMaxLength(2).setRequired(true),
+    "tsDayModal":new TextInputBuilder().setCustomId("tsDayInp").setLabel("The day of the month...").setStyle(TextInputStyle.Short).setMinLength(1).setMaxLength(2).setRequired(true),
+    "tsYearModal":new TextInputBuilder().setCustomId("tsYearInp").setLabel("The year...").setStyle(TextInputStyle.Short).setMinLength(2).setMaxLength(4).setRequired(true),
+    "tsAmPm":new TextInputBuilder().setCustomId("tsAmPm").setLabel("If you used 12 hour, AM/PM").setStyle(TextInputStyle.Short).setMinLength(1).setMaxLength(2).setRequired(false)
 };
 const presets={
     "pollCreation":new ActionRowBuilder().addComponents(inps.pollAdd,inps.pollDel,inps.pollLaunch),
@@ -855,10 +894,18 @@ const presets={
     "meme":[new ActionRowBuilder().addComponents(inps.approve,inps.delete)],
     "moveMessage":new ActionRowBuilder().addComponents(inps.channels),
     "tzConfig":[new ActionRowBuilder().addComponents(inps.tzUp,inps.tzDown,inps.tzSave)],
+    "timestamp":[new ActionRowBuilder().addComponents(inps.tsHour,inps.tsMinutes,inps.tsSeconds,inps.tsDay,inps.tsYear),new ActionRowBuilder().addComponents(inps.tsMonth),new ActionRowBuilder().addComponents(inps.tsType),new ActionRowBuilder().addComponents(inps.howToCopy,inps.onDesktop)],
 
     "pollAddModal":new ModalBuilder().setCustomId("poll-added").setTitle("Add a poll option").addComponents(new ActionRowBuilder().addComponents(inps.pollInp)),
-    "pollRemModal":new ModalBuilder().setCustomId("poll-removed").setTitle("Remove a poll option").addComponents(new ActionRowBuilder().addComponents(inps.pollNum))
+    "pollRemModal":new ModalBuilder().setCustomId("poll-removed").setTitle("Remove a poll option").addComponents(new ActionRowBuilder().addComponents(inps.pollNum)),
+
+    "tsHourModal":new ModalBuilder().setCustomId("tsHourModal").setTitle("Set the Hour for the Timestamp").addComponents(new ActionRowBuilder().addComponents(inps.tsHourModal),new ActionRowBuilder().addComponents(inps.tsAmPm)),
+    "tsMinutesModal":new ModalBuilder().setCustomId("tsMinutesModal").setTitle("Set the Minutes for the Timestamp").addComponents(new ActionRowBuilder().addComponents(inps.tsMinutesModal)),
+    "tsSecondsModal":new ModalBuilder().setCustomId("tsSecondsModal").setTitle("Set the Seconds for the Timestamp").addComponents(new ActionRowBuilder().addComponents(inps.tsSecondsModal)),
+    "tsDayModal":new ModalBuilder().setCustomId("tsDayModal").setTitle("Set the Day for the Timestamp").addComponents(new ActionRowBuilder().addComponents(inps.tsDayModal)),
+    "tsYearModal":new ModalBuilder().setCustomId("tsYearModal").setTitle("Set the Year for the Timestamp").addComponents(new ActionRowBuilder().addComponents(inps.tsYearModal))
 };
+
 var kaProgramRegex =/\b(?!<)https?:\/\/(?:www\.)?khanacademy\.org\/(cs|computer-programming)\/[a-z,\d,-]+\/\d+(?!>)\b/gi;
 var discordMessageRegex =/\b(?!<)https?:\/\/(ptb\.|canary\.)?discord(app)?.com\/channels\/(\@me|\d+)\/\d+\/\d+(?!>)\b/gi;
 var spotifyTrackRegex=/\bhttps?:\/\/open\.spotify\.com\/track\/\w+(\b|\?)/gi;
@@ -976,23 +1023,18 @@ client.on("messageCreate",async msg=>{
                 var replyBlip="";
                 if(msg.type===19){
                     var rMsg=await msg.fetchReference();
-                    replyBlip=`_[Reply to **${rMsg.author.username}**: ${rMsg.content.slice(0,22).replace(/(https?\:\/\/|\n)/ig,"")}${rMsg.content.length>22?"...":""}](<https://discord.com/channels/${rMsg.guild.id}/${rMsg.channel.id}/${rMsg.id}>)_\n`;
+                    replyBlip=`_[Reply to **${rMsg.author.username}**: ${rMsg.content.slice(0,22).replace(/(https?\:\/\/|\n|\<?\@(\d+|everyone)\>?)/ig,"")}${rMsg.content.length>22?"...":""}](<https://discord.com/channels/${rMsg.guild.id}/${rMsg.channel.id}/${rMsg.id}>)_\n`;
                 }
-
-                // Quick patch to censor ping everyone exploit - WKoA. TODO: make it work better or whatever
-                var messageContent = msg.content.replaceAll("@", "[@]")
-
                 sendHook({
                     username:msg.member?.nickname||msg.author.globalName||msg.author.username,
                     avatarURL:msg.member?.displayAvatarURL(),
-                    content:ll(`\`\`\`\nThe following message from ${msg.author.username} has been censored by Stewbot.\`\`\`${replyBlip}${messageContent}`)
+                    content:ll(`\`\`\`\nThe following message from ${msg.author.username} has been censored by Stewbot.\`\`\`${replyBlip}${msg.content}`)
                 });
             }
             if(storage[msg.author.id].config.dmOffenses&&msg.webhookId===null){
                 try{msg.author.send(ll(`Your message in **${msg.guild.name}** was ${storage[msg.guildId].filter.censor?"censored":"deleted"} due to the following word${foundWords.length>1?"s":""} being in the filter: ||${foundWords.join("||, ||")}||${storage[msg.author.id].config.returnFiltered?"```\n"+msg.ogContent.replaceAll("`","\\`")+"```":""}`));}catch(e){}
             }
             if(storage[msg.guildId].filter.log&&storage[msg.guildId].filter.channel){
-                // TODO: format this ugly thing. It looks like it was completely written by Kestron or something - WKoA
                 client.channels.cache.get(storage[msg.guildId].filter.channel).send(ll(`I have ${storage[msg.guildId].filter.censor?"censored":"deleted"} a message from **${msg.author.username}** in <#${msg.channel.id}> for the following blocked word${foundWords.length>1?"s":""}: ||${foundWords.join("||, ||")}||\`\`\`\n${msg.ogContent.replaceAll("`","\\`").replaceAll(/(?<=https?:\/\/[^(\s|\/)]+)\./gi, "[.]").replaceAll(/(?<=https?):\/\//gi, "[://]")}\`\`\``));
             }
             save();
@@ -1311,7 +1353,7 @@ client.on("messageCreate",async msg=>{
 client.on("interactionCreate",async cmd=>{
     if(cmd.commandName==="secret") return;
     try{
-	    if(!cmd.isButton()&&!cmd.isModalSubmit()&&!cmd.isChannelSelectMenu()&&!cmd.isRoleSelectMenu()) await cmd.deferReply({ephemeral:["poll","auto_roles","report_problem","submit_meme","delete_message","move_message","auto-join-roles","join-roleOption","admin_message","personal_config"].includes(cmd.commandName)});
+	    if(!cmd.isButton()&&!cmd.isModalSubmit()&&!cmd.isChannelSelectMenu()&&!cmd.isRoleSelectMenu()&&!cmd.isStringSelectMenu()) await cmd.deferReply({ephemeral:["poll","auto_roles","report_problem","submit_meme","delete_message","move_message","auto-join-roles","join-roleOption","admin_message","personal_config","timestamp"].includes(cmd.commandName)});
     }catch(e){}
     try{
         if(cmd.guildId!==0){
@@ -1346,8 +1388,7 @@ client.on("interactionCreate",async cmd=>{
             cmd.followUp(`**Online**\n- Latency: ${client.ws.ping} milliseconds\n- Last Started: <t:${uptime}:f>, <t:${uptime}:R>\n- Uptime: ${((Math.round(Date.now()/1000)-uptime)/(60*60)).toFixed(2)} hours\n- Server Count: ${client.guilds.cache.size} Servers`);
         break;
         case 'define':
-            fetch("https://api.dictionaryapi.dev/api/v2/entries/en/"+cmd.options.getString("what")).then(d=>d.text()).then(d=>{
-                    fs.writeFileSync("./test.txt",d);
+            fetch("https://api.dictionaryapi.dev/api/v2/entries/en/"+cmd.options.getString("what")).then(d=>d.json()).then(d=>{
                     d = d[0];
                     let defs = [];
                     for (var i = 0; i < d.meanings.length; i++) {
@@ -1774,7 +1815,9 @@ client.on("interactionCreate",async cmd=>{
                 cmd.followUp("Configured your personal setup");
             }
             else{
-                cmd.followUp({content:`**Timezone Configuration**\n\nPlease use the buttons to make the following time the current time (You can ignore minutes)\n<t:${Math.round(Date.now()/1000)+((storage[cmd.user.id].config.hasSetTZ?storage[cmd.user.id].config.timeOffset:0)*60*60)}:t>`,components:presets.tzConfig});
+                var cur=new Date();
+                if(!storage[cmd.user.id].config.hasSetTZ) storage[cmd.user.id].config.timeOffset=0;
+                cmd.followUp({content:`## Timezone Configuration\n\nPlease use the buttons to make the following number your current time (you can ignore minutes)\n${(cur.getHours()+storage[cmd.user.id].config.timeOffset)===0?"12":(cur.getHours()+storage[cmd.user.id].config.timeOffset)>12?(cur.getHours()+storage[cmd.user.id].config.timeOffset)-12:(cur.getHours()+storage[cmd.user.id].config.timeOffset)}:${(cur.getMinutes()+"").padStart(2,"0")} ${(cur.getHours()+storage[cmd.user.id].config.timeOffset)>11?"PM":"AM"}\n${((cur.getHours()+storage[cmd.user.id].config.timeOffset)+"").padStart(2,"0")}${(cur.getMinutes()+"").padStart(2,"0")}`,components:presets.tzConfig});
             }
         break;
         case 'general_config':
@@ -2169,6 +2212,14 @@ client.on("interactionCreate",async cmd=>{
                 cmd.followUp(`I didn't get that. Are you sure this is a valid message link? You can get one by accessing the context menu on a message, and pressing \`Copy Message Link\`.`);
             }
         break;
+        case 'timestamp':
+            if(storage[cmd.user.id].config.hasSetTZ){
+                cmd.followUp({content:`<t:${Math.round((new Date().setSeconds(0))/1000)}:t>`,components:presets.timestamp});
+            }
+            else{
+                cmd.followUp(`This command needs you to set your timezone first! Run ${cmds.personal_config} and specify \`configure_timezone\` to get started,`);
+            }
+        break;
 
         case 'restart':
             if(cmd.guild?.id==="983074750165299250"&&cmd.channel.id==="986097382267715604"){
@@ -2383,8 +2434,30 @@ client.on("interactionCreate",async cmd=>{
             cmd.update(`## Timezone Configuration\n\nPlease use the buttons to make the following number your current time (you can ignore minutes)\n${(cur.getHours()+storage[cmd.user.id].config.timeOffset)===0?"12":(cur.getHours()+storage[cmd.user.id].config.timeOffset)>12?(cur.getHours()+storage[cmd.user.id].config.timeOffset)-12:(cur.getHours()+storage[cmd.user.id].config.timeOffset)}:${(cur.getMinutes()+"").padStart(2,"0")} ${(cur.getHours()+storage[cmd.user.id].config.timeOffset)>11?"PM":"AM"}\n${((cur.getHours()+storage[cmd.user.id].config.timeOffset)+"").padStart(2,"0")}${(cur.getMinutes()+"").padStart(2,"0")}`);
         break;
         case 'tzSave':
+            storage[cmd.user.id].config.hasSetTZ=true;
             save();
             cmd.update({content:`## Timezone Configured\n\nUTC ${storage[cmd.user.id].config.timeOffset}`,components:[]});
+        break;
+        case 'howToCopy':
+            cmd.reply({content:`## Desktop\n- Press the \`On Desktop\` button\n- Press the copy icon on the top right of the code block\n- Paste it where you want to use it\n## Mobile\n- Hold down on the message until the context menu appears\n- Press \`Copy Text\`\n- Paste it where you want to use it`,ephemeral:true});
+        break;
+        case 'onDesktop':
+            cmd.reply({content:`\`\`\`\n${cmd.message.content}\`\`\``,ephemeral:true});
+        break;
+        case 'tsHour':
+            cmd.showModal(presets.tsHourModal);
+        break;
+        case 'tsMinutes':
+            cmd.showModal(presets.tsMinutesModal);
+        break;
+        case 'tsSeconds':
+            cmd.showModal(presets.tsSecondsModal);
+        break;
+        case 'tsDay':
+            cmd.showModal(presets.tsDayModal);
+        break;
+        case 'tsYear':
+            cmd.showModal(presets.tsYearModal);
         break;
 
         //Modals
@@ -2457,6 +2530,63 @@ client.on("interactionCreate",async cmd=>{
                 let row=new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId("racJoin").setLabel("Join Game").setStyle(ButtonStyle.Danger).setDisabled(true),new ButtonBuilder().setCustomId("racMove").setLabel("Make a Move").setStyle(ButtonStyle.Success).setDisabled(true));
                 cmd.message.edit({content:tallyRac(),components:[row]});
             }
+        break;
+        case "tsYearModal":
+            var inp=cmd.fields.getTextInputValue("tsYearInp").padStart(4,"20");
+            if(!/^\d+$/.test(inp)){
+                cmd.deferUpdate();
+                break;
+            }
+            cmd.update(`<t:${Math.round(new Date(+cmd.message.content.split(":")[1]*1000).setYear(+inp)/1000)}:${cmd.message.content.split(":")[2].split(">")[0]}>`);
+        break;
+        case "tsMinutesModal":
+            var inp=cmd.fields.getTextInputValue("tsMinutesInp");
+            if(!/^\d+$/.test(inp)){
+                cmd.deferUpdate();
+                break;
+            }
+            cmd.update(`<t:${Math.round(new Date(+cmd.message.content.split(":")[1]*1000).setMinutes(+inp)/1000)}:${cmd.message.content.split(":")[2].split(">")[0]}>`);
+        break;
+        case "tsSecondsModal":
+            var inp=cmd.fields.getTextInputValue("tsSecondsInp");
+            if(!/^\d+$/.test(inp)){
+                cmd.deferUpdate();
+                break;
+            }
+            cmd.update(`<t:${Math.round(new Date(+cmd.message.content.split(":")[1]*1000).setSeconds(+inp)/1000)}:${cmd.message.content.split(":")[2].split(">")[0]}>`);
+        break;
+        case "tsHourModal":
+            var inp=cmd.fields.getTextInputValue("tsHourInp");
+            if(!/^\d+$/.test(inp)){
+                cmd.deferUpdate();
+                break;
+            }
+            inp=+inp-storage[cmd.user.id].config.timeOffset;
+            if(cmd.fields.getTextInputValue("tsAmPm").toLowerCase()[0]==="p"&&inp<13){
+                inp+=12;
+            }
+            while(inp>23){
+                inp-=24;
+            }
+            while(inp<0){
+                inp+=24;
+            }
+            cmd.update(`<t:${Math.round(new Date(+cmd.message.content.split(":")[1]*1000).setHours(inp)/1000)}:${cmd.message.content.split(":")[2].split(">")[0]}>`);
+        break;
+        case "tsDayModal":
+            var inp=cmd.fields.getTextInputValue("tsDayInp");
+            if(!/^\d+$/.test(inp)){
+                cmd.deferUpdate();
+                break;
+            }
+            var t=new Date(+cmd.message.content.split(":")[1]*1000);
+            if(t.getHours()+storage[cmd.user.id].config.timeOffset<0){
+                inp--;
+            }
+            if(t.getHours()+storage[cmd.user.id].config.timeOffset>23){
+                inp++;
+            }
+            cmd.update(`<t:${Math.round(t.setDate(inp)/1000)}:${cmd.message.content.split(":")[2].split(">")[0]}>`);
         break;
 
         //Select Menus
@@ -2550,6 +2680,12 @@ client.on("interactionCreate",async cmd=>{
                 });
             }
             cmd.update({"content":"\u200b",components:[]});
+        break;
+        case 'tsMonth':
+            cmd.update(`<t:${Math.round(new Date(+cmd.message.content.split(":")[1]*1000).setMonth(cmd.values[0])/1000)}:${cmd.message.content.split(":")[2].split(">")[0]}>`);
+        break;
+        case 'tsType':
+            cmd.update(`<t:${Math.round(new Date(+cmd.message.content.split(":")[1]*1000)/1000)}:${cmd.values[0]}>`);
         break;
     }
     if(cmd.customId?.startsWith("poll-closeOption")){
@@ -2849,9 +2985,9 @@ client.on("messageUpdate",async (msgO,msg)=>{
             .setTitle("(Jump to message)")
             .setURL(`https://www.discord.com/channels/${msg.guild.id}/${msg.channel.id}/${msg.id}`)
             .setAuthor({
-                name: msg.author?.globalName||msg.author?.username,
-                iconURL:msg.author.displayAvatarURL(),
-                url:`https://discord.com/users/${msg.author.id}`
+                name: `${msg.author?.globalName||msg.author?.username}`,
+                iconURL:msg.author?.displayAvatarURL(),
+                url:`https://discord.com/users/${msg.author?.id}`
             })
             .setDescription(`${replyBlip?`${replyBlip}\n`:""}${msg.content?msg.content:"⠀"}`)
             .setTimestamp(new Date(msg.createdTimestamp))
