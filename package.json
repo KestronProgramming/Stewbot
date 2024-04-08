@@ -1,10 +1,13 @@
 {
   "dependencies": {
     "@discordjs/builders": "^1.6.5",
+    "@discordjs/voice": "^0.16.1",
     "@inworld/nodejs-sdk": "^1.10.0",
     "@vitalets/google-translate-api": "^9.2.0",
     "canvas": "^2.11.2",
     "discord.js": "^14.13.0",
-    "fs": "^0.0.1-security"
+    "fs": "^0.0.1-security",
+    "get-mp3-duration": "^1.0.0",
+    "libsodium-wrappers": "^0.7.13"
   }
 }

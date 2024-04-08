@@ -34,7 +34,7 @@ process.stdin.on("end", () => {
         },
         'body': JSON.stringify({ 
             'username': "stderrLog.js", 
-            "content": data
+            "content": data.slice(0,1997)+data.length>1997?"...":""
         })
     }).then(re => re.text()).then(re => {
         // There are only responeses on errors
