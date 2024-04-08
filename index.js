@@ -1023,7 +1023,7 @@ client.on("messageCreate",async msg=>{
                 var replyBlip="";
                 if(msg.type===19){
                     var rMsg=await msg.fetchReference();
-                    replyBlip=`_[Reply to **${rMsg.author.username}**: ${rMsg.content.slice(0,22).replace(/(https?\:\/\/|\n|\<?\@(\d+|everyone)\>?)/ig,"")}${rMsg.content.length>22?"...":""}](<https://discord.com/channels/${rMsg.guild.id}/${rMsg.channel.id}/${rMsg.id}>)_\n`;
+                    replyBlip=`_[Reply to **${rMsg.author.username}**: ${rMsg.content.slice(0,22).replace(/(https?\:\/\/|\n)/ig,"").replace(/\@/ig,"[@]")}${rMsg.content.length>22?"...":""}](<https://discord.com/channels/${rMsg.guild.id}/${rMsg.channel.id}/${rMsg.id}>)_\n`;
                 }
                 sendHook({
                     username:msg.member?.nickname||msg.author.globalName||msg.author.username,
