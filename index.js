@@ -1028,7 +1028,7 @@ client.on("messageCreate",async msg=>{
                 sendHook({
                     username:msg.member?.nickname||msg.author.globalName||msg.author.username,
                     avatarURL:msg.member?.displayAvatarURL(),
-                    content:ll(`\`\`\`\nThe following message from ${msg.author.username} has been censored by Stewbot.\`\`\`${replyBlip}${msg.content}`)
+                    content:ll(`\`\`\`\nThe following message from ${msg.author.username} has been censored by Stewbot.\`\`\`${replyBlip}${msg.content.slice(0,1800).replace(/(https?\:\/\/|\n|\<?\@(\d+|everyone)\>?)/ig,"")}`)
                 });
             }
             if(storage[msg.author.id].config.dmOffenses&&msg.webhookId===null){
