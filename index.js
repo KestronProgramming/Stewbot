@@ -1079,7 +1079,7 @@ client.on("messageCreate",async msg=>{
                         hook.send(resp);
                     }
                     else{
-                        client.channels.cache.get(storage[msg.guild.id].levels.channel).createWebhook({
+                        client.channels.cache.get(storage[msg.guild.id].levels.location==="channel"?storage[msg.guild.id].levels.channel:msg.channel.id).createWebhook({
                             name:"Stewbot",
                             avatar: "https://cdn.discordapp.com/attachments/1145432570104926234/1170273261704196127/kt.jpg",
                         }).then(d=>{
