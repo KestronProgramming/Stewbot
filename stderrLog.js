@@ -1,4 +1,4 @@
-#!/usr/bin/node 
+#!/usr/local/bin/node
 
 // Info:
 // To make this file runable, run `chmod +x ./stderrLog.js`
@@ -7,6 +7,8 @@
 
 // Using fetch instead of discord.js, less libraries means less chance this script fails
 const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
+
+const fs = require("node:fs")
 
 const logWebhook = require("./env.json").logWebhook;
 
@@ -25,7 +27,28 @@ process.stdin.on("readable", () => {
 process.stdin.on("end", () => {
 
     // Make data a little more readable (this can be changed if the md parsing is too ugly)
-    data = "- - - - -\n" + data + "\n- - - - -"
+    data = "=====\n" + data + "\n====="
+
+    const isToLong = data.length > 2000;
+
+    // Save just the chunk that the webhook can send (2K chars) to a var
+    const webhookData = isToLong ? data.slice(0,1997) + "..." : data; 
+
+    // Now, we'll write this error stream to a file instead
+    if (isToLong) {
+        // mm-dd-yyyy-<military time>
+        const dateTime = new Date().toLocaleString('en-US', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false
+        }).replaceAll("/", "-").replaceAll(":", "").replaceAll(", ", "-");
+        
+        // write this error to file
+        fs.writeFileSync("./errorLogs/error-"+dateTime+".txt", data)
+    }
 
     fetch(logWebhook, {
         'method': 'POST',
@@ -34,7 +57,7 @@ process.stdin.on("end", () => {
         },
         'body': JSON.stringify({ 
             'username': "stderrLog.js", 
-            "content": data.slice(0,1997)+data.length>1997?"...":""
+            "content": webhookData
         })
     }).then(re => re.text()).then(re => {
         // There are only responeses on errors
