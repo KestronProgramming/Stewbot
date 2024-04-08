@@ -416,23 +416,14 @@ function noPerms(where,what){
         case "ManageMessages":
             storage[where].filter.active=false;
         break;
-        case "SendMessages":
-            storage[where].starboard.active=false;
-            storage[where].logs.active=false;
-            storage[where].counting.active=false;
-            storage[where].config.ai=false;
-            storage[where].config.embedPreviews=false;
-            return true;
-        break;
         case "ManageRoles":
             storage[where].stickyRoles=false;
         break;
-        case "ReadMessageHistory"://Needed for cmd.followUp which allows me to respond to commands after the 3 second window and is more stable
-            return true;
+        case "ManageWebhooks":
+            storage[where].filter.censor=false;
         break;
     }
     save();
-    return false;
 }
 function checkDirty(where,what){
     if(where===false||where===undefined) return false;
@@ -503,7 +494,13 @@ function daily(){
         }
         Object.keys(storage).forEach(s=>{
             if(storage[s]?.daily?.devos?.active){
-                client.channels.cache.get(storage[s].daily.devos.channel).send({embeds:dailyDevo});
+                var c=client.channels.cache.get(storage[s].daily.devos.channel);
+                if(c.permissionsFor(client.user.id).has("SEND_MESSAGES")){
+                    c.send({embeds:dailyDevo});
+                }
+                else{
+                    storage[s].daily.devos.active=false;
+                }
             }
         });
     });
@@ -1037,10 +1034,16 @@ client.on("messageCreate",async msg=>{
                 });
             }
             if(storage[msg.author.id].config.dmOffenses&&msg.webhookId===null){
-                try{msg.author.send(ll(`Your message in **${msg.guild.name}** was ${storage[msg.guildId].filter.censor?"censored":"deleted"} due to the following word${foundWords.length>1?"s":""} being in the filter: ||${foundWords.join("||, ||")}||${storage[msg.author.id].config.returnFiltered?"```\n"+msg.ogContent.replaceAll("`","\\`")+"```":""}`));}catch(e){}
+                try{msg.author.send(ll(`Your message in **${msg.guild.name}** was ${storage[msg.guildId].filter.censor?"censored":"deleted"} due to the following word${foundWords.length>1?"s":""} being in the filter: ||${foundWords.join("||, ||")}||${storage[msg.author.id].config.returnFiltered?"```\n"+msg.ogContent.replaceAll("`","\\`")+"```":""}`)).catch(e=>{});}catch(e){}
             }
             if(storage[msg.guildId].filter.log&&storage[msg.guildId].filter.channel){
-                client.channels.cache.get(storage[msg.guildId].filter.channel).send(ll(`I have ${storage[msg.guildId].filter.censor?"censored":"deleted"} a message from **${msg.author.username}** in <#${msg.channel.id}> for the following blocked word${foundWords.length>1?"s":""}: ||${foundWords.join("||, ||")}||\`\`\`\n${msg.ogContent.replaceAll("`","\\`").replaceAll(/(?<=https?:\/\/[^(\s|\/)]+)\./gi, "[.]").replaceAll(/(?<=https?):\/\//gi, "[://]")}\`\`\``));
+                var c=client.channels.cache.get(storage[msg.guildId].filter.channel);
+                if(c.permissionsFor(client.user.id).has("SEND_MESSAGES")){
+                    c.send(ll(`I have ${storage[msg.guildId].filter.censor?"censored":"deleted"} a message from **${msg.author.username}** in <#${msg.channel.id}> for the following blocked word${foundWords.length>1?"s":""}: ||${foundWords.join("||, ||")}||\`\`\`\n${msg.ogContent.replaceAll("`","\\`").replaceAll(/(?<=https?:\/\/[^(\s|\/)]+)\./gi, "[.]").replaceAll(/(?<=https?):\/\//gi, "[://]")}\`\`\``));
+                }
+                else{
+                    storage[msg.guildId].filter.log=false;
+                }
             }
             save();
             return;
@@ -1057,20 +1060,22 @@ client.on("messageCreate",async msg=>{
                     delete storage[msg.guild.id].levels.channelOrDM;
                 }
                 if(storage[msg.guild.id].levels.location==="DM"){
-                    msg.author.send({embeds:[{
-                        "type": "rich",
-                        "title": `Level Up`,
-                        "description": storage[msg.guild.id].levels.msg.replaceAll("${USERNAME}",`**${msg.author.username}**`).replaceAll("${USER}",`<@${msg.author.id}>`).replaceAll("${LVL}",storage[msg.guild.id].users[msg.author.id].lvl),
-                        "color": 0x006400,
-                        "thumbnail": {
-                            "url": msg.guild.iconURL(),
-                            "height": 0,
-                            "width": 0
-                        },
-                        "footer": {
-                            "text": `Sent from ${msg.guild.name}. To disable these messages, use /personal_config.`
-                        }
-                    }]});
+                    try{
+                        msg.author.send({embeds:[{
+                            "type": "rich",
+                            "title": `Level Up`,
+                            "description": storage[msg.guild.id].levels.msg.replaceAll("${USERNAME}",`**${msg.author.username}**`).replaceAll("${USER}",`<@${msg.author.id}>`).replaceAll("${LVL}",storage[msg.guild.id].users[msg.author.id].lvl),
+                            "color": 0x006400,
+                            "thumbnail": {
+                                "url": msg.guild.iconURL(),
+                                "height": 0,
+                                "width": 0
+                            },
+                            "footer": {
+                                "text": `Sent from ${msg.guild.name}. To disable these messages, use /personal_config.`
+                            }
+                        }]}).catch(e=>{});
+                    }catch(e){}
                 }
                 else{
                     var resp={
@@ -1078,23 +1083,48 @@ client.on("messageCreate",async msg=>{
                         "avatarURL":msg.guild.iconURL(),
                         "username":msg.guild.name
                     };
-                    var hook=await client.channels.cache.get(storage[msg.guild.id].levels.location==="channel"?storage[msg.guild.id].levels.channel:msg.channel.id).fetchWebhooks();
-                    hook=hook.find(h=>h.token);
-                    if(hook){
-                        hook.send(resp);
+                    var c=client.channels.cache.get(storage[msg.guild.id].levels.location==="channel"?storage[msg.guild.id].levels.channel:msg.channel.id);
+                    if(c.permissionsFor(client.user.id).has("MANAGE_WEBHOOKS")){
+                        var hook=await c.fetchWebhooks();
+                        hook=hook.find(h=>h.token);
+                        if(hook){
+                            hook.send(resp);
+                        }
+                        else{
+                            client.channels.cache.get(storage[msg.guild.id].levels.location==="channel"?storage[msg.guild.id].levels.channel:msg.channel.id).createWebhook({
+                                name:"Stewbot",
+                                avatar: "https://cdn.discordapp.com/attachments/1145432570104926234/1170273261704196127/kt.jpg",
+                            }).then(d=>{
+                                d.send(resp);
+                            });
+                        }
                     }
                     else{
-                        client.channels.cache.get(storage[msg.guild.id].levels.location==="channel"?storage[msg.guild.id].levels.channel:msg.channel.id).createWebhook({
-                            name:"Stewbot",
-                            avatar: "https://cdn.discordapp.com/attachments/1145432570104926234/1170273261704196127/kt.jpg",
-                        }).then(d=>{
-                            d.send(resp);
-                        });
+                        storage[msg.guild.id].levels.location="DM";
+                        try{
+                            msg.author.send({embeds:[{
+                                "type": "rich",
+                                "title": `Level Up`,
+                                "description": storage[msg.guild.id].levels.msg.replaceAll("${USERNAME}",`**${msg.author.username}**`).replaceAll("${USER}",`<@${msg.author.id}>`).replaceAll("${LVL}",storage[msg.guild.id].users[msg.author.id].lvl),
+                                "color": 0x006400,
+                                "thumbnail": {
+                                    "url": msg.guild.iconURL(),
+                                    "height": 0,
+                                    "width": 0
+                                },
+                                "footer": {
+                                    "text": `Sent from ${msg.guild.name}. To disable these messages, use /personal_config.`
+                                }
+                            }]}).catch(e=>{});
+                        }catch(e){}
                     }
                 }
             }
         }
         save();
+    }
+    if(storage[msg.guildId]?.counting.active&&msg.channel.id===storage[msg.guildId]?.counting.channel&&!msg.author.bot&&(!msg.channel.permissionsFor(client.user.id).has("ADD_REACTIONS")||!msg.channel.permissionsFor(client.user.id).has("SEND_MESSAGES"))){
+        storage[msg.guildId]?.counting.active=false;
     }
     if(storage[msg.guildId]?.counting.active&&msg.channel.id===storage[msg.guildId]?.counting.channel&&!msg.author.bot){
         var num=msg.content.match(/^(\d|,)+(?:\b)/i);
@@ -1158,7 +1188,7 @@ client.on("messageCreate",async msg=>{
     var links=msg.content.match(discordMessageRegex)||[];
     var progs=msg.content.match(kaProgramRegex)||[];
     var spotTracks=msg.content.match(spotifyTrackRegex)||[];
-    if(!storage[msg.author.id].config.embedPreviews||!storage[msg.guildId]?.config.embedPreviews){
+    if(!storage[msg.author.id].config.embedPreviews||!storage[msg.guildId]?.config.embedPreviews||!msg.channel.permissionsFor(client.user.id).has("SEND_MESSAGES")||!msg.channel.permissionsFor(msg.author.id).has("EMBED_LINKS")){
         links=[];
         progs=[];
     }
@@ -1306,7 +1336,7 @@ client.on("messageCreate",async msg=>{
             })
             .setImage(msg.attachments.first()?msg.attachments.first().url:null)
         ];
-        client.users.cache.get(msg.channel.name.split("Ticket with ")[1].split(" in ")[0]).send(resp);
+        try{client.users.cache.get(msg.channel.name.split("Ticket with ")[1].split(" in ")[0]).send(resp).catch(e=>{});}catch(e){}
     }
     if(msg.reference&&msg.channel instanceof DMChannel&&!msg.bot){
         var rmsg=await msg.channel.messages.fetch(msg.reference.messageId);
@@ -1316,40 +1346,43 @@ client.on("messageCreate",async msg=>{
                 username:msg.author.nickname||msg.author.globalName||msg.author.username,
                 avatar_url:msg.author.displayAvatarURL()
             };
-            var hook=await client.channels.cache.get(rmsg.content.split("Ticket ID: ")[1].split("/")[0]).fetchWebhooks();
-            hook=hook.find(h=>h.token);
-            if(hook){
-                fetch(`https://discord.com/api/webhooks/${hook.id}/${hook.token}?thread_id=${rmsg.content.split("Ticket ID:")[1].split("/")[1]}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(resp),
-                }).then(d=>d.text());
-            }
-            else{
-                client.channels.cache.get(rmsg.content.split("Ticket ID: ")[1].split("/")[0]).createWebhook({
-                    name:"Stewbot",
-                    avatar: "https://cdn.discordapp.com/attachments/1145432570104926234/1170273261704196127/kt.jpg",
-                }).then(d=>{
-                    fetch(`https://discord.com/api/webhooks/${d.id}/${d.token}?thread_id=${rmsg.content.split("Ticket ID:")[1].split("/")[1]}`, {
+            var c=client.channels.cache.get(rmsg.content.split("Ticket ID: ")[1].split("/")[0]);
+            if(c.permissionsFor(client.user.id).has("SEND_MESSAGES")){
+                var hook=await c.fetchWebhooks();
+                hook=hook.find(h=>h.token);
+                if(hook){
+                    fetch(`https://discord.com/api/webhooks/${hook.id}/${hook.token}?thread_id=${rmsg.content.split("Ticket ID:")[1].split("/")[1]}`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
                         },
                         body: JSON.stringify(resp),
+                    }).then(d=>d.text());
+                }
+                else{
+                    client.channels.cache.get(rmsg.content.split("Ticket ID: ")[1].split("/")[0]).createWebhook({
+                        name:"Stewbot",
+                        avatar: "https://cdn.discordapp.com/attachments/1145432570104926234/1170273261704196127/kt.jpg",
+                    }).then(d=>{
+                        fetch(`https://discord.com/api/webhooks/${d.id}/${d.token}?thread_id=${rmsg.content.split("Ticket ID:")[1].split("/")[1]}`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify(resp),
+                        });
                     });
-                });
+                }
             }
             return;
         }
     }
 
-    if(msg.channel instanceof DMChannel&&!msg.author.bot&&storage[msg.author.id].config.aiPings) {
+    if(msg.channel instanceof DMChannel&&!msg.author.bot&&storage[msg.author.id].config.aiPings&&msg.channel.permissionsFor(client.user.id).has("SEND_MESSAGES")) {
         msg.channel.sendTyping();
 	    sendMessage(msg, true);
     }
-    else if(msg.mentions.users.has(client.user.id)&&!msg.author.bot&&storage[msg.author.id].config.aiPings) {
+    else if(msg.mentions.users.has(client.user.id)&&!msg.author.bot&&storage[msg.author.id].config.aiPings&&msg.channel.permissionsFor(client.user.id).has("SEND_MESSAGES")) {
         if (/^<[@|#|@&].*?>$/g.test(msg.content.replace(/\s+/g, ''))) {
             msg.content = "*User says nothing*";
         }
@@ -1386,7 +1419,7 @@ client.on("interactionCreate",async cmd=>{
     if(cmd.guild){
         Object.keys(PermissionFlagsBits).forEach(perm=>{
             if(!cmd.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits[perm])){
-                stop=noPerms(cmd.guildId,perm);
+                noPerms(cmd.guildId,perm);
             }
         });
     }
@@ -1431,6 +1464,11 @@ client.on("interactionCreate",async cmd=>{
                 });
         break;
         case "filter":
+            if(!cmd.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageMessages)){
+                storage[cmd.guildId].filter.active=false;
+                cmd.followUp(`I cannot run a filter for this server. I need the MANAGE_MESSAGES permission first, otherwise I cannot delete messages.`);
+                break;
+            }
             switch(cmd.options.getSubcommand()){
                 case "add":
                     if(storage[cmd.guildId].filter.blacklist.includes(cmd.options.getString("word"))){
@@ -1453,13 +1491,25 @@ client.on("interactionCreate",async cmd=>{
                     }
                 break;
                 case "config":
+                    var disclaimers=[];
                     storage[cmd.guildId].filter.active=cmd.options.getBoolean("active");
                     if(cmd.options.getBoolean("censor")!==null) storage[cmd.guildId].filter.censor=cmd.options.getBoolean("censor");
                     if(cmd.options.getBoolean("log")!==null) storage[cmd.guildId].filter.log=cmd.options.getBoolean("log");
                     if(cmd.options.getChannel("channel")!==null) storage[cmd.guildId].filter.channel=cmd.options.getChannel("channel").id;
-                    if(storage[cmd.guildId].filter.channel==="") storage[cmd.guildId].filter.log=false;
-                    cmd.followUp(`Filter configured.${(cmd.options.getBoolean("log")&&!storage[cmd.guildId].filter.log)?`\n\nNo channel was set to log summaries of deleted messages to, so logging these is turned off. To reenable this, run ${cmds['filter config']} again and set \`log\` to true and specify a \`channel\`.`:""}`);
                     save();
+                    if(!cmd.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageWebhooks)&&storage[cmd.guildId].filter.censor){
+                        storage[cmd.guildId].filter.censor=false;
+                        disclaimers.push(`I cannot run censoring for this server, I need the MANAGE_WEBHOOKS permission first, otherwise I can't post a censored version.`);
+                    }
+                    if(storage[cmd.guildId].filter.channel===""&&storage[cmd.guildId].filter.log){
+                        storage[cmd.guildId].filter.log=false;
+                        disclaimers.push(`No channel was set to log summaries of deleted messages to, so logging these is turned off.`);
+                    }
+                    else if(storage[cmd.guildId].filter.log&&!client.channels.cache.get(storage[cmd.guildId].filter.channel).permissionsFor(client.user.id).has("SEND_MESSAGES")){
+                        storage[cmd.guildId].filter.log=false;
+                        disclaimers.push(`I cannot send messages to the specified log channel for this server, so logging deleted messages has been turned off.`);
+                    }
+                    cmd.followUp(`Filter configured.${disclaimers.map(d=>`\n\n${d}`)}`);
                 break;
                 case "import":
                     fetch(cmd.options.getAttachment("file").attachment).then(d=>d.text()).then(d=>{
@@ -1478,7 +1528,7 @@ client.on("interactionCreate",async cmd=>{
             }
         break;
         case 'view_filter':
-            if(storage[cmd.guildId].filter.blacklist.length>0){
+            if(storage[cmd.guildId].filter.blacklist.length>0&&storage[cmd.guildId].filter.active){
                 cmd.followUp({"content":`**Warning!** There is no guarantee what kinds of words may be in the blacklist. There is a chance it could be heavily dirty or offensive. To continue, press the button below.`,"components":[new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('view_filter').setLabel('DM me the blacklist').setStyle(ButtonStyle.Danger))]});
             }
             else{
@@ -1495,8 +1545,21 @@ client.on("interactionCreate",async cmd=>{
             if(cmd.options.getInteger("threshold")!==null) storage[cmd.guildId].starboard.threshold=cmd.options.getInteger("threshold");
             if(cmd.options.getString("emoji")!==null) storage[cmd.guildId].starboard.emoji=cmd.options.getString("emoji").includes(":")?cmd.options.getString("emoji").split(":")[2].split(">")[0]:cmd.options.getString("emoji");
             if(cmd.options.getString("message_type")!==null) storage[cmd.guildId].starboard.messType=cmd.options.getString("message_type");
-            if(storage[cmd.guildId].starboard.channel==="") storage[cmd.guildId].starboard.active=false;
-            cmd.followUp(`Starboard configured.${cmd.options.getBoolean("active")&&!storage[cmd.guildId].starboard.active?`\n\nNo channel has been set for this server, so starboard is inactive. To enable starboard, run ${cmds.starboard_config} again setting \`active\` to true and specify a \`channel\`.`:""}`);
+            
+            var disclaimers=[];
+            if(storage[cmd.guildId].starboard.channel===""&&storage[cmd.guildId].starboard.active){
+                storage[cmd.guildId].starboard.active=false;
+                disclaimers.push(`No channel was set to post starboarded messages to, so starboard has been turned off.`);
+            }
+            else if(storage[cmd.guildId].starboard.active&&!client.channels.cache.get(storage[cmd.guildId].starboard.channel).permissionsFor(client.user.id).has("SEND_MESSAGES")){
+                storage[cmd.guildId].starboard.active=false;
+                disclaimers.push(`I cannot send messages to the specified starboard channel for this server, so starboard has been turned off.`);
+            }
+            if(storage[cmd.guildId].starboard.messType==="0"&&!cmd.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageWebhooks)){
+                storage[cmd.guildId].starboard.messType="2";
+                disclaimers.push(`I do not have the MANAGE_WEBHOOKS permissions, so I cannot use the starboard message type configured. I have changed the setting to "Post an embed with the message" instead.`);
+            }
+            cmd.followUp(`Starboard configured.${disclaimers.map(d=>`\n\n${d}`)}`);
             save();
         break;
         case 'levels_config':
@@ -1504,8 +1567,16 @@ client.on("interactionCreate",async cmd=>{
             if(cmd.options.getChannel("channel")!==null) storage[cmd.guildId].levels.channel=cmd.options.getChannel("channel").id;
             if(cmd.options.getString("location")!==null) storage[cmd.guildId].levels.location=cmd.options.getString("location");
             if(cmd.options.getString("message")!==null) storage[cmd.guildId].levels.msg=cmd.options.getString("message");
-            if(storage[cmd.guildId].levels.channel===""&&storage[cmd.guildId].levels.location==="channel") storage[cmd.guildId].levels.active=false;
-            cmd.followUp(`Level ups configured.${cmd.options.getBoolean("active")&&!storage[cmd.guildId].levels.active?`\n\nNo channel has been set for this server, so level ups is now inactive. To enable level ups, run ${cmds.levels_config} again setting \`active\` to true and specify a \`channel\`.`:""}`);
+            var disclaimers=[];
+            if(storage[cmd.guildId].levels.channel===""&&storage[cmd.guildId].levels.location==="channel"){
+                storage[cmd.guildId].levels.location="DM";
+                disclaimers.push(`No channel was set to post level-ups to, so I have changed the level-up notification location to DMs.`);
+            }
+            if(storage[cmd.guildId].levels.location!=="DM"&&!cmd.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageWebhooks)){
+                storage[cmd.guildId].levels.location="DM";
+                disclaimers.push(`I do not have the MANAGE_WEBHOOKS permission for this server, so I cannot post level-up messages. I have set the location for level-up notifications to DMs instead.`);
+            }
+            cmd.followUp(`Level ups configured.${disclaimers.map(d=>`\n\n${d}`)}`);
             save();
         break;
         case 'counting':
@@ -1515,16 +1586,35 @@ client.on("interactionCreate",async cmd=>{
                     if(cmd.options.getChannel("channel")!==null) storage[cmd.guildId].counting.channel=cmd.options.getChannel("channel").id;
                     if(cmd.options.getBoolean("public")!==null) storage[cmd.guildId].counting.public=cmd.options.getBoolean("public");
                     if(cmd.options.getInteger("posts_between_turns")!==null) storage[cmd.guildId].counting.takeTurns=cmd.options.getInteger("posts_between_turns");
-                    if(!storage[cmd.guildId].counting.channel) storage[cmd.guildId].counting.active=false;
-                    if(!storage[cmd.guildId].counting.reset||storage[cmd.guildId].counting.takeTurns<1) storage[cmd.guildId].counting.legit=false;
+                    var disclaimers=[];
+                    if(!storage[cmd.guildId].counting.channel){
+                        storage[cmd.guildId].counting.active=false;
+                        disclaimers.push(`No channel was set for counting to be active in, so counting is disabled currently.`);
+                    }
+                    var c=client.channels.cache.get(storage[cmd.guild.id].counting.channel);
+                    if(!c.permissionsFor(client.user.id).has("SEND_MESSAGES")){
+                        storage[cmd.guild.id].counting.active=false;
+                        disclaimers.push(`I can't send messages in the specified channel, so counting is disabled currently.`);
+                    }
+                    if(!c.permissionsFor(client.user.id).has("ADD_REACTIONS")){
+                        storage[cmd.guild.id].counting.active=false;
+                        disclaimers.push(`I can't add reactions in the specified channel, so counting is disabled currently.`);
+                    }
+                    if(!storage[cmd.guildId].counting.reset||storage[cmd.guildId].counting.takeTurns<1){
+                        storage[cmd.guildId].counting.legit=false;
+                    }
                     for(let a in storage[cmd.guildId].users){
                         storage[cmd.guildId].users[a].countTurns=0;
                         storage[cmd.guildId].users[a].beenCountWarned=false;
                     }
-                    cmd.followUp(`Alright, I configured counting for this server.${storage[cmd.guildId].counting.active!==cmd.options.getBoolean("active")?`\n\nIt looks like no channel has been set to count in, so counting is currently disabled. Please run ${cmds['counting config']} again and set the channel to activate counting.`:`${storage[cmd.guildId].counting.legit?"":`\n\nPlease be aware this server is currently ineligible for the leaderboard. To fix this, make sure that reset is set to true, that the posts between turns is at least 1, and that you don't set the number to anything higher than 1 manually.`}`}`);
+                    cmd.followUp(`Alright, I configured counting for this server.${disclaimers.map(d=>`\n\n${d}`)}${storage[cmd.guildId].counting.legit?"":`\n\nPlease be aware this server is currently ineligible for the leaderboard. To fix this, make sure that reset is set to true, that the posts between turns is at least 1, and that you don't set the number to anything higher than 1 manually.`}`);
                     save();
                 break;
                 case "set_number":
+                    if(!storage[cmd.guildId].counting.active){
+                        cmd.followUp(`This server doesn't use counting at the moment, configure it with ${commands["counting config"]}.`);
+                        break;
+                    }
                     storage[cmd.guildId].counting.nextNum=cmd.options.getInteger("num");
                     if(storage[cmd.guildId].counting.nextNum>1){
                         storage[cmd.guildId].counting.legit=false;
@@ -1561,7 +1651,7 @@ client.on("interactionCreate",async cmd=>{
                         let nextQues=firstQues.split(" or ")[1];
                         let nextQuest=nextQues[0].toUpperCase()+nextQues.slice(1,nextQues.length).split("?")[0];
                         cmd.followUp(`**Would you Rather**\n🅰️: ${firstQuest}\n🅱️: ${nextQuest}\n\n*\\*Disclaimer: All WYRs are provided by a third party API*`);
-                        if(cmd.guild?.id||cmd.channel?.id===client.user.id){
+                        if(cmd.channel?.permissionsFor(client.user.id).has("ADD_REACTIONS")){
                             let msg = await cmd.fetchReply();
                             msg.react("🅰️").then(msg.react("🅱️"));
                         }
@@ -1652,9 +1742,17 @@ client.on("interactionCreate",async cmd=>{
             cmd.followUp({"content":`**${cmd.options.getString("prompt")}**`,"ephemeral":true,"components":[presets.pollCreation]});
         break;
         case 'auto_roles':
+            if(!cmd.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageRoles)){
+                cmd.followUp(`I do not have the MANAGE_ROLES permission for this server, so I cannot run auto roles.`);
+                break;
+            }
             cmd.followUp({"content":`${cmd.options.getString("message")}`,"ephemeral":true,"components":[presets.rolesCreation]});
         break;
         case 'auto-join-roles':
+            if(!cmd.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageRoles)){
+                cmd.followUp(`I do not have the MANAGE_ROLES permission for this server, so I cannot run auto join roles.`);
+                break;
+            }
             cmd.followUp({"content":`Select all of the roles you'd like the user to have upon joining`,'ephemeral':true,"components":presets.autoJoinRoles});
         break;
         case 'report_problem':
@@ -1666,8 +1764,17 @@ client.on("interactionCreate",async cmd=>{
             if(cmd.options.getChannel("channel")!==null) storage[cmd.guildId].ajm.channel=cmd.options.getChannel("channel").id;
             if(cmd.options.getString("channel_or_dm")!==null) storage[cmd.guildId].ajm.dm=cmd.options.getString("channel_or_dm")==="dm";
             if(cmd.options.getString("message")!==null) storage[cmd.guildId].ajm.message=cmd.options.getString("message");
-            if(!storage[cmd.guildId].ajm.dm&&storage[cmd.guildId].ajm.channel===""||storage[cmd.guildId].ajm.message==="") storage[cmd.guildId].ajm.active=false;
-            cmd.followUp(`Auto join messages configured.${storage[cmd.guildId].ajm.active!==cmd.options.getBoolean("active")?` It looks like an invalid configuration was set. Make sure to specify a channel to post to if not posting to DMs, and to specify a message to send.`:""}`);
+            var disclaimers=[];
+            if(!storage[cmd.guildId].ajm.dm&&storage[cmd.guildId].ajm.channel===""){
+                storage[cmd.guildId].ajm.dm=true;
+                disclaimers.push(`No channel was specified to post auto join messages in, so I have set it to DMs instead.`);
+            }
+            if(!storage[cmd.guildId].ajm.dm&&!client.channels.cache.get(storage[cmd.guildId].ajm.channel)?.permissionsFor(client.user.id).has("SEND_MESSAGES")){
+                storage[cmd.guildId].ajm.dm=true;
+                disclaimers.push(`I can't post in the specified channel, so I have set the location to DMs instead.`);
+            }
+            if(storage[cmd.guildId].ajm.message==="") storage[cmd.guildId].ajm.message=defaultGuild.ajm.message;
+            cmd.followUp(`Auto join messages configured.${disclaimers.map(d=>`\n\n${d}`)}`);
         break;
         case 'auto-leave-message':
             if(!storage[cmd.guildId].hasOwnProperty("alm")){
@@ -1675,8 +1782,13 @@ client.on("interactionCreate",async cmd=>{
             }
             storage[cmd.guildId].alm.active=cmd.options.getBoolean("active");
             storage[cmd.guildId].alm.channel=cmd.options.getChannel("channel").id;
+            var disclaimers=[];
+            if(!client.channels.cache.get(storage[cmd.guildId].alm.channel).permissionsFor(client.user.id).has("SEND_MESSAGES")){
+                storage[cmd.guildId].alm.active=false;
+                disclaimers.push(`I can't post in the specified channel, so I cannot run auto leave messages.`);
+            }
             if(cmd.options.getString("message")!==null) storage[cmd.guildId].alm.message=cmd.options.getString("message");
-            cmd.followUp(`Auto leave messages configured.`);
+            cmd.followUp(`Auto leave messages configured.${disclaimers.map(d=>`\n\n${d}`)}`);
         break;
         case 'translate':
             translate(cmd.options.getString("what"),Object.assign({
@@ -1707,23 +1819,25 @@ client.on("interactionCreate",async cmd=>{
         break;
         case 'admin_message':
             if(cmd.options.getUser("target")?.id){
-                cmd.options.getUser("target").send({embeds:[{
-                    type: "rich",
-                    title: cmd.guild.name.slice(0,80),
-                    description: cmd.options.getString("what").replaceAll("\\n","\n"),
-                    color: 0x006400,
-                    thumbnail: {
-                        url: cmd.guild.iconURL(),
-                        height: 0,
-                        width: 0,
-                    },
-                    footer: {
-                        text:`This message was sent by a moderator of ${cmd.guild.name}`
-                    }
-                }]});
-                cmd.followUp("Messaged them");
+                try{
+                    cmd.options.getUser("target").send({embeds:[{
+                        type: "rich",
+                        title: cmd.guild.name.slice(0,80),
+                        description: cmd.options.getString("what").replaceAll("\\n","\n"),
+                        color: 0x006400,
+                        thumbnail: {
+                            url: cmd.guild.iconURL(),
+                            height: 0,
+                            width: 0,
+                        },
+                        footer: {
+                            text:`This message was sent by a moderator of ${cmd.guild.name}`
+                        }
+                    }]}).catch(e=>{});
+                    cmd.followUp("Messaged them");
+                }catch(e){}
             }
-            else{
+            else if(cmd.channel.permissionsFor(client.user.id).has("MANAGE_WEBHOOKS")){
                 var resp={
                     "content":cmd.options.getString("what").replaceAll("\\n","\n"),
                     "avatarURL":cmd.guild.iconURL(),
@@ -1744,6 +1858,9 @@ client.on("interactionCreate",async cmd=>{
                 }
                 cmd.followUp({content:"Posted",ephemeral:true});
             }
+            else{
+                cmd.followUp(`I don't have the MANAGE_WEBHOOKS permission, so I can't post an admin message in this server.`);
+            }
         break;
         case 'log_config':
             storage[cmd.guildId].logs.active=cmd.options.getBoolean("active");
@@ -1755,10 +1872,20 @@ client.on("interactionCreate",async cmd=>{
             if(cmd.options.getBoolean("invite_events")) storage[cmd.guildId].logs.invite_events=cmd.options.getBoolean("invite_events");
             if(cmd.options.getBoolean("role_events")) storage[cmd.guildId].logs.role_events=cmd.options.getBoolean("role_events");
             if(cmd.options.getBoolean("mod_actions")) storage[cmd.guildId].logs.mod_actions=cmd.options.getBoolean("mod_actions");
-            cmd.followUp("Configured log events");
+            var disclaimers=[];
+            if(!client.channels.cache.get(storage[cmd.guildId].logs.channel).permissionsFor(client.user.id).has("SEND_MESSAGES")){
+                storage[cmd.guildId].logs.active=false;
+                disclaimers.push(`I can't post in the specified channel, so logging is turned off.`);
+            }
+            cmd.followUp(`Configured log events.${disclaimers.map(d=>`\n\n${d}`)}`);
             save();
         break;
         case 'sticky-roles':
+            if(!cmd.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageRoles)){
+                storage[cmd.guildId].stickyRoles=false;
+                cmd.followUp(`I do not have the MANAGE_ROLES permission for this server, so I cannot run sticky roles.`);
+                break;
+            }
             storage[cmd.guildId].stickyRoles=cmd.options.getBoolean("active");
             cmd.followUp("Sticky roles configured. Please be aware I can only manage roles lower than my highest role in the server roles list.");
         break;
@@ -2152,6 +2279,10 @@ client.on("interactionCreate",async cmd=>{
             }
             storage[cmd.guildId].daily.devos.active=cmd.options.getBoolean("active");
             storage[cmd.guildId].daily.devos.channel=cmd.options.getChannel("channel").id;
+            if(!cmd.options.getChannel("channel").permissionsFor(client.user.id).has("SEND_MESSAGES")){
+                cmd.followUp(`I can't send messages in that channel, so I can't run daily devos for this server.`);
+                break;
+            }
             cmd.followUp(`${storage[cmd.guildId].daily.devos.active?"A":"Dea"}ctivated daily \`devotions\` for this server in <#${storage[cmd.guildId].daily.devos.channel}>.`);
             save();
         break;
