@@ -51,7 +51,8 @@ const contexts={
 	"chat":{"contexts":[0,1,2],"integration_types":[0,1]},
 	"embed_message":{"contexts":[0,1,2],"integration_types":[0,1]},
 	"secret":{"contexts":[0,1,2],"integration_types":[0,1]},
-	"secret":{"contexts":[0,1,2],"integration_types":[0,1]},
+	"timestamp":{"contexts":[0,1,2],"integration_types":[0,1]},
+	"daily-config":{"contexts":[0],"integration_types":[0]},
 
 	"submit_meme":{"contexts":[0,1,2],"integration_types":[0,1]},
 	"translate_message":{"contexts":[0,1,2],"integration_types":[0,1]},
@@ -325,6 +326,11 @@ const commands = [
 			option.setName("code").setDescription("Do you have something for me?")
 		),
 	new SlashCommandBuilder().setName("timestamp").setDescription("Generate a timestamp for use in your message"),
+	new SlashCommandBuilder().setName("daily-config").setDescription("Configure daily devos (More types to come!)").addBooleanOption(option=>
+			option.setName("active").setDescription("Should I run this daily type?").setRequired(true)
+		).addChannelOption(option=>
+			option.setName("channel").setDescription("The channel for me to post this daily type in").setRequired(true)
+		).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages).setDMPermission(false),
 
 	new ContextMenuCommandBuilder().setName("submit_meme").setType(ApplicationCommandType.Message),
 	new ContextMenuCommandBuilder().setName("delete_message").setType(ApplicationCommandType.Message).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),//Leaving this in DMs to delete undesirable bot DMs
