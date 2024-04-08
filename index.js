@@ -495,7 +495,7 @@ function daily(){
         Object.keys(storage).forEach(s=>{
             if(storage[s]?.daily?.devos?.active){
                 var c=client.channels.cache.get(storage[s].daily.devos.channel);
-                if(c.permissionsFor(client.user.id).has("SEND_MESSAGES")){
+                if(c.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
                     c.send({embeds:dailyDevo});
                 }
                 else{
@@ -1038,7 +1038,7 @@ client.on("messageCreate",async msg=>{
             }
             if(storage[msg.guildId].filter.log&&storage[msg.guildId].filter.channel){
                 var c=client.channels.cache.get(storage[msg.guildId].filter.channel);
-                if(c.permissionsFor(client.user.id).has("SEND_MESSAGES")){
+                if(c.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
                     c.send(ll(`I have ${storage[msg.guildId].filter.censor?"censored":"deleted"} a message from **${msg.author.username}** in <#${msg.channel.id}> for the following blocked word${foundWords.length>1?"s":""}: ||${foundWords.join("||, ||")}||\`\`\`\n${msg.ogContent.replaceAll("`","\\`").replaceAll(/(?<=https?:\/\/[^(\s|\/)]+)\./gi, "[.]").replaceAll(/(?<=https?):\/\//gi, "[://]")}\`\`\``));
                 }
                 else{
@@ -1084,7 +1084,7 @@ client.on("messageCreate",async msg=>{
                         "username":msg.guild.name
                     };
                     var c=client.channels.cache.get(storage[msg.guild.id].levels.location==="channel"?storage[msg.guild.id].levels.channel:msg.channel.id);
-                    if(c.permissionsFor(client.user.id).has("MANAGE_WEBHOOKS")){
+                    if(c.permissionsFor(client.user.id).has(PermissionFlagsBits.ManageWebhooks)){
                         var hook=await c.fetchWebhooks();
                         hook=hook.find(h=>h.token);
                         if(hook){
@@ -1123,7 +1123,7 @@ client.on("messageCreate",async msg=>{
         }
         save();
     }
-    if(storage[msg.guildId]?.counting.active&&msg.channel.id===storage[msg.guildId]?.counting.channel&&!msg.author.bot&&(!msg.channel.permissionsFor(client.user.id).has("ADD_REACTIONS")||!msg.channel.permissionsFor(client.user.id).has("SEND_MESSAGES"))){
+    if(storage[msg.guildId]?.counting.active&&msg.channel.id===storage[msg.guildId]?.counting.channel&&!msg.author.bot&&(!msg.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.AddReactions)||!msg.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages))){
         storage[msg.guildId].counting.active=false;
     }
     if(storage[msg.guildId]?.counting.active&&msg.channel.id===storage[msg.guildId]?.counting.channel&&!msg.author.bot){
@@ -1188,7 +1188,7 @@ client.on("messageCreate",async msg=>{
     var links=msg.content.match(discordMessageRegex)||[];
     var progs=msg.content.match(kaProgramRegex)||[];
     var spotTracks=msg.content.match(spotifyTrackRegex)||[];
-    if(!storage[msg.author.id].config.embedPreviews||!storage[msg.guildId]?.config.embedPreviews||!msg.channel.permissionsFor(client.user.id).has("SEND_MESSAGES")||!msg.channel.permissionsFor(msg.author.id)?.has(PermissionFlagsBits.EmbedLinks)){
+    if(!storage[msg.author.id].config.embedPreviews||!storage[msg.guildId]?.config.embedPreviews||!msg.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)||!msg.channel.permissionsFor(msg.author.id)?.has(PermissionFlagsBits.EmbedLinks)){
         links=[];
         progs=[];
     }
@@ -1347,7 +1347,7 @@ client.on("messageCreate",async msg=>{
                 avatar_url:msg.author.displayAvatarURL()
             };
             var c=client.channels.cache.get(rmsg.content.split("Ticket ID: ")[1].split("/")[0]);
-            if(c.permissionsFor(client.user.id).has("SEND_MESSAGES")){
+            if(c.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
                 var hook=await c.fetchWebhooks();
                 hook=hook.find(h=>h.token);
                 if(hook){
@@ -1378,11 +1378,11 @@ client.on("messageCreate",async msg=>{
         }
     }
 
-    if(msg.channel instanceof DMChannel&&!msg.author.bot&&storage[msg.author.id].config.aiPings&&msg.channel.permissionsFor(client.user.id).has("SEND_MESSAGES")) {
+    if(msg.channel instanceof DMChannel&&!msg.author.bot&&storage[msg.author.id].config.aiPings&&msg.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)) {
         msg.channel.sendTyping();
 	    sendMessage(msg, true);
     }
-    else if(msg.mentions.users.has(client.user.id)&&!msg.author.bot&&storage[msg.author.id].config.aiPings&&msg.channel.permissionsFor(client.user.id).has("SEND_MESSAGES")) {
+    else if(msg.mentions.users.has(client.user.id)&&!msg.author.bot&&storage[msg.author.id].config.aiPings&&msg.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)) {
         if (/^<[@|#|@&].*?>$/g.test(msg.content.replace(/\s+/g, ''))) {
             msg.content = "*User says nothing*";
         }
@@ -1505,7 +1505,7 @@ client.on("interactionCreate",async cmd=>{
                         storage[cmd.guildId].filter.log=false;
                         disclaimers.push(`No channel was set to log summaries of deleted messages to, so logging these is turned off.`);
                     }
-                    else if(storage[cmd.guildId].filter.log&&!client.channels.cache.get(storage[cmd.guildId].filter.channel).permissionsFor(client.user.id).has("SEND_MESSAGES")){
+                    else if(storage[cmd.guildId].filter.log&&!client.channels.cache.get(storage[cmd.guildId].filter.channel).permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
                         storage[cmd.guildId].filter.log=false;
                         disclaimers.push(`I cannot send messages to the specified log channel for this server, so logging deleted messages has been turned off.`);
                     }
@@ -1551,7 +1551,7 @@ client.on("interactionCreate",async cmd=>{
                 storage[cmd.guildId].starboard.active=false;
                 disclaimers.push(`No channel was set to post starboarded messages to, so starboard has been turned off.`);
             }
-            else if(storage[cmd.guildId].starboard.active&&!client.channels.cache.get(storage[cmd.guildId].starboard.channel).permissionsFor(client.user.id).has("SEND_MESSAGES")){
+            else if(storage[cmd.guildId].starboard.active&&!client.channels.cache.get(storage[cmd.guildId].starboard.channel).permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
                 storage[cmd.guildId].starboard.active=false;
                 disclaimers.push(`I cannot send messages to the specified starboard channel for this server, so starboard has been turned off.`);
             }
@@ -1592,11 +1592,11 @@ client.on("interactionCreate",async cmd=>{
                         disclaimers.push(`No channel was set for counting to be active in, so counting is disabled currently.`);
                     }
                     var c=client.channels.cache.get(storage[cmd.guild.id].counting.channel);
-                    if(!c.permissionsFor(client.user.id).has("SEND_MESSAGES")){
+                    if(!c.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
                         storage[cmd.guild.id].counting.active=false;
                         disclaimers.push(`I can't send messages in the specified channel, so counting is disabled currently.`);
                     }
-                    if(!c.permissionsFor(client.user.id).has("ADD_REACTIONS")){
+                    if(!c.permissionsFor(client.user.id).has(PermissionFlagsBits.AddReactions)){
                         storage[cmd.guild.id].counting.active=false;
                         disclaimers.push(`I can't add reactions in the specified channel, so counting is disabled currently.`);
                     }
@@ -1651,7 +1651,7 @@ client.on("interactionCreate",async cmd=>{
                         let nextQues=firstQues.split(" or ")[1];
                         let nextQuest=nextQues[0].toUpperCase()+nextQues.slice(1,nextQues.length).split("?")[0];
                         cmd.followUp(`**Would you Rather**\n🅰️: ${firstQuest}\n🅱️: ${nextQuest}\n\n*\\*Disclaimer: All WYRs are provided by a third party API*`);
-                        if(cmd.channel?.permissionsFor(client.user.id).has("ADD_REACTIONS")){
+                        if(cmd.channel?.permissionsFor(client.user.id).has(PermissionFlagsBits.AddReactions)){
                             let msg = await cmd.fetchReply();
                             msg.react("🅰️").then(msg.react("🅱️"));
                         }
@@ -1769,7 +1769,7 @@ client.on("interactionCreate",async cmd=>{
                 storage[cmd.guildId].ajm.dm=true;
                 disclaimers.push(`No channel was specified to post auto join messages in, so I have set it to DMs instead.`);
             }
-            if(!storage[cmd.guildId].ajm.dm&&!client.channels.cache.get(storage[cmd.guildId].ajm.channel)?.permissionsFor(client.user.id).has("SEND_MESSAGES")){
+            if(!storage[cmd.guildId].ajm.dm&&!client.channels.cache.get(storage[cmd.guildId].ajm.channel)?.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
                 storage[cmd.guildId].ajm.dm=true;
                 disclaimers.push(`I can't post in the specified channel, so I have set the location to DMs instead.`);
             }
@@ -1783,7 +1783,7 @@ client.on("interactionCreate",async cmd=>{
             storage[cmd.guildId].alm.active=cmd.options.getBoolean("active");
             storage[cmd.guildId].alm.channel=cmd.options.getChannel("channel").id;
             var disclaimers=[];
-            if(!client.channels.cache.get(storage[cmd.guildId].alm.channel).permissionsFor(client.user.id).has("SEND_MESSAGES")){
+            if(!client.channels.cache.get(storage[cmd.guildId].alm.channel).permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
                 storage[cmd.guildId].alm.active=false;
                 disclaimers.push(`I can't post in the specified channel, so I cannot run auto leave messages.`);
             }
@@ -1837,7 +1837,7 @@ client.on("interactionCreate",async cmd=>{
                     cmd.followUp("Messaged them");
                 }catch(e){}
             }
-            else if(cmd.channel.permissionsFor(client.user.id).has("MANAGE_WEBHOOKS")){
+            else if(cmd.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.ManageWebhooks)){
                 var resp={
                     "content":cmd.options.getString("what").replaceAll("\\n","\n"),
                     "avatarURL":cmd.guild.iconURL(),
@@ -1873,7 +1873,7 @@ client.on("interactionCreate",async cmd=>{
             if(cmd.options.getBoolean("role_events")) storage[cmd.guildId].logs.role_events=cmd.options.getBoolean("role_events");
             if(cmd.options.getBoolean("mod_actions")) storage[cmd.guildId].logs.mod_actions=cmd.options.getBoolean("mod_actions");
             var disclaimers=[];
-            if(!client.channels.cache.get(storage[cmd.guildId].logs.channel).permissionsFor(client.user.id).has("SEND_MESSAGES")){
+            if(!client.channels.cache.get(storage[cmd.guildId].logs.channel).permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
                 storage[cmd.guildId].logs.active=false;
                 disclaimers.push(`I can't post in the specified channel, so logging is turned off.`);
             }
@@ -2279,7 +2279,7 @@ client.on("interactionCreate",async cmd=>{
             }
             storage[cmd.guildId].daily.devos.active=cmd.options.getBoolean("active");
             storage[cmd.guildId].daily.devos.channel=cmd.options.getChannel("channel").id;
-            if(!cmd.options.getChannel("channel").permissionsFor(client.user.id).has("SEND_MESSAGES")){
+            if(!cmd.options.getChannel("channel").permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
                 cmd.followUp(`I can't send messages in that channel, so I can't run daily devos for this server.`);
                 break;
             }
