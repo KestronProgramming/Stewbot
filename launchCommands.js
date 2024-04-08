@@ -50,6 +50,7 @@ const contexts={
 	"chat":{"contexts":[0,1,2],"integration_types":[0,1]},
 	"embed_message":{"contexts":[0,1,2],"integration_types":[0,1]},
 	"secret":{"contexts":[0,1,2],"integration_types":[0,1]},
+	"secret":{"contexts":[0,1,2],"integration_types":[0,1]},
 
 	"submit_meme":{"contexts":[0,1,2],"integration_types":[0,1]},
 	"translate_message":{"contexts":[0,1,2],"integration_types":[0,1]},
@@ -90,7 +91,7 @@ const commands = [
 		).addStringOption(option=>
 			option.setName("emoji").setDescription("The emoji to react with to trigger starboard (Default: ⭐)")
 		).addIntegerOption(option=>
-			option.setName("threshold").setDescription("How many reactions are needed to trigger starboard? (Default: 3)")
+			option.setName("threshold").setDescription("How many reactions are needed to trigger starboard? (Default: 3)").setMinValue(1)
 		).addStringOption(option=>
 			option.setName("message_type").setDescription("What should the bot's starboard posts look like?").addChoices(
 				{"name":"Make it look like the user posted","value":"0"},
@@ -100,7 +101,7 @@ const commands = [
 		).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages).setDMPermission(false),
 	new SlashCommandBuilder().setName("fun").setDescription("Posts something fun to enjoy").addSubcommand(command=>
 			command.setName("meme").setDescription("Posts a meme").addIntegerOption(option=>
-				option.setName("number").setDescription("Specific meme # to post (optional)")
+				option.setName("number").setDescription("Specific meme # to post (optional)").setMinValue(0)
 			)
 		).addSubcommand(command=>
 			command.setName("joke").setDescription("Posts a joke")
@@ -169,11 +170,11 @@ const commands = [
 			).addBooleanOption(option=>
 				option.setName("public").setDescription("Do you want this server to show up in the counting leaderboard?")
 			).addIntegerOption(option=>
-				option.setName("posts_between_turns").setDescription("How many posts do you need to wait between turns?")
+				option.setName("posts_between_turns").setDescription("How many posts do you need to wait between turns?").setMinValue(0)
 			)
 		).addSubcommand(command=>
 			command.setName("set_number").setDescription("Set the next number to count at (Disqualifies from leaderboard)").addIntegerOption(option=>
-				option.setName("num").setDescription("The number to count at next").setRequired(true)
+				option.setName("num").setDescription("The number to count at next").setRequired(true).setMinValue(0)
 			)
 		).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages).setDMPermission(false),
 	new SlashCommandBuilder().setName("next_counting_number").setDescription("View the next number to count at").setDMPermission(false),
@@ -314,6 +315,7 @@ const commands = [
 	new SlashCommandBuilder().setName("secret").setDescription("It's a secret to everybody").addStringOption(option=>
 			option.setName("code").setDescription("Do you have something for me?")
 		),
+	new SlashCommandBuilder().setName("timestamp").setDescription("Generate a timestamp for use in your message"),
 
 	new ContextMenuCommandBuilder().setName("submit_meme").setType(ApplicationCommandType.Message),
 	new ContextMenuCommandBuilder().setName("delete_message").setType(ApplicationCommandType.Message).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),//Leaving this in DMs to delete undesirable bot DMs
