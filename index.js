@@ -927,7 +927,7 @@ function getStarMsg(msg){
         `Got a message for you.`,
         `It's always a good day when @ posts`
     ];
-    return `**${msgs[Math.floor(Math.random()*msgs.length)].replaceAll("@",msg.author.globalName||msg.author.username)}**`;
+    return `**${msgs[Math.floor(Math.random()*msgs.length)].replaceAll("@",msg.author?.globalName||msg.author?.username||"this person")}**`;
 }
 
 var ints=Object.keys(GatewayIntentBits).map(a=>GatewayIntentBits[a]);
