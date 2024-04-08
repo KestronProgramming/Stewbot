@@ -749,7 +749,7 @@ const defaultGuild={
         "active":false,
         "channel":"",
         "msg":"Congratulations ${USERNAME}, you have leveled up to level ${LVL}!",
-        "channelOrDM":"DM"
+        "location":"DM"
     },
     "filter":{
         "blacklist":[],
@@ -1047,7 +1047,11 @@ client.on("messageCreate",async msg=>{
         if(storage[msg.guild.id].users[msg.author.id].exp>getLvl(storage[msg.guild.id].users[msg.author.id].lvl)){
             storage[msg.guild.id].users[msg.author.id].lvl++;
             if(storage[msg.author.id].config.levelUpMsgs){
-                if(storage[msg.guild.id].levels.channelOrDM==="DM"){
+                if(storage[msg.guild.id].levels.hasOwnProperty("channelOrDM")){
+                    storage[msg.guild.id].levels.location=storage[msg.guild.id].levels.channelOrDM;
+                    delete storage[msg.guild.id].levels.channelOrDM;
+                }
+                if(storage[msg.guild.id].levels.location==="DM"){
                     msg.author.send({embeds:[{
                         "type": "rich",
                         "title": `Level Up`,
@@ -1069,7 +1073,7 @@ client.on("messageCreate",async msg=>{
                         "avatarURL":msg.guild.iconURL(),
                         "username":msg.guild.name
                     };
-                    var hook=await client.channels.cache.get(storage[msg.guild.id].levels.channel).fetchWebhooks();
+                    var hook=await client.channels.cache.get(storage[msg.guild.id].levels.location==="channel"?storage[msg.guild.id].levels.channel:msg.channel.id).fetchWebhooks();
                     hook=hook.find(h=>h.token);
                     if(hook){
                         hook.send(resp);
@@ -1493,9 +1497,9 @@ client.on("interactionCreate",async cmd=>{
         case 'levels_config':
             storage[cmd.guildId].levels.active=cmd.options.getBoolean("active");
             if(cmd.options.getChannel("channel")!==null) storage[cmd.guildId].levels.channel=cmd.options.getChannel("channel").id;
-            if(cmd.options.getString("channel_or_dm")!==null) storage[cmd.guildId].levels.channelOrDM=cmd.options.getString("channel_or_dm");
+            if(cmd.options.getString("location")!==null) storage[cmd.guildId].levels.location=cmd.options.getString("location");
             if(cmd.options.getString("message")!==null) storage[cmd.guildId].levels.msg=cmd.options.getString("message");
-            if(storage[cmd.guildId].levels.channel===""&&storage[cmd.guildId].levels.channelOrDM!=="DM") storage[cmd.guildId].levels.active=false;
+            if(storage[cmd.guildId].levels.channel===""&&storage[cmd.guildId].levels.location==="channel") storage[cmd.guildId].levels.active=false;
             cmd.followUp(`Level ups configured.${cmd.options.getBoolean("active")&&!storage[cmd.guildId].levels.active?`\n\nNo channel has been set for this server, so level ups is now inactive. To enable level ups, run ${cmds.levels_config} again setting \`active\` to true and specify a \`channel\`.`:""}`);
             save();
         break;
@@ -3280,7 +3284,7 @@ client.on("guildMemberUpdate",async (memberO,member)=>{
     if(storage[member.guild.id]?.logs.active&&storage[member.guild.id]?.logs.user_change_events){
         var diffs=`**User <@${member.id}> (${member.user.username}) Edited For This Server**`;
         Object.keys(memberO).forEach(key=>{
-            if(key==="tags"||key==="permissions"||key==="flags"||key==="_roles") return;
+            if(key==="tags"||key==="permissions"||key==="flags"||key==="_roles"||key==="joinedTimestamp"||key==="pending") return;
             if(memberO[key]!==member[key]){
                 diffs+=`\n- \`${key}\``;
             }

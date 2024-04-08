@@ -282,14 +282,15 @@ const commands = [
 	new SlashCommandBuilder().setName("levels_config").setDescription("Configure level ups").addBooleanOption(option=>
 			option.setName("active").setDescription("Should level ups be active?").setRequired(true)
 		).addChannelOption(option=>
-			option.setName("channel").setDescription("Which channel should level ups go to, if set to channel?")
+			option.setName("channel").setDescription("Which channel should level ups go to, if set to a specific channel?")
 		).addStringOption(option=>
 			option.setName("message").setDescription("What gets sent at a new level. Use ${USER} for ping, ${USERNAME} for username, ${LVL} for level.").setMinLength(1)
 		).addStringOption(option=>
 			option.addChoices(
-				{"name":"Channel",value:"channel"},
-				{"name":"DM",value:"DM"}
-			).setName("channel_or_dm").setDescription("Where should level up messages be sent?")
+				{"name":"Specific Channel",value:"channel"},
+				{"name":"DM",value:"DM"},
+				{"name":"Inline","value":"inline"}
+			).setName("location").setDescription("Where should level up messages be sent?")
 		).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages).setDMPermission(false),
 	new SlashCommandBuilder().setName("leaderboard").setDescription("View a leaderboard").addStringOption(option=>
 			option.setName("which").setDescription("Which leaderboard do you want to see?").setChoices(
