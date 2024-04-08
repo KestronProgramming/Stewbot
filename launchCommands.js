@@ -329,7 +329,7 @@ const commands = [
 	new SlashCommandBuilder().setName("daily-config").setDescription("Configure daily devos (More types to come!)").addBooleanOption(option=>
 			option.setName("active").setDescription("Should I run this daily type?").setRequired(true)
 		).addChannelOption(option=>
-			option.setName("channel").setDescription("The channel for me to post this daily type in").setRequired(true)
+			option.setName("channel").setDescription("The channel for me to post this daily type in").setChannelTypes(ChannelType.GuildText).setRequired(true)
 		).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages).setDMPermission(false),
 
 	new ContextMenuCommandBuilder().setName("submit_meme").setType(ApplicationCommandType.Message),
