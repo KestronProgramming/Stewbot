@@ -948,6 +948,8 @@ function notify(urgencyLevel,what){
 var logQueue={};
 var uptime=0;
 var statTog=0;
+
+//Actionable events
 client.once("ready",async ()=>{
     uptime=Math.round(Date.now()/1000);
     notify(1,`Started <t:${uptime}:R>`);
@@ -2382,9 +2384,19 @@ client.on("interactionCreate",async cmd=>{
         //Context Menu Commands
         case 'delete_message':
             if(cmd.guild?.id){
+                if(!cmd.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.ManageMessages)){
+                    cmd.followUp(`I cannot delete this message.`);
+                    break;
+                }
                 cmd.targetMessage.delete();
-                if(storage[cmd.guildId].filter.log&&storage[cmd.guildId].filter.channel){
-                    client.channels.cache.get(storage[cmd.guildId].filter.channel).send({content:`Message from <@${cmd.targetMessage.author.id}> deleted by **${cmd.user.username}**.\n\n${cmd.targetMessage.content}`,allowedMentions:{parse:[]}});
+                if(storage[cmd.guildId].logs.mod_actions&&storage[cmd.guildId].logs.active){
+                    var c=client.channels.cache.get(storage[cmd.guildId].logs.channel);
+                    if(c.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
+                        c.send({content:`Message from <@${cmd.targetMessage.author.id}> deleted by **${cmd.user.username}**.\n\n${cmd.targetMessage.content}`,allowedMentions:{parse:[]}});
+                    }
+                    else{
+                        storage[cmd.guildId].logs.active=false;
+                    }
                 }
                 cmd.followUp({"content":"Success","ephemeral":true});
             }
@@ -2394,6 +2406,10 @@ client.on("interactionCreate",async cmd=>{
             }
         break;
         case 'move_message':
+            if(!cmd.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageWebhooks)){
+                cmd.followUp("I do not have the MANAGE_WEBHOOKS permission, so I cannot move this message.").
+                break;
+            }
             cmd.followUp({"content":`Where do you want to move message \`${cmd.targetMessage.id}\` by **${cmd.targetMessage.author.username}**?`,"ephemeral":true,"components":[presets.moveMessage]});
         break;
         case 'submit_meme':
@@ -2451,9 +2467,6 @@ client.on("interactionCreate",async cmd=>{
             cmd.user.send({"content":`The following is the blacklist for **${cmd.guild.name}** as requested.\n\n||${storage[cmd.guildId].filter.blacklist.join("||, ||")}||`,"components":[new ActionRowBuilder().addComponents(inps.delete,inps.export)]});
             cmd.deferUpdate();
         break;
-        case "delete-all":
-            cmd.message.delete();
-        break;
         case 'poll-addOption':
             cmd.showModal(presets.pollAddModal);
         break;
@@ -2461,6 +2474,10 @@ client.on("interactionCreate",async cmd=>{
             cmd.showModal(presets.pollRemModal);
         break;
         case 'poll-publish':
+            if(!cmd.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
+                cmd.reply({content:`I can't send messages in this channel.`,ephemeral:true});
+                break;
+            }
             var poll=parsePoll(cmd.message.content);
             var comp=[];
             var comp2=[];
@@ -2837,6 +2854,14 @@ client.on("interactionCreate",async cmd=>{
             cmd.update(`<t:${Math.round(new Date(+cmd.message.content.split(":")[1]*1000)/1000)}:${cmd.values[0]}>`);
         break;
     }
+    if(cmd.customId?.startsWith("delete-")){
+        if(cmd.user.id===cmd.customId.split("-")[1]||cmd.customId==="delete-all"||cmd.member?.permissions.has(PermissionFlagsBits.ManageMessages)){
+            cmd.message.delete();
+        }
+        else{
+            cmd.reply({content:`I can't do that for you just now.`,ephemeral:true});
+        }
+    }
     if(cmd.customId?.startsWith("poll-closeOption")){
         if(cmd.user.id===cmd.customId.split("poll-closeOption")[1]||cmd.member.permissions.has(PermissionFlagsBits.ManageMessages)){
             var poll=parsePoll(cmd.message.content,true);
@@ -2913,15 +2938,30 @@ client.on("interactionCreate",async cmd=>{
         save();
     }
     if(cmd.customId?.startsWith("autoRole-")){
+        let myRole=cmd.guild.members.cache.get(client.user.id).roles.highest.position;
         let id=cmd.customId.split("autoRole-")[1];
         let role=cmd.guild.roles.cache.get(id);
-        if(!cmd.member.roles.cache.find(r=>r.id===id)){
-            cmd.member.roles.add(role);
+        if(!role){
+            cmd.reply({content:`That role doesn't seem to exist anymore.`,ephemeral:true});
+            return;
+        }
+        if(myRole<=cmd.roles.get(role).rawPosition){
+            cmd.reply({content:`I cannot help with that role at the moment. Please let a moderator know that for me to help with the **${cmd.roles.get(role).name}**, it needs to be dragged below my highest role in the Server Settings role list.`,ephemeral:true,allowedMentions:{parse:[]}});
         }
         else{
-            cmd.member.roles.remove(role);
+            if(!cmd.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageRoles)){
+                cmd.reply({content:`I cannot apply roles at the moment. Please let the moderators know to grant me the MANAGE_ROLES permission, and to place any roles they want me to manage below my highest role in the roles list.`});
+            }
+            else{
+                if(!cmd.member.roles.cache.find(r=>r.id===id)){
+                    cmd.member.roles.add(role);
+                }
+                else{
+                    cmd.member.roles.remove(role);
+                }
+                cmd.deferUpdate();
+            }
         }
-        cmd.deferUpdate();
     }
     if(cmd.customId?.startsWith("ticket-")){
         client.channels.cache.get(cmd.customId.split("-")[1]).send(`Ticket opened by **${cmd.member.nickname||cmd.user.globalName||cmd.user.username}**.`).then(msg=>{
@@ -2976,11 +3016,23 @@ client.on("messageReactionAdd",async (react,user)=>{
         storage[user.id]=structuredClone(defaultUser);
         save();
     }
-    if(storage[react.message.guild.id].filter.active){
+    if(storage[react.message.guild?.id]?.filter.active&&react.message.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageMessages)){
         if(checkDirty(react.message.guild.id,`${react._emoji.name.trim()}`)){
             react.remove();
+            if(storage[react.message.guild.id].filter.log){
+                var c=client.channels.cache.get(storage[react.message.guild.id].filter.channel);
+                if(c.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
+                    c.send({content:`I removed a ${react._emoji.id===null?react._emoji.name:`<:${react._emoji.name}:${react._emoji.id}>`} reaction from https://discord.com/channels/${react.message.guild.id}/${react.message.channel.id}/${react.message.id} added by <@${user.id}> due to being in the filter.`});
+                }
+                else{
+                    storage[react.message.guild.id].filter.log=false;
+                }
+            }
             return;
         }
+    }
+    else if(storage[react.message.guild?.id]?.filter.active){
+        storage[react.message.guild.id].filter.active=false;
     }
     if(react.message.channel.id!==storage[react.message.guildId].starboard.channel&&(storage[react.message.guildId].starboard.emoji===react._emoji.name||storage[react.message.guildId].starboard.emoji===react._emoji.id)&&storage[react.message.guildId].starboard.active&&storage[react.message.guildId].starboard.channel&&!storage[react.message.guildId].starboard.posted.hasOwnProperty(react.message.id)){
         var msg=await react.message.channel.messages.fetch(react.message.id);
@@ -3006,7 +3058,12 @@ client.on("messageReactionAdd",async (react,user)=>{
                 resp.content=react.message.content;
                 resp.username=react.message.author.globalName||react.message.author.username;
                 resp.avatarURL=react.message.author.displayAvatarURL();
-                var hook=await client.channels.cache.get(storage[react.message.guild.id].starboard.channel).fetchWebhooks();
+                var c=client.channels.cache.get(storage[react.message.guild.id].starboard.channel);
+                if(!c.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageWebhooks)){
+                    storage[react.message.guild.id].starboard.messType="2";
+                    return;
+                }
+                var hook=await c.fetchWebhooks();
                 hook=hook.find(h=>h.token);
                 if(hook){
                     hook.send(resp).then(h=>{
@@ -3045,7 +3102,12 @@ client.on("messageReactionAdd",async (react,user)=>{
                 if(storage[react.message.guild.id].starboard.messType==="1"){
                     resp.content=getStarMsg(react.message);
                 }
-                client.channels.cache.get(storage[react.message.guild.id].starboard.channel).send(resp).then(d=>{
+                var c=client.channels.cache.get(storage[react.message.guild.id].starboard.channel)
+                if(!c.permissionsFor(client.user.id).has(PermissionFlagsBits.ManageWebhooks)){
+                    storage[react.message.guild.id].starboard.active=false;
+                    return;
+                }
+                c.send(resp).then(d=>{
                     storage[react.message.guild.id].starboard.posted[react.message.id]=d.id;
                 });
             }
@@ -3177,20 +3239,25 @@ client.on("guildMemberAdd",async member=>{
     save();
 
     if(storage[member.guild.id].ajm.active){
+        if(!member.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageWebhooks)){
+            storage[member.guild.id].ajm.dm=true;
+        }
         if(storage[member.guild.id].ajm.message==="") storage[member.guild.id].ajm.message=defaultGuild.ajm.message;
         if(storage[member.guild.id].ajm.dm){
-            member.send({embeds:[{
-                type: "rich",
-                title: member.guild.name,
-                description: storage[member.guild.id].ajm.message.replaceAll("${@USER}",`<@${member.id}>`),
-                color: 0x006400,
-                thumbnail: {
-                    url: member.guild.iconURL(),
-                    height: 0,
-                    width: 0,
-                },
-                footer: {text:`This message was sent from ${member.guild.name}`},
-            }]});
+            try{
+                member.send({embeds:[{
+                    type: "rich",
+                    title: member.guild.name,
+                    description: storage[member.guild.id].ajm.message.replaceAll("${@USER}",`<@${member.id}>`),
+                    color: 0x006400,
+                    thumbnail: {
+                        url: member.guild.iconURL(),
+                        height: 0,
+                        width: 0,
+                    },
+                    footer: {text:`This message was sent from ${member.guild.name}`},
+                }]}).catch(e=>{});
+            }catch(e){}
         }
         else{
             var resp={
@@ -3215,22 +3282,32 @@ client.on("guildMemberAdd",async member=>{
     }
     var addedStickyRoles=0;
     if(storage[member.guild.id].stickyRoles){
-        storage[member.guild.id].users[member.id].roles.forEach(role=>{
-            try{
-                var role=member.guild.roles.cache.find(r=>r.id===role);
-                if(role){
-                    member.roles.add(role);
-                    addedStickyRoles++;
+        if(!member.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageRoles)){
+            storage[member.guild.id].stickyRoles=false;
+        }
+        else{
+            storage[member.guild.id].users[member.id].roles.forEach(role=>{
+                try{
+                    let myRole=member.guild.members.cache.get(client.user.id).roles.highest.position;
+                    var role=member.guild.roles.cache.find(r=>r.id===role);
+                    if(role&&myRole>role.rawPosition){
+                        member.roles.add(role);
+                        addedStickyRoles++;
+                    }
                 }
-            }
-            catch(e){}
-        });
+                catch(e){}
+            });
+        }
     }
     if(addedStickyRoles===0&&storage[member.guild.id].autoJoinRoles){
+        if(!member.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageRoles)){
+            storage[member.guild.id].autoJoinRoles=[];
+        }
         if(storage[member.guild.id].autoJoinRoles.length>0){
             storage[member.guild.id].autoJoinRoles.forEach(role=>{
+                let myRole=member.guild.members.cache.get(client.user.id).roles.highest.position;
                 var role=member.guild.roles.cache.find(r=>r.id===role);
-                if(role){
+                if(role&&myRole>role.rawPosition){
                     member.roles.add(role);
                 }
             });
@@ -3260,9 +3337,19 @@ client.on("guildMemberRemove",async member=>{
 
     if(storage[member.guild.id].logs.active&&storage[member.guild.id].logs.joining_and_leaving){
         var bans=await member.guild.bans.fetch();
-        client.channels.cache.get(storage[member.guild.id].logs.channel).send({content:`**<@${member.id}> (${member.user.username}) has ${bans.find(b=>b.user.id===member.id)?"been banned from":"left"} the server.**${bans.find(b=>b.user.id===member.id)?.reason!==undefined?`\n${bans.find(b=>b.user.id===member.id)?.reason}`:""}`,allowedMentions:{parse:[]}});
+        var c=client.channels.cache.get(storage[member.guild.id].logs.channel);
+        if(c.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
+            c.send({content:`**<@${member.id}> (${member.user.username}) has ${bans.find(b=>b.user.id===member.id)?"been banned from":"left"} the server.**${bans.find(b=>b.user.id===member.id)?.reason!==undefined?`\n${bans.find(b=>b.user.id===member.id)?.reason}`:""}`,allowedMentions:{parse:[]}});
+        }
+        else{
+            storage[member.guild.id].logs.active=false;
+        }
     }
     if(storage[member.guild.id].alm?.active){
+        if(!member.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageWebhooks)){
+            storage[member.guild.id].alm.active=false;
+            return;
+        }
         if(storage[member.guild.id].alm.message==="") storage[member.guild.id].alm.message=defaultGuild.alm.message;
         var resp={
             content:storage[member.guild.id].alm.message.replaceAll("${@USER}",`**${member.user.username}**`),
@@ -3284,6 +3371,8 @@ client.on("guildMemberRemove",async member=>{
         }
     }
 });
+
+//Strictly log-based events
 client.on("channelDelete",async channel=>{
     if(!storage.hasOwnProperty(channel.guild.id)){
         storage[channel.guild.id]=structuredClone(defaultGuild);
@@ -3461,24 +3550,27 @@ client.on("guildMemberUpdate",async (memberO,member)=>{
     }
 });
 
+//Events for staff notifications
 client.on("rateLimit",async d=>{
     notify(1,"Ratelimited -\n\n"+d);
 });
 client.on("guildCreate",async guild=>{
-    if(!storage.hasOwnProperty(guild.id)){
-        storage[guild.id]=structuredClone(defaultGuild);
-        save();
-    }
+    storage[guild.id]=structuredClone(defaultGuild);
+    save();
     notify(1,`Added to **a new server**!`);
 });
 client.on("guildDelete",async guild=>{
+    delete storage[guild.id];
+    save();
     notify(1,`Removed from **a server**.`);
 });
 
+//Error handling
 function handleException(e) {
     notify(1, e.stack);
 }
 process.on('unhandledRejection', handleException);
 process.on('unhandledException', handleException);
 
+//Begin
 client.login(process.env.token);
