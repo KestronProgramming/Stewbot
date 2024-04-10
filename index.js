@@ -3078,6 +3078,17 @@ client.on("interactionCreate",async cmd=>{
             else{
                 cmd.reply({content:`I was unable to find the target in question.`,ephemeral:true});
             }
+            if(cmd.member.permissions.has(PermissionFlagsBits.ManageMessages)){
+                for(var i=0;i<storage[cmd.guild.id].users[cmd.customId.split("-")[1]].lastMessages.length;i++){
+                    try{
+                        var badMess=await client.channels.cache.get(storage[cmd.guild.id].users[cmd.customId.split("-")[1]].lastMessages[i].split("/")[0]).messages.fetch(storage[cmd.guild.id].users[cmd.customId.split("-")[1]].lastMessages[i].split("/")[1]);
+                        badMess.delete().catch(e=>{console.log(e)});
+                        storage[cmd.guild.id].users[cmd.customId.split("-")[1]].lastMessages.splice(i,1);
+                        i--;
+                    }
+                    catch(e){console.log(e)}
+                }
+            }
         }
         else{
             cmd.reply({content:`You do not have sufficient permissions to kick members.`,ephemeral:true});
