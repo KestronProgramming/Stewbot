@@ -3124,7 +3124,10 @@ client.on("interactionCreate",async cmd=>{
                     try{
                         client.guilds.cache.get(storage[cmd.user.id].timedOutIn[to]).members.fetch().then(members=>{
                             members.forEach(m=>{
-                                if(m.id===cmd.user.id) m.timeout(null);
+                                if(m.id===cmd.user.id){
+                                    m.timeout(null);
+                                    storage[m.guild.id].users[m.id].safeTimestamp=new Date();
+                                }
                             });
                         });
                     }catch(e){console.log(e)}
