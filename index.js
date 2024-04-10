@@ -1,6 +1,7 @@
 process.env=require("./env.json");
 var client;
 const translate=require("@vitalets/google-translate-api").translate;
+const crypto = require('crypto');
 const { createCanvas } = require('canvas');
 const { InworldClient, SessionToken, status } = require("@inworld/nodejs-sdk");
 const {Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder}=require("discord.js");
@@ -883,7 +884,20 @@ const inps={
     "tsSecondsModal":new TextInputBuilder().setCustomId("tsSecondsInp").setLabel("The seconds...").setStyle(TextInputStyle.Short).setMinLength(1).setMaxLength(2).setRequired(true),
     "tsDayModal":new TextInputBuilder().setCustomId("tsDayInp").setLabel("The day of the month...").setStyle(TextInputStyle.Short).setMinLength(1).setMaxLength(2).setRequired(true),
     "tsYearModal":new TextInputBuilder().setCustomId("tsYearInp").setLabel("The year...").setStyle(TextInputStyle.Short).setMinLength(2).setMaxLength(4).setRequired(true),
-    "tsAmPm":new TextInputBuilder().setCustomId("tsAmPm").setLabel("If you used 12 hour, AM/PM").setStyle(TextInputStyle.Short).setMinLength(1).setMaxLength(2).setRequired(false)
+    "tsAmPm":new TextInputBuilder().setCustomId("tsAmPm").setLabel("If you used 12 hour, AM/PM").setStyle(TextInputStyle.Short).setMinLength(1).setMaxLength(2).setRequired(false),
+
+    "captcha0":new ButtonBuilder().setCustomId("captcha-0").setLabel("0").setStyle(ButtonStyle.Primary),
+    "captcha1":new ButtonBuilder().setCustomId("captcha-1").setLabel("1").setStyle(ButtonStyle.Primary),
+    "captcha2":new ButtonBuilder().setCustomId("captcha-2").setLabel("2").setStyle(ButtonStyle.Primary),
+    "captcha3":new ButtonBuilder().setCustomId("captcha-3").setLabel("3").setStyle(ButtonStyle.Primary),
+    "captcha4":new ButtonBuilder().setCustomId("captcha-4").setLabel("4").setStyle(ButtonStyle.Primary),
+    "captcha5":new ButtonBuilder().setCustomId("captcha-5").setLabel("5").setStyle(ButtonStyle.Primary),
+    "captcha6":new ButtonBuilder().setCustomId("captcha-6").setLabel("6").setStyle(ButtonStyle.Primary),
+    "captcha7":new ButtonBuilder().setCustomId("captcha-7").setLabel("7").setStyle(ButtonStyle.Primary),
+    "captcha8":new ButtonBuilder().setCustomId("captcha-8").setLabel("8").setStyle(ButtonStyle.Primary),
+    "captcha9":new ButtonBuilder().setCustomId("captcha-9").setLabel("9").setStyle(ButtonStyle.Primary),
+    "captchaBack":new ButtonBuilder().setCustomId("captcha-back").setEmoji("❌").setStyle(ButtonStyle.Danger),
+    "captchaDone":new ButtonBuilder().setCustomId("captcha-done").setEmoji("✅").setStyle(ButtonStyle.Success)
 };
 const presets={
     "pollCreation":new ActionRowBuilder().addComponents(inps.pollAdd,inps.pollDel,inps.pollLaunch),
@@ -901,7 +915,9 @@ const presets={
     "tsMinutesModal":new ModalBuilder().setCustomId("tsMinutesModal").setTitle("Set the Minutes for the Timestamp").addComponents(new ActionRowBuilder().addComponents(inps.tsMinutesModal)),
     "tsSecondsModal":new ModalBuilder().setCustomId("tsSecondsModal").setTitle("Set the Seconds for the Timestamp").addComponents(new ActionRowBuilder().addComponents(inps.tsSecondsModal)),
     "tsDayModal":new ModalBuilder().setCustomId("tsDayModal").setTitle("Set the Day for the Timestamp").addComponents(new ActionRowBuilder().addComponents(inps.tsDayModal)),
-    "tsYearModal":new ModalBuilder().setCustomId("tsYearModal").setTitle("Set the Year for the Timestamp").addComponents(new ActionRowBuilder().addComponents(inps.tsYearModal))
+    "tsYearModal":new ModalBuilder().setCustomId("tsYearModal").setTitle("Set the Year for the Timestamp").addComponents(new ActionRowBuilder().addComponents(inps.tsYearModal)),
+
+    "captcha":[new ActionRowBuilder().addComponents(inps.captcha1,inps.captcha2,inps.captcha3),new ActionRowBuilder().addComponents(inps.captcha4,inps.captcha5,inps.captcha6),new ActionRowBuilder().addComponents(inps.captcha7,inps.captcha8,inps.captcha9),new ActionRowBuilder().addComponents(inps.captchaBack,inps.captcha0,inps.captchaDone)]
 };
 
 var kaProgramRegex =/\b(?!<)https?:\/\/(?:www\.)?khanacademy\.org\/(cs|computer-programming)\/[a-z,\d,-]+\/\d+(?!>)\b/gi;
@@ -1387,6 +1403,48 @@ client.on("messageCreate",async msg=>{
 	        msg.channel.sendTyping();
             sendMessage(msg);
         }
+    }
+
+    if(msg.guild){
+        var hash = crypto.createHash('md5').update(msg.content.slice(0,148)).digest('hex');
+        if(!storage[msg.author.id].hasOwnProperty("hashStreak")) storage[msg.author.id].hashStreak=0;
+        if(!storage[msg.guild.id].users[msg.author.id].hasOwnProperty("lastMessages")){
+            storage[msg.guild.id].users[msg.author.id].lastMessages=[];
+        }
+        if(storage[msg.author.id].lastHash===hash){
+            if(msg.content.toLowerCase().includes("@everyone")||msg.content.toLowerCase().includes("@here")||msg.content.toLowerCase().includes("http")) storage[msg.author.id].hashStreak++;
+            if(storage[msg.author.id].hashStreak>=3){
+                storage[msg.author.id].captcha=true;
+                var botInServer=msg.guild?.members.cache.get(client.user.id);
+                if(botInServer?.permissions.has(PermissionFlagsBits.ModerateMembers)&&!storage[msg.guild.id].disableAntiHack&&new Date()-(storage[msg.guild.id].users[msg.author.id].safeTimestamp||0)>60000*60*24*7){
+                    try{
+                        msg.member.timeout(60000*60*24,`Detected spam activity of high profile pings and/or a URL of some kind. Automatically applied for safety.`);//One day, by then any automated hacks should've run their course
+                        if(!storage[msg.author.id].hasOwnProperty("timedOutIn")) storage[msg.author.id].timedOutIn=[];
+                        storage[msg.author.id].timedOutIn.push(msg.guild.id);
+                        if(msg.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
+                            var sendRow=[new ButtonBuilder().setCustomId("untimeout-"+msg.author.id).setLabel("Remove Timeout").setStyle(ButtonStyle.Success)];
+                            if(botInServer.permissions.has(PermissionFlagsBits.BanMembers)&&msg.member.bannable){
+                                sendRow.push(new ButtonBuilder().setCustomId("ban-"+msg.author.id).setLabel(`Ban`).setStyle(ButtonStyle.Danger));
+                            }
+                            if(botInServer.permissions.has(PermissionFlagsBits.KickMembers)&&msg.member.kickable){
+                                sendRow.push(new ButtonBuilder().setCustomId("kick-"+msg.author.id).setLabel(`Kick`).setStyle(ButtonStyle.Danger));
+                            }
+                            if(botInServer.permissions.has(PermissionFlagsBits.ManageMessages)){
+                                sendRow.push(new ButtonBuilder().setCustomId("del-"+msg.author.id).setLabel(`Delete the Messages in Question`).setStyle(ButtonStyle.Primary));
+                            }
+                            msg.reply({content:`I have detected unusual activity from this account. I have temporarily applied a timeout. To remove this timeout, please use ${cmds.captcha} in a DM with me, or a moderator can remove this timeout manually.\n\nIf a mod wishes to disable this behaviour, designed to protect servers from mass spam, ping, and NSFW hacked or spam accounts, run ${cmds.general_config} and specify to disable Anti Hack Protection.`,components:[new ActionRowBuilder().addComponents(...sendRow)]});
+                        }
+                    }
+                    catch(e){}
+                }
+            }
+        }
+        else{
+            storage[msg.author.id].lastHash=hash;
+            storage[msg.author.id].hashStreak=0;
+            storage[msg.guild.id].users[msg.author.id].lastMessages=[];
+        }
+        storage[msg.guild.id].users[msg.author.id].lastMessages.push(`${msg.channel.id}/${msg.id}`);
     }
 });
 client.on("interactionCreate",async cmd=>{
@@ -2333,6 +2391,13 @@ client.on("interactionCreate",async cmd=>{
                 cmd.followUp(`This command needs you to set your timezone first! Run ${cmds.personal_config} and specify \`configure_timezone\` to get started,`);
             }
         break;
+        case 'captcha':
+            var captcha="";
+            for(var ca=0;ca<5;ca++){
+                captcha+=Math.floor(Math.random()*10);
+            }
+            cmd.followUp({content:`Please enter the following: \`${captcha}\`\n\nEntered: \`\``,components:presets.captcha});
+        break;
 
         case 'restart':
             if(cmd.guild?.id==="983074750165299250"&&cmd.channel.id==="986097382267715604"){
@@ -2959,6 +3024,114 @@ client.on("interactionCreate",async cmd=>{
                 "text": `Help Menu for Stewbot`
             }
         }]});
+    }
+    if(cmd.customId?.startsWith("ban-")){
+        if(cmd.member.permissions.has(PermissionFlagsBits.BanMembers)){
+            var target=cmd.guild.members.cache.get(cmd.customId.split("-")[1]);
+            if(target){
+                target.ban({reason:`Detected high spam activity with high profile pings and/or a URL, was instructed to ban by ${cmd.user.username}.`});
+                cmd.message.delete();
+            }
+            else{
+                cmd.reply({content:`I was unable to find the target in question.`,ephemeral:true});
+            }
+            if(cmd.member.permissions.has(PermissionFlagsBits.ManageMessages)){
+                for(var i=0;i<storage[cmd.guild.id].users[cmd.customId.split("-")[1]].lastMessages.length;i++){
+                    try{
+                        var badMess=await client.channels.cache.get(storage[cmd.guild.id].users[cmd.customId.split("-")[1]].lastMessages[i].split("/")[0]).messages.fetch(storage[cmd.guild.id].users[cmd.customId.split("-")[1]].lastMessages[i].split("/")[1]);
+                        badMess.delete().catch(e=>{console.log(e)});
+                        storage[cmd.guild.id].users[cmd.customId.split("-")[1]].lastMessages.splice(i,1);
+                        i--;
+                    }
+                    catch(e){console.log(e)}
+                }
+            }
+        }
+        else{
+            cmd.reply({content:`You do not have sufficient permissions to ban members.`,ephemeral:true});
+        }
+    }
+    if(cmd.customId?.startsWith("untimeout-")){
+        if(cmd.member.permissions.has(PermissionFlagsBits.ModerateMembers)){
+            storage[cmd.guild.id].users[cmd.customId.split("-")[1]].safeTimestamp=new Date();
+            var target=cmd.guild.members.cache.get(cmd.customId.split("-")[1]);
+            if(target){
+                target.timeout(null);
+                cmd.message.delete();
+            }
+            else{
+                cmd.reply({content:`I was unable to find the target in question.`,ephemeral:true});
+            }
+        }
+        else{
+            cmd.reply({content:`You do not have sufficient permissions to timeout members.`,ephemeral:true});
+        }
+    }
+    if(cmd.customId?.startsWith("kick-")){
+        if(cmd.member.permissions.has(PermissionFlagsBits.KickMembers)){
+            var target=cmd.guild.members.cache.get(cmd.customId.split("-")[1]);
+            if(target){
+                target.kick({reason:`Detected high spam activity with high profile pings and/or a URL, was instructed to kick by ${cmd.user.username}.`});
+                await cmd.reply({content:`Done. Do you wish to delete the messages in question as well?`,components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId("del-"+target.id).setLabel("Yes").setStyle(ButtonStyle.Success))],ephemeral:true});
+                cmd.message.delete();
+            }
+            else{
+                cmd.reply({content:`I was unable to find the target in question.`,ephemeral:true});
+            }
+        }
+        else{
+            cmd.reply({content:`You do not have sufficient permissions to kick members.`,ephemeral:true});
+        }
+    }
+    if(cmd.customId?.startsWith("del-")){
+        if(cmd.member.permissions.has(PermissionFlagsBits.ManageMessages)){
+            for(var i=0;i<storage[cmd.guild.id].users[cmd.customId.split("-")[1]].lastMessages.length;i++){
+                try{
+                    var badMess=await client.channels.cache.get(storage[cmd.guild.id].users[cmd.customId.split("-")[1]].lastMessages[i].split("/")[0]).messages.fetch(storage[cmd.guild.id].users[cmd.customId.split("-")[1]].lastMessages[i].split("/")[1]);
+                    badMess.delete().catch(e=>{console.log(e)});
+                    storage[cmd.guild.id].users[cmd.customId.split("-")[1]].lastMessages.splice(i,1);
+                    i--;
+                }
+                catch(e){console.log(e)}
+            }
+            await cmd.reply({content:`Done.`,ephemeral:true});
+            cmd.message.delete();
+        }
+        else{
+            cmd.reply({content:`You do not have sufficient permissions to delete messages.`,ephemeral:true});
+        }
+    }
+    if(cmd.customId?.startsWith("captcha-")){
+        var action=cmd.customId.split("captcha-")[1];
+        if(action==="done"){
+            if(cmd.message.content.split("Entered: ")[1].replaceAll("`","")===cmd.message.content.split("`")[1]){
+                cmd.update({content:`Thank you.`,components:[]});
+                for(var to=0;to<storage[cmd.user.id].timedOutIn.length;to++){
+                    try{
+                        client.guilds.cache.get(storage[cmd.user.id].timedOutIn[to]).members.fetch().then(members=>{
+                            members.forEach(m=>{
+                                if(m.id===cmd.user.id) m.timeout(null);
+                            });
+                        });
+                    }catch(e){console.log(e)}
+                    storage[cmd.user.id].timedOutIn.splice(to,1);
+                    to--;
+                }
+            }
+            else{
+                cmd.message.delete();
+            }
+        }
+        else if(action==="back"){
+            var inp=cmd.message.content.split("Entered: ")[1].replaceAll("`","");
+            if(inp.length>0){
+                inp=inp.slice(0,inp.length-1);
+            }
+            cmd.update(`${cmd.message.content.split("Entered: ")[0]}Entered: ${inp.length>0?"`":""}${inp}${inp.length>0?"`":""}`);
+        }
+        else{
+            cmd.update(`${cmd.message.content.split("Entered: ")[0]}Entered: \`${cmd.message.content.split("Entered: ")[1].replaceAll("`","")}${action}\``);
+        }
     }
 });
 client.on("messageReactionAdd",async (react,user)=>{

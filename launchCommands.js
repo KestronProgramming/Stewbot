@@ -53,6 +53,7 @@ const contexts={
 	"secret":{"contexts":[0,1,2],"integration_types":[0,1]},
 	"timestamp":{"contexts":[0,1,2],"integration_types":[0,1]},
 	"daily-config":{"contexts":[0],"integration_types":[0]},
+	"captcha":{"contexts":[1],"integration_types":[0,1]},
 
 	"submit_meme":{"contexts":[0,1,2],"integration_types":[0,1]},
 	"translate_message":{"contexts":[0,1,2],"integration_types":[0,1]},
@@ -318,6 +319,7 @@ const commands = [
 		).addChannelOption(option=>
 			option.setName("channel").setDescription("The channel for me to post this daily type in").addChannelTypes(ChannelType.GuildText).setRequired(true)
 		).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages).setDMPermission(false),
+	new SlashCommandBuilder().setName("captcha").setDescription("Use this command if I've timed you out for spam").setDMPermission(true),
 
 	new ContextMenuCommandBuilder().setName("submit_meme").setType(ApplicationCommandType.Message),
 	new ContextMenuCommandBuilder().setName("delete_message").setType(ApplicationCommandType.Message).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),//Leaving this in DMs to delete undesirable bot DMs
