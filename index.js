@@ -339,10 +339,6 @@ var helpPages=[
                 desc:"Posts a picture of a person who never existed using AI"
             },
             {
-                name:cmds["fun craiyon"],
-                desc:"Make an image from a prompt using Dall-E Mini"
-            },
-            {
                 name:cmds["fun rac"],
                 desc:"Play a game of Rows & Columns (use command for further help)"
             },
@@ -1662,39 +1658,6 @@ client.on("interactionCreate",async cmd=>{
                     fetch("https://v2.jokeapi.dev/joke/Pun?blacklistFlags=nsfw,religious,political,racist,sexist,explicit&safe-mode").then(d=>d.json()).then(d=>{
                         cmd.followUp(d.type==="single"?`${d.joke}`:`${d.setup}\n\n||${d.delivery}||`);
                     });
-                break;
-                case 'craiyon':
-                    if(checkDirty(cmd.guild?.id,cmd.options.getString("prompt"))||checkDirty(cmd.guild?.id,cmd.options.getString("negative"))){
-                        cmd.followUp({content:`This server has blocked words in your prompt`,ephemeral:true});
-                        break;
-                    }
-                    await cmd.followUp({content:`Your request is now loading. Expected finish time <t:${Math.round(Date.now()/1000)+60}:R>`,files:["./loading.gif"]});
-                    try{
-                        fetch("https://api.craiyon.com/v3", {
-                            "headers": {
-                                "accept": "*/*",
-                                "accept-language": "en-US,en;q=0.9",
-                                "content-type": "application/json",
-                                "sec-ch-ua": "\"Chromium\";v=\"116\", \"Not)A;Brand\";v=\"24\", \"Opera GX\";v=\"102\"",
-                                "sec-ch-ua-mobile": "?0",
-                                "sec-ch-ua-platform": "\"Windows\"",
-                                "sec-fetch-dest": "empty",
-                                "sec-fetch-mode": "cors",
-                                "sec-fetch-site": "same-site"
-                            },
-                            "referrerPolicy": "same-origin",
-                            "body": `{\"prompt\":\"${cmd.options.getString("prompt")}\",\"version\":\"c4ue22fb7kb6wlac\",\"token\":null,\"model\":\"${cmd.options.getString("type")?cmd.options.getString("type"):"photo"}\",\"negative_prompt\":\"${cmd.options.getString("negative")?cmd.options.getString("negative"):""}\"}`,
-                            "method": "POST",
-                            "mode": "cors",
-                            "credentials": "omit"
-                        }).then(d=>d.json()).then(d=>{
-                            cmd.editReply({"content":`<@${cmd.user.id}>, your prompt has been completed. Images courtesy of <https://www.craiyon.com/>.`,files:d.images.map(i=>`https://img.craiyon.com/${i}`)});
-                            if(storage[cmd.user.id].config.dmNotifs) cmd.user.send(`Your ${cmds['fun craiyon']} prompt \`${cmd.options.getString("prompt")}\` has completed. https://discord.com/channels/${cmd.guild?.id?cmd.guildId:"@me"}/${cmd.channelId}/${cmd.id}`);
-                        });
-                    }
-                    catch(e){
-                        cmd.editReply({"content":"Uh oh, something went wrong."});
-                    }
                 break;
                 case 'meme':
                     var memes=fs.readdirSync("./memes");
