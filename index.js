@@ -1990,6 +1990,7 @@ client.on("interactionCreate",async cmd=>{
         case 'general_config':
             if(cmd.options.getBoolean("ai_pings")!==null) storage[cmd.guildId].config.ai=cmd.options.getBoolean("ai_pings");
             if(cmd.options.getBoolean("embeds")!==null) storage[cmd.guildId].config.embedPreviews=cmd.options.getBoolean("embeds");
+            if(cmd.options.getBoolean("disable_anti_hack")!==null) storage[cmd.guildId].disableAntiHack=cmd.options.getBoolean("disable_anti_hack");
             cmd.followUp("Configured your personal setup");
         break;
         case 'bible':
