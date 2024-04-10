@@ -3711,7 +3711,6 @@ client.on("userUpdate",async (userO,user)=>{
     });
 });
 client.on("guildMemberUpdate",async (memberO,member)=>{
-    console.log(member);
     if(storage[member.guild.id]?.logs.active&&storage[member.guild.id]?.logs.user_change_events){
         var diffs=[];
         var caredAboutDiffs=["nickname","avatar"];
