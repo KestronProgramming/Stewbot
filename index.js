@@ -1189,7 +1189,6 @@ client.on("messageCreate",async msg=>{
 
     var links=msg.content.match(discordMessageRegex)||[];
     var progs=msg.content.match(kaProgramRegex)||[];
-    var spotTracks=msg.content.match(spotifyTrackRegex)||[];
     if(!storage[msg.author.id].config.embedPreviews||!storage[msg.guildId]?.config.embedPreviews||!msg.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)||!msg.channel.permissionsFor(msg.author.id)?.has(PermissionFlagsBits.EmbedLinks)){
         links=[];
         progs=[];
@@ -1380,7 +1379,7 @@ client.on("messageCreate",async msg=>{
         }
     }
 
-    if(msg.channel instanceof DMChannel&&!msg.author.bot&&storage[msg.author.id].config.aiPings&&msg.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)) {
+    if(msg.channel instanceof DMChannel&&!msg.author.bot&&storage[msg.author.id].config.aiPings) {
         msg.channel.sendTyping();
 	    sendMessage(msg, true);
     }
@@ -1511,7 +1510,7 @@ client.on("interactionCreate",async cmd=>{
                         storage[cmd.guildId].filter.log=false;
                         disclaimers.push(`I cannot send messages to the specified log channel for this server, so logging deleted messages has been turned off.`);
                     }
-                    cmd.followUp(`Filter configured.${disclaimers.map(d=>`\n\n${d}`)}`);
+                    cmd.followUp(`Filter configured.${disclaimers.map(d=>`\n\n${d}`).join("")}`);
                 break;
                 case "import":
                     fetch(cmd.options.getAttachment("file").attachment).then(d=>d.text()).then(d=>{
@@ -1561,7 +1560,7 @@ client.on("interactionCreate",async cmd=>{
                 storage[cmd.guildId].starboard.messType="2";
                 disclaimers.push(`I do not have the MANAGE_WEBHOOKS permissions, so I cannot use the starboard message type configured. I have changed the setting to "Post an embed with the message" instead.`);
             }
-            cmd.followUp(`Starboard configured.${disclaimers.map(d=>`\n\n${d}`)}`);
+            cmd.followUp(`Starboard configured.${disclaimers.map(d=>`\n\n${d}`).join("")}`);
             save();
         break;
         case 'levels_config':
@@ -1578,7 +1577,7 @@ client.on("interactionCreate",async cmd=>{
                 storage[cmd.guildId].levels.location="DM";
                 disclaimers.push(`I do not have the MANAGE_WEBHOOKS permission for this server, so I cannot post level-up messages. I have set the location for level-up notifications to DMs instead.`);
             }
-            cmd.followUp(`Level ups configured.${disclaimers.map(d=>`\n\n${d}`)}`);
+            cmd.followUp(`Level ups configured.${disclaimers.map(d=>`\n\n${d}`).join("")}`);
             save();
         break;
         case 'counting':
@@ -1609,7 +1608,7 @@ client.on("interactionCreate",async cmd=>{
                         storage[cmd.guildId].users[a].countTurns=0;
                         storage[cmd.guildId].users[a].beenCountWarned=false;
                     }
-                    cmd.followUp(`Alright, I configured counting for this server.${disclaimers.map(d=>`\n\n${d}`)}${storage[cmd.guildId].counting.legit?"":`\n\nPlease be aware this server is currently ineligible for the leaderboard. To fix this, make sure that reset is set to true, that the posts between turns is at least 1, and that you don't set the number to anything higher than 1 manually.`}`);
+                    cmd.followUp(`Alright, I configured counting for this server.${disclaimers.map(d=>`\n\n${d}`).join("")}${storage[cmd.guildId].counting.legit?"":`\n\nPlease be aware this server is currently ineligible for the leaderboard. To fix this, make sure that reset is set to true, that the posts between turns is at least 1, and that you don't set the number to anything higher than 1 manually.`}`);
                     save();
                 break;
                 case "set_number":
@@ -1776,7 +1775,7 @@ client.on("interactionCreate",async cmd=>{
                 disclaimers.push(`I can't post in the specified channel, so I have set the location to DMs instead.`);
             }
             if(storage[cmd.guildId].ajm.message==="") storage[cmd.guildId].ajm.message=defaultGuild.ajm.message;
-            cmd.followUp(`Auto join messages configured.${disclaimers.map(d=>`\n\n${d}`)}`);
+            cmd.followUp(`Auto join messages configured.${disclaimers.map(d=>`\n\n${d}`).join("")}`);
         break;
         case 'auto-leave-message':
             if(!storage[cmd.guildId].hasOwnProperty("alm")){
@@ -1790,7 +1789,7 @@ client.on("interactionCreate",async cmd=>{
                 disclaimers.push(`I can't post in the specified channel, so I cannot run auto leave messages.`);
             }
             if(cmd.options.getString("message")!==null) storage[cmd.guildId].alm.message=cmd.options.getString("message");
-            cmd.followUp(`Auto leave messages configured.${disclaimers.map(d=>`\n\n${d}`)}`);
+            cmd.followUp(`Auto leave messages configured.${disclaimers.map(d=>`\n\n${d}`).join("")}`);
         break;
         case 'translate':
             translate(cmd.options.getString("what"),Object.assign({
@@ -1879,7 +1878,7 @@ client.on("interactionCreate",async cmd=>{
                 storage[cmd.guildId].logs.active=false;
                 disclaimers.push(`I can't post in the specified channel, so logging is turned off.`);
             }
-            cmd.followUp(`Configured log events.${disclaimers.map(d=>`\n\n${d}`)}`);
+            cmd.followUp(`Configured log events.${disclaimers.map(d=>`\n\n${d}`).join("")}`);
             save();
         break;
         case 'sticky-roles':
@@ -2420,7 +2419,6 @@ client.on("interactionCreate",async cmd=>{
             cmd.followUp({content:`Submitted for evaluation`,ephemeral:true});
             let i=0;
             for(a of cmd.targetMessage.attachments){
-                console.log(a);
                 var dots=a[1].url.split("?")[0].split(".");
                 dots=dots[dots.length-1];
                 if(!["mov","png","jpg","jpeg","gif","mp4","mp3","wav","webm","ogg"].includes(dots)){
@@ -3141,18 +3139,29 @@ client.on("messageDelete",async msg=>{
         }
     }
     if(storage[msg.guild.id]?.logs.mod_actions&&storage[msg.guild.id]?.logs.active){
-        setTimeout(async ()=>{
-            const fetchedLogs = await msg.guild.fetchAuditLogs({
-                type: AuditLogEvent.MessageDelete,
-                limit: 1,
-            });
-            const firstEntry = fetchedLogs.entries.first();
-            if(!firstEntry) return;
-            firstEntry.timestamp=BigInt("0b"+BigInt(firstEntry.id).toString(2).slice(0,39))+BigInt(1420070400000);
-            if(firstEntry.target.id===msg?.author?.id&&BigInt(Date.now())-firstEntry.timestamp<BigInt(60000)){
-                msg.guild.channels.cache.get(storage[msg.guild.id].logs.channel).send({content:ll(`**Message from <@${firstEntry.target.id}> Deleted by <@${firstEntry.executor.id}> in <#${msg.channel.id}>**\n\n${msg.content.length>0?`\`\`\`\n${msg.content}\`\`\``:""}${msg.attachments?.size>0?`There were **${msg.attachments.size}** attachments on this message.`:""}`),allowedMentions:{parse:[]}});
-            }
-        },2000);
+        if(msg.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ViewAuditLog)){
+            setTimeout(async ()=>{
+                const fetchedLogs = await msg.guild.fetchAuditLogs({
+                    type: AuditLogEvent.MessageDelete,
+                    limit: 1,
+                });
+                const firstEntry = fetchedLogs.entries.first();
+                if(!firstEntry) return;
+                firstEntry.timestamp=BigInt("0b"+BigInt(firstEntry.id).toString(2).slice(0,39))+BigInt(1420070400000);
+                if(firstEntry.target.id===msg?.author?.id&&BigInt(Date.now())-firstEntry.timestamp<BigInt(60000)){
+                    var c=msg.guild.channels.cache.get(storage[msg.guild.id].logs.channel);
+                    if(c.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
+                        c.send({content:ll(`**Message from <@${firstEntry.target.id}> Deleted by <@${firstEntry.executor.id}> in <#${msg.channel.id}>**\n\n${msg.content.length>0?`\`\`\`\n${msg.content}\`\`\``:""}${msg.attachments?.size>0?`There were **${msg.attachments.size}** attachments on this message.`:""}`),allowedMentions:{parse:[]}});
+                    }
+                    else{
+                        storage[msg.guild.id].logs.active=false;
+                    }
+                }
+            },2000);
+        }
+        else{
+            storage[msg.guild.id].logs.mod_actions=false;
+        }
     }
 });
 client.on("messageUpdate",async (msgO,msg)=>{
@@ -3380,7 +3389,13 @@ client.on("channelDelete",async channel=>{
     }
 
     if(storage[channel.guild.id].logs.active&&storage[channel.guild.id].logs.channel_events){
-        channel.guild.channels.cache.get(storage[channel.guild.id].logs.channel).send(`**Channel \`${channel.name}\` Deleted**`);
+        var c=channel.guild.channels.cache.get(storage[channel.guild.id].logs.channel);
+        if(c.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
+            c.send(`**Channel \`${channel.name}\` Deleted**`);
+        }
+        else{
+            storage[channel.guild.id].logs.active=false;
+        }
     }
 });
 client.on("channelUpdate",async (channelO,channel)=>{
@@ -3390,14 +3405,76 @@ client.on("channelUpdate",async (channelO,channel)=>{
     }
 
     if(storage[channel.guild.id].logs.active&&storage[channel.guild.id].logs.channel_events){
-        var diffs=`**Channel \`${channel.name}\`${channelO.name!==channel.name?` (Previously known as \`${channelO.name}\`)`:""} Edited**`;
+        var diffs=[];
+        var caredAboutDiffs=["name","nsfw","topic","parentId","rateLimitPerUser"];
         Object.keys(channelO).forEach(key=>{
-            if(key==="flags") return;
-            if(channelO[key]!==channel[key]){
-                diffs+=`\n- \`${key}\``;
+            if(channelO[key]!==channel[key]&&caredAboutDiffs.includes(key)){
+                diffs.push(key);
             }
         });
-        //logQueue[storage[channel.guild.id].logs.channel].push(diffs);
+        if(diffs.length>0){
+            var c=channel.guild.channels.cache.get(storage[channel.guild.id].logs.channel);
+            if(c.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
+                var rls={
+                    "0":"None",
+                    "5":"5s",
+                    "10":"10s",
+                    "15":"15s",
+                    "30":"30s",
+                    "60":"1m",
+                    "120":"2m",
+                    "300":"5m",
+                    "600":"10m",
+                    "900":"15m",
+                    "1800":"30m",
+                    "3600":"1h",
+                    "7200":"2h",
+                    "21600":"6h"
+                };
+                c.send({content:`**Channel Edited**${diffs.map(d=>`\n- ${d}`).join("")}`,embeds:[
+                    {
+                        "type": "rich",
+                        "title": `${diffs.includes("name")?`#${channelO.name} -> `:""}#${channel.name}`,
+                        "description": "",
+                        "color": 0x006400,
+                        "fields": [
+                            {
+                                "name": `Description`,
+                                "value": `${diffs.includes("topic")?`${channelO.topic} -> `:""}${channel.topic}`,
+                                "inline": true
+                            },
+                            {
+                                "name": `Category Name`,
+                                "value": `${diffs.includes("parentId]")?`${channelO.parentId===null?"None":client.channels.cache.get(channelO.parentId)?.name} -> `:""}${channel.parentId===null?"None":client.channels.cache.get(channel.parentId)?.name}`,
+                                "inline": true
+                            },
+                            {
+                                "name": `Slowmode`,
+                                "value": `${diffs.includes("rateLimitPerUser")?`${rls[`${channelO.rateLimitPerUser}`]} -> `:""}${rls[`${channel.rateLimitPerUser}`]}`,
+                                "inline": true
+                            },
+                            {
+                                "name": `Age Restricted`,
+                                "value": `${diffs.includes("nsfw")?`${channelO.nsfw} -> `:""}${channel.nsfw}`,
+                                "inline": true
+                            }
+                        ],
+                        "thumbnail":{
+                            "url":channel.guild.iconURL(),
+                            "width":0,
+                            "height":0
+                        },
+                        "footer": {
+                            "text": `Channel Edited`
+                        },
+                        "url": `https://discord.com/channels/${channel.guild.id}/${channel.id}`
+                    }
+                ]});
+            }
+            else{
+                storage[channel.guild.id].logs.active=false;
+            }
+        }
     }
 });
 client.on("emojiCreate",async emoji=>{
@@ -3407,7 +3484,13 @@ client.on("emojiCreate",async emoji=>{
     }
 
     if(storage[emoji.guild.id].logs.active&&storage[emoji.guild.id].logs.emoji_events){
-        emoji.guild.channels.cache.get(storage[emoji.guild.id].logs.channel).send(`**Emoji :\`${emoji.name}\`: created:** <:${emoji.name}:${emoji.id}>`);
+        var c=emoji.guild.channels.cache.get(storage[emoji.guild.id].logs.channel);
+        if(c.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
+            c.send(`**Emoji :\`${emoji.name}\`: created:** <:${emoji.name}:${emoji.id}>`);
+        }
+        else{
+            storage[channel.guild.id].logs.active=false;
+        }
     }
 });
 client.on("emojiDelete",async emoji=>{
@@ -3417,7 +3500,13 @@ client.on("emojiDelete",async emoji=>{
     }
 
     if(storage[emoji.guild.id].logs.active&&storage[emoji.guild.id].logs.emoji_events){
-        emoji.guild.channels.cache.get(storage[emoji.guild.id].logs.channel).send(`**Emoji :\`${emoji.name}\`: deleted.**`);
+        var c=emoji.guild.channels.cache.get(storage[emoji.guild.id].logs.channel);
+        if(c.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
+            c.send(`**Emoji :\`${emoji.name}\`: deleted.**`);
+        }
+        else{
+            storage[channel.guild.id].logs.active=false;
+        }
     }
 });
 client.on("emojiUpdate",async (emojiO,emoji)=>{
@@ -3427,7 +3516,13 @@ client.on("emojiUpdate",async (emojiO,emoji)=>{
     }
 
     if(storage[emoji.guild.id].logs.active&&storage[emoji.guild.id].logs.emoji_events){
-        emoji.guild.channels.cache.get(storage[emoji.guild.id].logs.channel).send(`**Emoji :\`${emojiO.name}\`: is now :\`${emoji.name}\`:** <:${emoji.name}:${emoji.id}>`);
+        var c=emoji.guild.channels.cache.get(storage[emoji.guild.id].logs.channel);
+        if(c.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
+            c.send(`**Emoji :\`${emojiO.name}\`: is now :\`${emoji.name}\`:** <:${emoji.name}:${emoji.id}>`);
+        }
+        else{
+            storage[emoji.guild.id].logs.active=false;
+        }
     }
 });
 client.on("stickerCreate",async sticker=>{
@@ -3437,7 +3532,13 @@ client.on("stickerCreate",async sticker=>{
     }
 
     if(storage[sticker.guild.id].logs.active&&storage[sticker.guild.id].logs.emoji_events){
-        sticker.guild.channels.cache.get(storage[sticker.guild.id].logs.channel).send({content:`**Sticker \`${sticker.name}\` created**\n- **Name**: ${sticker.name}\n- **Related Emoji**: ${/^\d{19}$/.test(sticker.tags)?`<:${client.emojis.cache.get(sticker.tags).name}:${sticker.tags}>`:sticker.tags}\n- **Description**: ${sticker.description}`,stickers:[sticker]});
+        var c=sticker.guild.channels.cache.get(storage[sticker.guild.id].logs.channel);
+        if(c.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
+            c.send({content:`**Sticker \`${sticker.name}\` created**\n- **Name**: ${sticker.name}\n- **Related Emoji**: ${/^\d{19}$/.test(sticker.tags)?`<:${client.emojis.cache.get(sticker.tags).name}:${sticker.tags}>`:sticker.tags}\n- **Description**: ${sticker.description}`,stickers:[sticker]});
+        }
+        else{
+            storage[sticker.guild.id].logs.active=false;
+        }
     }
 });
 client.on("stickerDelete",async sticker=>{
@@ -3447,7 +3548,13 @@ client.on("stickerDelete",async sticker=>{
     }
 
     if(storage[sticker.guild.id].logs.active&&storage[sticker.guild.id].logs.emoji_events){
-        sticker.guild.channels.cache.get(storage[sticker.guild.id].logs.channel).send(`**Sticker \`${sticker.name}\` Deleted**`);
+        var c=sticker.guild.channels.cache.get(storage[sticker.guild.id].logs.channel);
+        if(c.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
+            c.send(`**Sticker \`${sticker.name}\` Deleted**`);
+        }
+        else{
+            storage[sticker.guild.id].logs.active=false;
+        }
     }
 });
 client.on("stickerUpdate",async (stickerO,sticker)=>{
@@ -3457,13 +3564,21 @@ client.on("stickerUpdate",async (stickerO,sticker)=>{
     }
 
     if(storage[sticker.guild.id].logs.active&&storage[sticker.guild.id].logs.emoji_events){
-        let diffs=`**Sticker \`${sticker.name}\`${stickerO.name!==stickername?` (Previously known as \`${stickerO.name}\`)`:""} Updated**`;
+        let diffs=[];
         Object.keys(stickerO).forEach(key=>{
             if(stickerO[key]!==sticker.key){
-                diffs+=`\n- **\`${key}\`**`;
+                diffs.push(key);
             }
         });
-        sticker.guild.channels.cache.get(storage[sticker.guild.id].logs.channel).send(diffs);
+        if(diffs.length>0){
+            var c=sticker.guild.channels.cache.get(storage[sticker.guild.id].logs.channel);
+            if(c.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
+                c.send({content:`**Sticker Edited**\n- **Name**: ${diffs.includes("name")?`${stickerO.name} -> `:""}${sticker.name}\n- **Related Emoji**: ${diffs.includes("tags")?`${/^\d{19}$/.test(stickerO.tags)?`<:${client.emojis.cache.get(stickerO.tags).name}:${stickerO.tags}>`:stickerO.tags} -> `:""}${/^\d{19}$/.test(sticker.tags)?`<:${client.emojis.cache.get(sticker.tags).name}:${sticker.tags}>`:sticker.tags}\n- **Description**: ${diffs.includes("description")?`${stickerO.description} -> `:""}${sticker.description}`,stickers:[sticker]});
+            }
+            else{
+                storage[sticker.guild.id].logs.active=false;
+            }
+        }
     }
 });
 client.on("inviteCreate",async invite=>{
@@ -3473,7 +3588,13 @@ client.on("inviteCreate",async invite=>{
     }
 
     if(storage[invite.guild.id].logs.active&&storage[invite.guild.id].logs.invite_events){
-        invite.guild.channels.cache.get(storage[invite.guild.id].logs.channel).send({content:`**Invite \`${invite.code}\` Created**\n- Code: ${invite.code}\n- Created by <@${invite.inviterId}>\n- Channel: <#${invite.channelId}>${invite._expiresTimestamp?`\n- Expires <t:${Math.round(invite._expiresTimestamp/1000)}:R>`:``}\n- Max uses: ${invite.maxUses>0?invite.maxUses:"Infinite"}`,allowedMentions:{parse:[]}});
+        var c=invite.guild.channels.cache.get(storage[invite.guild.id].logs.channel);
+        if(c.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
+            c.send({content:`**Invite \`${invite.code}\` Created**\n- Code: ${invite.code}\n- Created by <@${invite.inviterId}>\n- Channel: <#${invite.channelId}>${invite._expiresTimestamp?`\n- Expires <t:${Math.round(invite._expiresTimestamp/1000)}:R>`:``}\n- Max uses: ${invite.maxUses>0?invite.maxUses:"Infinite"}`,allowedMentions:{parse:[]}});
+        }
+        else{
+            storage[invite.guild.id].logs.active=false;
+        }
     }
 });
 client.on("inviteDelete",async invite=>{
@@ -3483,7 +3604,13 @@ client.on("inviteDelete",async invite=>{
     }
 
     if(storage[invite.guild.id].logs.active&&storage[invite.guild.id].logs.invite_events){
-        invite.guild.channels.cache.get(storage[invite.guild.id].logs.channel).send({content:`**Invite \`${invite.code}\` Deleted**`,allowedMentions:{parse:[]}});
+        var c=invite.guild.channels.cache.get(storage[invite.guild.id].logs.channel);
+        if(c.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
+            c.send({content:`**Invite \`${invite.code}\` Deleted**`,allowedMentions:{parse:[]}});
+        }
+        else{
+            storage[invite.guild.id].logs.active=false;
+        }
     }
 });
 client.on("roleCreate",async role=>{
@@ -3493,7 +3620,13 @@ client.on("roleCreate",async role=>{
     }
 
     if(storage[role.guild.id].logs.active&&storage[role.guild.id].logs.role_events){
-        role.guild.channels.cache.get(storage[role.guild.id].logs.channel).send({content:`**Role <@&${role.id}> created**`,allowedMentions:{parse:[]}});
+        var c=role.guild.channels.cache.get(storage[role.guild.id].logs.channel);
+        if(c.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
+            c.send({content:`**Role <@&${role.id}> created**`,allowedMentions:{parse:[]}});
+        }
+        else{
+            storage[role.guild.id].logs.active=false;
+        }
     }
 });
 client.on("roleDelete",async role=>{
@@ -3503,7 +3636,13 @@ client.on("roleDelete",async role=>{
     }
 
     if(storage[role.guild.id].logs.active&&storage[role.guild.id].logs.role_events){
-        role.guild.channels.cache.get(storage[role.guild.id].logs.channel).send(`**Role \`${role.name}\` Deleted**`);
+        var c=role.guild.channels.cache.get(storage[role.guild.id].logs.channel);
+        if(c.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
+            c.send(`**Role \`${role.name}\` Deleted**`);
+        }
+        else{
+            storage[role.guild.id].logs.active=false;
+        }
     }
 });
 client.on("roleUpdate",async (roleO,role)=>{
@@ -3513,40 +3652,140 @@ client.on("roleUpdate",async (roleO,role)=>{
     }
 
     if(storage[role.guild.id].logs.active&&storage[role.guild.id].logs.role_events){
-        var diffs=`**Role <@&${role.id}> Edited**`;
+        var diffs=[];
+        var caredAboutDiffs=["name","hoist","mentionable","color"];
         Object.keys(roleO).forEach(key=>{
-            if(key==="tags"||key==="permissions"||key==="flags"||key==="rawPosition") return;
-            if(roleO[key]!==role[key]){
-                diffs+=`\n- \`${key}\``;
+            if(roleO[key]!==role[key]&&caredAboutDiffs.includes(key)){
+                diffs.push(key);
             }
         });
-        if(!diffs.endsWith("**")) role.guild.channels.cache.get(storage[role.guild.id].logs.channel).send({content:diffs,allowedMentions:{parse:[]}});
+        if(diffs.length>0){
+            var c=role.guild.channels.cache.get(storage[role.guild.id].logs.channel);
+            if(c.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
+                var flds=[
+                    {
+                      "name": `Hoisted`,
+                      "value": `${diffs.includes("hoist")?`${roleO.hoist} -> `:""}${role.hoist}`,
+                      "inline": true
+                    },
+                    {
+                      "name": `Pingable`,
+                      "value": `${diffs.includes("mentionable")?`${roleO.mentionable} -> `:""}${role.mentionable}`,
+                      "inline": true
+                    }
+                ];
+                if(diffs.includes("color")){
+                    flds.push({
+                        "name": `Old Color`,
+                        "value": `#${roleO.color}`,
+                        "inline": false
+                    });
+                }
+                c.send({content:`**Role <@&${role.id}> Edited**`,embeds:[{
+                    "type": "rich",
+                    "title": `${diffs.includes("name")?`${roleO.name} -> `:""}${role.name}`,
+                    "description": "",
+                    "color": role.color,
+                    "fields": flds,
+                    "thumbnail": {
+                        "url": role.guild.iconURL(),
+                        "height": 0,
+                        "width": 0
+                    }
+                  }],allowedMentions:{parse:[]}});
+            }
+            else{
+                storage[role.guild.id].logs.active=false;
+            }
+        }
     }
 });
 client.on("userUpdate",async (userO,user)=>{
-    var diffs=`**User <@${user.id}> (${user.username}) Edited Globally**`;
+    var diffs=[];
+    var caredAboutDiffs=["username","globalName","avatar","banner"];
     Object.keys(userO).forEach(key=>{
-        if(key==="tags"||key==="permissions"||key==="flags") return;
-        if(userO[key]!==user[key]){
-            diffs+=`\n- \`${key}\``;
+        if(userO[key]!==user[key]&&caredAboutDiffs.includes(key)){
+            diffs.push(key);
         }
     });
     Object.keys(storage).forEach(entry=>{
         if(storage[entry]?.users?.[user.id]?.inServer&&storage[entry].logs.active&&storage[entry].logs.user_change_events){
-            client.channels.cache.get(storage[entry].logs.channel).send({content:diffs,allowedMentions:{parse:[]}});
+            var c=client.channels.cache.get(storage[entry].logs.channel);
+            if(c.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
+                var flds=[];
+                if(diffs.includes("avatar")){
+                    flds.push({
+                        "name": `Avatar`,
+                        "value": `Changed`,
+                        "inline": true
+                    });
+                }
+                if(diffs.includes("banner")){
+                    flds.push({
+                        "name": `Banner`,
+                        "value": `Changed`,
+                        "inline": true
+                    });
+                }
+                c.send({content:`**User <@${user.id}> Edited Globally**`,embeds:[{
+                        "type": "rich",
+                        "title": `${diffs.includes("globalName")?`${userO.globalName} -> `:""}${user.globalName}`,
+                        "description": `${diffs.includes("username")?`${userO.username} -> `:""}${user.username}`,
+                        "color": user.accentColor===undefined?0x006400:user.accentColor,
+                        "fields": flds,
+                        "thumbnail": {
+                            "url": user.displayAvatarURL(),
+                            "height": 0,
+                            "width": 0
+                        },
+                        "url":`https://discord.com/users/${user.id}`
+                    }],allowedMentions:{parse:[]}});
+            }
+            else{
+                storage[entry].logs.active=false;
+            }
         }
     });
 });
 client.on("guildMemberUpdate",async (memberO,member)=>{
+    console.log(member);
     if(storage[member.guild.id]?.logs.active&&storage[member.guild.id]?.logs.user_change_events){
-        var diffs=`**User <@${member.id}> (${member.user.username}) Edited For This Server**`;
+        var diffs=[];
+        var caredAboutDiffs=["nickname","avatar"];
         Object.keys(memberO).forEach(key=>{
-            if(key==="tags"||key==="permissions"||key==="flags"||key==="_roles"||key==="joinedTimestamp"||key==="pending") return;
-            if(memberO[key]!==member[key]){
-                diffs+=`\n- \`${key}\``;
+            if(memberO[key]!==member[key]&&caredAboutDiffs.includes(key)){
+                diffs.push(key);
             }
         });
-        if(!diffs.endsWith("**")) client.channels.cache.get(storage[member.guild.id].logs.channel).send({content:diffs,allowedMentions:{parse:[]}});
+        if(diffs.length>0){
+            var c=client.channels.cache.get(storage[member.guild.id].logs.channel);
+            if(c.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
+                var flds=[];
+                if(diffs.includes("avatar")){
+                    flds.push({
+                        "name": `Avatar`,
+                        "value": `Changed`,
+                        "inline": true
+                    });
+                }
+                c.send({content:`**User <@${member.id}> Edited for this Server**`,embeds:[{
+                    "type": "rich",
+                    "title": `${diffs.includes("nickname")?`${memberO.nickname} -> `:""}${member.nickname}`,
+                    "description": `${member.user.username}`,
+                    "color": member.user.accentColor===undefined?0x006400:member.user.accentColor,
+                    "fields": flds,
+                    "thumbnail": {
+                        "url": member.displayAvatarURL()?member.displayAvatarURL():member.user.displayAvatarURL(),
+                        "height": 0,
+                        "width": 0
+                    },
+                    "url":`https://discord.com/users/${member.id}`
+                }],allowedMentions:{parse:[]}});
+            }
+            else{
+                storage[member.guild.id].logs.active=false;
+            }
+        }
     }
 });
 
