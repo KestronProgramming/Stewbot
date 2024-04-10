@@ -3106,6 +3106,9 @@ client.on("interactionCreate",async cmd=>{
         if(action==="done"){
             if(cmd.message.content.split("Entered: ")[1].replaceAll("`","")===cmd.message.content.split("`")[1]){
                 cmd.update({content:`Thank you.`,components:[]});
+                storage[cmd.user.id].captcha=false;
+                storage[msg.author.id].lastHash="";
+                storage[msg.author.id].hashStreak=0;
                 for(var to=0;to<storage[cmd.user.id].timedOutIn.length;to++){
                     try{
                         client.guilds.cache.get(storage[cmd.user.id].timedOutIn[to]).members.fetch().then(members=>{
