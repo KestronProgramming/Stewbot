@@ -2972,7 +2972,7 @@ client.on("interactionCreate",async cmd=>{
             cmd.reply({content:`That role doesn't seem to exist anymore.`,ephemeral:true});
             return;
         }
-        if(myRole<=cmd.roles.get(role).rawPosition){
+        if(myRole<=role.rawPosition){
             cmd.reply({content:`I cannot help with that role at the moment. Please let a moderator know that for me to help with the **${cmd.roles.get(role).name}**, it needs to be dragged below my highest role in the Server Settings role list.`,ephemeral:true,allowedMentions:{parse:[]}});
         }
         else{
