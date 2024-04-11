@@ -438,6 +438,38 @@ function checkDirty(where,what){
     });
     return dirty;
 }
+function getAwayCard(embed,user,guild,global){
+    if(embed){
+        var daUser=client.users.cache.get(user);
+        var daEmb={
+            "type": "rich",
+            "title": `Unavailable`,
+            "color": 0xff0000,
+            "author": {
+                "name": `${daUser.globalName||daUser.username}`,
+                "icon_url": `${daUser.displayAvatarURL()}`
+            },
+            "footer": {
+                "text": `Set up using /unavailable`
+            }
+        };
+        if(global){
+            daEmb.description=checkDirty(guild,storage[user].gone.message.message)?checkDirty(guild,storage[user].gone.message):storage[user].gone.message;
+        }
+        else{
+            daEmb.description=checkDirty(guild,storage[guild].users[user].gone.message)?checkDirty(guild,storage[guild].users[user].gone.message):storage[guild].users[user].gone.message;
+        }
+        return daEmb;
+    }
+    else{
+        if(global){
+            return checkDirty(guild,storage[user].gone.message)?checkDirty(guild,storage[user].gone.message):storage[user].gone.message;
+        }
+        else{
+            return checkDirty(guild,storage[guild].users[user].gone.message)?checkDirty(guild,storage[guild].users[user].gone.message):storage[guild].users[user].gone.message;
+        }
+    }
+}
 function getLvl(lvl){
     var total=0;
     while(lvl>-1){
@@ -811,7 +843,13 @@ const defaultGuildUser={
     "exp":0,
     "expTimeout":0,
     "lvl":0,
-    "beenCountWarned":false
+    "beenCountWarned":false,
+    "gone":{
+        "active":false,
+        "message":"I'm not available right now",
+        "until":0,
+        "autoOff":false
+    }
 };
 const defaultUser={
     "offenses":0,
@@ -823,6 +861,12 @@ const defaultUser={
         "levelUpMsgs":true,
         "timeOffset":0,
         "hasSetTZ":false
+    },
+    "gone":{
+        "active":false,
+        "message":"I'm not available right now",
+        "until":0,
+        "autoOff":false
     }
 };
 const inps={
@@ -1445,12 +1489,85 @@ client.on("messageCreate",async msg=>{
             storage[msg.guild.id].users[msg.author.id].lastMessages=[];
         }
         storage[msg.guild.id].users[msg.author.id].lastMessages.push(`${msg.channel.id}/${msg.id}`);
+        save();
+    }
+    msg.mentions.users.forEach(async mentionedUser=>{
+        if(storage[msg.guild?.id]?.users[mentionedUser.id]?.gone.active&&mentionedUser.id!==msg.author.id){
+            if(storage[msg.guild.id].users[mentionedUser.id].gone.until>new Date()){
+                if(msg.guild.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageWebhooks)){
+                    var resp={
+                        "content":`${getAwayCard(false,mentionedUser.id,msg.guild.id,false)}\n\n_Set up using ${cmds.unavailable}_`,
+                        "avatarURL":mentionedUser.displayAvatarURL(),
+                        "username":mentionedUser.globalName||mentionedUser.username
+                    };
+                    var hook=await msg.channel.fetchWebhooks();
+                    hook=hook.find(h=>h.token);
+                    if(hook){
+                        hook.send(resp);
+                    }
+                    else{
+                        client.channels.cache.get(storage[msg.guild.id].levels.location==="channel"?storage[msg.guild.id].levels.channel:msg.channel.id).createWebhook({
+                            name:"Stewbot",
+                            avatar: "https://cdn.discordapp.com/attachments/1145432570104926234/1170273261704196127/kt.jpg",
+                        }).then(d=>{
+                            d.send(resp);
+                        });
+                    }
+                }
+                else if(msg.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
+                    msg.reply({embeds:[getAwayCard(true,mentionedUser.id,msg.guild.id,false)],allowedMentions:{parse:[]}});
+                }
+            }
+            else{
+                storage[msg.guild.id].users[mentionedUser.id].gone.active=false;
+            }
+            save();
+        }
+        else if(storage[mentionedUser.id]?.gone.active&&mentionedUser.id!==msg.author.id){
+            if(storage[mentionedUser.id].gone.until>new Date()){
+                if(msg.guild.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageWebhooks)){
+                    var resp={
+                        "content":`${getAwayCard(false,mentionedUser.id,msg.guild.id,true)}\n\n_Set up using ${cmds.unavailable}_`,
+                        "avatarURL":mentionedUser.displayAvatarURL(),
+                        "username":mentionedUser.globalName||mentionedUser.username
+                    };
+                    var hook=await msg.channel.fetchWebhooks();
+                    hook=hook.find(h=>h.token);
+                    if(hook){
+                        hook.send(resp);
+                    }
+                    else{
+                        client.channels.cache.get(storage[msg.guild.id].levels.location==="channel"?storage[msg.guild.id].levels.channel:msg.channel.id).createWebhook({
+                            name:"Stewbot",
+                            avatar: "https://cdn.discordapp.com/attachments/1145432570104926234/1170273261704196127/kt.jpg",
+                        }).then(d=>{
+                            d.send(resp);
+                        });
+                    }
+                }
+                else if(msg.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
+                    msg.reply({embeds:[getAwayCard(true,mentionedUser.id,msg.guild.id,true)],allowedMentions:{parse:[]}});
+                }
+            }
+            else{
+                storage[mentionedUser.id].gone.active=false;
+            }
+            save();
+        }
+    });
+    if(storage[msg.guild?.id]?.users[msg.author.id].gone?.active&&storage[msg.guild?.id]?.users[msg.author.id].gone?.autoOff){
+        storage[msg.guild.id].users[msg.author.id].gone.active=false;
+        save();
+    }
+    if(storage[msg.author.id].gone?.active&&storage[msg.author.id].gone?.autoOff){
+        storage[msg.author.id].gone.active=false;
+        save();
     }
 });
 client.on("interactionCreate",async cmd=>{
     if(cmd.commandName==="secret") return;
     try{
-	    if(!cmd.isButton()&&!cmd.isModalSubmit()&&!cmd.isChannelSelectMenu()&&!cmd.isRoleSelectMenu()&&!cmd.isStringSelectMenu()) await cmd.deferReply({ephemeral:["poll","auto_roles","submit_meme","delete_message","move_message","auto-join-roles","join-roleOption","admin_message","personal_config","timestamp"].includes(cmd.commandName)||cmd.options.getBoolean("private")});
+	    if(!cmd.isButton()&&!cmd.isModalSubmit()&&!cmd.isChannelSelectMenu()&&!cmd.isRoleSelectMenu()&&!cmd.isStringSelectMenu()) await cmd.deferReply({ephemeral:["poll","auto_roles","submit_meme","delete_message","move_message","auto-join-roles","join-roleOption","admin_message","personal_config","timestamp","unavailable"].includes(cmd.commandName)||cmd.options.getBoolean("private")});
     }catch(e){}
     try{
         if(cmd.guildId!==0){
@@ -2398,6 +2515,55 @@ client.on("interactionCreate",async cmd=>{
                 captcha+=Math.floor(Math.random()*10);
             }
             cmd.followUp({content:`Please enter the following: \`${captcha}\`\n\nEntered: \`\``,components:presets.captcha});
+            save();
+        break;
+        case 'unavailable':
+            var glbl=cmd.options.getBoolean("globally");
+            var ts=false;
+            var disclaimers=[];
+            if(cmd.options.getString("how_long")){
+                ts=cmd.options.getString("how_long");
+                if(ts.includes(":")) ts=ts.split(":")[1];
+                if(!/^\d+$/.test(ts)){
+                    disclaimers.push(`Invalid timestamp`);
+                    ts=false;
+                }
+                if(ts.length<13) ts+="000";
+            }
+            if(!storage[cmd.user.id].hasOwnProperty("gone")){
+                storage[cmd.user.id].gone=structuredClone(defaultUser.gone);
+            }
+            if(!storage[cmd.guild?.id]?.users[cmd.user.id]?.hasOwnProperty("gone")){
+                storage[cmd.guild?.id].users[cmd.user.id].gone=structuredClone(defaultGuildUser.gone);
+            }
+            if(!cmd.guild&&glbl){
+                glbl=false;
+                disclaimers.push(`This command was not used in a server, so the setting has been applied globally.`);
+            }
+            if(glbl){
+                storage[cmd.user.id].gone.active=cmd.options.getBoolean("active");
+                if(cmd.options.getString("message")!==null) storage[cmd.user.id].gone.message=cmd.options.getString("message");
+                if(ts) storage[cmd.user.id].gone.until=+ts;
+                if(cmd.options.getBoolean("auto_deactivate")!==null) storage[cmd.user.id].gone.autoOff=cmd.options.getBoolean("auto_deactivate");
+            }
+            else{
+                storage[cmd.guild.id].users[cmd.user.id].gone.active=cmd.options.getBoolean("active");
+                if(!checkDirty(cmd.guild.id,cmd.options.getString("message"))){
+                    if(cmd.options.getString("message")!==null) storage[cmd.guild.id].users[cmd.user.id].gone.message=cmd.options.getString("message");
+                }
+                else{
+                    disclaimers.push(`I cannot use that message in this server.`);
+                }
+                if(ts) storage[cmd.guild.id].users[cmd.user.id].gone.until=+ts;
+                if(cmd.options.getBoolean("auto_deactivate")!==null) storage[cmd.guild.id].users[cmd.user.id].gone.autoOff=cmd.options.getBoolean("auto_deactivate");
+            }
+            if(cmd.options.getBoolean("active")){
+                cmd.followUp({content:`As you command.${disclaimers.map(d=>`\n\n${d}`).join("")}`,embeds:[getAwayCard(true,cmd.user.id,cmd.guild.id,glbl)]});
+            }
+            else{
+                cmd.followUp(`As you command.`);
+            }
+            save();
         break;
 
         case 'restart':
