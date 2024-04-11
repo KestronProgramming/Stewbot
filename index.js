@@ -1492,7 +1492,7 @@ client.on("messageCreate",async msg=>{
         save();
     }
     msg.mentions.users.forEach(async mentionedUser=>{
-        if(storage[msg.guild?.id]?.users[mentionedUser.id]?.gone.active&&mentionedUser.id!==msg.author.id){
+        if(storage[msg.guild?.id]?.users[mentionedUser.id]?.gone?.active&&mentionedUser.id!==msg.author.id){
             if(storage[msg.guild.id].users[mentionedUser.id].gone.until>new Date()){
                 if(msg.guild.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageWebhooks)){
                     var resp={
@@ -1523,7 +1523,7 @@ client.on("messageCreate",async msg=>{
             }
             save();
         }
-        else if(storage[mentionedUser.id]?.gone.active&&mentionedUser.id!==msg.author.id){
+        else if(storage[mentionedUser.id]?.gone?.active&&mentionedUser.id!==msg.author.id){
             if(storage[mentionedUser.id].gone.until>new Date()){
                 if(msg.guild.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageWebhooks)){
                     var resp={
