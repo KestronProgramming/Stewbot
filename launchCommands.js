@@ -54,6 +54,7 @@ const contexts={
 	"timestamp":{"contexts":[0,1,2],"integration_types":[0,1]},
 	"daily-config":{"contexts":[0],"integration_types":[0]},
 	"captcha":{"contexts":[1],"integration_types":[0,1]},
+	"unavailable":{"contexts":[0,1,2],"integration_types":[0,1]},
 
 	"submit_meme":{"contexts":[0,1,2],"integration_types":[0,1]},
 	"translate_message":{"contexts":[0,1,2],"integration_types":[0,1]},
@@ -384,6 +385,17 @@ const commands = [
 			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 		).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages).setDMPermission(false),
 	new SlashCommandBuilder().setName("captcha").setDescription("Use this command if I've timed you out for spam").setDMPermission(true),
+	new SlashCommandBuilder().setName("unavailable").setDescription("Use this to automatically tell users who ping you that you're unavailable").addBooleanOption(option=>
+			option.setName("active").setDescription("Are you unavailable?").setRequired(true)
+		).addBooleanOption(option=>
+			option.setName("globally").setDescription("Unavailable in every server you're pinged in, or just this one? (Default: global)")
+		).addStringOption(option=>
+			option.setName("message").setDescription("Message to send when you get pinged (Use `\\n` for a line break)").setMinLength(5)
+		).addStringOption(option=>
+			option.setName("how_long").setDescription("How long will you be unavailable for? (Paste a Discord timestamp, use /timestamp to make one!)")
+		).addBooleanOption(option=>
+			option.setName("auto_deactivate").setDescription("Deactivate automatically the next time you send a message?")
+		).setDMPermission(true),
 
 	new ContextMenuCommandBuilder().setName("submit_meme").setType(ApplicationCommandType.Message),
 	new ContextMenuCommandBuilder().setName("delete_message").setType(ApplicationCommandType.Message).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),//Leaving this in DMs to delete undesirable bot DMs
