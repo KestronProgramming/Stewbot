@@ -3470,7 +3470,7 @@ client.on("messageDelete",async msg=>{
                 firstEntry.timestamp=BigInt("0b"+BigInt(firstEntry.id).toString(2).slice(0,39))+BigInt(1420070400000);
                 if(firstEntry.target.id===msg?.author?.id&&BigInt(Date.now())-firstEntry.timestamp<BigInt(60000)){
                     var c=msg.guild.channels.cache.get(storage[msg.guild.id].logs.channel);
-                    if(c.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
+                    if(c?.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
                         c.send({content:ll(`**Message from <@${firstEntry.target.id}> Deleted by <@${firstEntry.executor.id}> in <#${msg.channel.id}>**\n\n${msg.content.length>0?`\`\`\`\n${msg.content}\`\`\``:""}${msg.attachments?.size>0?`There were **${msg.attachments.size}** attachments on this message.`:""}`),allowedMentions:{parse:[]}});
                     }
                     else{
