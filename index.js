@@ -1450,7 +1450,7 @@ client.on("messageCreate",async msg=>{
 client.on("interactionCreate",async cmd=>{
     if(cmd.commandName==="secret") return;
     try{
-	    if(!cmd.isButton()&&!cmd.isModalSubmit()&&!cmd.isChannelSelectMenu()&&!cmd.isRoleSelectMenu()&&!cmd.isStringSelectMenu()) await cmd.deferReply({ephemeral:["poll","auto_roles","report_problem","submit_meme","delete_message","move_message","auto-join-roles","join-roleOption","admin_message","personal_config","timestamp"].includes(cmd.commandName)});
+	    if(!cmd.isButton()&&!cmd.isModalSubmit()&&!cmd.isChannelSelectMenu()&&!cmd.isRoleSelectMenu()&&!cmd.isStringSelectMenu()) await cmd.deferReply({ephemeral:["poll","auto_roles","submit_meme","delete_message","move_message","auto-join-roles","join-roleOption","admin_message","personal_config","timestamp"].includes(cmd.commandName)||cmd.options.getBoolean("private")});
     }catch(e){}
     try{
         if(cmd.guildId!==0){
@@ -2603,7 +2603,7 @@ client.on("interactionCreate",async cmd=>{
                 ctx.lineTo(300, 300);
                 t+=finalResults[key];
                 ctx.fill();
-                ctx.stroke();
+                if(Object.keys(finalResults).length>1) ctx.stroke();
             });
             fs.writeFileSync("./tempPoll.png",canvas.toBuffer("image/png"));
             cmd.update({content:`<@${poll.starter}> asks: **${poll.title}**${poll.choices.map((a,i)=>`\n${i}. ${a} **${storage[cmd.guildId].polls[cmd.message.id].options[a].length}**${finalResults.hasOwnProperty(a)?` - ${pieCols[i][1]}`:""}`).join("")}`,files:["./tempPoll.png"]});
@@ -2914,7 +2914,7 @@ client.on("interactionCreate",async cmd=>{
                 ctx.lineTo(300, 300);
                 t+=finalResults[key];
                 ctx.fill();
-                ctx.stroke();
+                if(Object.keys(finalResults).length>1) ctx.stroke();
             });
             fs.writeFileSync("./tempPoll.png",canvas.toBuffer("image/png"));
             cmd.update({content:ll(`**Poll Closed**\n<@${poll.starter}> asked: **${poll.title}**${poll.choices.map((a,i)=>`\n${i}. ${a} **${storage[cmd.guildId].polls[cmd.message.id].options[a].length}** - ${pieCols[i][1]}`).join("")}\n\n**Voters**${Object.keys(storage[cmd.guildId].polls[cmd.message.id].options).map(opt=>`\n${opt}${storage[cmd.guildId].polls[cmd.message.id].options[opt].map(a=>`\n- <@${a}>`).join("")}`).join("")}`),components:[],allowedMentions:{"parse":[]},files:["./tempPoll.png"]});
@@ -2958,7 +2958,7 @@ client.on("interactionCreate",async cmd=>{
             ctx.lineTo(300, 300);
             t+=finalResults[key];
             ctx.fill();
-            ctx.stroke();
+            if(Object.keys(finalResults).length>1) ctx.stroke();
         });
         fs.writeFileSync("./tempPoll.png",canvas.toBuffer("image/png"));
         cmd.update({content:`<@${poll.starter}> asks: **${poll.title}**${poll.choices.map((a,i)=>`\n${i}. ${a} **${storage[cmd.guildId].polls[cmd.message.id].options[a].length}**${finalResults.hasOwnProperty(a)?` - ${pieCols[i][1]}`:""}`).join("")}`,files:["./tempPoll.png"]});

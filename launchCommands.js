@@ -61,8 +61,12 @@ const contexts={
 	"delete_message":{"contexts":[0,1],"integration_types":[0]}
 };
 const commands = [
-	new SlashCommandBuilder().setName("help").setDescription("View the help menu"),
-	new SlashCommandBuilder().setName('ping').setDescription('Check uptime stats'),
+	new SlashCommandBuilder().setName("help").setDescription("View the help menu").addBooleanOption(option=>
+			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
+		),
+	new SlashCommandBuilder().setName('ping').setDescription('Check uptime stats').addBooleanOption(option=>
+		option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
+	),
 	new SlashCommandBuilder().setName("filter").setDescription("Manage the filter for this server").addSubcommand(command=>
 		command.setName("config").setDescription("Configure the filter for this server").addBooleanOption(option=>
 				option.setName("active").setDescription("Should I remove messages that contain words configured in the blacklist?").setRequired(true)
@@ -72,21 +76,31 @@ const commands = [
 				option.setName("log").setDescription("Post a summary of filtered messages to a staff channel? (Must set 'channel' on this command if true)")
 			).addChannelOption(option=>
 				option.setName("channel").setDescription("Which channel should I post summaries of deleted messages to?").addChannelTypes(ChannelType.GuildText)
+			).addBooleanOption(option=>
+				option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 			)
 		).addSubcommand(command=>
 			command.setName("add").setDescription('Add a word to the filter').addStringOption(option=>
 				option.setName("word").setDescription("The word to blacklist").setRequired(true)
+			).addBooleanOption(option=>
+				option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 			)
 		).addSubcommand(command=>
 			command.setName("remove").setDescription('Remove a word from the filter').addStringOption(option=>
 				option.setName("word").setDescription("The word to remove from the blacklist").setRequired(true)
+			).addBooleanOption(option=>
+				option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 			)
 		).addSubcommand(command=>
 			command.setName("import").setDescription("Import a CSV wordlist").addAttachmentOption(option=>
 				option.setName("file").setDescription("A .csv with comma seperated words you'd like to block").setRequired(true)
+			).addBooleanOption(option=>
+				option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 			)
 		).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages).setDMPermission(false),
-	new SlashCommandBuilder().setName("view_filter").setDescription("View the list of blacklisted words for this server").setDMPermission(false),
+	new SlashCommandBuilder().setName("view_filter").setDescription("View the list of blacklisted words for this server").setDMPermission(false).addBooleanOption(option=>
+		option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
+	),
 	new SlashCommandBuilder().setName("starboard_config").setDescription("Configure starboard for this server").addBooleanOption(option=>
 			option.setName("active").setDescription("Should I post messages to the configured channel?").setRequired(true)
 		).addChannelOption(option=>
@@ -101,6 +115,8 @@ const commands = [
 				{"name":"Post an embed with the message and a greeting","value":"1"},
 				{"name":"Post an embed with the message","value":"2"}
 			)
+		).addBooleanOption(option=>
+			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 		).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages).setDMPermission(false),
 	new SlashCommandBuilder().setName("fun").setDescription("Posts something fun to enjoy").addSubcommand(command=>
 			command.setName("meme").setDescription("Posts a meme").addIntegerOption(option=>
@@ -123,11 +139,15 @@ const commands = [
 			option.setName("target").setDescription("Who to kick?").setRequired(true)
 		).addStringOption(option=>
 			option.setName("reason").setDescription("What is the reason for this kick?")
+		).addBooleanOption(option=>
+			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 		).setDefaultMemberPermissions(PermissionFlagsBits.KickMembers).setDMPermission(false),
 	new SlashCommandBuilder().setName("ban").setDescription("Ban a user").addUserOption(option=>
 			option.setName("target").setDescription("Who to ban?").setRequired(true)
 		).addStringOption(option=>
 			option.setName("reason").setDescription("What is the reason for this ban?")
+		).addBooleanOption(option=>
+			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 		).setDefaultMemberPermissions(PermissionFlagsBits.BanMembers).setDMPermission(false),
 	new SlashCommandBuilder().setName("timeout").setDescription("Timeout a user").addUserOption(option=>
 			option.setName("target").setDescription("Who to timeout?").setRequired(true)
@@ -139,6 +159,8 @@ const commands = [
 			option.setName("seconds").setDescription("Seconds to timeout the user for?")
 		).addStringOption(option=>
 			option.setName("reason").setDescription("What is the reason for this timeout?")
+		).addBooleanOption(option=>
+			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 		).setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers).setDMPermission(false),
 	new SlashCommandBuilder().setName("translate").setDescription("Translate a string of text").addStringOption(option=>
 			option.setName("what").setDescription("What to translate").setRequired(true)
@@ -146,10 +168,14 @@ const commands = [
 			option.setName("language_from").setDescription("The language the original text is in (Default: autodetect)")
 		).addStringOption(option=>
 			option.setName("language_to").setDescription("The language you want the text translated into (Default: en)")
+		).addBooleanOption(option=>
+			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 		),
 	new SlashCommandBuilder().setName("define").setDescription("Get the definition for a word").addStringOption(option=>
-		option.setName("what").setDescription("What to define").setRequired(true)
-	),
+			option.setName("what").setDescription("What to define").setRequired(true)
+		).addBooleanOption(option=>
+			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
+		),
 	new SlashCommandBuilder().setName("counting").setDescription("Manage counting functions for this server").addSubcommand(command=>
 			command.setName("config").setDescription("Configure counting for this server").addBooleanOption(option=>
 				option.setName("active").setDescription("Do counting things in this server?").setRequired(true)
@@ -161,19 +187,27 @@ const commands = [
 				option.setName("public").setDescription("Do you want this server to show up in the counting leaderboard?")
 			).addIntegerOption(option=>
 				option.setName("posts_between_turns").setDescription("How many posts do you need to wait between turns?").setMinValue(0)
+			).addBooleanOption(option=>
+				option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 			)
 		).addSubcommand(command=>
 			command.setName("set_number").setDescription("Set the next number to count at (Disqualifies from leaderboard)").addIntegerOption(option=>
 				option.setName("num").setDescription("The number to count at next").setRequired(true).setMinValue(0)
+			).addBooleanOption(option=>
+				option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 			)
 		).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages).setDMPermission(false),
-	new SlashCommandBuilder().setName("next_counting_number").setDescription("View the next number to count at").setDMPermission(false),
+	new SlashCommandBuilder().setName("next_counting_number").setDescription("View the next number to count at").addBooleanOption(option=>
+			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
+		).setDMPermission(false),
 	new SlashCommandBuilder().setName("general_config").setDescription("Configure general behaviors").addBooleanOption(option=>
 			option.setName("ai_pings").setDescription("Have the bot post an AI message when pinging it?")
 		).addBooleanOption(option=>
 			option.setName("embeds").setDescription("If a message link is posted, should I post a preview?")
 		).addBooleanOption(option=>
 			option.setName("disable_anti_hack").setDescription("Do you want to disable the anti hack/spam account protection for this server?")
+		).addBooleanOption(option=>
+			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 		).setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers).setDMPermission(false),
 	new SlashCommandBuilder().setName("personal_config").setDescription("Configure the bot for you personally").addBooleanOption(option=>
 			option.setName("ai_pings").setDescription("Respond with an AI message to pings or DMs")
@@ -205,6 +239,8 @@ const commands = [
 			)
 		).addChannelOption(option=>
 			option.setName("channel").setDescription("The channel to post the message to").addChannelTypes(ChannelType.GuildText)
+		).addBooleanOption(option=>
+			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 		).setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers).setDMPermission(false),
 	new SlashCommandBuilder().setName("auto-leave-message").setDescription("Set up a message to be sent automatically when a user leaves").addBooleanOption(option=>
 			option.setName("active").setDescription("Should I send a message when the user leaves?").setRequired(true)
@@ -212,6 +248,8 @@ const commands = [
 			option.setName("channel").setDescription("The channel to post the message to").addChannelTypes(ChannelType.GuildText).setRequired(true)
 		).addStringOption(option=>
 			option.setName("message").setDescription("The message to be sent (Use \"${@USER}\" to use the user's username)")
+		).addBooleanOption(option=>
+			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 		).setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers).setDMPermission(false),
 	new SlashCommandBuilder().setName("auto_roles").setDescription("Setup a message with auto roles").addStringOption(option=>
 			option.setName("message").setDescription("The message to be sent with the role options").setRequired(true)
@@ -227,6 +265,8 @@ const commands = [
 			).setRequired(true)
 		).addStringOption(option=>
 			option.setName("details").setDescription("Can you please provide us some details?").setRequired(true)
+		).addBooleanOption(option=>
+			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 		),
 	new SlashCommandBuilder().setName("log_config").setDescription("Configure log events").addBooleanOption(option=>
 			option.setName("active").setDescription("Log server and user events to the designated channel?").setRequired(true)
@@ -246,6 +286,8 @@ const commands = [
 			option.setName("role_events").setDescription("Log role events?")
 		).addBooleanOption(option=>
 			option.setName("mod_actions").setDescription("Log when a moderator performs an action")
+		).addBooleanOption(option=>
+			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 		).setDefaultMemberPermissions(PermissionFlagsBits.ViewAuditLog).setDMPermission(false),
 	new SlashCommandBuilder().setName("admin_message").setDescription("Anonymously make a post in the server's name").addStringOption(option=>
 			option.setName("what").setDescription("What to say").setMaxLength(2000).setRequired(true)
@@ -260,14 +302,20 @@ const commands = [
 				option.setName("low").setDescription("Lower bound of the random number? (Default: 1)")
 			).addIntegerOption(option=>
 				option.setName("high").setDescription("Upper bound of the random number? (Default: 10)")
+			).addBooleanOption(option=>
+				option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 			)
 		).addSubcommand(command=>
 			command.setName("coin-flip").setDescription("Flip a number of coins").addIntegerOption(option=>
 				option.setName("number").setDescription("How many coins should I flip?").setMinValue(1).setMaxValue(10)
+			).addBooleanOption(option=>
+				option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 			)
 		).addSubcommand(command=>
 			command.setName("8-ball").setDescription("Ask a question and receive an entirely random response").addStringOption(option=>
 				option.setName("question").setDescription("What question are you asking?").setRequired(true)
+			).addBooleanOption(option=>
+				option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 			)
 		),
 	new SlashCommandBuilder().setName("auto-join-roles").setDescription("Automatically add roles to a user when they join the server").setDefaultMemberPermissions(PermissionFlagsBits.ManageRoles).setDMPermission(false),
@@ -290,6 +338,8 @@ const commands = [
 				{"name":"DM",value:"DM"},
 				{"name":"Inline","value":"inline"}
 			).setName("location").setDescription("Where should level up messages be sent?")
+		).addBooleanOption(option=>
+			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 		).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages).setDMPermission(false),
 	new SlashCommandBuilder().setName("leaderboard").setDescription("View a leaderboard").addStringOption(option=>
 			option.setName("which").setDescription("Which leaderboard do you want to see?").setChoices(
@@ -300,13 +350,21 @@ const commands = [
 			).setRequired(true)
 		).addUserOption(option=>
 			option.setName("who").setDescription("If applicable, who's spot on the leaderboard do you wish to highlight?")
+		).addBooleanOption(option=>
+			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 		).setDMPermission(false),
 	new SlashCommandBuilder().setName("rank").setDescription("Your rank for this server's level ups").addUserOption(option=>
 			option.setName("target").setDescription("Who's rank are you trying to view?")
+		).addBooleanOption(option=>
+			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 		).setDMPermission(false),
-	new SlashCommandBuilder().setName("links").setDescription("Get a list of links relevant for the bot"),
+	new SlashCommandBuilder().setName("links").setDescription("Get a list of links relevant for the bot").addBooleanOption(option=>
+			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
+		),
 	new SlashCommandBuilder().setName("chat").setDescription("Chat with the bot").addStringOption(option=>
 			option.setName("what").setDescription("What to say").setRequired(true)
+		).addBooleanOption(option=>
+			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 		),
 	new SlashCommandBuilder().setName("embed_message").setDescription("Embed a message link from another channel or server").addStringOption(option=>
 			option.setName("link").setDescription("The message link").setRequired(true)
@@ -314,12 +372,16 @@ const commands = [
 
 	new SlashCommandBuilder().setName("secret").setDescription("It's a secret to everybody").addStringOption(option=>
 			option.setName("code").setDescription("Do you have something for me?")
+		).addBooleanOption(option=>
+			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 		),
 	new SlashCommandBuilder().setName("timestamp").setDescription("Generate a timestamp for use in your message"),
 	new SlashCommandBuilder().setName("daily-config").setDescription("Configure daily devos (More types to come!)").addBooleanOption(option=>
 			option.setName("active").setDescription("Should I run this daily type?").setRequired(true)
 		).addChannelOption(option=>
 			option.setName("channel").setDescription("The channel for me to post this daily type in").addChannelTypes(ChannelType.GuildText).setRequired(true)
+		).addBooleanOption(option=>
+			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 		).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages).setDMPermission(false),
 	new SlashCommandBuilder().setName("captcha").setDescription("Use this command if I've timed you out for spam").setDMPermission(true),
 
