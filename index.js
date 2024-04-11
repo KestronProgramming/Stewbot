@@ -270,6 +270,10 @@ var helpPages=[
                 desc:"View uptime stats"
             },
             {
+                name:cmds.links,
+                desc:"Every single link you may need for the bot"
+            },
+            {
                 name:cmds.personal_config,
                 desc:"Set some options for your personal interactions with the bot"
             },
@@ -307,8 +311,8 @@ var helpPages=[
                 desc:"Setup a ticket system so that users can communicate directly and privately with moderators"
             },
             {
-                name:cmds["auto-join-message"],
-                desc:"Configure a message to be sent either in a channel or the user's DMs whenever a user joins"
+                name:`${cmds["auto-join-message"]}/${cmds["auto-leave-message"]}`,
+                desc:"Configure a message to be sent either in a channel or the user's DMs whenever a user joins or leaves"
             },
             {
                 name:cmds.log_config,
@@ -316,7 +320,7 @@ var helpPages=[
             },
             {
                 name:cmds.admin_message,
-                desc:"DM a user anonymously in the server's name"
+                desc:"Send a message anonymously in the server's name"
             },
             {
                 name:cmds["sticky-roles"],
@@ -329,6 +333,18 @@ var helpPages=[
             {
                 name:cmds["auto-join-roles"],
                 desc:"Add one or more roles to every user that joins"
+            },
+            {
+                name:cmds.general_config,
+                desc:"Configure options for the whole server such as AI pings or embedding links"
+            },
+            {
+                name:cmds.levels_config,
+                desc:"Configure level-ups and exp for this server"
+            },
+            {
+                name:cmds["daily-config"],
+                desc:"Configure daily devotions (more to come soon!) for your server"
             }
         ]
     },
@@ -378,6 +394,10 @@ var helpPages=[
             {
                 name:cmds.leaderboard,
                 desc:"View one of the leaderboards or rank cards"
+            },
+            {
+                name:cmds.chat,
+                desc:"Use Stewbot's AI from a command, useful for DMs with anyone if you install the bot to your account"
             }
         ]
     },
@@ -403,6 +423,18 @@ var helpPages=[
             {
                 name:cmds.bible,
                 desc:"Look up one or more verses in the King James Bible "
+            },
+            {
+                name:cmds.embed_message,
+                desc:"Embed Discord message links with a command, useful for DMs with anyone if you install the bot to your account"
+            },
+            {
+                name:cmds.timestamp,
+                desc:"Generate a timestamp that will show everyone the same time relevant to their timezone"
+            },
+            {
+                name:cmds.unavailable,
+                desc:"If you're unavailable, have Stewbot let others know if they try to ping you!"
             }
         ]
     }
