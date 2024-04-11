@@ -454,7 +454,7 @@ function getAwayCard(embed,user,guild,global){
             }
         };
         if(global){
-            daEmb.description=checkDirty(guild,storage[user].gone.message.message)?checkDirty(guild,storage[user].gone.message):storage[user].gone.message;
+            daEmb.description=storage[user].gone.message;
         }
         else{
             daEmb.description=checkDirty(guild,storage[guild].users[user].gone.message)?checkDirty(guild,storage[guild].users[user].gone.message):storage[guild].users[user].gone.message;
@@ -463,7 +463,7 @@ function getAwayCard(embed,user,guild,global){
     }
     else{
         if(global){
-            return checkDirty(guild,storage[user].gone.message)?checkDirty(guild,storage[user].gone.message):storage[user].gone.message;
+            return storage[user].gone.message;
         }
         else{
             return checkDirty(guild,storage[guild].users[user].gone.message)?checkDirty(guild,storage[guild].users[user].gone.message):storage[guild].users[user].gone.message;
@@ -2558,7 +2558,7 @@ client.on("interactionCreate",async cmd=>{
                 if(cmd.options.getBoolean("auto_deactivate")!==null) storage[cmd.guild.id].users[cmd.user.id].gone.autoOff=cmd.options.getBoolean("auto_deactivate");
             }
             if(cmd.options.getBoolean("active")){
-                cmd.followUp({content:`As you command.${disclaimers.map(d=>`\n\n${d}`).join("")}`,embeds:[getAwayCard(true,cmd.user.id,cmd.guild.id,glbl)]});
+                cmd.followUp({content:`As you command.${disclaimers.map(d=>`\n\n${d}`).join("")}`,embeds:[getAwayCard(true,cmd.user.id,cmd.guild?.id,glbl)]});
             }
             else{
                 cmd.followUp(`As you command.`);
