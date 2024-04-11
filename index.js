@@ -2542,14 +2542,14 @@ client.on("interactionCreate",async cmd=>{
             }
             if(glbl){
                 storage[cmd.user.id].gone.active=cmd.options.getBoolean("active");
-                if(cmd.options.getString("message")!==null) storage[cmd.user.id].gone.message=cmd.options.getString("message");
+                if(cmd.options.getString("message")!==null) storage[cmd.user.id].gone.message=cmd.options.getString("message").replaceAll("\\n","\n");
                 if(ts) storage[cmd.user.id].gone.until=+ts;
                 if(cmd.options.getBoolean("auto_deactivate")!==null) storage[cmd.user.id].gone.autoOff=cmd.options.getBoolean("auto_deactivate");
             }
             else{
                 storage[cmd.guild.id].users[cmd.user.id].gone.active=cmd.options.getBoolean("active");
                 if(!checkDirty(cmd.guild.id,cmd.options.getString("message"))){
-                    if(cmd.options.getString("message")!==null) storage[cmd.guild.id].users[cmd.user.id].gone.message=cmd.options.getString("message");
+                    if(cmd.options.getString("message")!==null) storage[cmd.guild.id].users[cmd.user.id].gone.message=cmd.options.getString("message").replaceAll("\\n","\n");
                 }
                 else{
                     disclaimers.push(`I cannot use that message in this server.`);
