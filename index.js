@@ -2536,8 +2536,8 @@ client.on("interactionCreate",async cmd=>{
             if(!storage[cmd.guild?.id]?.users[cmd.user.id]?.hasOwnProperty("gone")&&cmd.guild){
                 storage[cmd.guild?.id].users[cmd.user.id].gone=structuredClone(defaultGuildUser.gone);
             }
-            if(!cmd.guild&&glbl){
-                glbl=false;
+            if(!cmd.guild&&!glbl){
+                glbl=true;
                 disclaimers.push(`This command was not used in a server, so the setting has been applied globally.`);
             }
             if(glbl){
@@ -2547,7 +2547,7 @@ client.on("interactionCreate",async cmd=>{
                 if(cmd.options.getBoolean("auto_deactivate")!==null) storage[cmd.user.id].gone.autoOff=cmd.options.getBoolean("auto_deactivate");
             }
             else{
-                storage[cmd.guild.id].users[cmd.user.id].gone.active=cmd.options.getBoolean("active");
+                storage[cmd.guild?.id].users[cmd.user.id].gone.active=cmd.options.getBoolean("active");
                 if(!checkDirty(cmd.guild.id,cmd.options.getString("message"))){
                     if(cmd.options.getString("message")!==null) storage[cmd.guild.id].users[cmd.user.id].gone.message=cmd.options.getString("message").replaceAll("\\n","\n");
                 }
