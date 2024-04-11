@@ -2530,6 +2530,9 @@ client.on("interactionCreate",async cmd=>{
                 }
                 if(ts.length<13) ts+="000";
             }
+            if(!ts){
+                ts="999999999999999999";
+            }
             if(!storage[cmd.user.id].hasOwnProperty("gone")){
                 storage[cmd.user.id].gone=structuredClone(defaultUser.gone);
             }
