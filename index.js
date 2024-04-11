@@ -2533,7 +2533,7 @@ client.on("interactionCreate",async cmd=>{
             if(!storage[cmd.user.id].hasOwnProperty("gone")){
                 storage[cmd.user.id].gone=structuredClone(defaultUser.gone);
             }
-            if(!storage[cmd.guild?.id]?.users[cmd.user.id]?.hasOwnProperty("gone")){
+            if(!storage[cmd.guild?.id]?.users[cmd.user.id]?.hasOwnProperty("gone")&&cmd.guild){
                 storage[cmd.guild?.id].users[cmd.user.id].gone=structuredClone(defaultGuildUser.gone);
             }
             if(!cmd.guild&&glbl){
