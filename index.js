@@ -1058,29 +1058,31 @@ client.once("ready",async ()=>{
     setTimeout(daily,((now.getHours()>11?11+24-now.getHours():11-now.getHours())*(60000*60))+((60-now.getMinutes())*60000));
 });
 client.on("messageCreate",async msg=>{
-    if(msg.author.id==="949401296404905995"&&msg.content.startsWith("~sudo")){
-        switch(msg.content.split(" ")[1]){
-            case "permStatus":
-                var missingPerms=[];
-                Object.keys(PermissionFlagsBits).forEach(perm=>{
-                    if(!msg.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits[perm])){
-                        missingPerms.push(perm);
+    if(msg.content.startsWith("~sudo")){
+        if(client.channels.cache.get("986097382267715604").permissionsFor(msg.author.id).has(PermissionFlagsBits.SendMessages)){
+            switch(msg.content.split(" ")[1]){
+                case "permStatus":
+                    var missingPerms=[];
+                    Object.keys(PermissionFlagsBits).forEach(perm=>{
+                        if(!msg.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits[perm])){
+                            missingPerms.push(perm);
+                        }
+                    });
+                    if(missingPerms.length===0) missingPerms.push(`No issues found`);
+                    msg.reply(`As you command.${missingPerms.map(m=>`\n- ${m}`).join("")}`);
+                break;
+                case "configStatus":
+                    switch(msg.content.split(" ")[2]){
+                        case "filter":
+                            msg.reply(`As you command.\n- Active: ${storage[msg.guild.id].filter.active}\n- Censor: ${storage[msg.guild.id].filter.censor}\n- Log to a channel: ${storage[msg.guild.id].filter.log} <#${storage[msg.guild.id].filter.channel}>\n- Blocked words: ${storage[msg.guild.id].filter.blacklist.length}`);
+                        break;
+                        case "autoMessage":
+                            if(!storage[msg.guild.id].hasOwnProperty("alm")) storage[msg.guild.id].alm=structuredClone(defaultGuild.alm);
+                            msg.reply(`As you command.\n##Auto Join Messages\n- Active: ${storage[msg.guild.id].ajm.active}\n- Location: ${storage[msg.guild.id].ajm.location||storage[msg.guild.id].ajm.dm?"DM":"Channel"}\n- Channel: ${storage[msg.guild.id].ajm.channel}\n- Message: \`\`\`\n${storage[msg.guild.id].ajm.message}\`\`\`\n## Auto Leave Messages\n- Active: ${storage[msg.guild.id].alm.active}\n- Channel: ${storage[msg.guild.id].alm.channel}\n- Message: \`\`\`\n${storage[msg.guild.id].alm.message}`);
+                        break;
                     }
-                });
-                if(missingPerms.length===0) missingPerms.push(`No issues found`);
-                msg.reply(`As you command.${missingPerms.map(m=>`\n- ${m}`).join("")}`);
-            break;
-            case "configStatus":
-                switch(msg.content.split(" ")[2]){
-                    case "filter":
-                        msg.reply(`As you command.\n- Active: ${storage[msg.guild.id].filter.active}\n- Censor: ${storage[msg.guild.id].filter.censor}\n- Log to a channel: ${storage[msg.guild.id].filter.log} <#${storage[msg.guild.id].filter.channel}>\n- Blocked words: ${storage[msg.guild.id].filter.blacklist.length}`);
-                    break;
-                    case "autoMessage":
-                        if(!storage[msg.guild.id].hasOwnProperty("alm")) storage[msg.guild.id].alm=structuredClone(defaultGuild.alm);
-                        msg.reply(`As you command.\n##Auto Join Messages\n- Active: ${storage[msg.guild.id].ajm.active}\n- Location: ${storage[msg.guild.id].ajm.location||storage[msg.guild.id].ajm.dm?"DM":"Channel"}\n- Channel: ${storage[msg.guild.id].ajm.channel}\n- Message: \`\`\`\n${storage[msg.guild.id].ajm.message}\`\`\`\n## Auto Leave Messages\n- Active: ${storage[msg.guild.id].alm.active}\n- Channel: ${storage[msg.guild.id].alm.channel}\n- Message: \`\`\`\n${storage[msg.guild.id].alm.message}`);
-                    break;
-                }
-            break;
+                break;
+            }
         }
     }
     async function sendHook(what){
