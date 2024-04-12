@@ -1076,6 +1076,7 @@ client.on("messageCreate",async msg=>{
                         msg.reply(`As you command.\n- Active: ${storage[msg.guild.id].filter.active}\n- Censor: ${storage[msg.guild.id].filter.censor}\n- Log to a channel: ${storage[msg.guild.id].filter.log} <#${storage[msg.guild.id].filter.channel}>\n- Blocked words: ${storage[msg.guild.id].filter.blacklist.length}`);
                     break;
                     case "autoMessage":
+                        if(!storage[msg.guild.id].hasOwnProperty("alm")) storage[msg.guild.id].alm=structuredClone(defaultGuild.alm);
                         msg.reply(`As you command.\n##Auto Join Messages\n- Active: ${storage[msg.guild.id].ajm.active}\n- Location: ${storage[msg.guild.id].ajm.location||storage[msg.guild.id].ajm.dm?"DM":"Channel"}\n- Channel: ${storage[msg.guild.id].ajm.channel}\n- Message: \`\`\`\n${storage[msg.guild.id].ajm.message}\`\`\`\n## Auto Leave Messages\n- Active: ${storage[msg.guild.id].alm.active}\n- Channel: ${storage[msg.guild.id].alm.channel}\n- Message: \`\`\`\n${storage[msg.guild.id].alm.message}`);
                     break;
                 }
