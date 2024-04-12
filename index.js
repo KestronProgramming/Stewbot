@@ -1078,7 +1078,7 @@ client.on("messageCreate",async msg=>{
                         break;
                         case "autoMessage":
                             if(!storage[msg.guild.id].hasOwnProperty("alm")) storage[msg.guild.id].alm=structuredClone(defaultGuild.alm);
-                            msg.reply(`As you command.\n##Auto Join Messages\n- Active: ${storage[msg.guild.id].ajm.active}\n- Location: ${storage[msg.guild.id].ajm.location||storage[msg.guild.id].ajm.dm?"DM":"Channel"}\n- Channel: ${storage[msg.guild.id].ajm.channel}\n- Message: \`\`\`\n${storage[msg.guild.id].ajm.message}\`\`\`\n## Auto Leave Messages\n- Active: ${storage[msg.guild.id].alm.active}\n- Channel: ${storage[msg.guild.id].alm.channel}\n- Message: \`\`\`\n${storage[msg.guild.id].alm.message}`);
+                            msg.reply(`As you command.\n## Auto Join Messages\n- Active: ${storage[msg.guild.id].ajm.active}\n- Location: ${storage[msg.guild.id].ajm.location||storage[msg.guild.id].ajm.dm?"DM":"Channel"}\n- Channel: ${storage[msg.guild.id].ajm.channel}\n- Message: \`\`\`\n${storage[msg.guild.id].ajm.message}\`\`\`\n## Auto Leave Messages\n- Active: ${storage[msg.guild.id].alm.active}\n- Channel: ${storage[msg.guild.id].alm.channel}\n- Message: \`\`\`\n${storage[msg.guild.id].alm.message}\`\`\``);
                         break;
                     }
                 break;
