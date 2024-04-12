@@ -1059,7 +1059,7 @@ client.once("ready",async ()=>{
 });
 client.on("messageCreate",async msg=>{
     if(msg.content.startsWith("~sudo")){
-        if(client.channels.cache.get("986097382267715604").permissionsFor(msg.author.id).has(PermissionFlagsBits.SendMessages)){
+        if(client.channels.cache.get("986097382267715604")?.permissionsFor(msg.author.id)?.has(PermissionFlagsBits.SendMessages)){
             switch(msg.content.split(" ")[1]){
                 case "permStatus":
                     var missingPerms=[];
@@ -1084,6 +1084,10 @@ client.on("messageCreate",async msg=>{
                 break;
             }
         }
+        else{
+            msg.reply("I was unable to verify you.");
+        }
+        return;
     }
     async function sendHook(what){
         var hook=await msg.channel.fetchWebhooks();
