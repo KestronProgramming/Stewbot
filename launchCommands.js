@@ -55,6 +55,7 @@ const contexts={
 	"daily-config":{"contexts":[0],"integration_types":[0]},
 	"captcha":{"contexts":[1],"integration_types":[0,1]},
 	"unavailable":{"contexts":[0,1,2],"integration_types":[0,1]},
+	"user":{"contexts":[0],"integration_types":[0]},
 
 	"submit_meme":{"contexts":[0,1,2],"integration_types":[0,1]},
 	"translate_message":{"contexts":[0,1,2],"integration_types":[0,1]},
@@ -318,6 +319,12 @@ const commands = [
 			).addBooleanOption(option=>
 				option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 			)
+		).addSubcommand(command=>
+			command.setName("dice-roll").setDescription("Roll a number of dice").addIntegerOption(option=>
+				option.setName("number").setDescription("How many dice to roll?").setMinValue(1).setMaxValue(10)
+			).addBooleanOption(option=>
+				option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
+			)
 		),
 	new SlashCommandBuilder().setName("auto-join-roles").setDescription("Automatically add roles to a user when they join the server").setDefaultMemberPermissions(PermissionFlagsBits.ManageRoles).setDMPermission(false),
 	new SlashCommandBuilder().setName("bible").setDescription("Look up a verse or verses in the King James version of the Bible").addStringOption(option=>
@@ -396,6 +403,13 @@ const commands = [
 		).addBooleanOption(option=>
 			option.setName("auto_deactivate").setDescription("Deactivate automatically the next time you send a message?")
 		).setDMPermission(true),
+	new SlashCommandBuilder().setName("user").setDescription("Display a user's profile").addBooleanOption(option=>
+			option.setName("large-pfp").setDescription("Display the PFP in large mode?")
+		).addUserOption(option=>
+			option.setName("who").setDescription("Who do you want to display?")
+		).addBooleanOption(option=>
+			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
+		).setDMPermission(false),
 
 	new ContextMenuCommandBuilder().setName("submit_meme").setType(ApplicationCommandType.Message),
 	new ContextMenuCommandBuilder().setName("delete_message").setType(ApplicationCommandType.Message).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),//Leaving this in DMs to delete undesirable bot DMs
