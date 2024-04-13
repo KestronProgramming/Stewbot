@@ -392,6 +392,10 @@ var helpPages=[
                 desc:"Receive a random answer to a question"
             },
             {
+                name:cmds["random dice-roll"],
+                desc:"Roll a number of dice"
+            },
+            {
                 name:cmds.leaderboard,
                 desc:"View one of the leaderboards or rank cards"
             },
@@ -435,6 +439,10 @@ var helpPages=[
             {
                 name:cmds.unavailable,
                 desc:"If you're unavailable, have Stewbot let others know if they try to ping you!"
+            },
+            {
+                name:cmds.user,
+                desc:"Get a user's profile information"
             }
         ]
     }
