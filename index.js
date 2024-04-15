@@ -852,7 +852,11 @@ const defaultGuild={
         "legit":true, //If manually setting the next number, disqualify from the overarching leaderboard
         "reset":true,
         "public":true,
-        "takeTurns":1
+        "takeTurns":1,
+        "failRoleActive":false,
+        "failRole":"",
+        "warnRoleActive":false,
+        "warnRole":""
     },
     "users":{},
     "reactionRoles":[],
@@ -1284,12 +1288,40 @@ client.on("messageCreate",async msg=>{
                             for(let a in storage[msg.guild.id].users){
                                 storage[msg.guild.id].users[a].countTurns=0;
                             }
+                            if(storage[msg.guild.id].counting.failRoleActive&&msg.guild.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageRoles)){
+                                var fr=msg.guild.roles.cache.get(storage[msg.guild.id].counting.failRole);
+                                if(!fr){
+                                    storage[msg.guild.id].counting.failRoleActive=false;
+                                }
+                                else{
+                                    if(msg.guild.members.cache.get(client.user.id).roles.highest.position>fr.rawPosition){
+                                        msg.member.roles.add(fr);
+                                    }
+                                    else{
+                                        storage[msg.guild.id].counting.failRoleActive=false;
+                                    }
+                                }
+                            }
                             save();
                         }
                     }
                     else{
-                        msg.reply(`⚠️ **Warning**\nNope, that's incorrect. You have been warned! Next time this will reset the count. The next number is **${storage[msg.guild.id].counting.nextNum}**.\`\`\`\nNumbers entered must be the last number plus one, (so if the last entered number is 148, the next number is 149).${storage[msg.guild.id].counting.takeTurns>0?` You also need to make sure at least ${storage[msg.guild.id].counting.takeTurns} other ${storage[msg.guild.id].counting.takeTurns===1?"person":"people"} take${storage[msg.guild.id].counting.takeTurns===1?"s":""} a turn before you take another turn.\`\`\``:""}`);
+                        msg.reply(`⚠️ **Warning**\nNope, that's incorrect. You have been warned! Next time this will reset the count. The next number is **${storage[msg.guild.id].counting.nextNum}**.\`\`\`\nNumbers entered must be the last number plus one, (so if the last entered number is 148, the next number is 149).${storage[msg.guild.id].counting.takeTurns>0?` You also need to make sure at least ${storage[msg.guild.id].counting.takeTurns} other ${storage[msg.guild.id].counting.takeTurns===1?"person":"people"} take${storage[msg.guild.id].counting.takeTurns===1?"s":""} a turn before you take another turn.\`\`\``:"```"}`);
                         storage[msg.guild.id].users[msg.author.id].beenCountWarned=true;
+                        if(storage[msg.guild.id].counting.warnRoleActive&&msg.guild.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageRoles)){
+                            var wr=msg.guild.roles.cache.get(storage[msg.guild.id].counting.warnRole);
+                            if(!wr){
+                                storage[msg.guild.id].counting.warnRoleActive=false;
+                            }
+                            else{
+                                if(msg.guild.members.cache.get(client.user.id).roles.highest.position>wr.rawPosition){
+                                    msg.member.roles.add(wr);
+                                }
+                                else{
+                                    storage[msg.guild.id].counting.warnRoleActive=false;
+                                }
+                            }
+                        }
                         save();
                     }
                 }
@@ -1303,11 +1335,39 @@ client.on("messageCreate",async msg=>{
                     for(let a in storage[msg.guild.id].users){
                         storage[msg.guild.id].users[a].countTurns=0;
                     }
+                    if(storage[msg.guild.id].counting.failRoleActive&&msg.guild.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageRoles)){
+                        var fr=msg.guild.roles.cache.get(storage[msg.guild.id].counting.failRole);
+                        if(!fr){
+                            storage[msg.guild.id].counting.failRoleActive=false;
+                        }
+                        else{
+                            if(msg.guild.members.cache.get(client.user.id).roles.highest.position>fr.rawPosition){
+                                msg.member.roles.add(fr);
+                            }
+                            else{
+                                storage[msg.guild.id].counting.failRoleActive=false;
+                            }
+                        }
+                    }
                     save();
                 }
                 else{
-                    msg.reply(`⚠️ **Warning**\nNope, that's incorrect. You have been warned! Next time this will reset the count. The next number is **${storage[msg.guild.id].counting.nextNum}**.\`\`\`\nNumbers entered must be the last number plus one, (so if the last entered number is 148, the next number is 149).${storage[msg.guild.id].counting.takeTurns>0?` You also need to make sure at least ${storage[msg.guild.id].counting.takeTurns} other ${storage[msg.guild.id].counting.takeTurns===1?"person":"people"} take${storage[msg.guild.id].counting.takeTurns===1?"s":""} a turn before you take another turn.\`\`\``:""}`);
+                    msg.reply(`⚠️ **Warning**\nNope, that's incorrect. You have been warned! Next time this will reset the count. The next number is **${storage[msg.guild.id].counting.nextNum}**.\`\`\`\nNumbers entered must be the last number plus one, (so if the last entered number is 148, the next number is 149).${storage[msg.guild.id].counting.takeTurns>0?` You also need to make sure at least ${storage[msg.guild.id].counting.takeTurns} other ${storage[msg.guild.id].counting.takeTurns===1?"person":"people"} take${storage[msg.guild.id].counting.takeTurns===1?"s":""} a turn before you take another turn.\`\`\``:"```"}`);
                     storage[msg.guild.id].users[msg.author.id].beenCountWarned=true;
+                    if(storage[msg.guild.id].counting.warnRoleActive&&msg.guild.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageRoles)){
+                        var wr=msg.guild.roles.cache.get(storage[msg.guild.id].counting.warnRole);
+                        if(!wr){
+                            storage[msg.guild.id].counting.warnRoleActive=false;
+                        }
+                        else{
+                            if(msg.guild.members.cache.get(client.user.id).roles.highest.position>wr.rawPosition){
+                                msg.member.roles.add(wr);
+                            }
+                            else{
+                                storage[msg.guild.id].counting.warnRoleActive=false;
+                            }
+                        }
+                    }
                     save();
                 }
             }
@@ -1822,7 +1882,41 @@ client.on("interactionCreate",async cmd=>{
                     if(cmd.options.getChannel("channel")!==null) storage[cmd.guildId].counting.channel=cmd.options.getChannel("channel").id;
                     if(cmd.options.getBoolean("public")!==null) storage[cmd.guildId].counting.public=cmd.options.getBoolean("public");
                     if(cmd.options.getInteger("posts_between_turns")!==null) storage[cmd.guildId].counting.takeTurns=cmd.options.getInteger("posts_between_turns");
+                    if(cmd.options.getBoolean("apply-a-fail-role")!==null) storage[cmd.guildId].counting.failRoleActive=cmd.options.getBoolean("apply-a-fail-role");
+                    if(cmd.options.getBoolean("apply-a-warn-role")!==null) storage[cmd.guildId].counting.warnRoleActive=cmd.options.getBoolean("apply-a-warn-role");
+                    if(cmd.options.getRole("fail-role")!==null) storage[cmd.guildId].counting.failRole=cmd.options.getRole("fail-role")?.id;
+                    if(cmd.options.getRole("warn-role")!==null) storage[cmd.guildId].counting.warnRole=cmd.options.getRole("warn-role")?.id;
                     var disclaimers=[];
+                    if(storage[cmd.guildId].counting.failRoleActive){
+                        var fr=cmd.guild.roles.cache.get(storage[cmd.guildId].counting.failRole);
+                        if(!fr){
+                            disclaimers.push("I was unable to identify the configured fail role, so fail roles have been turned off.");
+                            storage[cmd.guildId].counting.failRoleActive=false;
+                        }
+                        if(!cmd.guild.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageRoles)){
+                            disclaimers.push("I do not have the MANAGE ROLES permission for this server, so I have turned off the fail roles.");
+                            storage[cmd.guildId].counting.failRoleActive=false;
+                        }
+                        if(cmd.guild.members.cache.get(client.user.id).roles.highest.position<=fr.rawPosition){
+                            disclaimers.push("I do not have permission to manage the specified fail role, so fail roles have been turned off. Make sure that my highest role is dragged above the roles you want me to manage in the role settings.");
+                            storage[cmd.guildId].counting.failRoleActive=false;
+                        }
+                    }
+                    if(storage[cmd.guildId].counting.warnRoleActive){
+                        var wr=cmd.guild.roles.cache.get(storage[cmd.guildId].counting.warnRole);
+                        if(!wr){
+                            disclaimers.push("I was unable to identify the configured warn role, so warn roles have been turned off.");
+                            storage[cmd.guildId].counting.warnRoleActive=false;
+                        }
+                        if(!cmd.guild.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageRoles)){
+                            disclaimers.push("I do not have the MANAGE ROLES permission for this server, so I have turned off the warn roles.");
+                            storage[cmd.guildId].counting.warnRoleActive=false;
+                        }
+                        if(cmd.guild.members.cache.get(client.user.id).roles.highest.position<=wr.rawPosition){
+                            disclaimers.push("I do not have permission to manage the specified warn role, so warn roles have been turned off. Make sure that my highest role is dragged above the roles you want me to manage in the role settings.");
+                            storage[cmd.guildId].counting.warnRoleActive=false;
+                        }
+                    }
                     if(!storage[cmd.guildId].counting.channel){
                         storage[cmd.guildId].counting.active=false;
                         disclaimers.push(`No channel was set for counting to be active in, so counting is disabled currently.`);
