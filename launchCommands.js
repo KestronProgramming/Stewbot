@@ -190,6 +190,14 @@ const commands = [
 			).addIntegerOption(option=>
 				option.setName("posts_between_turns").setDescription("How many posts do you need to wait between turns?").setMinValue(0)
 			).addBooleanOption(option=>
+				option.setName("apply-a-fail-role").setDescription("Should I apply a role to users who fail the count?")
+			).addRoleOption(option=>
+				option.setName("fail-role").setDescription("If fail roles are on, which role should be applied?")
+			).addBooleanOption(option=>
+				option.setName("apply-a-warn-role").setDescription("Should I apply a role to users who are warned?")
+			).addRoleOption(option=>
+				option.setName("warn-role").setDescription("If warn roles are on, which role should be applied?")
+			).addBooleanOption(option=>
 				option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 			)
 		).addSubcommand(command=>
