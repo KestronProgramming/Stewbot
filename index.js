@@ -235,7 +235,7 @@ function checkHoliday(){
     ];
     setDates.forEach(holiday=>{
         if(holiday.days.includes(`${n.getMonth()+1}/${n.getDate()-1}`)){
-            ret="stewbot.gif";
+            ret="main.jpg";
         }
         if(holiday.days.includes(`${n.getMonth()+1}/${n.getDate()}`)){
             ret=holiday.pfp;
@@ -251,7 +251,7 @@ function checkHoliday(){
         ret="easter.jpg";
     }
     if((n.getMonth()===10&&n.getDay()===5&&Math.floor((n.getDate()-1)/7)===3)||n.getMonth()===4&&n.getDay()===2&&(n.getDate()-1)+7>31||n.getMonth()+1===Easter(n.getFullYear()).split("/")[0]&&n.getDate()-1===Easter(n.getFullYear()).split("/")[1]){
-        ret="stewbot.gif";
+        ret="main.jpg";
     }
     if(ret!==""){
         client.user.setAvatar(`./pfps/${ret}`);
@@ -4249,7 +4249,7 @@ client.on("userUpdate",async (userO,user)=>{
     Object.keys(storage).forEach(entry=>{
         if(storage[entry]?.users?.[user.id]?.inServer&&storage[entry].logs.active&&storage[entry].logs.user_change_events){
             var c=client.channels.cache.get(storage[entry].logs.channel);
-            if(c.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
+            if(c?.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
                 var flds=[];
                 if(diffs.includes("avatar")){
                     flds.push({
