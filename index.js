@@ -235,7 +235,7 @@ function checkHoliday(){
     ];
     setDates.forEach(holiday=>{
         if(holiday.days.includes(`${n.getMonth()+1}/${n.getDate()-1}`)){
-            ret="main.jpg";
+            ret="stewbot.gif";
         }
         if(holiday.days.includes(`${n.getMonth()+1}/${n.getDate()}`)){
             ret=holiday.pfp;
@@ -251,7 +251,7 @@ function checkHoliday(){
         ret="easter.jpg";
     }
     if((n.getMonth()===10&&n.getDay()===5&&Math.floor((n.getDate()-1)/7)===3)||n.getMonth()===4&&n.getDay()===2&&(n.getDate()-1)+7>31||n.getMonth()+1===Easter(n.getFullYear()).split("/")[0]&&n.getDate()-1===Easter(n.getFullYear()).split("/")[1]){
-        ret="main.jpg"
+        ret="stewbot.gif";
     }
     if(ret!==""){
         client.user.setAvatar(`./pfps/${ret}`);
@@ -494,7 +494,7 @@ function getAwayCard(embed,user,guild,global){
             }
         };
         if(global){
-            daEmb.description=storage[user].gone.message;
+            daEmb.description=storage[user].gone.message
         }
         else{
             daEmb.description=checkDirty(guild,storage[guild].users[user].gone.message)?checkDirty(guild,storage[guild].users[user].gone.message):storage[guild].users[user].gone.message;
@@ -1102,6 +1102,14 @@ client.on("messageCreate",async msg=>{
         return;
     }
     async function sendHook(what){
+        // TODO: kestronify this code (i.e. I edited it and see if you want to refractor it differently) - WKoA
+        if(typeof what==="string"){
+            what = what.replace(/\@(?=[^\]])/ig,"[@]"); // replace only @'s that are not already escaped
+        }
+        else{
+            what.content=what.content.replace(/\@(?=[^\]])/ig,"[@]");
+        }
+
         var hook=await msg.channel.fetchWebhooks();
         hook=hook.find(h=>h.token);
         if(hook){
@@ -1623,16 +1631,17 @@ client.on("messageCreate",async msg=>{
         save();
     }
     msg.mentions.users.forEach(async mentionedUser=>{
-        if(storage[msg.guild?.id]?.users[mentionedUser.id]?.gone?.active&&mentionedUser.id!==msg.author.id&&msg.channel.permissionsFor(mentionedUser.id).has(PermissionFlagsBits.SendMessages)){
+        if(storage[msg.guild?.id]?.users[mentionedUser.id]?.gone?.active&&(mentionedUser.id!==msg.author.id || msg.author.id === "724416180097384498" /* <- let me ping myself for testing */)&&msg.channel.permissionsFor(mentionedUser.id).has(PermissionFlagsBits.SendMessages)){
             if(storage[msg.guild.id].users[mentionedUser.id].gone.until>new Date()){
                 if(msg.guild.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageWebhooks)){
                     var resp={
-                        "content":`${getAwayCard(false,mentionedUser.id,msg.guild.id,false)}\n\n_Set up using ${cmds.unavailable}_`,
+                        "content":ll(`${getAwayCard(false,mentionedUser.id,msg.guild.id,false)}\n\n_Set up using ${cmds.unavailable}_`.replace(/\@(?=[^\]])/ig,"[@]")), // TODO see if this one worked ig
                         "avatarURL":mentionedUser.displayAvatarURL(),
                         "username":mentionedUser.globalName||mentionedUser.username
                     };
                     var hook=await msg.channel.fetchWebhooks();
                     hook=hook.find(h=>h.token);
+                    // TODO - use the sendHook function here - WKoA
                     if(hook){
                         hook.send(resp);
                     }
@@ -1658,7 +1667,7 @@ client.on("messageCreate",async msg=>{
             if(storage[mentionedUser.id].gone.until>new Date()){
                 if(msg.guild.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageWebhooks)){
                     var resp={
-                        "content":`${getAwayCard(false,mentionedUser.id,msg.guild.id,true)}\n\n_Set up using ${cmds.unavailable}_`,
+                        "content":`${getAwayCard(false,mentionedUser.id,msg.guild.id,true)}\n\n_Set up using ${cmds.unavailable}_`.replace(/\@(?=[^\]])/ig,"[@]"),
                         "avatarURL":mentionedUser.displayAvatarURL(),
                         "username":mentionedUser.globalName||mentionedUser.username
                     };
