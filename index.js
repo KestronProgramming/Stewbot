@@ -1094,6 +1094,10 @@ client.on("messageCreate",async msg=>{
                         break;
                     }
                 break;
+                case "countSet":
+                    storage[msg.guild.id].counting.nextNum=+msg.content.split(" ")[2];
+                    msg.reply(`The next number to enter is **${storage[msg.guild.id].counting.nextNum}**.`);
+                break;
             }
         }
         else{
