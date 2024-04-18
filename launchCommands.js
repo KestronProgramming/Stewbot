@@ -60,7 +60,8 @@ const contexts={
 	"submit_meme":{"contexts":[0,1,2],"integration_types":[0,1]},
 	"translate_message":{"contexts":[0,1,2],"integration_types":[0,1]},
 	"move_message":{"contexts":[0],"integration_types":[0]},
-	"delete_message":{"contexts":[0,1],"integration_types":[0]}
+	"delete_message":{"contexts":[0,1],"integration_types":[0]},
+	"remove_embeds":{"contexts":[0],"integration_types":[0]}
 };
 const commands = [
 	new SlashCommandBuilder().setName("help").setDescription("View the help menu").addBooleanOption(option=>
@@ -422,7 +423,8 @@ const commands = [
 	new ContextMenuCommandBuilder().setName("submit_meme").setType(ApplicationCommandType.Message),
 	new ContextMenuCommandBuilder().setName("delete_message").setType(ApplicationCommandType.Message).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),//Leaving this in DMs to delete undesirable bot DMs
 	new ContextMenuCommandBuilder().setName("translate_message").setType(ApplicationCommandType.Message),
-	new ContextMenuCommandBuilder().setName("move_message").setType(ApplicationCommandType.Message).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages).setDMPermission(false)
+	new ContextMenuCommandBuilder().setName("move_message").setType(ApplicationCommandType.Message).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages).setDMPermission(false),
+	new ContextMenuCommandBuilder().setName("remove_embeds").setType(ApplicationCommandType.Message).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages).setDMPermission(false)
 ]
 .map(command => Object.assign(command.toJSON(),contexts[command.toJSON().name]));
 

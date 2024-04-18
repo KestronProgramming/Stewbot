@@ -1707,7 +1707,7 @@ client.on("messageCreate",async msg=>{
 client.on("interactionCreate",async cmd=>{
     if(cmd.commandName==="secret") return;
     try{
-	    if(!cmd.isButton()&&!cmd.isModalSubmit()&&!cmd.isChannelSelectMenu()&&!cmd.isRoleSelectMenu()&&!cmd.isStringSelectMenu()) await cmd.deferReply({ephemeral:["poll","auto_roles","submit_meme","delete_message","move_message","auto-join-roles","join-roleOption","admin_message","personal_config","timestamp","unavailable"].includes(cmd.commandName)||cmd.options.getBoolean("private")});
+	    if(!cmd.isButton()&&!cmd.isModalSubmit()&&!cmd.isChannelSelectMenu()&&!cmd.isRoleSelectMenu()&&!cmd.isStringSelectMenu()) await cmd.deferReply({ephemeral:["poll","auto_roles","submit_meme","delete_message","move_message","auto-join-roles","join-roleOption","admin_message","personal_config","timestamp","unavailable","remove_embeds"].includes(cmd.commandName)||cmd.options.getBoolean("private")});
     }catch(e){}
     try{
         if(cmd.guildId!==0){
@@ -2854,6 +2854,15 @@ client.on("interactionCreate",async cmd=>{
             }).then(t=>{
                 cmd.followUp(`Attempted to translate${t.text!==cmd.targetMessage.content?`: \`${t.text}\`. If this is incorrect, try using ${cmds.translate}.`:`, but I was unable to. Try using ${cmds.translate}.`}`);
             });
+        break;
+        case 'remove_embeds':
+            if(cmd.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageMessages)){
+                cmd.targetMessage.suppressEmbeds(true);
+                cmd.followUp(`Suppressed embeds`);
+            }
+            else{
+                cmd.followUp(`I don't seem to have the MANAGE_MESSAGES permission, so I can't fulfill this request.`);
+            }
         break;
     }
     //Buttons, Modals, and Select Menus
