@@ -1,6 +1,7 @@
 process.env=require("./env.json");
 var client;
 const translate=require("@vitalets/google-translate-api").translate;
+const rssParser=new require("rss-parser")();
 const crypto = require('crypto');
 const { createCanvas } = require('canvas');
 const { InworldClient, SessionToken, status } = require("@inworld/nodejs-sdk");
@@ -256,6 +257,37 @@ function checkHoliday(){
     if(ret!==""){
         client.user.setAvatar(`./pfps/${ret}`);
     }
+}
+async function checkRSS(){
+    if(!storage.hasOwnProperty("rss")) storage.rss={};
+    Object.keys(storage.rss).forEach(async feed=>{
+        if(feed.channels.length===0){
+            delete storage.rss[feed.hash];
+        }
+        else{
+            var cont=true;
+            var parsed=await rssParser.parseURL(feed.url).catch(e=>{
+                delete storage.rss[feed.hash];
+                cont=false;
+            });
+            if(cont){
+                parsed.items.forEach(item=>{
+                    if(feed.lastSent<new Date(item.isoDate)){
+                        feed.lastSent=new Date(item.isoDate);
+                        feed.channels.forEach(chan=>{
+                            let c=client.channels.cache.get(chan);
+                            if(c===undefined||c===null||!c?.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
+                                feed.channels.splice(feed.channels.indexOf(chan),1);
+                            }
+                            else{
+                                c.send(`New notification from a followed RSS feed\n${item.link}`);
+                            }
+                        });
+                    }
+                });
+            }
+        }
+    });
 }
 var helpPages=[
     {
@@ -1045,7 +1077,6 @@ function notify(urgencyLevel,what){
         break;
     }}catch(e){}
 }
-var logQueue={};
 var uptime=0;
 var statTog=0;
 
@@ -1068,6 +1099,8 @@ client.once("ready",async ()=>{
     },60000*5);
     var now=new Date();
     setTimeout(daily,((now.getHours()>11?11+24-now.getHours():11-now.getHours())*(60000*60))+((60-now.getMinutes())*60000));
+    checkRSS();
+    setInterval(checkRSS,600000);
 });
 client.on("messageCreate",async msg=>{
     if(msg.content.startsWith("~sudo")){
@@ -2786,6 +2819,58 @@ client.on("interactionCreate",async cmd=>{
                 },
                 "url": `https://discord.com/users/949401296404905995`
               }],allowedMentions:{parse:[]}});
+        break;
+        case 'rss':
+            switch(cmd.options.getSubcommand()){
+                case 'check':
+                    var feeds=[];
+                    Object.keys(storage.rss).forEach(feed=>{
+                        if(feed.channels.includes(cmd.options.getChannel("channel").id)){
+                            feeds.push(feed.url);
+                        }
+                    });
+                    cmd.followUp(feeds.length>0?`The RSS feeds being followed for <#${cmd.options.getChannel("channel").id}> include the following:\n${feeds.map(f=>`- ${f}`).join("\n")}`:`There are no feeds followed in <#${cmd.options.getChannel("channel").id}>`);
+                break;
+                case 'follow':
+                    if(!cmd.options.getChannel("channel").permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
+                        cmd.followUp(`I'm not allowed to send messages in <#${cmd.options.getChannel("channel").id}> so this action cannot be completed.`);
+                        break;
+                    }
+                    var hash = crypto.createHash('md5').update(cmd.options.getString("feed")).digest('hex');
+                    if(!storage.rss.hasOwnProperty(hash)){
+                        storage.rss[hash]={
+                            "hash":hash,
+                            "url":cmd.options.getString("feed"),
+                            "channels":[],
+                            "lastSent":new Date()
+                        };
+                    }
+                    storage.rss[hash].channels.push(cmd.options.getChannel("channel").id);
+                    cmd.followUp("I have followed the feed for that channel");
+                    save();
+                break;
+                case 'unfollow':
+                    if(cmd.options.getString("feed").toLowerCase()!=="all"){
+                        var hash = crypto.createHash('md5').update(cmd.options.getString("feed")).digest('hex');
+                        if(storage.rss.hasOwnProperty(hash)&&storage.rss[hash]?.channels.includes(cmd.options.getChannel("channel").id)){
+                            storage.rss.hash.channels.splice(storage.rss.hash.channels.indexOf(cmd.options.getChannel("channel").id),1);
+                            cmd.followUp("I have unfollowed the feed for that channel");
+                        }
+                        else{
+                            cmd.followUp(`That feed is not in my database`);
+                        }
+                    }
+                    else{
+                        Object.keys(storage.rss).forEach(feed=>{
+                            if(feed.channels.includes(cmd.options.getChannel("channel").id)){
+                                feed.channels.splice(feed.channels.indexOf(cmd.options.getChannel("channel").id),1);
+                            }
+                        });
+                        cmd.followUp(`I have unfollowed all feeds for that channel`);
+                    }
+                    save();
+                break;
+            }
         break;
 
         case 'restart':
