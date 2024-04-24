@@ -1,7 +1,8 @@
 process.env=require("./env.json");
 var client;
 const translate=require("@vitalets/google-translate-api").translate;
-const rssParser=new require("rss-parser")();
+const RSSParser=require("rss-parser");
+const rssParser=new RSSParser();
 const crypto = require('crypto');
 const { createCanvas } = require('canvas');
 const { InworldClient, SessionToken, status } = require("@inworld/nodejs-sdk");
