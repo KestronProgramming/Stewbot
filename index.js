@@ -296,23 +296,23 @@ var helpPages=[
         name:"General",
         commands:[
             {
-                name:cmds.help,
+                name:cmds.help.mention,
                 desc:"This help menu"
             },
             {
-                name:cmds.ping,
+                name:cmds.ping.mention,
                 desc:"View uptime stats"
             },
             {
-                name:cmds.links,
+                name:cmds.links.mention,
                 desc:"Every single link you may need for the bot"
             },
             {
-                name:cmds.personal_config,
+                name:cmds.personal_config.mention,
                 desc:"Set some options for your personal interactions with the bot"
             },
             {
-                name:cmds.report_problem,
+                name:cmds.report_problem.mention,
                 desc:"If anything goes wrong with the bot, an error, profanity, exploit, or even just a suggestion, use this command"
             }
         ]
@@ -321,63 +321,63 @@ var helpPages=[
         name:"Administration",
         commands:[
             {
-                name:cmds.filter,
+                name:cmds.filter.mention,
                 desc:"Configure different options for the filter, which will remove configurably blacklisted words"
             },
             {
-                name:cmds.starboard_config,
+                name:cmds.starboard_config.mention,
                 desc:"Configure starboard, which is like a highlights reel of messages with a certain amount of a specific reaction"
             },
             {
-                name:`${cmds.timeout}/${cmds.kick}/${cmds.ban}`,
+                name:`${cmds.timeout.mention}/${cmds.kick.mention}/${cmds.ban.mention}`,
                 desc:"Moderate a user"
             },
             {
-                name:cmds.counting,
+                name:cmds.counting.mention,
                 desc:"Configure counting, so that the bot manages a collaborative count starting at 1"
             },
             {
-                name:cmds.auto_roles,
+                name:cmds.auto_roles.mention,
                 desc:"Configure automatic roles so that users can pick roles from a list and have them automatically applied"
             },
             {
-                name:cmds.ticket,
+                name:cmds.ticket.mention,
                 desc:"Setup a ticket system so that users can communicate directly and privately with moderators"
             },
             {
-                name:`${cmds["auto-join-message"]}/${cmds["auto-leave-message"]}`,
+                name:`${cmds["auto-join-message"].mention}/${cmds["auto-leave-message"].mention}`,
                 desc:"Configure a message to be sent either in a channel or the user's DMs whenever a user joins or leaves"
             },
             {
-                name:cmds.log_config,
+                name:cmds.log_config.mention,
                 desc:"Automatically be notified of different server and user events you may need to know about for moderation purposes"
             },
             {
-                name:cmds.admin_message,
+                name:cmds.admin_message.mention,
                 desc:"Send a message anonymously in the server's name"
             },
             {
-                name:cmds["sticky-roles"],
+                name:cmds["sticky-roles"].mention,
                 desc:"Automatically reapply roles if a user leaves and then rejoins"
             },
             {
-                name:cmds.move_message,
+                name:cmds.move_message.mention,
                 desc:"Move a user's message from one channel to another"
             },
             {
-                name:cmds["auto-join-roles"],
+                name:cmds["auto-join-roles"].mention,
                 desc:"Add one or more roles to every user that joins"
             },
             {
-                name:cmds.general_config,
+                name:cmds.general_config.mention,
                 desc:"Configure options for the whole server such as AI pings or embedding links"
             },
             {
-                name:cmds.levels_config,
+                name:cmds.levels_config.mention,
                 desc:"Configure level-ups and exp for this server"
             },
             {
-                name:cmds["daily-config"],
+                name:cmds["daily-config"].mention,
                 desc:"Configure daily devotions (more to come soon!) for your server"
             }
         ]
@@ -386,55 +386,55 @@ var helpPages=[
         name:"Entertainment",
         commands:[
             {
-                name:cmds["fun dne"],
+                name:cmds.fun.dne.mention,
                 desc:"Posts a picture of a person who never existed using AI"
             },
             {
-                name:cmds["fun rac"],
+                name:cmds.fun.rac.mention,
                 desc:"Play a game of Rows & Columns (use command for further help)"
             },
             {
-                name:cmds["fun wyr"],
+                name:cmds.fun.wyr.mention,
                 desc:"Posts a Would-You-Rather Question"
             },
             {
-                name:cmds["fun joke"],
+                name:cmds.fun.joke.mention,
                 desc:"Posts a joke"
             },
             {
-                name:cmds["fun meme"],
+                name:cmds.fun.meme.mention,
                 desc:"Posts an approved meme"
             },
             {
-                name:cmds.poll,
+                name:cmds.poll.mention,
                 desc:"Helps you to make and run a poll"
             },
             {
-                name:cmds.submit_meme,
+                name:cmds.submit_meme.mention,
                 desc:"Submit a meme to be approved for the bot to post"
             },
             {
-                name:cmds["random rng"],
+                name:cmds.random.rng.mention,
                 desc:"Generate a random number"
             },
             {
-                name:cmds["random coin-flip"],
+                name:cmds.random["coin-flip"].mention,
                 desc:"Flip a number of coins"
             },
             {
-                name:cmds["random 8-ball"],
+                name:cmds.random["8-ball"].mention,
                 desc:"Receive a random answer to a question"
             },
             {
-                name:cmds["random dice-roll"],
+                name:cmds.random["dice-roll"].mention,
                 desc:"Roll a number of dice"
             },
             {
-                name:cmds.leaderboard,
+                name:cmds.leaderboard.mention,
                 desc:"View one of the leaderboards or rank cards"
             },
             {
-                name:cmds.chat,
+                name:cmds.chat.mention,
                 desc:"Use Stewbot's AI from a command, useful for DMs with anyone if you install the bot to your account"
             }
         ]
@@ -443,39 +443,39 @@ var helpPages=[
         name:"Informational",
         commands:[
             {
-                name:cmds.define,
+                name:cmds.define.mention,
                 desc:"Defines a word"
             },
             {
-                name:cmds.translate,
+                name:cmds.translate.mention,
                 desc:"Translates a word or phrase"
             },
             {
-                name:cmds.view_filter,
+                name:cmds.view_filter.mention,
                 desc:"Posts a list of blacklisted words in this server"
             },
             {
-                name:cmds.next_counting_number,
+                name:cmds.next_counting_number.mention,
                 desc:"If counting is active, the next number to post to keep it going"
             },
             {
-                name:cmds.bible,
+                name:cmds.bible.mention,
                 desc:"Look up one or more verses in the King James Bible "
             },
             {
-                name:cmds.embed_message,
+                name:cmds.embed_message.mention,
                 desc:"Embed Discord message links with a command, useful for DMs with anyone if you install the bot to your account"
             },
             {
-                name:cmds.timestamp,
+                name:cmds.timestamp.mention,
                 desc:"Generate a timestamp that will show everyone the same time relevant to their timezone"
             },
             {
-                name:cmds.unavailable,
+                name:cmds.unavailable.mention,
                 desc:"If you're unavailable, have Stewbot let others know if they try to ping you!"
             },
             {
-                name:cmds.user,
+                name:cmds.user.mention,
                 desc:"Get a user's profile information"
             }
         ]
@@ -1654,7 +1654,7 @@ client.on("messageCreate",async msg=>{
                             if(botInServer.permissions.has(PermissionFlagsBits.ManageMessages)){
                                 sendRow.push(new ButtonBuilder().setCustomId("del-"+msg.author.id).setLabel(`Delete the Messages in Question`).setStyle(ButtonStyle.Primary));
                             }
-                            msg.reply({content:`I have detected unusual activity from this account. I have temporarily applied a timeout. To remove this timeout, please use ${cmds.captcha} in a DM with me, or a moderator can remove this timeout manually.\n\nIf a mod wishes to disable this behaviour, designed to protect servers from mass spam, ping, and NSFW hacked or spam accounts, run ${cmds.general_config} and specify to disable Anti Hack Protection.`,components:[new ActionRowBuilder().addComponents(...sendRow)]});
+                            msg.reply({content:`I have detected unusual activity from this account. I have temporarily applied a timeout. To remove this timeout, please use ${cmds.captcha.mention} in a DM with me, or a moderator can remove this timeout manually.\n\nIf a mod wishes to disable this behaviour, designed to protect servers from mass spam, ping, and NSFW hacked or spam accounts, run ${cmds.general_config.mention} and specify to disable Anti Hack Protection.`,components:[new ActionRowBuilder().addComponents(...sendRow)]});
                         }
                     }
                     catch(e){}
@@ -1674,7 +1674,7 @@ client.on("messageCreate",async msg=>{
             if(storage[msg.guild.id].users[mentionedUser.id].gone.until>new Date()){
                 if(msg.guild.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageWebhooks)){
                     var resp={
-                        "content":ll(`${getAwayCard(false,mentionedUser.id,msg.guild.id,false)}\n\n_Set up using ${cmds.unavailable}_`.replace(/\@(?=[^\]])/ig,"[@]")), // TODO see if this one worked ig
+                        "content":ll(`${getAwayCard(false,mentionedUser.id,msg.guild.id,false)}\n\n_Set up using ${cmds.unavailable.mention}_`.replace(/\@(?=[^\]])/ig,"[@]")), // TODO see if this one worked ig
                         "avatarURL":mentionedUser.displayAvatarURL(),
                         "username":mentionedUser.globalName||mentionedUser.username
                     };
@@ -1706,7 +1706,7 @@ client.on("messageCreate",async msg=>{
             if(storage[mentionedUser.id].gone.until>new Date()){
                 if(msg.guild.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageWebhooks)){
                     var resp={
-                        "content":`${getAwayCard(false,mentionedUser.id,msg.guild.id,true)}\n\n_Set up using ${cmds.unavailable}_`.replace(/\@(?=[^\]])/ig,"[@]"),
+                        "content":`${getAwayCard(false,mentionedUser.id,msg.guild.id,true)}\n\n_Set up using ${cmds.unavailable.mention}_`.replace(/\@(?=[^\]])/ig,"[@]"),
                         "avatarURL":mentionedUser.displayAvatarURL(),
                         "username":mentionedUser.globalName||mentionedUser.username
                     };
@@ -1816,11 +1816,11 @@ client.on("interactionCreate",async cmd=>{
             switch(cmd.options.getSubcommand()){
                 case "add":
                     if(storage[cmd.guildId].filter.blacklist.includes(cmd.options.getString("word"))){
-                        cmd.followUp({"ephemeral":true,"content":`The word ||${cmd.options.getString("word")}|| is already in the blacklist.${storage[cmd.guildId].filter.active?"":`To begin filtering in this server, use ${cmds['filter config']}.`}`});
+                        cmd.followUp({"ephemeral":true,"content":`The word ||${cmd.options.getString("word")}|| is already in the blacklist.${storage[cmd.guildId].filter.active?"":`To begin filtering in this server, use ${cmds.filter.config.mention}.`}`});
                     }
                     else{
                         storage[cmd.guildId].filter.blacklist.push(cmd.options.getString("word"));
-                        cmd.followUp(`Added ||${cmd.options.getString("word")}|| to the filter for this server.${storage[cmd.guildId].filter.active?"":`\n\nThe filter for this server is currently disabled. To enable it, use ${cmds['filter config']}.`}`);
+                        cmd.followUp(`Added ||${cmd.options.getString("word")}|| to the filter for this server.${storage[cmd.guildId].filter.active?"":`\n\nThe filter for this server is currently disabled. To enable it, use ${cmds.filter.config.mention}.`}`);
                         save();
                     }
                 break;
@@ -1831,7 +1831,7 @@ client.on("interactionCreate",async cmd=>{
                         save();
                     }
                     else{
-                        cmd.followUp(`I'm sorry, but I don't appear to have that word in my blacklist. Are you sure you're spelling it right? You can use ${cmds.view_filter} to see all filtered words.`);
+                        cmd.followUp(`I'm sorry, but I don't appear to have that word in my blacklist. Are you sure you're spelling it right? You can use ${cmds.view_filter.mention} to see all filtered words.`);
                     }
                 break;
                 case "config":
@@ -1876,7 +1876,7 @@ client.on("interactionCreate",async cmd=>{
                 cmd.followUp({"content":`**Warning!** There is no guarantee what kinds of words may be in the blacklist. There is a chance it could be heavily dirty or offensive. To continue, press the button below.`,"components":[new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('view_filter').setLabel('DM me the blacklist').setStyle(ButtonStyle.Danger))]});
             }
             else{
-                cmd.followUp(`This server doesn't have any words blacklisted at the moment. To add some, you can use ${cmds['filter add']}.`);
+                cmd.followUp(`This server doesn't have any words blacklisted at the moment. To add some, you can use ${cmds.filter.add.mention}.`);
             }
         break;
         case 'starboard_config':
@@ -2006,7 +2006,7 @@ client.on("interactionCreate",async cmd=>{
             }
         break;
         case 'next_counting_number':
-            cmd.followUp(storage[cmd.guildId].counting.active?`The next number to enter ${cmd.channel.id!==storage[cmd.guildId].counting.channel?`in <#${storage[cmd.guildId].counting.channel}> `:""}is \`${storage[cmd.guildId].counting.nextNum}\`.`:`Counting isn't active in this server! Use ${cmds['counting config']} to set it up.`);
+            cmd.followUp(storage[cmd.guildId].counting.active?`The next number to enter ${cmd.channel.id!==storage[cmd.guildId].counting.channel?`in <#${storage[cmd.guildId].counting.channel}> `:""}is \`${storage[cmd.guildId].counting.nextNum}\`.`:`Counting isn't active in this server! Use ${cmds.filter.config.mention} to set it up.`);
         break;
         case 'fun':
             switch(cmd.options.getSubcommand()){
@@ -2143,7 +2143,7 @@ client.on("interactionCreate",async cmd=>{
                     cmd.followUp({content:`I have been asked not to translate that by this server`,ephemeral:true});
                     return;
                 }
-                cmd.followUp(`Attempted to translate${t.text!==cmd.options.getString("what")?`: \`${t.text}\`. If this is incorrect, try using ${cmds.translate} again and specify more.`:`, but I was unable to. Try using ${cmds.translate} again and specify more.`}`);
+                cmd.followUp(`Attempted to translate${t.text!==cmd.options.getString("what")?`: \`${t.text}\`. If this is incorrect, try using ${cmds.translate.mention} again and specify more.`:`, but I was unable to. Try using ${cmds.translate.mention} again and specify more.`}`);
             });
         break;
         case 'ticket':
@@ -2240,7 +2240,7 @@ client.on("interactionCreate",async cmd=>{
         break;
         case 'timeout':
             if(cmd.options.getUser("target").id===client.id){
-                cmd.followUp(`I cannot timeout myself. I apologize for any inconveniences I may have caused. You can use ${cmds.report_problem} if there's something that needs improvement.`);
+                cmd.followUp(`I cannot timeout myself. I apologize for any inconveniences I may have caused. You can use ${cmds.report_problem.mention} if there's something that needs improvement.`);
                 break;
             }
             if(cmd.user.id===cmd.options.getUser("target").id){
@@ -2252,7 +2252,7 @@ client.on("interactionCreate",async cmd=>{
         break;
         case 'ban':
             if(cmd.options.getUser("target").id===client.id){
-                cmd.followUp(`I cannot ban myself. I apologize for any inconveniences I may have caused. You can use ${cmds.report_problem} if there's something that needs improvement.`);
+                cmd.followUp(`I cannot ban myself. I apologize for any inconveniences I may have caused. You can use ${cmds.report_problem.mention} if there's something that needs improvement.`);
                 break;
             }
             if(cmd.user.id===cmd.options.getUser("target").id){
@@ -2367,7 +2367,7 @@ client.on("interactionCreate",async cmd=>{
         break;
         case 'rank':
             if(!storage[cmd.guildId].levels.active){
-                cmd.followUp(`This server doesn't use level ups at the moment. It can be configured using ${cmds.levels_config}.`);
+                cmd.followUp(`This server doesn't use level ups at the moment. It can be configured using ${cmds.levels_config.mention}.`);
                 return;
             }
             var usr=cmd.options.getUser("target")?.id||cmd.user.id;
@@ -2419,7 +2419,7 @@ client.on("interactionCreate",async cmd=>{
             switch(cmd.options.getString("which")){
                 case "levels":
                     if(!storage[cmd.guildId].levels.active){
-                        cmd.followUp(`This server doesn't use level ups at the moment. It can be configured using ${cmds.levels_config}.`);
+                        cmd.followUp(`This server doesn't use level ups at the moment. It can be configured using ${cmds.levels_config.mention}.`);
                         return;
                     }
                     if(cmd.options.getUser("who")?.id){
@@ -2482,7 +2482,7 @@ client.on("interactionCreate",async cmd=>{
                 break;
                 case "starboard":
                     if(!storage[cmd.guildId].starboard.active){
-                        cmd.followUp(`This server doesn't use starboard at the moment. It can be configured using ${cmds.starboard_config}.`);
+                        cmd.followUp(`This server doesn't use starboard at the moment. It can be configured using ${cmds.starboard_config.mention}.`);
                         return;
                     }
                     var searchId=cmd.options.getUser("who")?.id||cmd.user.id;
@@ -2536,7 +2536,7 @@ client.on("interactionCreate",async cmd=>{
                 break;
                 case "cleanliness":
                     if(!storage[cmd.guildId].filter.active){
-                        cmd.followUp(`This server doesn't use the at the moment. It can be configured using ${cmds["filter config"]}.`);
+                        cmd.followUp(`This server doesn't use the at the moment. It can be configured using ${cmds.filter.config.mention}.`);
                         return;
                     }
                     if(cmd.options.getUser("who")?.id){
@@ -2719,7 +2719,7 @@ client.on("interactionCreate",async cmd=>{
                 cmd.followUp({content:`<t:${Math.round((new Date().setSeconds(0))/1000)}:t>`,components:presets.timestamp});
             }
             else{
-                cmd.followUp(`This command needs you to set your timezone first! Run ${cmds.personal_config} and specify \`configure_timezone\` to get started,`);
+                cmd.followUp(`This command needs you to set your timezone first! Run ${cmds.personal_config.mention} and specify \`configure_timezone\` to get started,`);
             }
         break;
         case 'captcha':
@@ -2950,7 +2950,7 @@ client.on("interactionCreate",async cmd=>{
             translate(cmd.targetMessage.content,{
                 to:cmd.locale.slice(0,2)
             }).then(t=>{
-                cmd.followUp(`Attempted to translate${t.text!==cmd.targetMessage.content?`: \`${t.text}\`. If this is incorrect, try using ${cmds.translate}.`:`, but I was unable to. Try using ${cmds.translate}.`}`);
+                cmd.followUp(`Attempted to translate${t.text!==cmd.targetMessage.content?`: \`${t.text}\`. If this is incorrect, try using ${cmds.translate.mention}.`:`, but I was unable to. Try using ${cmds.translate.mention}.`}`);
             });
         break;
         case 'remove_embeds':
