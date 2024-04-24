@@ -16,53 +16,65 @@ Integration Types
 0: Only as a server command
 1: Only as a user command
 */
-const contexts={
-	"help":{"contexts":[0,1,2],"integration_types":[0,1]},
-	"ping":{"contexts":[0,1,2],"integration_types":[0,1]},
-	"filter":{"contexts":[0],"integration_types":[0]},
-	"view_filter":{"contexts":[0],"integration_types":[0]},
-	"starboard_config":{"contexts":[0],"integration_types":[0]},
-	"fun":{"contexts":[0,1,2],"integration_types":[0,1]},
-	"kick":{"contexts":[0],"integration_types":[0]},
-	"ban":{"contexts":[0],"integration_types":[0]},
-	"timeout":{"contexts":[0],"integration_types":[0]},
-	"translate":{"contexts":[0,1,2],"integration_types":[0,1]},
-	"define":{"contexts":[0,1,2],"integration_types":[0,1]},
-	"counting":{"contexts":[0],"integration_types":[0]},
-	"next_counting_number":{"contexts":[0],"integration_types":[0]},
-	"general_config":{"contexts":[0],"integration_types":[0]},
-	"personal_config":{"contexts":[0,1,2],"integration_types":[0,1]},
-	"poll":{"contexts":[0],"integration_types":[0]},
-	"ticket":{"contexts":[0],"integration_types":[0]},
-	"auto-join-message":{"contexts":[0],"integration_types":[0]},
-	"auto-leave-message":{"contexts":[0],"integration_types":[0]},
-	"auto_roles":{"contexts":[0],"integration_types":[0]},
-	"report_problem":{"contexts":[0,1,2],"integration_types":[0,1]},
-	"log_config":{"contexts":[0],"integration_types":[0]},
-	"admin_message":{"contexts":[0],"integration_types":[0]},
-	"sticky-roles":{"contexts":[0],"integration_types":[0]},
-	"random":{"contexts":[0,1,2],"integration_types":[0,1]},
-	"auto-join-roles":{"contexts":[0],"integration_types":[0]},
-	"bible":{"contexts":[0,1,2],"integration_types":[0,1]},
-	"levels_config":{"contexts":[0],"integration_types":[0]},
-	"leaderboard":{"contexts":[0,1,2],"integration_types":[0,1]},
-	"rank":{"contexts":[0],"integration_types":[0]},
-	"links":{"contexts":[0,1,2],"integration_types":[0,1]},
-	"chat":{"contexts":[0,1,2],"integration_types":[0,1]},
-	"embed_message":{"contexts":[0,1,2],"integration_types":[0,1]},
+/*
+categories=[//For auto generated help pages
+	"General Bot Usage",//0
+	"Reference",//1
+	"Multiplayer",//2
+	"Supporting Command",//3
+	"Entertainment",//4
+	"Administration",//5
+	"Configuration"//6
+];*/
+const extraInfo={
+	//Slash commands
+	"help":{"contexts":[0,1,2],"integration_types":[0,1],"cat":0},
+	"ping":{"contexts":[0,1,2],"integration_types":[0,1],"cat":0},
+	"filter":{"contexts":[0],"integration_types":[0],"cat":6},
+	"view_filter":{"contexts":[0],"integration_types":[0],"cat":3},
+	"starboard_config":{"contexts":[0],"integration_types":[0],"cat":6},
+	"fun":{"contexts":[0,1,2],"integration_types":[0,1],"cat":4},
+	"kick":{"contexts":[0],"integration_types":[0],"cat":5},
+	"ban":{"contexts":[0],"integration_types":[0],"cat":5},
+	"timeout":{"contexts":[0],"integration_types":[0],"cat":5},
+	"translate":{"contexts":[0,1,2],"integration_types":[0,1],"cat":1},
+	"define":{"contexts":[0,1,2],"integration_types":[0,1],"cat":1},
+	"counting":{"contexts":[0],"integration_types":[0],"cat":6},
+	"next_counting_number":{"contexts":[0],"integration_types":[0],"cat":3},
+	"general_config":{"contexts":[0],"integration_types":[0],"cat":6},
+	"personal_config":{"contexts":[0,1,2],"integration_types":[0,1],"cat":6},
+	"poll":{"contexts":[0],"integration_types":[0],"cat":2},
+	"ticket":{"contexts":[0],"integration_types":[0],"cat":5},
+	"auto-join-message":{"contexts":[0],"integration_types":[0],"cat":6},
+	"auto-leave-message":{"contexts":[0],"integration_types":[0],"cat":6},
+	"auto_roles":{"contexts":[0],"integration_types":[0],"cat":5},
+	"report_problem":{"contexts":[0,1,2],"integration_types":[0,1],"cat":0},
+	"log_config":{"contexts":[0],"integration_types":[0],"cat":6},
+	"admin_message":{"contexts":[0],"integration_types":[0],"cat":5},
+	"sticky-roles":{"contexts":[0],"integration_types":[0],"cat":6},
+	"random":{"contexts":[0,1,2],"integration_types":[0,1],"cat":4},
+	"auto-join-roles":{"contexts":[0],"integration_types":[0],"cat":6},
+	"bible":{"contexts":[0,1,2],"integration_types":[0,1],"cat":1},
+	"levels_config":{"contexts":[0],"integration_types":[0],"cat":6},
+	"leaderboard":{"contexts":[0,1,2],"integration_types":[0,1],"cat":2},
+	"rank":{"contexts":[0],"integration_types":[0],"cat":2},
+	"links":{"contexts":[0,1,2],"integration_types":[0,1],"cat":0},
+	"chat":{"contexts":[0,1,2],"integration_types":[0,1],"cat":4},
+	"embed_message":{"contexts":[0,1,2],"integration_types":[0,1],"cat":1},
 	"secret":{"contexts":[0,1,2],"integration_types":[0,1]},
-	"timestamp":{"contexts":[0,1,2],"integration_types":[0,1]},
-	"daily-config":{"contexts":[0],"integration_types":[0]},
+	"timestamp":{"contexts":[0,1,2],"integration_types":[0,1],"cat":1},
+	"daily-config":{"contexts":[0],"integration_types":[0],"cat":6},
 	"captcha":{"contexts":[1],"integration_types":[0,1]},
-	"unavailable":{"contexts":[0,1,2],"integration_types":[0,1]},
-	"user":{"contexts":[0],"integration_types":[0]},
-	"rss":{"contexts":[0],"integration_types":[0]},
+	"unavailable":{"contexts":[0,1,2],"integration_types":[0,1],"cat":2},
+	"user":{"contexts":[0],"integration_types":[0],"cat":1},
+	"rss":{"contexts":[0],"integration_types":[0],"cat":6},
 
-	"submit_meme":{"contexts":[0,1,2],"integration_types":[0,1]},
-	"translate_message":{"contexts":[0,1,2],"integration_types":[0,1]},
-	"move_message":{"contexts":[0],"integration_types":[0]},
-	"delete_message":{"contexts":[0,1],"integration_types":[0]},
-	"remove_embeds":{"contexts":[0],"integration_types":[0]}
+	//Context Menu Commands
+	"submit_meme":{"contexts":[0,1,2],"integration_types":[0,1],"cat":2,"desc":"Submit a meme to the Kestron moderators for verification to show up in `/fun meme`"},
+	"translate_message":{"contexts":[0,1,2],"integration_types":[0,1],"cat":1,"desc":"Attempt to autodetect the language of a message and translate it"},
+	"move_message":{"contexts":[0],"integration_types":[0],"cat":5,"desc":"Move a message from one channel into another"},
+	"delete_message":{"contexts":[0,1],"integration_types":[0],"cat":5,"desc":"Delete a message using Stewbot; can be used to delete Stewbot DMs"},
+	"remove_embeds":{"contexts":[0],"integration_types":[0],"cat":5,"desc":"Remove embeds from a message"}
 };
 const commands = [
 	new SlashCommandBuilder().setName("help").setDescription("View the help menu").addBooleanOption(option=>
@@ -450,17 +462,35 @@ const commands = [
 	new ContextMenuCommandBuilder().setName("move_message").setType(ApplicationCommandType.Message).setDMPermission(false),
 	new ContextMenuCommandBuilder().setName("remove_embeds").setType(ApplicationCommandType.Message).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages).setDMPermission(false)
 ]
-.map(command => Object.assign(command.toJSON(),contexts[command.toJSON().name]));
-
+.map(command => Object.assign(command.toJSON(),extraInfo[command.toJSON().name]));
 const rest = new REST({ version: '9' }).setToken(process.env.token);
 var comms={};
 rest.put(Routes.applicationCommands(process.env.clientId),{body:commands}).then(d=>{
+	fs.writeFileSync("./autogentest.json",JSON.stringify(d));
 	d.forEach(c=>{
-		comms[c.name]=`</${c.name}:${c.id}>`;
+		comms[c.name]={
+			mention:`</${c.name}:${c.id}>`,
+			id:c.id,
+			name:c.name,
+			description:c.description,
+			contexts:c.contexts,
+			integration_types:c.integration_types,
+			type:c.type,
+			default_member_permissions:c.default_member_permissions
+		};
 		if(c.hasOwnProperty("options")){
 			c.options.forEach(o=>{
 				if(o.type===1){
-					comms[`${c.name} ${o.name}`]=`</${c.name} ${o.name}:${c.id}>`
+					comms[c.name][o.name]={
+						mention:`</${c.name} ${o.name}:${c.id}>`,
+						id:c.id,
+						name:o.name,
+						description:o.description,
+						contexts:c.contexts,
+						integration_types:c.integration_types,
+						type:o.type,
+						default_member_permissions:c.default_member_permissions
+					};
 				}
 			});
 		}
