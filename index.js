@@ -2826,7 +2826,7 @@ client.on("interactionCreate",async cmd=>{
                 cmd.followUp("I do not have the MANAGE_WEBHOOKS permission, so I cannot move this message.").
                 break;
             }
-            if(cmd.member.permissions.has(PermissionFlagsBits.ManageMessages)){
+            if(cmd.member.permissions.has(PermissionFlagsBits.ManageMessages)||cmd.user.id===cmd.targetMessage.author.id){
                 cmd.followUp({"content":`Where do you want to move message \`${cmd.targetMessage.id}\` by **${cmd.targetMessage.author.username}**?`,"ephemeral":true,"components":[presets.moveMessage]});
             }
             else{
