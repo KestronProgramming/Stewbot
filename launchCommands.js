@@ -56,6 +56,7 @@ const contexts={
 	"captcha":{"contexts":[1],"integration_types":[0,1]},
 	"unavailable":{"contexts":[0,1,2],"integration_types":[0,1]},
 	"user":{"contexts":[0],"integration_types":[0]},
+	"rss":{"contexts":[0],"integration_types":[0]},
 
 	"submit_meme":{"contexts":[0,1,2],"integration_types":[0,1]},
 	"translate_message":{"contexts":[0,1,2],"integration_types":[0,1]},
@@ -419,6 +420,29 @@ const commands = [
 		).addBooleanOption(option=>
 			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 		).setDMPermission(false),
+	new SlashCommandBuilder().setName("rss").setDescription("Commands relating to RSS feeds").addSubcommand(command=>
+			command.setName("follow").setDescription("Follow an RSS feed").addChannelOption(option=>
+				option.setName("channel").setDescription("The channel to follow this RSS feed in").setRequired(true)
+			).addStringOption(option=>
+				option.setName("feed").setDescription("The feed to follow").setRequired(true)
+			).addBooleanOption(option=>
+				option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
+			)
+		).addSubcommand(command=>
+			command.setName("unfollow").setDescription("Unfollow an RSS feed").addChannelOption(option=>
+				option.setName("channel").setDescription("The channel to unfollow this RSS feed from").setRequired(true)
+			).addStringOption(option=>
+				option.setName("feed").setDescription("The feed to unfollow (Type 'all' to unfollow all)").setRequired(true)
+			).addBooleanOption(option=>
+				option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
+			)
+		).addSubcommand(command=>
+			command.setName("check").setDescription("Check the RSS feeds a channel follows").addChannelOption(option=>
+				option.setName("channel").setDescription("The channel to check RSS feeds for").setRequired(true)
+			).addBooleanOption(option=>
+				option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
+			)
+		).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
 
 	new ContextMenuCommandBuilder().setName("submit_meme").setType(ApplicationCommandType.Message),
 	new ContextMenuCommandBuilder().setName("delete_message").setType(ApplicationCommandType.Message).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),//Leaving this in DMs to delete undesirable bot DMs
