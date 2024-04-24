@@ -2826,7 +2826,12 @@ client.on("interactionCreate",async cmd=>{
                 cmd.followUp("I do not have the MANAGE_WEBHOOKS permission, so I cannot move this message.").
                 break;
             }
-            cmd.followUp({"content":`Where do you want to move message \`${cmd.targetMessage.id}\` by **${cmd.targetMessage.author.username}**?`,"ephemeral":true,"components":[presets.moveMessage]});
+            if(cmd.member.permissions.has(PermissionFlagsBits.ManageMessages)){
+                cmd.followUp({"content":`Where do you want to move message \`${cmd.targetMessage.id}\` by **${cmd.targetMessage.author.username}**?`,"ephemeral":true,"components":[presets.moveMessage]});
+            }
+            else{
+                cmd.followUp(`To use this command, you need to either be the one to have sent the message, or be a moderator with the MANAGE MESSAGES permission.`);
+            }
         break;
         case 'submit_meme':
             if(cmd.targetMessage.attachments.size===0){
@@ -3240,7 +3245,7 @@ client.on("interactionCreate",async cmd=>{
             for(a of msg.attachments){
                 var dots=a[1].url.split("?")[0].split(".");
                 dots=dots[dots.length-1];
-                await fetch(a[1].url.split("?")[0]).then(d=>d.arrayBuffer()).then(d=>{
+                await fetch(a[1].url).then(d=>d.arrayBuffer()).then(d=>{
                     fs.writeFileSync(`./tempMove/${p}.${dots}`,Buffer.from(d));
                 });
                 p++;
@@ -4309,7 +4314,7 @@ client.on("guildMemberUpdate",async (memberO,member)=>{
         });
         if(diffs.length>0){
             var c=client.channels.cache.get(storage[member.guild.id].logs.channel);
-            if(c.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
+            if(c?.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
                 var flds=[];
                 if(diffs.includes("avatar")){
                     flds.push({
