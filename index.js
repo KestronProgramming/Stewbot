@@ -262,6 +262,7 @@ function checkHoliday(){
 async function checkRSS(){
     if(!storage.hasOwnProperty("rss")) storage.rss={};
     Object.keys(storage.rss).forEach(async feed=>{
+        feed=storage.rss[feed];
         if(feed.channels.length===0){
             delete storage.rss[feed.hash];
         }
@@ -2826,6 +2827,7 @@ client.on("interactionCreate",async cmd=>{
                 case 'check':
                     var feeds=[];
                     Object.keys(storage.rss).forEach(feed=>{
+                        feed=storage.rss[feed];
                         if(feed.channels.includes(cmd.options.getChannel("channel").id)){
                             feeds.push(feed.url);
                         }
@@ -2863,6 +2865,7 @@ client.on("interactionCreate",async cmd=>{
                     }
                     else{
                         Object.keys(storage.rss).forEach(feed=>{
+                            feed=storage.rss[feed];
                             if(feed.channels.includes(cmd.options.getChannel("channel").id)){
                                 feed.channels.splice(feed.channels.indexOf(cmd.options.getChannel("channel").id),1);
                             }
