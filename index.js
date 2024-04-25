@@ -2708,7 +2708,7 @@ client.on("interactionCreate",async cmd=>{
             sendMessage(cmd,true,true);
         break;
         case 'embed_message':
-            if(cmd.options.getString("link").toLowerCase()==="primed"){
+            if(cmd.options.getString("link").toLowerCase()==="primed"&&storage[cmd.user.id].hasOwnProperty("primedEmbed")){
                 var primer=getPrimedEmbed(cmd.user.id,cmd.guild?.id);
                 cmd.followUp({"content":`Embedded primed message. Use the context menu command \`/prime_embed\` and type \`PRIMED\` into ${cmds.embed_message.mention} to do the same.`,embeds:[primer],files:primer.title==="Blocked"?[]:storage[cmd.user.id].primedEmbed.attachmentURLs});
             }
