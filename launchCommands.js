@@ -73,8 +73,9 @@ const extraInfo={
 	"submit_meme":{"contexts":[0,1,2],"integration_types":[0,1],"cat":2,"desc":"Submit a meme to the Kestron moderators for verification to show up in `/fun meme`"},
 	"translate_message":{"contexts":[0,1,2],"integration_types":[0,1],"cat":1,"desc":"Attempt to autodetect the language of a message and translate it"},
 	"move_message":{"contexts":[0],"integration_types":[0],"cat":5,"desc":"Move a message from one channel into another"},
-	"delete_message":{"contexts":[0,1],"integration_types":[0],"cat":5,"desc":"Delete a message using Stewbot; can be used to delete Stewbot DMs"},
-	"remove_embeds":{"contexts":[0],"integration_types":[0],"cat":5,"desc":"Remove embeds from a message"}
+	//"delete_message":{"contexts":[0,1],"integration_types":[0],"cat":5,"desc":"Delete a message using Stewbot; can be used to delete Stewbot DMs"},
+	"remove_embeds":{"contexts":[0],"integration_types":[0],"cat":5,"desc":"Remove embeds from a message"},
+	"prime_embed":{"contexts":[0,1,2],"integration_types":[0,1],"cat":1,"desc":"Get a message ready to be embedded using /embed_message"}
 };
 const commands = [
 	new SlashCommandBuilder().setName("help").setDescription("View the help menu").addBooleanOption(option=>
@@ -397,7 +398,7 @@ const commands = [
 			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 		),
 	new SlashCommandBuilder().setName("embed_message").setDescription("Embed a message link from another channel or server").addStringOption(option=>
-			option.setName("link").setDescription("The message link").setRequired(true)
+			option.setName("link").setDescription("The message link, or PRIMED if you used the /prime_embed context menu command").setRequired(true)
 		),
 
 	new SlashCommandBuilder().setName("secret").setDescription("It's a secret to everybody").addStringOption(option=>
@@ -457,16 +458,16 @@ const commands = [
 		).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
 
 	new ContextMenuCommandBuilder().setName("submit_meme").setType(ApplicationCommandType.Message),
-	new ContextMenuCommandBuilder().setName("delete_message").setType(ApplicationCommandType.Message).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),//Leaving this in DMs to delete undesirable bot DMs
+	//new ContextMenuCommandBuilder().setName("delete_message").setType(ApplicationCommandType.Message).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),//Leaving this in DMs to delete undesirable bot DMs
 	new ContextMenuCommandBuilder().setName("translate_message").setType(ApplicationCommandType.Message),
 	new ContextMenuCommandBuilder().setName("move_message").setType(ApplicationCommandType.Message).setDMPermission(false),
-	new ContextMenuCommandBuilder().setName("remove_embeds").setType(ApplicationCommandType.Message).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages).setDMPermission(false)
+	new ContextMenuCommandBuilder().setName("remove_embeds").setType(ApplicationCommandType.Message).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages).setDMPermission(false),
+	new ContextMenuCommandBuilder().setName("prime_embed").setType(ApplicationCommandType.Message)
 ]
 .map(command => Object.assign(command.toJSON(),extraInfo[command.toJSON().name]));
 const rest = new REST({ version: '9' }).setToken(process.env.token);
 var comms={};
 rest.put(Routes.applicationCommands(process.env.clientId),{body:commands}).then(d=>{
-	fs.writeFileSync("./autogentest.json",JSON.stringify(d));
 	d.forEach(c=>{
 		comms[c.name]={
 			mention:`</${c.name}:${c.id}>`,
@@ -496,5 +497,5 @@ rest.put(Routes.applicationCommands(process.env.clientId),{body:commands}).then(
 		}
 	});
 	fs.writeFileSync("./commands.json",JSON.stringify(comms));
-	console.log("Updated commands and wrote command mentions to ./commands.json");
+	console.log("Updated commands on Discord and wrote commands to ./commands.json");
 }).catch(console.error);
