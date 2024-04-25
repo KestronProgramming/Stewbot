@@ -945,6 +945,24 @@ const defaultUser={
         "message":"I'm not available right now",
         "until":0,
         "autoOff":false
+    },
+    "primedEmbed":{
+        "content":"",
+        "attachmentURLs":[],
+        "server":{
+            "id":"",
+            "name":"",
+            "channelId":"",
+            "channelName":"",
+            "icon":""
+        },
+        "author":{
+            "icon":"",
+            "name":"",
+            "id":""
+        },
+        "timestamp":"",
+        "id":""
     }
 };
 const inps={
@@ -1059,6 +1077,32 @@ function getStarMsg(msg){
         `It's always a good day when @ posts`
     ];
     return `**${msgs[Math.floor(Math.random()*msgs.length)].replaceAll("@",msg.author?.globalName||msg.author?.username||"this person")}**`;
+}
+function getPrimedEmbed(userId,guildIn){
+    var mes=storage[userId].primedEmbed;
+    if(checkDirty(guildIn,mes.content)||checkDirty(guildIn,mes.author.name)||checkDirty(guildIn,mes.server.name)||checkDirty(guildIn,mes.server.channelName)){
+        return {
+            "type": "rich",
+            "title": `Blocked`,
+            "description": `I cannot embed that message due to this server's filter.`,
+            "color": 0xff0000
+          };
+    }
+    return new EmbedBuilder()
+        .setColor("#006400")
+        .setTitle("(Jump to message)")
+        .setURL(`https://discord.com/channels/${mes.server.id}/${mes.server.channelId}/${mes.id}`)
+        .setAuthor({
+            name: mes.author.name,
+            iconURL: "" + mes.author.icon,
+            url: "https://discord.com/users/" + mes.author.id
+        })
+        .setDescription(mes.content||null)
+        .setTimestamp(new Date(mes.timestamp))
+        .setFooter({
+            text: mes.server.name + " / " + mes.server.channelName,
+            iconURL: mes.server.icon
+        });
 }
 
 var ints=Object.keys(GatewayIntentBits).map(a=>GatewayIntentBits[a]);
@@ -1746,7 +1790,7 @@ client.on("messageCreate",async msg=>{
 client.on("interactionCreate",async cmd=>{
     if(cmd.commandName==="secret") return;
     try{
-	    if(!cmd.isButton()&&!cmd.isModalSubmit()&&!cmd.isChannelSelectMenu()&&!cmd.isRoleSelectMenu()&&!cmd.isStringSelectMenu()) await cmd.deferReply({ephemeral:["poll","auto_roles","submit_meme","delete_message","move_message","auto-join-roles","join-roleOption","admin_message","personal_config","timestamp","unavailable","remove_embeds"].includes(cmd.commandName)||cmd.options.getBoolean("private")});
+	    if(!cmd.isButton()&&!cmd.isModalSubmit()&&!cmd.isChannelSelectMenu()&&!cmd.isRoleSelectMenu()&&!cmd.isStringSelectMenu()) await cmd.deferReply({ephemeral:["poll","auto_roles","submit_meme","delete_message","move_message","auto-join-roles","join-roleOption","admin_message","personal_config","timestamp","unavailable","remove_embeds","prime_embed"].includes(cmd.commandName)||cmd.options.getBoolean("private")});
     }catch(e){}
     try{
         if(cmd.guildId!==0){
@@ -2664,54 +2708,60 @@ client.on("interactionCreate",async cmd=>{
             sendMessage(cmd,true,true);
         break;
         case 'embed_message':
-            try{
-                let slashes=cmd.options.getString("link").split("channels/")[1].split("/");
-                let embs=[];
+            if(cmd.options.getString("link").toLowerCase()==="primed"){
+                var primer=getPrimedEmbed(cmd.user.id,cmd.guild?.id);
+                cmd.followUp({"content":`Embedded primed message. Use the context menu command \`/prime_embed\` and type \`PRIMED\` into ${cmds.embed_message.mention} to do the same.`,embeds:[primer],files:primer.title==="Blocked"?[]:storage[cmd.user.id].primedEmbed.attachmentURLs});
+            }
+            else{
                 try{
-                    var channelLinked=await client.channels.cache.get(slashes[slashes.length-2]);
-                    var mes=await channelLinked.messages.fetch(slashes[slashes.length-1]);
-                    if(checkDirty(cmd.guild?.id,mes.content)||checkDirty(cmd.guild?.id,mes.author.nickname||mes.author.globalName||mes.author.username)||checkDirty(cmd.guild?.id,mes.guild.name)||checkDirty(cmd.guild?.id,mes.channel.name)){
-                        cmd.followUp(`I'm sorry, that message is blocked by this server's filter.`);
-                        break;
-                    }
-                    let messEmbed = new EmbedBuilder()
-                        .setColor("#006400")
-                        .setTitle("(Jump to message)")
-                        .setURL(cmd.options.getString("link"))
-                        .setAuthor({
-                            name: mes.author.nickname||mes.author.globalName||mes.author.username,
-                            iconURL: "" + mes.author.displayAvatarURL(),
-                            url: "https://discord.com/users/" + mes.author.id,
-                        })
-                        .setDescription(mes.content||null)
-                        .setTimestamp(new Date(mes.createdTimestamp))
-                        .setFooter({
-                            text: mes.guild?.name?mes.guild.name + " / " + mes.channel.name:`DM with ${client.user.username}`,
-                            iconURL: mes.guild.iconURL(),
+                    let slashes=cmd.options.getString("link").split("channels/")[1].split("/");
+                    let embs=[];
+                    try{
+                        var channelLinked=await client.channels.cache.get(slashes[slashes.length-2]);
+                        var mes=await channelLinked.messages.fetch(slashes[slashes.length-1]);
+                        if(checkDirty(cmd.guild?.id,mes.content)||checkDirty(cmd.guild?.id,mes.author.nickname||mes.author.globalName||mes.author.username)||checkDirty(cmd.guild?.id,mes.guild.name)||checkDirty(cmd.guild?.id,mes.channel.name)){
+                            cmd.followUp(`I'm sorry, that message is blocked by this server's filter.`);
+                            break;
+                        }
+                        let messEmbed = new EmbedBuilder()
+                            .setColor("#006400")
+                            .setTitle("(Jump to message)")
+                            .setURL(cmd.options.getString("link"))
+                            .setAuthor({
+                                name: mes.author.nickname||mes.author.globalName||mes.author.username,
+                                iconURL: "" + mes.author.displayAvatarURL(),
+                                url: "https://discord.com/users/" + mes.author.id,
+                            })
+                            .setDescription(mes.content||null)
+                            .setTimestamp(new Date(mes.createdTimestamp))
+                            .setFooter({
+                                text: mes.guild?.name?mes.guild.name + " / " + mes.channel.name:`DM with ${client.user.username}`,
+                                iconURL: mes.guild.iconURL(),
+                            });
+                        var attachedImg=false;
+                        mes.attachments.forEach((attached,i) => {
+                            let url = attached.url;
+                            if(attachedImg||!(/(png|jpe?g)/i.test(url))){
+                                fils.push(url);
+                            }
+                            else{
+                                messEmbed.setImage(url);
+                                attachedImg=true;
+                            }
                         });
-                    var attachedImg=false;
-                    mes.attachments.forEach((attached,i) => {
-                        let url = attached.url;
-                        if(attachedImg||!(/(png|jpe?g)/i.test(url))){
-                            fils.push(url);
+                        if(channelLinked?.permissionsFor(cmd.user.id)?.has(PermissionFlagsBits.ViewChannel)){
+                            embs.push(messEmbed);
                         }
-                        else{
-                            messEmbed.setImage(url);
-                            attachedImg=true;
-                        }
-                    });
-                    if(channelLinked?.permissionsFor(cmd.user.id)?.has(PermissionFlagsBits.ViewChannel)){
-                        embs.push(messEmbed);
+                        cmd.followUp({content:embs.length>0?`Embedded linked message`:`Failed to embed message`,embeds:embs});
                     }
-                    cmd.followUp({content:embs.length>0?`Embedded linked message`:`Failed to embed message`,embeds:embs});
+                    catch(e){
+                        console.log(e);
+                        cmd.followUp(`I'm sorry, I can't access that message.`);
+                    }
                 }
                 catch(e){
-                    console.log(e);
-                    cmd.followUp(`I'm sorry, I can't access that message.`);
+                    cmd.followUp(`I didn't get that. Are you sure this is a valid message link? You can get one by accessing the context menu on a message, and pressing \`Copy Message Link\`.`);
                 }
-            }
-            catch(e){
-                cmd.followUp(`I didn't get that. Are you sure this is a valid message link? You can get one by accessing the context menu on a message, and pressing \`Copy Message Link\`.`);
             }
         break;
         case 'timestamp':
@@ -2887,6 +2937,31 @@ client.on("interactionCreate",async cmd=>{
         break;
 
         //Context Menu Commands
+        case 'prime_embed':
+            storage[cmd.user.id].primedEmbed={
+                "content":cmd.targetMessage.content,
+                "timestamp":cmd.targetMessage.createdTimestamp,
+                "author":{
+                    "icon":cmd.targetMessage.author.displayAvatarURL(),
+                    "name":cmd.targetMessage.author.globalName||cmd.targetMessage.author.username,
+                    "id":cmd.targetMessage.author.id
+                },
+                "server":{
+                    "channelName":cmd.targetMessage.channel?.name?cmd.targetMessage.channel.name:(cmd.targetMessage.author.globalName||cmd.targetMessage.author.username),
+                    "name":cmd.targetMessage.guild?.name?cmd.targetMessage.guild.name:"",
+                    "channelId":cmd.targetMessage.channel?.id,
+                    "id":cmd.targetMessage.guild?.id?cmd.targetMessage.guild.id:"@me",
+                    "icon":cmd.targetMessage.guild?cmd.targetMessage.guild.iconURL():cmd.targetMessage.author.displayAvatarURL()
+                },
+                "id":cmd.targetMessage.id,
+                "attachmentURLs":[]
+            };
+            cmd.targetMessage.attachments.forEach(a => {
+                storage[cmd.user.id].primedEmbed.attachmentURLs.push(a.url);
+            });
+            cmd.followUp({content:`I have prepared the message to be embedded. Use ${cmds.embed_message.mention} and type **PRIMED** to embed this message.`,embeds:[getPrimedEmbed(cmd.user.id)],files:storage[cmd.user.id].primedEmbed.attachmentURLs});
+            save();
+        break;
         case 'delete_message':
             if(cmd.guild?.id){
                 if(!cmd.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.ManageMessages)){
