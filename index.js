@@ -2306,7 +2306,7 @@ client.on("interactionCreate",async cmd=>{
             var b=cmd.guild.members.cache.get(cmd.options.getUser("target").id);
             if(b.bannable){
                 b.ban({reason:`Instructed to ban by ${cmd.user.username}: ${cmd.options.getString("reason")}`});
-                cmd.followUp(`I have banned <@${cmd.user.username}>`);
+                cmd.followUp(`I have banned <@${cmd.options.getUser("target").id}>`);
                 break;
             }
             else{
