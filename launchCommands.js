@@ -415,7 +415,7 @@ const commands = [
 			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 		).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages).setDMPermission(false),
 	new SlashCommandBuilder().setName("captcha").setDescription("Use this command if I've timed you out for spam").setDMPermission(true),
-	new SlashCommandBuilder().setName("unavailable").setDescription("Use this to automatically tell users who ping you that you're unavailable").addBooleanOption(option=>
+	/*new SlashCommandBuilder().setName("unavailable").setDescription("Use this to automatically tell users who ping you that you're unavailable").addBooleanOption(option=>
 			option.setName("active").setDescription("Are you unavailable?").setRequired(true)
 		).addBooleanOption(option=>
 			option.setName("globally").setDescription("Unavailable in every server you're pinged in, or just this one? (Default: global)")
@@ -425,7 +425,7 @@ const commands = [
 			option.setName("how_long").setDescription("How long will you be unavailable for? (Paste a Discord timestamp, use /timestamp to make one!)")
 		).addBooleanOption(option=>
 			option.setName("auto_deactivate").setDescription("Deactivate automatically the next time you send a message?")
-		).setDMPermission(true),
+		).setDMPermission(true),*/
 	new SlashCommandBuilder().setName("user").setDescription("Display a user's profile").addBooleanOption(option=>
 			option.setName("large-pfp").setDescription("Display the PFP in large mode?")
 		).addUserOption(option=>

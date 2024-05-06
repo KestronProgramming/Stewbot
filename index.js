@@ -469,11 +469,11 @@ var helpPages=[
             {
                 name:cmds.timestamp.mention,
                 desc:"Generate a timestamp that will show everyone the same time relevant to their timezone"
-            },
+            },/*
             {
                 name:cmds.unavailable.mention,
                 desc:"If you're unavailable, have Stewbot let others know if they try to ping you!"
-            },
+            },*/
             {
                 name:cmds.user.mention,
                 desc:"Get a user's profile information"
@@ -1713,8 +1713,9 @@ client.on("messageCreate",async msg=>{
         storage[msg.guild.id].users[msg.author.id].lastMessages.push(`${msg.channel.id}/${msg.id}`);
         save();
     }
+    /*
     msg.mentions.users.forEach(async mentionedUser=>{
-        if(storage[msg.guild?.id]?.users[mentionedUser.id]?.gone?.active&&(mentionedUser.id!==msg.author.id || msg.author.id === "724416180097384498" /* <- let me ping myself for testing */)&&msg.channel.permissionsFor(mentionedUser.id).has(PermissionFlagsBits.SendMessages)){
+        if(storage[msg.guild?.id]?.users[mentionedUser.id]?.gone?.active&&(mentionedUser.id!==msg.author.id)&&msg.channel.permissionsFor(mentionedUser.id).has(PermissionFlagsBits.SendMessages)){
             if(storage[msg.guild.id].users[mentionedUser.id].gone.until>new Date()){
                 if(msg.guild.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageWebhooks)){
                     var resp={
@@ -1777,7 +1778,7 @@ client.on("messageCreate",async msg=>{
             }
             save();
         }
-    });
+    });*/
     if(storage[msg.guild?.id]?.users[msg.author.id].gone?.active&&storage[msg.guild?.id]?.users[msg.author.id].gone?.autoOff){
         storage[msg.guild.id].users[msg.author.id].gone.active=false;
         save();
