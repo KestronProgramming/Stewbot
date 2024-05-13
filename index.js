@@ -1088,10 +1088,8 @@ function getPrimedEmbed(userId,guildIn){
             "color": 0xff0000
           };
     }
-    return new EmbedBuilder()
+    var emb=new EmbedBuilder()
         .setColor("#006400")
-        .setTitle("(Jump to message)")
-        .setURL(`https://discord.com/channels/${mes.server.id}/${mes.server.channelId}/${mes.id}`)
         .setAuthor({
             name: mes.author.name,
             iconURL: "" + mes.author.icon,
@@ -1103,6 +1101,11 @@ function getPrimedEmbed(userId,guildIn){
             text: mes.server.name + " / " + mes.server.channelName,
             iconURL: mes.server.icon
         });
+    if(mes.server.channelId){
+        emb=emb.setTitle("(Jump to message)")
+            .setURL(`https://discord.com/channels/${mes.server.id}/${mes.server.channelId}/${mes.id}`)
+    }
+    return emb;
 }
 
 var ints=Object.keys(GatewayIntentBits).map(a=>GatewayIntentBits[a]);
