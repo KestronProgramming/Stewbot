@@ -3340,12 +3340,6 @@ client.on("interactionCreate",async cmd=>{
                 break;
             }
             var t=new Date(+cmd.message.content.split(":")[1]*1000);
-            if(t.getHours()+storage[cmd.user.id].config.timeOffset<0){
-                inp--;
-            }
-            if(t.getHours()+storage[cmd.user.id].config.timeOffset>23){
-                inp++;
-            }
             cmd.update(`<t:${Math.round(t.setDate(inp)/1000)}:${cmd.message.content.split(":")[2].split(">")[0]}>`);
         break;
 
