@@ -1060,7 +1060,7 @@ const presets={
     "captcha":[new ActionRowBuilder().addComponents(inps.captcha1,inps.captcha2,inps.captcha3),new ActionRowBuilder().addComponents(inps.captcha4,inps.captcha5,inps.captcha6),new ActionRowBuilder().addComponents(inps.captcha7,inps.captcha8,inps.captcha9),new ActionRowBuilder().addComponents(inps.captchaBack,inps.captcha0,inps.captchaDone)]
 };
 
-var kaProgramRegex =/\b(?!<)https?:\/\/(?:www\.)?khanacademy\.org\/(cs|computer-programming)\/[a-z,\d,-]+\/\d+(?!>)\b/gi;
+var kaProgramRegex =/\b(?!<)https?:\/\/(?:www\.)?khanacademy\.org\/(cs|computer-programming|hour-of-code|python-program)\/[a-z,\d,-]+\/\d+(?!>)\b/gi;
 var discordMessageRegex =/\b(?!<)https?:\/\/(ptb\.|canary\.)?discord(app)?.com\/channels\/(\@me|\d+)\/\d+\/\d+(?!>)\b/gi;
 var spotifyTrackRegex=/\bhttps?:\/\/open\.spotify\.com\/track\/\w+(\b|\?)/gi;
 var spotifyAlbumRegex=/\bhttps?:\/\/open\.spotify\.com\/album\/\w+(\b|\?)/gi;
@@ -1585,7 +1585,7 @@ client.on("messageCreate",async msg=>{
                     text: `Backed up to https://kap-archive.bhavjit.com/`,
                     icon_url: `https://media.discordapp.net/attachments/810540153294684195/994417360737935410/ka-logo-zoomedout.png`,
                 },
-                url: `https://www.khanacademy.org/cs/i/${d.id}`
+                url: `https://www.khanacademy.org/${d.type === "PYTHON" ? "python-program" : "computer-programming"}/i/${d.id}`
             });
         });
     }
