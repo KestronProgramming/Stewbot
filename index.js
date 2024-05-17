@@ -1529,7 +1529,9 @@ client.on("messageCreate",async msg=>{
     for(var i=0;i<progs.length;i++){
         let prog=progs[i];
         var embds=[];
-        await fetch(`https://kap-archive.bhavjit.com/s/${prog.split("/")[prog.split("/").length-1].split("?")[0]}`).then(d=>d.json()).then(d=>{
+        await fetch(`https://kap-archive.bhavjit.com/s/${prog.split("/")[prog.split("/").length-1].split("?")[0]}`, { method: "POST" })
+        .then(d => d.statusText === "OK" ? d.json() : false).then(d=>{
+            if (!d) return;
             embds.push({
                 type: "rich",
                 title: d.title,
