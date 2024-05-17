@@ -1525,18 +1525,28 @@ client.on("messageCreate",async msg=>{
         }
         catch(e){}
     }
+    var progsDeleted = false;
     if(embs.length>0) msg.reply({content:`Embedded linked message${embs.length>1?"s":""}. You can prevent this behavior by surrounding message links in \`<\` and \`>\`.`,embeds:embs,files:fils,allowedMentions:{parse:[]}});
     for(var i=0;i<progs.length;i++){
         let prog=progs[i];
+        var progId = prog.split("/")[prog.split("/").length-1].split("?")[0];
         var embds=[];
-        await fetch(`https://kap-archive.bhavjit.com/s/${prog.split("/")[prog.split("/").length-1].split("?")[0]}`, { method: "POST" })
-        .then(d => d.statusText === "OK" ? d.json() : false).then(d=>{
-            if (!d) return;
+        await fetch(`https://kap-archive.bhavjit.com/s/${progId}`, { method: "POST" })
+        .then(async d => d.statusText === "OK" ? d.json() : false).then(async d=>{
+            let clr = 0x00ff00, progDeleted;
+            if (!d) {
+                clr = 0xffff00;
+                progsDeleted = true;
+                progDeleted = true;
+                d = await fetch(`https://kap-archive.bhavjit.com/g/${progId}`, { method: "POST" })
+                    .then(d=>d.json()).then(d=>d.status === 200 ? d : false);
+                if (!d) return;
+            }
             embds.push({
                 type: "rich",
                 title: d.title,
                 description: `\u200b`,
-                color: 0x00ff00,
+                color: clr,
                 author: {
                     name: `Made by ${d.author.nick}`,
                     url: `https://www.khanacademy.org/profile/${d.author.id}`,
@@ -1584,16 +1594,18 @@ client.on("messageCreate",async msg=>{
                     width: 0,
                 },
                 footer: {
-                    text: `Backed up to https://kap-archive.bhavjit.com/`,
+                    text: `${ progDeleted ? "Retrieved from" : "Backed up to" } https://kap-archive.bhavjit.com/`,
                     icon_url: `https://media.discordapp.net/attachments/810540153294684195/994417360737935410/ka-logo-zoomedout.png`,
                 },
-                url: `https://www.khanacademy.org/${d.type === "PYTHON" ? "python-program" : "computer-programming"}/i/${d.id}`
+                url: progDeleted ? `https://kap-archive.bhavjit.com/view?p=${d.id}` : `https://www.khanacademy.org/${d.type === "PYTHON" ? "python-program" : "computer-programming"}/i/${d.id}`
             });
         });
     }
     if(embds?.length>0){
         msg.suppressEmbeds(true);
-        msg.reply({content:`Backed program${embds.length>1?"s":""} up to the KAP Archive, which you can visit [here](https://kap-archive.bhavjit.com/).`,embeds:embds,allowedMentions:{parse:[]}});
+        let cont = `Backed program${embds.length>1?"s":""} up to`;
+        if (progsDeleted) cont = `${embds.length>1?"Backed programs up to and/or retrieved programs from":"Program retrieved from"}`;
+        msg.reply({content: `${cont} the KAP Archive, which you can visit [here](https://kap-archive.bhavjit.com/).`,embeds:embds,allowedMentions:{parse:[]}});
     }
 
     if(msg.channel.name?.startsWith("Ticket with ")&&!msg.author.bot){
