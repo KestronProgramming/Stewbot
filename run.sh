@@ -1,7 +1,7 @@
 # /bin/sh
 
 # Wait for network connection - in the case of a power outtage the router might still be down for a minute
-until sudo ping -c 1 1.1.1.1 &> /dev/null
+until ping -c 1 1.1.1.1 &> /dev/null
 do
     echo "Waiting for wifi..."
     sleep 0.5
@@ -9,7 +9,7 @@ done
 echo "wifi is up"
 
 # Wait for DNS to connect
-until sudo ping -c 1 discord.com &> /dev/null
+until ping -c 1 discord.com &> /dev/null
 do
     echo "Waiting for DNS..."
     sleep 0.5
