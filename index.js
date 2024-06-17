@@ -2103,16 +2103,18 @@ client.on("interactionCreate",async cmd=>{
                     });
                 break;
                 case 'meme':
-                    var memes=fs.readdirSync("./memes");
+                    var memes=fs.readdirSync("./memes"); // OPTIMIZE: load memes into ram at beginning and at accepting new memes
                     if(memes.length===0){
                         cmd.followUp("I'm sorry, but I don't appear to have any at the moment.");
                         break;
                     }
                     var meme;
                     try{
-                        meme=cmd.options.getInteger("number")?memes.filter(m=>m.split(".")[0]===cmd.options.getInteger("number").toString())[0]:memes[Math.floor(Math.random()*memes.length)];
+                        // meme = cmd.options.getInteger("number") ? memes.filter(m=>m.split(".")[0] === cmd.options.getInteger("number").toString())[0] : memes[Math.floor(Math.random()*memes.length)];
+                        meme = memes.filter(m=>m.split(".")[0] === cmd.options.getInteger("number").toString())[0];
+                        if (!meme) meme = memes[Math.floor(Math.random()*memes.length)];
                     }
-                    catch(e){
+                    catch(e) { // Give a random meme if it failes becaues there is no number. OPTIMIZE: check if there were options passed rather than try-catching
                         meme=memes[Math.floor(Math.random()*memes.length)];
                     }
                     cmd.followUp({content:`Meme #${meme.split(".")[0]}`,files:[`./memes/${meme}`]});
