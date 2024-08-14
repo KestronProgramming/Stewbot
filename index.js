@@ -1532,15 +1532,23 @@ client.on("messageCreate",async msg=>{
         var progId = prog.split("/")[prog.split("/").length-1].split("?")[0];
         var embds=[];
         await fetch(`https://kap-archive.bhavjit.com/s/${progId}`, { method: "POST" })
-        .then(async d => d.statusText === "OK" ? d.json() : false).then(async d=>{
+        .then(d => d.json().catch(e => {console.error("Error in KAP /s/ endpoint",e); return false})).then(async d=>{
             let clr = 0x00ff00, progDeleted;
-            if (!d) {
+            if (d?.archive?.sourceDeleted || !d) {
                 clr = 0xffff00;
                 progsDeleted = true;
                 progDeleted = true;
-                d = await fetch(`https://kap-archive.bhavjit.com/g/${progId}`, { method: "POST" })
-                    .then(d=>d.json()).then(d=>d.status === 200 ? d : false);
-                if (!d) return;
+                if (!d) {
+                    // Fallback to /g/ endpoint if possible
+                    console.warn("KAP /s/ endpoint failed. Falling back to /g/ endpoint");
+                    d = await fetch(`https://kap-archive.bhavjit.com/g/${progId}`, { method: "POST" })
+                        .then(d=>d.json()).then(d=>d.status === 200 ? d : false)
+                        .catch(e => console.error("Error in KAP /g/ fallback",e));
+                    if (!d) {
+                        console.warn("KAP /g/ fallback was not successful");
+                        return;
+                    }
+                }
             }
             embds.push({
                 type: "rich",
@@ -1584,7 +1592,7 @@ client.on("messageCreate",async msg=>{
                     },
                 ],
                 image: {
-                    url: `https://www.khanacademy.org/computer-programming/i/${d.id}/latest.png`,
+                    url: `https://${ progDeleted ? "kap-archive.bhavjit.com/thumb/" : "www.khanacademy.org/computer-programming/i/" }${d.id}/latest.png`,
                     height: 0,
                     width: 0,
                 },
@@ -1599,7 +1607,7 @@ client.on("messageCreate",async msg=>{
                 },
                 url: progDeleted ? `https://kap-archive.bhavjit.com/view?p=${d.id}` : `https://www.khanacademy.org/${d.type === "PYTHON" ? "python-program" : "computer-programming"}/i/${d.id}`
             });
-        });
+        }).catch(e => console.error(e));
     }
     if(embds?.length>0){
         msg.suppressEmbeds(true);
