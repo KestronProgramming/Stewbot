@@ -2111,16 +2111,18 @@ client.on("interactionCreate",async cmd=>{
                     });
                 break;
                 case 'meme':
-                    var memes=fs.readdirSync("./memes");
+                    var memes=fs.readdirSync("./memes"); // OPTIMIZE: load memes into ram at beginning and at accepting new memes
                     if(memes.length===0){
                         cmd.followUp("I'm sorry, but I don't appear to have any at the moment.");
                         break;
                     }
                     var meme;
                     try{
-                        meme=cmd.options.getInteger("number")?memes.filter(m=>m.split(".")[0]===cmd.options.getInteger("number").toString())[0]:memes[Math.floor(Math.random()*memes.length)];
+                        // meme = cmd.options.getInteger("number") ? memes.filter(m=>m.split(".")[0] === cmd.options.getInteger("number").toString())[0] : memes[Math.floor(Math.random()*memes.length)];
+                        meme = memes.filter(m=>m.split(".")[0] === cmd.options.getInteger("number").toString())[0];
+                        if (!meme) meme = memes[Math.floor(Math.random()*memes.length)];
                     }
-                    catch(e){
+                    catch(e) { // Give a random meme if it failes becaues there is no number. OPTIMIZE: check if there were options passed rather than try-catching
                         meme=memes[Math.floor(Math.random()*memes.length)];
                     }
                     cmd.followUp({content:`Meme #${meme.split(".")[0]}`,files:[`./memes/${meme}`]});
@@ -2280,13 +2282,13 @@ client.on("interactionCreate",async cmd=>{
         case 'log_config':
             storage[cmd.guildId].logs.active=cmd.options.getBoolean("active");
             storage[cmd.guildId].logs.channel=cmd.options.getChannel("channel").id;
-            if(cmd.options.getBoolean("channel_events")) storage[cmd.guildId].logs.channel_events=cmd.options.getBoolean("channel_events");
-            if(cmd.options.getBoolean("emoji_events")) storage[cmd.guildId].logs.emoji_events=cmd.options.getBoolean("emoji_events");
-            if(cmd.options.getBoolean("user_change_events")) storage[cmd.guildId].logs.user_change_events=cmd.options.getBoolean("user_change_events");
-            if(cmd.options.getBoolean("joining_and_leaving")) storage[cmd.guildId].logs.joining_and_leaving=cmd.options.getBoolean("joining_and_leaving");
-            if(cmd.options.getBoolean("invite_events")) storage[cmd.guildId].logs.invite_events=cmd.options.getBoolean("invite_events");
-            if(cmd.options.getBoolean("role_events")) storage[cmd.guildId].logs.role_events=cmd.options.getBoolean("role_events");
-            if(cmd.options.getBoolean("mod_actions")) storage[cmd.guildId].logs.mod_actions=cmd.options.getBoolean("mod_actions");
+            if(cmd.options.getBoolean("channel_events")!==null) storage[cmd.guildId].logs.channel_events=cmd.options.getBoolean("channel_events");
+            if(cmd.options.getBoolean("emoji_events")!==null) storage[cmd.guildId].logs.emoji_events=cmd.options.getBoolean("emoji_events");
+            if(cmd.options.getBoolean("user_change_events")!==null) storage[cmd.guildId].logs.user_change_events=cmd.options.getBoolean("user_change_events");
+            if(cmd.options.getBoolean("joining_and_leaving")!==null) storage[cmd.guildId].logs.joining_and_leaving=cmd.options.getBoolean("joining_and_leaving");
+            if(cmd.options.getBoolean("invite_events")!==null) storage[cmd.guildId].logs.invite_events=cmd.options.getBoolean("invite_events");
+            if(cmd.options.getBoolean("role_events")!==null) storage[cmd.guildId].logs.role_events=cmd.options.getBoolean("role_events");
+            if(cmd.options.getBoolean("mod_actions")!==null) storage[cmd.guildId].logs.mod_actions=cmd.options.getBoolean("mod_actions");
             var disclaimers=[];
             if(!client.channels.cache.get(storage[cmd.guildId].logs.channel).permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
                 storage[cmd.guildId].logs.active=false;
@@ -3559,7 +3561,7 @@ client.on("interactionCreate",async cmd=>{
             return;
         }
         if(myRole<=role.rawPosition){
-            cmd.reply({content:`I cannot help with that role at the moment. Please let a moderator know that for me to help with the **${cmd.roles.get(role).name}**, it needs to be dragged below my highest role in the Server Settings role list.`,ephemeral:true,allowedMentions:{parse:[]}});
+            cmd.reply({content:`I cannot help with that role at the moment. Please let a moderator know that for me to help with the **${cmd.roles?.get(role)?.name}**, it needs to be dragged below my highest role in the Server Settings role list.`,ephemeral:true,allowedMentions:{parse:[]}});
         }
         else{
             if(!cmd.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageRoles)){
