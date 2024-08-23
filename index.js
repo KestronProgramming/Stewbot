@@ -6,7 +6,8 @@ const rssParser=new RSSParser();
 const crypto = require('crypto');
 const { createCanvas } = require('canvas');
 const { InworldClient, SessionToken, status } = require("@inworld/nodejs-sdk");
-const {Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder}=require("discord.js");
+const {Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction}=require("discord.js");
+const { getEmojiFromMessage, parseEmoji } = require('./util');
 const bible=require("./kjv.json");
 var Bible={};
 var properNames={};
@@ -553,6 +554,129 @@ function getLvl(lvl){
     return total;
 }
 
+/**
+* Handle the information when a user reacts to a message, for emojiboards
+*
+* @param {MessageReaction | import("discord.js").PartialMessageReaction} react The reaction that was added
+* @param {Client} client The discord client
+* @returns {Promise<void>}
+*/
+async function doEmojiboardReaction(react, client) {
+	const emoji = getEmojiFromMessage(
+			react.emoji.requiresColons ?
+			`<:${react.emoji.name}:${react.emoji.id}>` :
+			react.emoji.name
+	)
+
+	// exit if the emojiboard for this emoji is not setup
+	if (!(emoji in storage[react.message.guildId].emojiboards)) return;
+
+	const emojiboard = storage[react.message.guildId].emojiboards[emoji];
+
+	if(!emojiboard.active) return;
+
+	// exit if this message has already been posted
+	if(react.message.id in emojiboard.posted) return;
+
+	const messageData    = await react.message.channel.messages.fetch(react.message.id);
+    const foundReactions = messageData.reactions.cache.get(parseEmoji(emoji))
+
+    // exit if we haven't reached the threshold
+	if(emojiboard.threshold > foundReactions?.count) {
+		return;
+	}
+
+	var replyBlip = "";
+	if(messageData.type === 19){
+			try {
+					var refMessage = await messageData.fetchReference();
+					replyBlip      = `_[Reply to **${refMessage.author.username}**: ${refMessage.content.slice(0,22).replace(/(https?\:\/\/|\n)/ig,"")}${refMessage.content.length>22?"...":""}](<https://discord.com/channels/${refMessage.guild.id}/${refMessage.channel.id}/${refMessage.id}>)_`;
+			} catch(e){}
+	}
+
+	const resp = { files:[] };
+	var i = 0;
+	react.message.attachments.forEach((attached) => {
+			let url=attached.url.toLowerCase();
+			if(i!==0||(!url.includes(".jpg")&&!url.includes(".png")&&!url.includes(".jpeg")&&!url.includes(".gif"))||emojiboard.messType==="0"){
+					resp.files.push(attached.url);
+			}
+			i++;
+	});
+
+	if(emojiboard.messType==="0"){
+			resp.content=react.message.content;
+			resp.username=react.message.author.globalName||react.message.author.username;
+			resp.avatarURL=react.message.author.displayAvatarURL();
+			var c=client.channels.cache.get(emojiboard.channel);
+			if(!c.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageWebhooks)){
+					emojiboard.messType="2";
+					return;
+			}
+			var hook=await c.fetchWebhooks();
+			hook=hook.find(h=>h.token);
+			if(hook){
+					hook.send(resp).then(h=>{
+							emojiboard.posted[react.message.guild.id]=`webhook${h.id}`;
+					});
+			}
+			else{
+					client.channels.cache.get(emojiboard.channel).createWebhook({
+							name:"Stewbot",
+							avatar: "https://cdn.discordapp.com/attachments/1145432570104926234/1170273261704196127/kt.jpg",
+					}).then(d=>{
+							d.send(resp).then(h=>{
+									emojiboard.posted[react.message.id]=`webhook${h.id}`;
+							});
+					});
+			}
+	}
+	else{
+			const emojiURL = (
+					react.emoji.requiresColons ?
+					(
+							react.emoji.animated ?
+							`https://cdn.discordapp.com/emojis/${react.emoji.id}.gif` :
+							`https://cdn.discordapp.com/emojis/${react.emoji.id}.png`
+					) :
+					undefined
+			)
+
+			resp.embeds=[new EmbedBuilder()
+					.setColor(0x006400)
+					.setTitle("(Jump to message)")
+					.setURL(`https://www.discord.com/channels/${react.message.guild.id}/${react.message.channel.id}/${react.message.id}`)
+					.setAuthor({
+							name: react.message.author.globalName||react.message.author.username,
+							iconURL:react.message.author.displayAvatarURL(),
+							url:`https://discord.com/users/${react.message.author.id}`
+					})
+					.setDescription(`${replyBlip?`${replyBlip}\n`:""}${react.message.content?react.message.content:"⠀"}`)
+					.setTimestamp(new Date(react.message.createdTimestamp))
+					.setFooter({
+							text: `${!emojiURL ? react.emoji.name + ' ' : ''}${react.message.channel.name}`,
+							iconURL: emojiURL
+					})
+					.setImage(react.message.attachments.first()?react.message.attachments.first().url:null)
+			];
+			if(emojiboard.messType==="1"){
+					resp.content=getStarMsg(react.message);
+			}
+			var c=client.channels.cache.get(emojiboard.channel)
+			if(!c.permissionsFor(client.user.id).has(PermissionFlagsBits.ManageWebhooks)){
+					emojiboard.active=false;
+					return;
+			}
+			c.send(resp).then(d=>{
+					emojiboard.posted[react.message.id]=d.id;
+			});
+	}
+
+	storage[react.message.guild.id].emojiboards[emoji] = emojiboard
+	try{ storage[react.message.guild.id].users[react.message.author.id].stars++; }catch(e){}
+	save();
+}
+
 var started24=false;
 function daily(){
     if(!started24){
@@ -867,6 +991,7 @@ const defaultGuild={
         "posted":{},
         "messType":"0"
     },
+    "emojiboards": {},
     "logs":{
         "channel":"",
         "active":false,
@@ -1976,6 +2101,65 @@ client.on("interactionCreate",async cmd=>{
             cmd.followUp(`Starboard configured.${disclaimers.map(d=>`\n\n${d}`).join("")}`);
             save();
         break;
+        case 'add_emojiboard':
+            if(!cmd.guild?.id){
+                cmd.followUp("Something is wrong");
+                break;
+            }
+            var emoji = getEmojiFromMessage(cmd.options.getString("emoji"));
+            if(!emoji) {
+                cmd.followUp("That emoji is not valid.");
+                break;
+            }
+            console.log("emoji is",emoji);
+            storage[cmd.guildId].emojiboards[emoji] = {
+                channel: cmd.options.getChannel("channel").id,
+                active: true,
+                threshold: cmd.options.getInteger("threshold") || 3,
+                messType: '0',
+                posted: {}
+            };
+            cmd.followUp("Emojiboard for " + parseEmoji(emoji) + " emoji added.");
+            save();
+            break;
+        case 'remove_emojiboard':
+            if(!cmd.guild?.id){
+                cmd.followUp("Something is wrong");
+                break;
+            }
+            var emoji = getEmojiFromMessage(cmd.options.getString("emoji"));
+            if(!emoji) {
+                cmd.followUp("That emoji is not valid.");
+                break;
+            }
+            if(!(emoji in storage[cmd.guildId].emojiboards)) {
+                cmd.followUp("That emoji is not in use for an emojiboard.");
+                break;
+            }
+            delete storage[cmd.guildId].emojiboards[emoji];
+            cmd.followUp("Emojiboard for " + parseEmoji(emoji) + " emoji removed.");
+            save();
+            break;
+        case 'edit_emojiboard':
+            if(!cmd.guild?.id){
+                cmd.followUp("Something is wrong");
+                break;
+            }
+            var emoji = getEmojiFromMessage(cmd.options.getString("emoji"));
+            if(!emoji) {
+                cmd.followUp("That emoji is not valid.");
+                break;
+            }
+            if(!(emoji in storage[cmd.guildId].emojiboards)) {
+                cmd.followUp("That emoji is not in use for an emojiboard.");
+                break;
+            }
+            if(cmd.options.getBoolean("active")!==null) storage[cmd.guildId].emojiboards[emoji].active=cmd.options.getBoolean("active");
+            if(cmd.options.getChannel("channel")!==null) storage[cmd.guildId].emojiboards[emoji].channel=cmd.options.getChannel("channel").id;
+            if(cmd.options.getInteger("threshold")!==null) storage[cmd.guildId].emojiboards[emoji].threshold=cmd.options.getInteger("threshold");
+            if(cmd.options.getString("message_type")!==null) storage[cmd.guildId].emojiboards[emoji].messType=cmd.options.getString("message_type");
+            cmd.followUp("Emojiboard for " + parseEmoji(emoji) + " emoji edited.");
+            break;
         case 'levels_config':
             storage[cmd.guildId].levels.active=cmd.options.getBoolean("active");
             if(cmd.options.getChannel("channel")!==null) storage[cmd.guildId].levels.channel=cmd.options.getChannel("channel").id;
@@ -3855,6 +4039,8 @@ client.on("messageReactionAdd",async (react,user)=>{
             save();
         }
     }
+
+    doEmojiboardReaction(react, client)
 });
 client.on("messageDelete",async msg=>{
     if(msg.guild?.id===undefined) return;

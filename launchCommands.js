@@ -135,6 +135,41 @@ const commands = [
 		).addBooleanOption(option=>
 			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 		).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages).setDMPermission(false),
+	new SlashCommandBuilder().setName("add_emojiboard").setDescription("Create a new emojiboard")
+	.addStringOption(option=>
+		option.setName("emoji").setDescription("The emoji to react with to trigger the emojiboard").setRequired(true)
+	).addChannelOption(option=>
+		option.setName("channel").setDescription("The channel to post the emojiboard in").addChannelTypes(ChannelType.GuildText).setRequired(true)
+	).addIntegerOption(option=>
+		option.setName("threshold").setDescription("How many reactions are needed to trigger starboard? (Default: 3)").setMinValue(1)
+	).addStringOption(option=>
+		option.setName("message_type").setDescription("What should the bot's starboard posts look like?").addChoices(
+			{"name":"Make it look like the user posted","value":"0"},
+			{"name":"Post an embed with the message and a greeting","value":"1"},
+			{"name":"Post an embed with the message","value":"2"}
+		)
+	).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages).setDMPermission(false),
+	new SlashCommandBuilder().setName("remove_emojiboard").setDescription("Remove an emojiboard")
+	.addStringOption(option=>
+		option.setName("emoji").setDescription("The emoji to remove the emojiboard for").setRequired(true)
+	).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages).setDMPermission(false),
+	new SlashCommandBuilder().setName("edit_emojiboard").setDescription("Configure an emojiboard for this server").addStringOption(option=>
+		option.setName("emoji").setDescription("The emojiboard to edit").setRequired(true)
+	).addBooleanOption(option=>
+		option.setName("active").setDescription("Should I post messages to the configured channel?")
+	).addChannelOption(option=>
+		option.setName("channel").setDescription("The channel to post messages to (Required for first config)").addChannelTypes(ChannelType.GuildText)
+	).addIntegerOption(option=>
+		option.setName("threshold").setDescription("How many reactions are needed to trigger starboard? (Default: 3)").setMinValue(1)
+	).addStringOption(option=>
+		option.setName("message_type").setDescription("What should the bot's starboard posts look like?").addChoices(
+			{"name":"Make it look like the user posted","value":"0"},
+			{"name":"Post an embed with the message and a greeting","value":"1"},
+			{"name":"Post an embed with the message","value":"2"}
+		)
+	).addBooleanOption(option=>
+		option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
+	).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages).setDMPermission(false),
 	new SlashCommandBuilder().setName("fun").setDescription("Posts something fun to enjoy").addSubcommand(command=>
 			command.setName("meme").setDescription("Posts a meme").addIntegerOption(option=>
 				option.setName("number").setDescription("Specific meme # to post (optional)").setMinValue(0)
