@@ -563,9 +563,9 @@ function getLvl(lvl){
 */
 async function doEmojiboardReaction(react, client) {
     const emoji = getEmojiFromMessage(
-            react.emoji.requiresColons ?
-            `<:${react.emoji.name}:${react.emoji.id}>` :
-            react.emoji.name
+        react.emoji.requiresColons ?
+        `<:${react.emoji.name}:${react.emoji.id}>` :
+        react.emoji.name
     )
 
     // exit if the emojiboard for this emoji is not setup
@@ -579,10 +579,11 @@ async function doEmojiboardReaction(react, client) {
     if(react.message.id in emojiboard.posted) return;
 
     const messageData    = await react.message.channel.messages.fetch(react.message.id);
-    const foundReactions = messageData.reactions.cache.get(parseEmoji(emoji))
+    const foundReactions = messageData.reactions.cache.get(react.emoji.id || react.emoji.name);
+    const selfReactions  = react.message.reactions.cache.filter(r => r.users.cache.has(react.message.author.id) && r.emoji.name === react.emoji.name)
 
     // exit if we haven't reached the threshold
-    if(emojiboard.threshold > foundReactions?.count) {
+    if((emojiboard.threshold + selfReactions.size) > foundReactions?.count) {
         return;
     }
 
