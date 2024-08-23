@@ -562,119 +562,119 @@ function getLvl(lvl){
 * @returns {Promise<void>}
 */
 async function doEmojiboardReaction(react, client) {
-	const emoji = getEmojiFromMessage(
-			react.emoji.requiresColons ?
-			`<:${react.emoji.name}:${react.emoji.id}>` :
-			react.emoji.name
-	)
+    const emoji = getEmojiFromMessage(
+            react.emoji.requiresColons ?
+            `<:${react.emoji.name}:${react.emoji.id}>` :
+            react.emoji.name
+    )
 
-	// exit if the emojiboard for this emoji is not setup
-	if (!(emoji in storage[react.message.guildId].emojiboards)) return;
+    // exit if the emojiboard for this emoji is not setup
+    if (!(emoji in storage[react.message.guildId].emojiboards)) return;
 
-	const emojiboard = storage[react.message.guildId].emojiboards[emoji];
+    const emojiboard = storage[react.message.guildId].emojiboards[emoji];
 
-	if(!emojiboard.active) return;
+    if(!emojiboard.active) return;
 
-	// exit if this message has already been posted
-	if(react.message.id in emojiboard.posted) return;
+    // exit if this message has already been posted
+    if(react.message.id in emojiboard.posted) return;
 
-	const messageData    = await react.message.channel.messages.fetch(react.message.id);
+    const messageData    = await react.message.channel.messages.fetch(react.message.id);
     const foundReactions = messageData.reactions.cache.get(parseEmoji(emoji))
 
     // exit if we haven't reached the threshold
-	if(emojiboard.threshold > foundReactions?.count) {
-		return;
-	}
+    if(emojiboard.threshold > foundReactions?.count) {
+        return;
+    }
 
-	var replyBlip = "";
-	if(messageData.type === 19){
-			try {
-					var refMessage = await messageData.fetchReference();
-					replyBlip      = `_[Reply to **${refMessage.author.username}**: ${refMessage.content.slice(0,22).replace(/(https?\:\/\/|\n)/ig,"")}${refMessage.content.length>22?"...":""}](<https://discord.com/channels/${refMessage.guild.id}/${refMessage.channel.id}/${refMessage.id}>)_`;
-			} catch(e){}
-	}
+    var replyBlip = "";
+    if(messageData.type === 19){
+            try {
+                    var refMessage = await messageData.fetchReference();
+                    replyBlip      = `_[Reply to **${refMessage.author.username}**: ${refMessage.content.slice(0,22).replace(/(https?\:\/\/|\n)/ig,"")}${refMessage.content.length>22?"...":""}](<https://discord.com/channels/${refMessage.guild.id}/${refMessage.channel.id}/${refMessage.id}>)_`;
+            } catch(e){}
+    }
 
-	const resp = { files:[] };
-	var i = 0;
-	react.message.attachments.forEach((attached) => {
-			let url=attached.url.toLowerCase();
-			if(i!==0||(!url.includes(".jpg")&&!url.includes(".png")&&!url.includes(".jpeg")&&!url.includes(".gif"))||emojiboard.messType==="0"){
-					resp.files.push(attached.url);
-			}
-			i++;
-	});
+    const resp = { files:[] };
+    var i = 0;
+    react.message.attachments.forEach((attached) => {
+            let url=attached.url.toLowerCase();
+            if(i!==0||(!url.includes(".jpg")&&!url.includes(".png")&&!url.includes(".jpeg")&&!url.includes(".gif"))||emojiboard.messType==="0"){
+                    resp.files.push(attached.url);
+            }
+            i++;
+    });
 
-	if(emojiboard.messType==="0"){
-			resp.content=react.message.content;
-			resp.username=react.message.author.globalName||react.message.author.username;
-			resp.avatarURL=react.message.author.displayAvatarURL();
-			var c=client.channels.cache.get(emojiboard.channel);
-			if(!c.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageWebhooks)){
-					emojiboard.messType="2";
-					return;
-			}
-			var hook=await c.fetchWebhooks();
-			hook=hook.find(h=>h.token);
-			if(hook){
-					hook.send(resp).then(h=>{
-							emojiboard.posted[react.message.guild.id]=`webhook${h.id}`;
-					});
-			}
-			else{
-					client.channels.cache.get(emojiboard.channel).createWebhook({
-							name:"Stewbot",
-							avatar: "https://cdn.discordapp.com/attachments/1145432570104926234/1170273261704196127/kt.jpg",
-					}).then(d=>{
-							d.send(resp).then(h=>{
-									emojiboard.posted[react.message.id]=`webhook${h.id}`;
-							});
-					});
-			}
-	}
-	else{
-			const emojiURL = (
-					react.emoji.requiresColons ?
-					(
-							react.emoji.animated ?
-							`https://cdn.discordapp.com/emojis/${react.emoji.id}.gif` :
-							`https://cdn.discordapp.com/emojis/${react.emoji.id}.png`
-					) :
-					undefined
-			)
+    if(emojiboard.messType==="0"){
+            resp.content=react.message.content;
+            resp.username=react.message.author.globalName||react.message.author.username;
+            resp.avatarURL=react.message.author.displayAvatarURL();
+            var c=client.channels.cache.get(emojiboard.channel);
+            if(!c.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageWebhooks)){
+                    emojiboard.messType="2";
+                    return;
+            }
+            var hook=await c.fetchWebhooks();
+            hook=hook.find(h=>h.token);
+            if(hook){
+                    hook.send(resp).then(h=>{
+                            emojiboard.posted[react.message.guild.id]=`webhook${h.id}`;
+                    });
+            }
+            else{
+                    client.channels.cache.get(emojiboard.channel).createWebhook({
+                            name:"Stewbot",
+                            avatar: "https://cdn.discordapp.com/attachments/1145432570104926234/1170273261704196127/kt.jpg",
+                    }).then(d=>{
+                            d.send(resp).then(h=>{
+                                    emojiboard.posted[react.message.id]=`webhook${h.id}`;
+                            });
+                    });
+            }
+    }
+    else{
+            const emojiURL = (
+                    react.emoji.requiresColons ?
+                    (
+                            react.emoji.animated ?
+                            `https://cdn.discordapp.com/emojis/${react.emoji.id}.gif` :
+                            `https://cdn.discordapp.com/emojis/${react.emoji.id}.png`
+                    ) :
+                    undefined
+            )
 
-			resp.embeds=[new EmbedBuilder()
-					.setColor(0x006400)
-					.setTitle("(Jump to message)")
-					.setURL(`https://www.discord.com/channels/${react.message.guild.id}/${react.message.channel.id}/${react.message.id}`)
-					.setAuthor({
-							name: react.message.author.globalName||react.message.author.username,
-							iconURL:react.message.author.displayAvatarURL(),
-							url:`https://discord.com/users/${react.message.author.id}`
-					})
-					.setDescription(`${replyBlip?`${replyBlip}\n`:""}${react.message.content?react.message.content:"⠀"}`)
-					.setTimestamp(new Date(react.message.createdTimestamp))
-					.setFooter({
-							text: `${!emojiURL ? react.emoji.name + ' ' : ''}${react.message.channel.name}`,
-							iconURL: emojiURL
-					})
-					.setImage(react.message.attachments.first()?react.message.attachments.first().url:null)
-			];
-			if(emojiboard.messType==="1"){
-					resp.content=getStarMsg(react.message);
-			}
-			var c=client.channels.cache.get(emojiboard.channel)
-			if(!c.permissionsFor(client.user.id).has(PermissionFlagsBits.ManageWebhooks)){
-					emojiboard.active=false;
-					return;
-			}
-			c.send(resp).then(d=>{
-					emojiboard.posted[react.message.id]=d.id;
-			});
-	}
+            resp.embeds=[new EmbedBuilder()
+                    .setColor(0x006400)
+                    .setTitle("(Jump to message)")
+                    .setURL(`https://www.discord.com/channels/${react.message.guild.id}/${react.message.channel.id}/${react.message.id}`)
+                    .setAuthor({
+                            name: react.message.author.globalName||react.message.author.username,
+                            iconURL:react.message.author.displayAvatarURL(),
+                            url:`https://discord.com/users/${react.message.author.id}`
+                    })
+                    .setDescription(`${replyBlip?`${replyBlip}\n`:""}${react.message.content?react.message.content:"⠀"}`)
+                    .setTimestamp(new Date(react.message.createdTimestamp))
+                    .setFooter({
+                            text: `${!emojiURL ? react.emoji.name + ' ' : ''}${react.message.channel.name}`,
+                            iconURL: emojiURL
+                    })
+                    .setImage(react.message.attachments.first()?react.message.attachments.first().url:null)
+            ];
+            if(emojiboard.messType==="1"){
+                    resp.content=getStarMsg(react.message);
+            }
+            var c=client.channels.cache.get(emojiboard.channel)
+            if(!c.permissionsFor(client.user.id).has(PermissionFlagsBits.ManageWebhooks)){
+                    emojiboard.active=false;
+                    return;
+            }
+            c.send(resp).then(d=>{
+                    emojiboard.posted[react.message.id]=d.id;
+            });
+    }
 
-	storage[react.message.guild.id].emojiboards[emoji] = emojiboard
-	try{ storage[react.message.guild.id].users[react.message.author.id].stars++; }catch(e){}
-	save();
+    storage[react.message.guild.id].emojiboards[emoji] = emojiboard
+    try{ storage[react.message.guild.id].users[react.message.author.id].stars++; }catch(e){}
+    save();
 }
 
 var started24=false;
@@ -1809,14 +1809,14 @@ client.on("messageCreate",async msg=>{
 
     if(msg.channel instanceof DMChannel&&!msg.author.bot&&storage[msg.author.id].config.aiPings) {
         msg.channel.sendTyping();
-	    sendMessage(msg, true);
+        sendMessage(msg, true);
     }
     else if(msg.mentions.users.has(client.user.id)&&!msg.author.bot&&storage[msg.author.id].config.aiPings&&msg.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)) {
         if (/^<[@|#|@&].*?>$/g.test(msg.content.replace(/\s+/g, ''))) {
             msg.content = "*User says nothing*";
         }
         if(storage[msg.guild?.id]?.config.ai){
-	        msg.channel.sendTyping();
+            msg.channel.sendTyping();
             sendMessage(msg);
         }
     }
@@ -1941,7 +1941,7 @@ client.on("messageCreate",async msg=>{
 client.on("interactionCreate",async cmd=>{
     if(cmd.commandName==="secret") return;
     try{
-	    if(!cmd.isButton()&&!cmd.isModalSubmit()&&!cmd.isChannelSelectMenu()&&!cmd.isRoleSelectMenu()&&!cmd.isStringSelectMenu()) await cmd.deferReply({ephemeral:["poll","auto_roles","submit_meme","delete_message","move_message","auto-join-roles","join-roleOption","admin_message","personal_config","timestamp","unavailable","remove_embeds","prime_embed"].includes(cmd.commandName)||cmd.options.getBoolean("private")});
+        if(!cmd.isButton()&&!cmd.isModalSubmit()&&!cmd.isChannelSelectMenu()&&!cmd.isRoleSelectMenu()&&!cmd.isStringSelectMenu()) await cmd.deferReply({ephemeral:["poll","auto_roles","submit_meme","delete_message","move_message","auto-join-roles","join-roleOption","admin_message","personal_config","timestamp","unavailable","remove_embeds","prime_embed"].includes(cmd.commandName)||cmd.options.getBoolean("private")});
     }catch(e){}
     try{
         if(cmd.guildId!==0){
