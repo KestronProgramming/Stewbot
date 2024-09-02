@@ -1967,7 +1967,15 @@ client.on("interactionCreate",async cmd=>{
     switch(cmd.commandName){
         //Slash Commands
         case 'ping':
-            cmd.followUp(`**Online**\n- Latency: ${client.ws.ping} milliseconds\n- Last Started: <t:${uptime}:f>, <t:${uptime}:R>\n- Uptime: ${((Math.round(Date.now()/1000)-uptime)/(60*60)).toFixed(2)} hours\n- Server Count: ${client.guilds.cache.size} Servers`);
+            fetch("https://discord.com/api/v10/applications/@me",{
+                headers: {
+                Authorization: `Bot ${process.env.token}`,
+                'Content-Type': 'application/json; charset=UTF-8',
+                'User-Agent': 'DiscordBot (https://github.com/discord/discord-example-app, 1.0.0)',
+                }
+            }).then(d=>d.json()).then(d=>{
+                cmd.followUp(`**Online**\n- Latency: ${client.ws.ping} milliseconds\n- Last Started: <t:${uptime}:f>, <t:${uptime}:R>\n- Uptime: ${((Math.round(Date.now()/1000)-uptime)/(60*60)).toFixed(2)} hours\n- Server Count: ${client.guilds.cache.size} Servers\n- User Install Count: ${d.approximate_user_install_count} Users`);
+            });
         break;
         case 'define':
             fetch("https://api.dictionaryapi.dev/api/v2/entries/en/"+cmd.options.getString("what")).then(d=>d.json()).then(d=>{
