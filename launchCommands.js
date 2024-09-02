@@ -278,7 +278,7 @@ const commands = [
 		).addBooleanOption(option=>
 			option.setName("embeds").setDescription("If you link a Discord message, should I embed a preview for you?")
 		).addBooleanOption(option=>
-			option.setName("level_up_messages").setDescription("Do you want to receive a message letting you know you leveled up?")
+			option.setName("level_up_messages").setDescription("Do you want to receive messages letting you know you leveled up?")
 		).addBooleanOption(option=>
 			option.setName("configure_timezone").setDescription("Open up a menu to configure your timezone?")
 		),
@@ -493,10 +493,9 @@ const commands = [
 		).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
 
 	new ContextMenuCommandBuilder().setName("submit_meme").setType(ApplicationCommandType.Message),
-	//new ContextMenuCommandBuilder().setName("delete_message").setType(ApplicationCommandType.Message).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),//Leaving this in DMs to delete undesirable bot DMs
+	new ContextMenuCommandBuilder().setName("delete_message").setType(ApplicationCommandType.Message).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),//Leaving this in DMs to delete undesirable bot DMs
 	new ContextMenuCommandBuilder().setName("translate_message").setType(ApplicationCommandType.Message),
 	new ContextMenuCommandBuilder().setName("move_message").setType(ApplicationCommandType.Message).setDMPermission(false),
-	new ContextMenuCommandBuilder().setName("remove_embeds").setType(ApplicationCommandType.Message).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages).setDMPermission(false),
 	new ContextMenuCommandBuilder().setName("prime_embed").setType(ApplicationCommandType.Message)
 ]
 .map(command => Object.assign(command.toJSON(),extraInfo[command.toJSON().name]));

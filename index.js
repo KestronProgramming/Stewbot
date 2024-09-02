@@ -618,7 +618,7 @@ async function doEmojiboardReaction(react, client) {
             hook=hook.find(h=>h.token);
             if(hook){
                     hook.send(resp).then(h=>{
-                            emojiboard.posted[react.message.guild.id]=`webhook${h.id}`;
+                            emojiboard.posted[react.message.id]=`webhook${h.id}`;
                     });
             }
             else{
@@ -673,7 +673,7 @@ async function doEmojiboardReaction(react, client) {
             });
     }
 
-    storage[react.message.guild.id].emojiboards[emoji] = emojiboard
+    storage[react.message.guild.id].emojiboards[emoji] = emojiboard;
     try{ storage[react.message.guild.id].users[react.message.author.id].stars++; }catch(e){}
     save();
 }
@@ -2112,12 +2112,11 @@ client.on("interactionCreate",async cmd=>{
                 cmd.followUp("That emoji is not valid.");
                 break;
             }
-            console.log("emoji is",emoji);
             storage[cmd.guildId].emojiboards[emoji] = {
                 channel: cmd.options.getChannel("channel").id,
                 active: true,
                 threshold: cmd.options.getInteger("threshold") || 3,
-                messType: '0',
+                messType: cmd.options.getString("message_type"),
                 posted: {}
             };
             cmd.followUp("Emojiboard for " + parseEmoji(emoji) + " emoji added.");
