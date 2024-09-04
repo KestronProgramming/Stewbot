@@ -1593,7 +1593,7 @@ client.on("messageCreate",async msg=>{
                 }
             }
         }
-    }
+    }/*
     if(storage[msg.guildId]?.persistence!==null&&!msg.author.bot){
         if(storage[msg.guild.id].persistence[msg.channel.id]?.active){
             if(msg.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.ManageWebhooks)&&msg.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.ManageMessages)){
@@ -1631,7 +1631,7 @@ client.on("messageCreate",async msg=>{
                 storage[msg.guild.id].persistence[msg.channel.id].active=false;
             }
         }
-    }
+    }*/
 
     var links=msg.content.match(discordMessageRegex)||[];
     var progs=msg.content.match(kaProgramRegex)||[];
