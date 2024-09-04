@@ -943,6 +943,7 @@ const handleError = (msg, dm) => {
 };
 
 const defaultGuild={
+    "persistence":{},
     "daily":{
         "memes":{
             "active":false,
@@ -1590,6 +1591,44 @@ client.on("messageCreate",async msg=>{
                     }
                     save();
                 }
+            }
+        }
+    }
+    if(storage[msg.guildId]?.persistence!==null&&!msg.author.bot){
+        if(storage[msg.guild.id].persistence[msg.channel.id]?.active){
+            if(msg.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.ManageWebhooks)&&msg.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.ManageMessages)){
+                if(storage[msg.guild.id].persistence[msg.channel.id].lastPost!==null){
+                    var mes=await msg.channel.messages.fetch(storage[msg.guild.id].persistence[msg.channel.id].lastPost);
+                    mes.delete();
+                }
+                var resp={
+                    "content":storage[msg.guild.id].persistence[msg.channel.id].content,
+                    "avatarURL":msg.guild.iconURL(),
+                    "username":msg.guild.name
+                };
+                var hook=await msg.channel.fetchWebhooks();
+                hook=hook.find(h=>h.token);
+                if(hook){
+                    hook.send(resp).then(d=>{
+                        storage[msg.guild.id].persistence[msg.channel.id].lastPost=d.id;
+                    });
+                }
+                else{
+                    client.channels.cache.get(msg.channel.id).createWebhook({
+                        name:"Stewbot",
+                        avatar: "https://cdn.discordapp.com/attachments/1145432570104926234/1170273261704196127/kt.jpg",
+                    }).then(d=>{
+                        d.send(resp).then(d=>{
+                            storage[msg.guild.id].persistence[msg.channel.id].lastPost=d.id;
+                        });
+                    });
+                }
+            }
+            else{
+                if(msg.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
+                    msg.channel.send(`I do not have sufficient permissions to manage persistent messages for this channel. Please make sure I can both manage webhooks and delete messages and then run ${cmds.set_persistent_message.mention}.`);
+                }
+                storage[msg.guild.id].persistence[msg.channel.id].active=false;
             }
         }
     }
@@ -3144,6 +3183,27 @@ client.on("interactionCreate",async cmd=>{
                     }
                     save();
                 break;
+            }
+        break;
+        case 'set_persistent_message':
+            if(!storage[cmd.guild.id].hasOwnProperty("persistence")){
+                storage[cmd.guild.id].persistence={};
+            }
+            if(!storage[cmd.guild.id].persistence.hasOwnProperty(cmd.channel.id)){
+                storage[cmd.guild.id].persistence[cmd.channel.id]={
+                    "active":false,
+                    "content":"Jerry",
+                    "lastPost":null
+                };
+            }
+            storage[cmd.guild.id].persistence[cmd.channel.id].active=cmd.options.getBoolean("active");
+            if(cmd.options.getString("content")!==null) storage[cmd.guild.id].persistence[cmd.channel.id].content=cmd.options.getString("content");
+            if(cmd.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.ManageWebhooks)){
+                cmd.followUp(`I have set your settings for this channel's persistent messages.`);
+            }
+            else{
+                cmd.followUp(`I need to be able to delete messages as well as manage webhooks for this channel. Without these permissions I cannot manage persistent messages here.`);
+                storage[cmd.guild.id].persistence[cmd.channel.id].active=false;
             }
         break;
 
