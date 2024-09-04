@@ -1593,9 +1593,16 @@ client.on("messageCreate",async msg=>{
                 }
             }
         }
-    }/*
-    if(storage[msg.guildId]?.persistence!==null&&!msg.author.bot){
-        if(storage[msg.guild.id].persistence[msg.channel.id]?.active){
+    }
+    if(storage[msg.guildId]?.hasOwnProperty("persistence")&&!msg.author.bot){
+        if(!storage[msg.guild.id].persistence.hasOwnProperty(msg.channel.id)){
+            storage[msg.guild.id].persistence[msg.channel.id]={
+                "active":false,
+                "content":"Jerry",
+                "lastPost":null
+            };
+        }
+        if(storage[msg.guild.id].persistence[msg.channel.id].active){
             if(msg.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.ManageWebhooks)&&msg.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.ManageMessages)){
                 if(storage[msg.guild.id].persistence[msg.channel.id].lastPost!==null){
                     var mes=await msg.channel.messages.fetch(storage[msg.guild.id].persistence[msg.channel.id].lastPost);
@@ -1631,7 +1638,7 @@ client.on("messageCreate",async msg=>{
                 storage[msg.guild.id].persistence[msg.channel.id].active=false;
             }
         }
-    }*/
+    }
 
     var links=msg.content.match(discordMessageRegex)||[];
     var progs=msg.content.match(kaProgramRegex)||[];
