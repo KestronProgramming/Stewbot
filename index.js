@@ -1315,7 +1315,6 @@ client.on("messageCreate",async msg=>{
         return;
     }
     async function sendHook(what){
-        // TODO: kestronify this code (i.e. I edited it and see if you want to refractor it differently) - WKoA
         if(typeof what==="string"){
             what = what.replace(/\@(?=[^\]])/ig,"[@]"); // replace only @'s that are not already escaped
         }
@@ -1323,13 +1322,23 @@ client.on("messageCreate",async msg=>{
             what.content=what.content.replace(/\@(?=[^\]])/ig,"[@]");
         }
 
-        var hook=await msg.channel.fetchWebhooks();
+        // Thread IDs work a little different (channel is parent, and thread ID is channel ID)
+        let mainChannel;
+        if (msg.channel.isThread()) {
+            mainChannel = msg.channel.parent;
+            // Add in thread ID so it sends it there instead of the parent channel 
+            what.threadId = msg.channel.id;
+        } else {
+            mainChannel = msg.channel;
+        }
+
+        var hook=await mainChannel.fetchWebhooks();
         hook=hook.find(h=>h.token);
         if(hook){
             hook.send(what);
         }
         else{
-            msg.channel.createWebhook({
+            mainChannel.createWebhook({
                 name:"Stewbot",
                 avatar: "https://cdn.discordapp.com/attachments/1145432570104926234/1170273261704196127/kt.jpg",
             }).then(d=>{
@@ -1381,11 +1390,14 @@ client.on("messageCreate",async msg=>{
                     var rMsg=await msg.fetchReference();
                     replyBlip=`_[Reply to **${rMsg.author.username}**: ${rMsg.content.slice(0,22).replace(/(https?\:\/\/|\n)/ig,"").replace(/\@/ig,"[@]")}${rMsg.content.length>22?"...":""}](<https://discord.com/channels/${rMsg.guild.id}/${rMsg.channel.id}/${rMsg.id}>)_\n`;
                 }
-                sendHook({
-                    username:msg.member?.nickname||msg.author.globalName||msg.author.username,
-                    avatarURL:msg.member?.displayAvatarURL(),
-                    content:ll(`\`\`\`\nThe following message from ${msg.author.username} has been censored by Stewbot.\`\`\`${replyBlip}${msg.content.slice(0,1800).replace(/(https?\:\/\/|\n)/ig,"").replace(/\@/ig,"[@]")}`)
-                });
+
+                const filteredMessageData = {
+                    "username": msg.member?.nickname||msg.author.globalName||msg.author.username,
+                    "avatarURL": msg.member?.displayAvatarURL(),
+                    "content": ll(`\`\`\`\nThe following message from ${msg.author.username} has been censored by Stewbot.\`\`\`${replyBlip}${msg.content.slice(0,1800).replace(/(https?\:\/\/|\n)/ig,"").replace(/\@/ig,"[@]")}`),
+                }
+
+                sendHook(filteredMessageData);
             }
             if(storage[msg.author.id].config.dmOffenses&&msg.webhookId===null){
                 try{msg.author.send(ll(`Your message in **${msg.guild.name}** was ${storage[msg.guildId].filter.censor?"censored":"deleted"} due to the following word${foundWords.length>1?"s":""} being in the filter: ||${foundWords.join("||, ||")}||${storage[msg.author.id].config.returnFiltered?"```\n"+msg.ogContent.replaceAll("`","\\`")+"```":""}`)).catch(e=>{});}catch(e){}
