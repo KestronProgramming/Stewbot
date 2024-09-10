@@ -17,6 +17,10 @@ Object.keys(bible).forEach(book=>{
 });
 const ignoreSize = 10 + Object.keys(Bible).reduce((a, b) => a.length > b.length ? a : b).length;
 const threshold = 3;
+function escapeRegex(input) {
+    // https://stackoverflow.com/questions/3446170/escape-string-for-use-in-javascript-regex
+    return input.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+}
 function levenshtein(s, t) {
     if (s === t) {
         return 0;
@@ -501,6 +505,7 @@ function checkDirty(where,what){
     if(where===false||where===undefined) return false;
     var dirty=false;
     storage[where].filter.blacklist.forEach(blockedWord=>{
+        blockedWord = escapeRegex(blockedWord)
         if(blockedWord.match(/^\<\:\w+\:\d+\>$/)){//Reduce custom emojis to their base
             var blockedWord2=`:${blockedWord.split(":")[1]}:`;
             if(new RegExp(`\\b${blockedWord2}(ing|s|ed|er|ism|ist|es|ual)?\\b`,"ig").test(what)||what===blockedWord2){
@@ -1373,6 +1378,7 @@ client.on("messageCreate",async msg=>{
     if(storage[msg.guildId]?.filter.active){
         var foundWords=[];
         storage[msg.guildId].filter.blacklist.forEach(blockedWord=>{
+            blockedWord = escapeRegex(blockedWord);
             if(new RegExp(`\\b${blockedWord}(ing|s|ed|er|ism|ist|es|ual|y)?\\b`,"ig").test(msg.content)){
                 foundWords.push(blockedWord);
                 if(foundWords.length===1){
@@ -4184,6 +4190,7 @@ client.on("messageUpdate",async (msgO,msg)=>{
     if(storage[msg.guild.id]?.filter.active){
         var foundWords=[];
         storage[msg.guildId].filter.blacklist.forEach(blockedWord=>{
+            blockedWord = escapeRegex(blockedWord)
             if(new RegExp(`\\b${blockedWord}(ing|s|ed|er|ism|ist|es|ual)?\\b`,"ig").test(msg.content)){
                 foundWords.push(blockedWord);
             }
