@@ -8,6 +8,7 @@ const { createCanvas } = require('canvas');
 const { InworldClient, SessionToken, status } = require("@inworld/nodejs-sdk");
 const {Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction}=require("discord.js");
 const { getEmojiFromMessage, parseEmoji } = require('./util');
+const config=require("./config.json");
 const bible=require("./kjv.json");
 var Bible={};
 var properNames={};
@@ -18,7 +19,6 @@ Object.keys(bible).forEach(book=>{
 const ignoreSize = 10 + Object.keys(Bible).reduce((a, b) => a.length > b.length ? a : b).length;
 const threshold = 3;
 function escapeRegex(input) {
-    // https://stackoverflow.com/questions/3446170/escape-string-for-use-in-javascript-regex
     return input.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
 }
 function levenshtein(s, t) {
@@ -129,12 +129,7 @@ const fs=require("fs");
 var storage=require("./storage.json");
 const cmds=require("./commands.json");
 const m8ballResponses=["So it would seem","Yes","No","Perhaps","Absolutely","Positively","Unfortunately","I am unsure","I do not know","Absolutely not","Possibly","More likely than not","Unlikely","Probably not","Probably","Maybe","Random answers is not the answer"];
-var needToSave=false;
-function save(){
-    needToSave=true;
-    //fs.writeFileSync("./storage.json",JSON.stringify(storage));
-}
-setInterval(()=>{if(needToSave){fs.writeFileSync("./storage.json",JSON.stringify(storage))};needToSave=false;},10000);
+setInterval(()=>{fs.writeFileSync("./storage.json",JSON.stringify(storage));},10000);
 function ll(s){
     return s.length>1999?s.slice(0,1996)+"...":s;
 }
@@ -499,7 +494,7 @@ function noPerms(where,what){
             storage[where].filter.censor=false;
         break;
     }
-    save();
+    
 }
 function checkDirty(where,what){
     if(where===false||where===undefined) return false;
@@ -583,6 +578,9 @@ async function doEmojiboardReaction(react, client) {
     // exit if this message has already been posted
     if(react.message.id in emojiboard.posted) return;
 
+    // Exit if the message is already an emojiboard post
+    if(react.message.channel.id===emojiboard.channel) return;
+
     const messageData    = await react.message.channel.messages.fetch(react.message.id);
     const foundReactions = messageData.reactions.cache.get(react.emoji.id || react.emoji.name);
     const selfReactions  = react.message.reactions.cache.filter(r => r.users.cache.has(react.message.author.id) && r.emoji.name === react.emoji.name)
@@ -628,8 +626,8 @@ async function doEmojiboardReaction(react, client) {
             }
             else{
                     client.channels.cache.get(emojiboard.channel).createWebhook({
-                            name:"Stewbot",
-                            avatar: "https://cdn.discordapp.com/attachments/1145432570104926234/1170273261704196127/kt.jpg",
+                            name:config.name,
+                            avatar: config.pfp,
                     }).then(d=>{
                             d.send(resp).then(h=>{
                                     emojiboard.posted[react.message.id]=`webhook${h.id}`;
@@ -680,7 +678,7 @@ async function doEmojiboardReaction(react, client) {
 
     storage[react.message.guild.id].emojiboards[emoji] = emojiboard;
     try{ storage[react.message.guild.id].users[react.message.author.id].stars++; }catch(e){}
-    save();
+    
 }
 
 var started24=false;
@@ -1194,9 +1192,6 @@ const presets={
 
 var kaProgramRegex =/\b(?!<)https?:\/\/(?:www\.)?khanacademy\.org\/(cs|computer-programming|hour-of-code|python-program)\/[a-z,\d,-]+\/\d+(?!>)\b/gi;
 var discordMessageRegex =/\b(?!<)https?:\/\/(ptb\.|canary\.)?discord(app)?.com\/channels\/(\@me|\d+)\/\d+\/\d+(?!>)\b/gi;
-var spotifyTrackRegex=/\bhttps?:\/\/open\.spotify\.com\/track\/\w+(\b|\?)/gi;
-var spotifyAlbumRegex=/\bhttps?:\/\/open\.spotify\.com\/album\/\w+(\b|\?)/gi;
-var spotifyPlaylistRegex=/\bhttps?:\/\/open\.spotify\.com\/playlist\/\w+(\b|\?)/gi;
 function getStarMsg(msg){
     var msgs=[
         `Excuse me, there is a new message.`,
@@ -1266,7 +1261,7 @@ client.once("ready",async ()=>{
     uptime=Math.round(Date.now()/1000);
     notify(1,`Started <t:${uptime}:R>`);
     console.log(`Logged Stewbot handles into ${client.user.tag}`);
-    save();
+    
     client.user.setActivity("It's a `/secret` to everybody",{type:ActivityType.Custom},1000*60*60*4);
     setInterval(()=>{
         statTog++;
@@ -1344,8 +1339,8 @@ client.on("messageCreate",async msg=>{
         }
         else{
             mainChannel.createWebhook({
-                name:"Stewbot",
-                avatar: "https://cdn.discordapp.com/attachments/1145432570104926234/1170273261704196127/kt.jpg",
+                name: config.name,
+                avatar: config.pfp,
             }).then(d=>{
                 d.send(what);
             });
@@ -1356,16 +1351,16 @@ client.on("messageCreate",async msg=>{
     if(msg.guildId!=="0"){
         if(!storage.hasOwnProperty(msg.guildId)){
             storage[msg.guildId]=structuredClone(defaultGuild);
-            save();
+            
         }
         if(!storage[msg.guildId].users.hasOwnProperty(msg.author.id)){
             storage[msg.guildId].users[msg.author.id]=structuredClone(defaultGuildUser);
-            save();
+            
         }
     }
     if(!storage.hasOwnProperty(msg.author.id)){
         storage[msg.author.id]=structuredClone(defaultUser);
-        save();
+        
     }
     if(msg.guild){
         Object.keys(PermissionFlagsBits).forEach(perm=>{
@@ -1417,7 +1412,7 @@ client.on("messageCreate",async msg=>{
                     storage[msg.guildId].filter.log=false;
                 }
             }
-            save();
+            
             return;
         }
     }
@@ -1464,8 +1459,8 @@ client.on("messageCreate",async msg=>{
                         }
                         else{
                             client.channels.cache.get(storage[msg.guild.id].levels.location==="channel"?storage[msg.guild.id].levels.channel:msg.channel.id).createWebhook({
-                                name:"Stewbot",
-                                avatar: "https://cdn.discordapp.com/attachments/1145432570104926234/1170273261704196127/kt.jpg",
+                                name:config.name,
+                                avatar: config.pfp
                             }).then(d=>{
                                 d.send(resp);
                             });
@@ -1493,7 +1488,7 @@ client.on("messageCreate",async msg=>{
                 }
             }
         }
-        save();
+        
     }
     if(storage[msg.guildId]?.counting.active&&msg.channel.id===storage[msg.guildId]?.counting.channel&&!msg.author.bot&&(!msg.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.AddReactions)||!msg.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages))){
         storage[msg.guildId].counting.active=false;
@@ -1515,7 +1510,7 @@ client.on("messageCreate",async msg=>{
                     }
                     storage[msg.guild.id].users[msg.author.id].count++;
                     storage[msg.guild.id].users[msg.author.id].countTurns=storage[msg.guild.id].counting.takeTurns;
-                    save();
+                    
                 }
                 else{
                     msg.react("❌");
@@ -1541,7 +1536,7 @@ client.on("messageCreate",async msg=>{
                                     }
                                 }
                             }
-                            save();
+                            
                         }
                     }
                     else{
@@ -1561,7 +1556,7 @@ client.on("messageCreate",async msg=>{
                                 }
                             }
                         }
-                        save();
+                        
                     }
                 }
             }
@@ -1588,7 +1583,7 @@ client.on("messageCreate",async msg=>{
                             }
                         }
                     }
-                    save();
+                    
                 }
                 else{
                     msg.reply(`⚠️ **Warning**\nNope, that's incorrect. You have been warned! Next time this will reset the count. The next number is **${storage[msg.guild.id].counting.nextNum}**.\`\`\`\nNumbers entered must be the last number plus one, (so if the last entered number is 148, the next number is 149).${storage[msg.guild.id].counting.takeTurns>0?` You also need to make sure at least ${storage[msg.guild.id].counting.takeTurns} other ${storage[msg.guild.id].counting.takeTurns===1?"person":"people"} take${storage[msg.guild.id].counting.takeTurns===1?"s":""} a turn before you take another turn.\`\`\``:"```"}`);
@@ -1607,7 +1602,7 @@ client.on("messageCreate",async msg=>{
                             }
                         }
                     }
-                    save();
+                    
                 }
             }
         }
@@ -1640,8 +1635,8 @@ client.on("messageCreate",async msg=>{
                 }
                 else{
                     client.channels.cache.get(msg.channel.id).createWebhook({
-                        name:"Stewbot",
-                        avatar: "https://cdn.discordapp.com/attachments/1145432570104926234/1170273261704196127/kt.jpg",
+                        name: config.name,
+                        avatar: config.pfp
                     }).then(d=>{
                         d.send(resp).then(d=>{
                             storage[msg.guild.id].persistence[msg.channel.id].lastPost=d.id;
@@ -1855,8 +1850,8 @@ client.on("messageCreate",async msg=>{
                 }
                 else{
                     client.channels.cache.get(rmsg.content.split("Ticket ID: ")[1].split("/")[0]).createWebhook({
-                        name:"Stewbot",
-                        avatar: "https://cdn.discordapp.com/attachments/1145432570104926234/1170273261704196127/kt.jpg",
+                        name: config.name,
+                        avatar: config.pfp
                     }).then(d=>{
                         fetch(`https://discord.com/api/webhooks/${d.id}/${d.token}?thread_id=${rmsg.content.split("Ticket ID:")[1].split("/")[1]}`, {
                             method: 'POST',
@@ -1926,81 +1921,15 @@ client.on("messageCreate",async msg=>{
             storage[msg.guild.id].users[msg.author.id].lastMessages=[];
         }
         storage[msg.guild.id].users[msg.author.id].lastMessages.push(`${msg.channel.id}/${msg.id}`);
-        save();
+        
     }
-    /*
-    msg.mentions.users.forEach(async mentionedUser=>{
-        if(storage[msg.guild?.id]?.users[mentionedUser.id]?.gone?.active&&(mentionedUser.id!==msg.author.id)&&msg.channel.permissionsFor(mentionedUser.id).has(PermissionFlagsBits.SendMessages)){
-            if(storage[msg.guild.id].users[mentionedUser.id].gone.until>new Date()){
-                if(msg.guild.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageWebhooks)){
-                    var resp={
-                        "content":ll(`${getAwayCard(false,mentionedUser.id,msg.guild.id,false)}\n\n_Set up using ${cmds.unavailable.mention}_`.replace(/\@(?=[^\]])/ig,"[@]")), // TODO see if this one worked ig
-                        "avatarURL":mentionedUser.displayAvatarURL(),
-                        "username":mentionedUser.globalName||mentionedUser.username
-                    };
-                    var hook=await msg.channel.fetchWebhooks();
-                    hook=hook.find(h=>h.token);
-                    // TODO - use the sendHook function here - WKoA
-                    if(hook){
-                        hook.send(resp);
-                    }
-                    else{
-                        client.channels.cache.get(storage[msg.guild.id].levels.location==="channel"?storage[msg.guild.id].levels.channel:msg.channel.id).createWebhook({
-                            name:"Stewbot",
-                            avatar: "https://cdn.discordapp.com/attachments/1145432570104926234/1170273261704196127/kt.jpg",
-                        }).then(d=>{
-                            d.send(resp);
-                        });
-                    }
-                }
-                else if(msg.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
-                    msg.reply({embeds:[getAwayCard(true,mentionedUser.id,msg.guild.id,false)],allowedMentions:{parse:[]}});
-                }
-            }
-            else{
-                storage[msg.guild.id].users[mentionedUser.id].gone.active=false;
-            }
-            save();
-        }
-        else if(storage[mentionedUser.id]?.gone?.active&&mentionedUser.id!==msg.author.id&&msg.channel.permissionsFor(mentionedUser.id).has(PermissionFlagsBits.SendMessages)){
-            if(storage[mentionedUser.id].gone.until>new Date()){
-                if(msg.guild.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageWebhooks)){
-                    var resp={
-                        "content":`${getAwayCard(false,mentionedUser.id,msg.guild.id,true)}\n\n_Set up using ${cmds.unavailable.mention}_`.replace(/\@(?=[^\]])/ig,"[@]"),
-                        "avatarURL":mentionedUser.displayAvatarURL(),
-                        "username":mentionedUser.globalName||mentionedUser.username
-                    };
-                    var hook=await msg.channel.fetchWebhooks();
-                    hook=hook.find(h=>h.token);
-                    if(hook){
-                        hook.send(resp);
-                    }
-                    else{
-                        client.channels.cache.get(storage[msg.guild.id].levels.location==="channel"?storage[msg.guild.id].levels.channel:msg.channel.id).createWebhook({
-                            name:"Stewbot",
-                            avatar: "https://cdn.discordapp.com/attachments/1145432570104926234/1170273261704196127/kt.jpg",
-                        }).then(d=>{
-                            d.send(resp);
-                        });
-                    }
-                }
-                else if(msg.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
-                    msg.reply({embeds:[getAwayCard(true,mentionedUser.id,msg.guild.id,true)],allowedMentions:{parse:[]}});
-                }
-            }
-            else{
-                storage[mentionedUser.id].gone.active=false;
-            }
-            save();
-        }
-    });*/
     if(storage[msg.guild?.id]?.users[msg.author.id].gone?.active&&storage[msg.guild?.id]?.users[msg.author.id].gone?.autoOff){
         storage[msg.guild.id].users[msg.author.id].gone.active=false;
-        save();
+        
     }
     if(storage[msg.author.id].gone?.active&&storage[msg.author.id].gone?.autoOff){
         storage[msg.author.id].gone.active=false;
-        save();
+        
     }
 });
 client.on("interactionCreate",async cmd=>{
@@ -2012,11 +1941,11 @@ client.on("interactionCreate",async cmd=>{
         if(cmd.guildId!==0){
             if(!storage.hasOwnProperty(cmd.guildId)){
                 storage[cmd.guildId]=structuredClone(defaultGuild);
-                save();
+                
             }
             if(!storage[cmd.guildId].users.hasOwnProperty(cmd.user.id)){
                 storage[cmd.guildId].users[cmd.user.id]=structuredClone(defaultGuildUser);
-                save();
+                
             }
         }
     }
@@ -2025,7 +1954,7 @@ client.on("interactionCreate",async cmd=>{
     }
     if(!storage.hasOwnProperty(cmd.user.id)){
         storage[cmd.user.id]=structuredClone(defaultUser);
-        save();
+        
     }
     //Slash Commands and Context Menus
     switch(cmd.commandName){
@@ -2089,14 +2018,14 @@ client.on("interactionCreate",async cmd=>{
                     else{
                         storage[cmd.guildId].filter.blacklist.push(cmd.options.getString("word"));
                         cmd.followUp(`Added ||${cmd.options.getString("word")}|| to the filter for this server.${storage[cmd.guildId].filter.active?"":`\n\nThe filter for this server is currently disabled. To enable it, use ${cmds.filter.config.mention}.`}`);
-                        save();
+                        
                     }
                 break;
                 case "remove":
                     if(storage[cmd.guildId].filter.blacklist.includes(cmd.options.getString("word"))){
                         storage[cmd.guildId].filter.blacklist.splice(storage[cmd.guildId].filter.blacklist.indexOf(cmd.options.getString("word")),1);
                         cmd.followUp(`Alright, I have removed ||${cmd.options.getString("word")}|| from the filter.`);
-                        save();
+                        
                     }
                     else{
                         cmd.followUp(`I'm sorry, but I don't appear to have that word in my blacklist. Are you sure you're spelling it right? You can use ${cmds.view_filter.mention} to see all filtered words.`);
@@ -2108,7 +2037,7 @@ client.on("interactionCreate",async cmd=>{
                     if(cmd.options.getBoolean("censor")!==null) storage[cmd.guildId].filter.censor=cmd.options.getBoolean("censor");
                     if(cmd.options.getBoolean("log")!==null) storage[cmd.guildId].filter.log=cmd.options.getBoolean("log");
                     if(cmd.options.getChannel("channel")!==null) storage[cmd.guildId].filter.channel=cmd.options.getChannel("channel").id;
-                    save();
+                    
                     if(!cmd.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageWebhooks)&&storage[cmd.guildId].filter.censor){
                         storage[cmd.guildId].filter.censor=false;
                         disclaimers.push(`I cannot run censoring for this server, I need the MANAGE_WEBHOOKS permission first, otherwise I can't post a censored version.`);
@@ -2134,7 +2063,7 @@ client.on("interactionCreate",async cmd=>{
                             }
                         });
                         cmd.followUp(addedWords.length>0?ll(`Added the following words to the blacklist:\n- ||${addedWords.join("||\n- ||")}||`):`Unable to add any of the words to the filter. Either there aren't any in the CSV, it's not formatted right, or all of the words are in the blacklist already.`);
-                        save();
+                        
                     });
                 break;
             }
@@ -2172,7 +2101,7 @@ client.on("interactionCreate",async cmd=>{
                 disclaimers.push(`I do not have the MANAGE_WEBHOOKS permissions, so I cannot use the starboard message type configured. I have changed the setting to "Post an embed with the message" instead.`);
             }
             cmd.followUp(`Starboard configured.${disclaimers.map(d=>`\n\n${d}`).join("")}`);
-            save();
+            
         break;
         case 'add_emojiboard':
             if(!cmd.guild?.id){
@@ -2192,7 +2121,7 @@ client.on("interactionCreate",async cmd=>{
                 posted: {}
             };
             cmd.followUp("Emojiboard for " + parseEmoji(emoji) + " emoji added.");
-            save();
+            
             break;
         case 'remove_emojiboard':
             if(!cmd.guild?.id){
@@ -2210,7 +2139,7 @@ client.on("interactionCreate",async cmd=>{
             }
             delete storage[cmd.guildId].emojiboards[emoji];
             cmd.followUp("Emojiboard for " + parseEmoji(emoji) + " emoji removed.");
-            save();
+            
             break;
         case 'edit_emojiboard':
             if(!cmd.guild?.id){
@@ -2247,7 +2176,7 @@ client.on("interactionCreate",async cmd=>{
                 disclaimers.push(`I do not have the MANAGE_WEBHOOKS permission for this server, so I cannot post level-up messages. I have set the location for level-up notifications to DMs instead.`);
             }
             cmd.followUp(`Level ups configured.${disclaimers.map(d=>`\n\n${d}`).join("")}`);
-            save();
+            
         break;
         case 'counting':
             switch(cmd.options.getSubcommand()){
@@ -2312,7 +2241,7 @@ client.on("interactionCreate",async cmd=>{
                         storage[cmd.guildId].users[a].beenCountWarned=false;
                     }
                     cmd.followUp(`Alright, I configured counting for this server.${disclaimers.map(d=>`\n\n${d}`).join("")}${storage[cmd.guildId].counting.legit?"":`\n\nPlease be aware this server is currently ineligible for the leaderboard. To fix this, make sure that reset is set to true, that the posts between turns is at least 1, and that you don't set the number to anything higher than 1 manually.`}`);
-                    save();
+                    
                 break;
                 case "set_number":
                     if(!storage[cmd.guildId].counting.active){
@@ -2327,7 +2256,7 @@ client.on("interactionCreate",async cmd=>{
                         storage[cmd.guildId].counting.legit=true;
                     }
                     cmd.followUp(`Alright, I've set the next number to be counted to \`${storage[cmd.guildId].counting.nextNum}\`.${storage[cmd.guildId].counting.legit?"":`\n\nPlease be aware that this server is currently ineligible for the leaderboard. To fix this, make sure that the number you start from is less than 2, that the posts between turns is at least 1, and that counting is configured to reset upon any mistakes.`}`);
-                    save();
+                    
                 break;
             }
         break;
@@ -2404,6 +2333,18 @@ client.on("interactionCreate",async cmd=>{
                     }
                     rac.players=[cmd.user.id];
                     cmd.followUp({content:getRACBoard(),components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId("racJoin").setLabel("Join Game").setStyle(ButtonStyle.Danger),new ButtonBuilder().setCustomId("racMove").setLabel("Make a Move").setStyle(ButtonStyle.Success))]});
+                break;
+                case 'rock_paper_scissors':
+                    var humanChoice=cmd.options.getString("choice");
+                    var computerChoice=["Rock","Paper","Scissors"][Math.floor(Math.random()*3)];
+                    var won=0;
+                    if(humanChoice==="Rock"&&computerChoice==="Paper"||humanChoice==="Paper"&&computerChoice==="Scissors"||humanChoice==="Scissors"&&computerChoice==="Rock"){
+                        won=1;
+                    }
+                    else if(humanChoice!==computerChoice){
+                        won=2;
+                    }
+                    cmd.followUp(`${won==0?`We`:`You`} ${won==0?`tied`:won==1?`lost`:`won`}! You played ${humanChoice} and I played ${computerChoice}.`);
                 break;
             }
         break;
@@ -2523,8 +2464,8 @@ client.on("interactionCreate",async cmd=>{
                 }
                 else{
                     cmd.channel.createWebhook({
-                        name:"Stewbot",
-                        avatar: "https://cdn.discordapp.com/attachments/1145432570104926234/1170273261704196127/kt.jpg",
+                        name: config.name,
+                        avatar: config.pfp
                     }).then(d=>{
                         d.send(resp);
                     });
@@ -2551,7 +2492,7 @@ client.on("interactionCreate",async cmd=>{
                 disclaimers.push(`I can't post in the specified channel, so logging is turned off.`);
             }
             cmd.followUp(`Configured log events.${disclaimers.map(d=>`\n\n${d}`).join("")}`);
-            save();
+            
         break;
         case 'sticky-roles':
             if(!cmd.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageRoles)){
@@ -2579,7 +2520,7 @@ client.on("interactionCreate",async cmd=>{
             cmd.followUp({content:`I have attempted to timeout <@${cmd.options.getUser("target").id}>`,allowedMentions:{parse:[]}});
         break;
         case 'ban':
-            if(cmd.options.getUser("target").id===client.id){
+            if(cmd.options.getUser("target").id===client.user.id){
                 cmd.followUp(`I cannot ban myself. I apologize for any inconveniences I may have caused. You can use ${cmds.report_problem.mention} if there's something that needs improvement.`);
                 break;
             }
@@ -2612,7 +2553,7 @@ client.on("interactionCreate",async cmd=>{
                     };
                 }),
                 "thumbnail": {
-                    "url": `https://cdn.discordapp.com/attachments/1145432570104926234/1170273261704196127/kt.jpg`,
+                    "url": config.pfp,
                     "height": 0,
                     "width": 0
                 },
@@ -2958,7 +2899,7 @@ client.on("interactionCreate",async cmd=>{
                 break;
             }
             cmd.followUp(`${storage[cmd.guildId].daily.devos.active?"A":"Dea"}ctivated daily \`devotions\` for this server in <#${storage[cmd.guildId].daily.devos.channel}>.`);
-            save();
+            
         break;
         case 'links':
             cmd.followUp(`Here is a list of links in relation with this bot you may find useful.\n- [Stewbot's Website](<https://stewbot.kestron.software/>)\n- [Stewbot's Invite Link](<https://stewbot.kestron.software/addIt>)\n- [Support Server](<https://discord.gg/k3yVkrrvez>)\n- [Stewbot's Source Code on Github](<https://github.com/KestronProgramming/Stewbot>)\n- [The Developer](<https://discord.com/users/949401296404905995>)\n- [The Developer's Website](<https://kestron.software/>)`);
@@ -3062,58 +3003,7 @@ client.on("interactionCreate",async cmd=>{
                 captcha+=Math.floor(Math.random()*10);
             }
             cmd.followUp({content:`Please enter the following: \`${captcha}\`\n\nEntered: \`\``,components:presets.captcha});
-            save();
-        break;
-        case 'unavailable':
-            var glbl=cmd.options.getBoolean("globally");
-            var ts=false;
-            var disclaimers=[];
-            if(cmd.options.getString("how_long")){
-                ts=cmd.options.getString("how_long");
-                if(ts.includes(":")) ts=ts.split(":")[1];
-                if(!/^\d+$/.test(ts)){
-                    disclaimers.push(`Invalid timestamp`);
-                    ts=false;
-                }
-                if(ts.length<13) ts+="000";
-            }
-            if(!ts){
-                ts="999999999999999999";
-            }
-            if(!storage[cmd.user.id].hasOwnProperty("gone")){
-                storage[cmd.user.id].gone=structuredClone(defaultUser.gone);
-            }
-            if(!storage[cmd.guild?.id]?.users[cmd.user.id]?.hasOwnProperty("gone")&&cmd.guild){
-                storage[cmd.guild?.id].users[cmd.user.id].gone=structuredClone(defaultGuildUser.gone);
-            }
-            if(!cmd.guild&&!glbl){
-                glbl=true;
-                disclaimers.push(`This command was not used in a server, so the setting has been applied globally.`);
-            }
-            if(glbl){
-                storage[cmd.user.id].gone.active=cmd.options.getBoolean("active");
-                if(cmd.options.getString("message")!==null) storage[cmd.user.id].gone.message=cmd.options.getString("message").replaceAll("\\n","\n");
-                if(ts) storage[cmd.user.id].gone.until=+ts;
-                if(cmd.options.getBoolean("auto_deactivate")!==null) storage[cmd.user.id].gone.autoOff=cmd.options.getBoolean("auto_deactivate");
-            }
-            else{
-                storage[cmd.guild?.id].users[cmd.user.id].gone.active=cmd.options.getBoolean("active");
-                if(!checkDirty(cmd.guild.id,cmd.options.getString("message"))){
-                    if(cmd.options.getString("message")!==null) storage[cmd.guild.id].users[cmd.user.id].gone.message=cmd.options.getString("message").replaceAll("\\n","\n");
-                }
-                else{
-                    disclaimers.push(`I cannot use that message in this server.`);
-                }
-                if(ts) storage[cmd.guild.id].users[cmd.user.id].gone.until=+ts;
-                if(cmd.options.getBoolean("auto_deactivate")!==null) storage[cmd.guild.id].users[cmd.user.id].gone.autoOff=cmd.options.getBoolean("auto_deactivate");
-            }
-            if(cmd.options.getBoolean("active")){
-                cmd.followUp({content:`As you command.${disclaimers.map(d=>`\n\n${d}`).join("")}`,embeds:[getAwayCard(true,cmd.user.id,cmd.guild?.id,glbl)]});
-            }
-            else{
-                cmd.followUp(`As you command.`);
-            }
-            save();
+            
         break;
         case 'user':
             var who=cmd.guild.members.cache.get(cmd.options.getUser("who")?cmd.options.getUser("who").id:cmd.user.id);
@@ -3184,7 +3074,7 @@ client.on("interactionCreate",async cmd=>{
                     }
                     storage.rss[hash].channels.push(cmd.options.getChannel("channel").id);
                     cmd.followUp("I have followed the feed for that channel");
-                    save();
+                    
                 break;
                 case 'unfollow':
                     if(cmd.options.getString("feed").toLowerCase()!=="all"){
@@ -3206,7 +3096,7 @@ client.on("interactionCreate",async cmd=>{
                         });
                         cmd.followUp(`I have unfollowed all feeds for that channel`);
                     }
-                    save();
+                    
                 break;
             }
         break;
@@ -3230,6 +3120,13 @@ client.on("interactionCreate",async cmd=>{
                 cmd.followUp(`I need to be able to delete messages as well as manage webhooks for this channel. Without these permissions I cannot manage persistent messages here.`);
                 storage[cmd.guild.id].persistence[cmd.channel.id].active=false;
             }
+        break;
+        case 'delete':
+            if(!cmd.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.ManageMessages)){
+                cmd.followUp(`I do not have the necessary permissions to execute this command.`);
+                break;
+            }
+            cmd.channel.bulkDelete(cmd.options.getInteger("amount")+1);
         break;
 
         case 'restart':
@@ -3265,7 +3162,7 @@ client.on("interactionCreate",async cmd=>{
                 storage[cmd.user.id].primedEmbed.attachmentURLs.push(a.url);
             });
             cmd.followUp({content:`I have prepared the message to be embedded. Use ${cmds.embed_message.mention} and type **PRIMED** to embed this message.`,embeds:[getPrimedEmbed(cmd.user.id)],files:storage[cmd.user.id].primedEmbed.attachmentURLs});
-            save();
+            
         break;
         case 'delete_message':
             if(cmd.guild?.id){
@@ -3394,7 +3291,7 @@ client.on("interactionCreate",async cmd=>{
                 });
                 poll.options=structuredClone(t);
                 storage[cmd.guildId].polls[msg.id]=structuredClone(poll);
-                save();
+                
             });
             cmd.update({"content":"\u200b",components:[]});
         break;
@@ -3451,7 +3348,7 @@ client.on("interactionCreate",async cmd=>{
                     i--;
                 }
             }
-            save();
+            
 
             var finalResults={};
             var totalVotes=0;
@@ -3499,7 +3396,7 @@ client.on("interactionCreate",async cmd=>{
         break;
         case 'tzSave':
             storage[cmd.user.id].config.hasSetTZ=true;
-            save();
+            
             cmd.update({content:`## Timezone Configured\n\nUTC ${storage[cmd.user.id].config.timeOffset}`,components:[]});
         break;
         case 'howToCopy':
@@ -3690,7 +3587,7 @@ client.on("interactionCreate",async cmd=>{
             else{
                 storage[cmd.guildId].autoJoinRoles=goodRoles;
                 cmd.reply({content:`Alright, I will add these roles to new members: <@&${goodRoles.join(">, <@&")}>`,allowedMentions:{parse:[]},ephemeral:true});
-                save();
+                
             }
         break;
         case 'move-message':
@@ -3726,8 +3623,8 @@ client.on("interactionCreate",async cmd=>{
             }
             else{
                 client.channels.cache.get(cmd.values[0]).createWebhook({
-                    name:"Stewbot",
-                    avatar: "https://cdn.discordapp.com/attachments/1145432570104926234/1170273261704196127/kt.jpg",
+                    name: config.name,
+                    avatar: config.pfp,
                 }).then(d=>{
                     d.send(resp).then(()=>{
                         msg.delete();
@@ -3784,7 +3681,7 @@ client.on("interactionCreate",async cmd=>{
             fs.writeFileSync("./tempPoll.png",canvas.toBuffer("image/png"));
             cmd.update({content:ll(`**Poll Closed**\n<@${poll.starter}> asked: **${poll.title}**${poll.choices.map((a,i)=>`\n${i}. ${a} **${storage[cmd.guildId].polls[cmd.message.id].options[a].length}** - ${pieCols[i][1]}`).join("")}\n\n**Voters**${Object.keys(storage[cmd.guildId].polls[cmd.message.id].options).map(opt=>`\n${opt}${storage[cmd.guildId].polls[cmd.message.id].options[opt].map(a=>`\n- <@${a}>`).join("")}`).join("")}`),components:[],allowedMentions:{"parse":[]},files:["./tempPoll.png"]});
             delete storage[cmd.guildId].polls[cmd.message.id];
-            save();
+            
         }
         else{
             cmd.reply({"ephemeral":true,"content":"You didn't start this poll and you don't have sufficient permissions to override this."});
@@ -3827,7 +3724,7 @@ client.on("interactionCreate",async cmd=>{
         });
         fs.writeFileSync("./tempPoll.png",canvas.toBuffer("image/png"));
         cmd.update({content:`<@${poll.starter}> asks: **${poll.title}**${poll.choices.map((a,i)=>`\n${i}. ${a} **${storage[cmd.guildId].polls[cmd.message.id].options[a].length}**${finalResults.hasOwnProperty(a)?` - ${pieCols[i][1]}`:""}`).join("")}`,files:["./tempPoll.png"]});
-        save();
+        
     }
     if(cmd.customId?.startsWith("autoRole-")){
         let myRole=cmd.guild.members.cache.get(client.user.id).roles.highest.position;
@@ -3882,7 +3779,7 @@ client.on("interactionCreate",async cmd=>{
                 };
             }),
             "thumbnail": {
-                "url": `https://cdn.discordapp.com/attachments/1145432570104926234/1170273261704196127/kt.jpg`,
+                "url": config.pfp,
                 "height": 0,
                 "width": 0
             },
@@ -4022,16 +3919,16 @@ client.on("messageReactionAdd",async (react,user)=>{
     if(react.message.guildId!=="0"){
         if(!storage.hasOwnProperty(react.message.guildId)){
             storage[react.message.guildId]=structuredClone(defaultGuild);
-            save();
+            
         }
         if(!storage[react.message.guildId].users.hasOwnProperty(user.id)){
             storage[react.message.guildId].users[user.id]=structuredClone(defaultGuildUser);
-            save();
+            
         }
     }
     if(!storage.hasOwnProperty(user.id)){
         storage[user.id]=structuredClone(defaultUser);
-        save();
+        
     }
     if(storage[react.message.guild?.id]?.filter.active&&react.message.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageMessages)){
         if(checkDirty(react.message.guild.id,`${react._emoji.name.trim()}`)){
@@ -4089,8 +3986,8 @@ client.on("messageReactionAdd",async (react,user)=>{
                 }
                 else{
                     client.channels.cache.get(storage[react.message.guild.id].starboard.channel).createWebhook({
-                        name:"Stewbot",
-                        avatar: "https://cdn.discordapp.com/attachments/1145432570104926234/1170273261704196127/kt.jpg",
+                        name: config.name,
+                        avatar: config.pfp,
                     }).then(d=>{
                         d.send(resp).then(h=>{
                             storage[react.message.guild.id].starboard.posted[react.message.id]=`webhook${h.id}`;
@@ -4129,7 +4026,7 @@ client.on("messageReactionAdd",async (react,user)=>{
                 });
             }
             try{storage[react.message.guild.id].users[react.message.author.id].stars++;}catch(e){}
-            save();
+            
         }
     }
 
@@ -4139,7 +4036,7 @@ client.on("messageDelete",async msg=>{
     if(msg.guild?.id===undefined) return;
     if(!storage.hasOwnProperty(msg.guild.id)){
         storage[msg.guild.id]=structuredClone(defaultGuild);
-        save();
+        
     }
     if(storage[msg.guild.id]?.starboard.posted.hasOwnProperty(msg.id)){
         if(storage[msg.guild.id].starboard.posted[msg.id].startsWith("webhook")){
@@ -4207,7 +4104,7 @@ client.on("messageUpdate",async (msgO,msg)=>{
             if(storage[msg.guildId].filter.log&&storage[msg.guildId].filter.channel){
                 client.channels.cache.get(storage[msg.guildId].filter.channel).send(ll(`I have deleted a message from **${msg.author.username}** in <#${msg.channel.id}> for editing in the following blocked word${foundWords.length>1?"s":""}": ||${foundWords.join("||, ||")}||\`\`\`\n${msg.content.replaceAll("`","\\`")}\`\`\``));
             }
-            save();
+            
             return;
         }
     }
@@ -4267,7 +4164,7 @@ client.on("guildMemberAdd",async member=>{
         storage[member.id]=structuredClone(defaultUser);
     }
     storage[member.guild.id].users[member.id].inServer=true;
-    save();
+    
 
     if(storage[member.guild.id].ajm.active){
         if(!member.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageWebhooks)){
@@ -4303,8 +4200,8 @@ client.on("guildMemberAdd",async member=>{
             }
             else{
                 client.channels.cache.get(storage[member.guild.id].ajm.channel).createWebhook({
-                    name:"Stewbot",
-                    avatar: "https://cdn.discordapp.com/attachments/1145432570104926234/1170273261704196127/kt.jpg",
+                    name: config.name,
+                    avatar: config.pfp
                 }).then(d=>{
                     d.send(resp);
                 });
@@ -4351,20 +4248,20 @@ client.on("guildMemberAdd",async member=>{
 client.on("guildMemberRemove",async member=>{
     if(!storage.hasOwnProperty(member.guild.id)){
         storage[member.guild.id]=structuredClone(defaultGuild);
-        save();
+        
     }
     if(!storage[member.guild.id].users.hasOwnProperty(member.id)){
         storage[member.guild.id].users[member.id]=structuredClone(defaultGuildUser);
-        save();
+        
     }
     if(!storage.hasOwnProperty(member.id)){
         storage[member.id]=structuredClone(defaultUser);
-        save();
+        
     }
 
     storage[member.guild.id].users[member.id].roles=member.roles.cache.map(r=>r.id);
     storage[member.guild.id].users[member.id].inServer=false;
-    save();
+    
 
     if(storage[member.guild.id].logs.active&&storage[member.guild.id].logs.joining_and_leaving){
         var bans=await member.guild.bans.fetch();
@@ -4394,8 +4291,8 @@ client.on("guildMemberRemove",async member=>{
         }
         else{
             client.channels.cache.get(storage[member.guild.id].alm.channel).createWebhook({
-                name:"Stewbot",
-                avatar: "https://cdn.discordapp.com/attachments/1145432570104926234/1170273261704196127/kt.jpg",
+                name: config.name,
+                avatar: config.pfp
             }).then(d=>{
                 d.send(resp);
             });
@@ -4407,7 +4304,7 @@ client.on("guildMemberRemove",async member=>{
 client.on("channelDelete",async channel=>{
     if(!storage.hasOwnProperty(channel.guild.id)){
         storage[channel.guild.id]=structuredClone(defaultGuild);
-        save();
+        
     }
 
     if(storage[channel.guild.id].logs.active&&storage[channel.guild.id].logs.channel_events){
@@ -4423,7 +4320,7 @@ client.on("channelDelete",async channel=>{
 client.on("channelUpdate",async (channelO,channel)=>{
     if(!storage.hasOwnProperty(channel.guild.id)){
         storage[channel.guild.id]=structuredClone(defaultGuild);
-        save();
+        
     }
 
     if(storage[channel.guild.id].logs.active&&storage[channel.guild.id].logs.channel_events){
@@ -4502,7 +4399,7 @@ client.on("channelUpdate",async (channelO,channel)=>{
 client.on("emojiCreate",async emoji=>{
     if(!storage.hasOwnProperty(emoji.guild.id)){
         storage[emoji.guild.id]=structuredClone(defaultGuild);
-        save();
+        
     }
 
     if(storage[emoji.guild.id].logs.active&&storage[emoji.guild.id].logs.emoji_events){
@@ -4518,7 +4415,7 @@ client.on("emojiCreate",async emoji=>{
 client.on("emojiDelete",async emoji=>{
     if(!storage.hasOwnProperty(emoji.guild.id)){
         storage[emoji.guild.id]=structuredClone(defaultGuild);
-        save();
+        
     }
 
     if(storage[emoji.guild.id].logs.active&&storage[emoji.guild.id].logs.emoji_events){
@@ -4534,7 +4431,7 @@ client.on("emojiDelete",async emoji=>{
 client.on("emojiUpdate",async (emojiO,emoji)=>{
     if(!storage.hasOwnProperty(emoji.guild.id)){
         storage[emoji.guild.id]=structuredClone(defaultGuild);
-        save();
+        
     }
 
     if(storage[emoji.guild.id].logs.active&&storage[emoji.guild.id].logs.emoji_events){
@@ -4550,7 +4447,7 @@ client.on("emojiUpdate",async (emojiO,emoji)=>{
 client.on("stickerCreate",async sticker=>{
     if(!storage.hasOwnProperty(sticker.guild.id)){
         storage[sticker.guild.id]=structuredClone(defaultGuild);
-        save();
+        
     }
 
     if(storage[sticker.guild.id].logs.active&&storage[sticker.guild.id].logs.emoji_events){
@@ -4566,7 +4463,7 @@ client.on("stickerCreate",async sticker=>{
 client.on("stickerDelete",async sticker=>{
     if(!storage.hasOwnProperty(sticker.guild.id)){
         storage[sticker.guild.id]=structuredClone(defaultGuild);
-        save();
+        
     }
 
     if(storage[sticker.guild.id].logs.active&&storage[sticker.guild.id].logs.emoji_events){
@@ -4582,7 +4479,7 @@ client.on("stickerDelete",async sticker=>{
 client.on("stickerUpdate",async (stickerO,sticker)=>{
     if(!storage.hasOwnProperty(sticker.guild.id)){
         storage[sticker.guild.id]=structuredClone(defaultGuild);
-        save();
+        
     }
 
     if(storage[sticker.guild.id].logs.active&&storage[sticker.guild.id].logs.emoji_events){
@@ -4606,7 +4503,7 @@ client.on("stickerUpdate",async (stickerO,sticker)=>{
 client.on("inviteCreate",async invite=>{
     if(!storage.hasOwnProperty(invite.guild.id)){
         storage[invite.guild.id]=structuredClone(defaultGuild);
-        save();
+        
     }
 
     if(storage[invite.guild.id].logs.active&&storage[invite.guild.id].logs.invite_events){
@@ -4622,7 +4519,7 @@ client.on("inviteCreate",async invite=>{
 client.on("inviteDelete",async invite=>{
     if(!storage.hasOwnProperty(invite.guild.id)){
         storage[invite.guild.id]=structuredClone(defaultGuild);
-        save();
+        
     }
 
     if(storage[invite.guild.id].logs.active&&storage[invite.guild.id].logs.invite_events){
@@ -4638,7 +4535,7 @@ client.on("inviteDelete",async invite=>{
 client.on("roleCreate",async role=>{
     if(!storage.hasOwnProperty(role.guild.id)){
         storage[role.guild.id]=structuredClone(defaultGuild);
-        save();
+        
     }
 
     if(storage[role.guild.id].logs.active&&storage[role.guild.id].logs.role_events){
@@ -4654,7 +4551,7 @@ client.on("roleCreate",async role=>{
 client.on("roleDelete",async role=>{
     if(!storage.hasOwnProperty(role.guild.id)){
         storage[role.guild.id]=structuredClone(defaultGuild);
-        save();
+        
     }
 
     if(storage[role.guild.id].logs.active&&storage[role.guild.id].logs.role_events){
@@ -4670,7 +4567,7 @@ client.on("roleDelete",async role=>{
 client.on("roleUpdate",async (roleO,role)=>{
     if(!storage.hasOwnProperty(role.guild.id)){
         storage[role.guild.id]=structuredClone(defaultGuild);
-        save();
+        
     }
 
     if(storage[role.guild.id].logs.active&&storage[role.guild.id].logs.role_events){
@@ -4816,21 +4713,16 @@ client.on("rateLimit",async d=>{
 });
 client.on("guildCreate",async guild=>{
     storage[guild.id]=structuredClone(defaultGuild);
-    save();
     notify(1,`Added to **a new server**!`);
 });
 client.on("guildDelete",async guild=>{
     delete storage[guild.id];
-    save();
     notify(1,`Removed from **a server**.`);
 });
 
 //Error handling
-function handleException(e) {
-    notify(1, e.stack);
-}
-process.on('unhandledRejection', handleException);
-process.on('unhandledException', handleException);
+process.on('unhandledRejection', e=>notify(1, e.stack));
+process.on('unhandledException', e=>notify(1, e.stack));
 
 //Begin
 client.login(process.env.token);

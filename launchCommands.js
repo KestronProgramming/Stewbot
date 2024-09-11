@@ -69,6 +69,8 @@ const extraInfo={
 	"user":{"contexts":[0],"integration_types":[0],"cat":1},
 	"rss":{"contexts":[0],"integration_types":[0],"cat":6},
 	"set_persistent_message":{"contexts":[0],"integration_types":[0],"cat":6},
+	"rock_paper_scissors":{"contexts":[0,1,2],"integration_types":[0,1],"cat":4},
+	"delete":{"contexts":[0],"integration_types":[0],"cat":5},
 
 	//Context Menu Commands
 	"submit_meme":{"contexts":[0,1,2],"integration_types":[0,1],"cat":2,"desc":"Submit a meme to the Kestron moderators for verification to show up in `/fun meme`"},
@@ -137,55 +139,75 @@ const commands = [
 			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 		).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages).setDMPermission(false),
 	new SlashCommandBuilder().setName("add_emojiboard").setDescription("Create a new emojiboard")
-	.addStringOption(option=>
-		option.setName("emoji").setDescription("The emoji to react with to trigger the emojiboard").setRequired(true)
-	).addChannelOption(option=>
-		option.setName("channel").setDescription("The channel to post the emojiboard in").addChannelTypes(ChannelType.GuildText).setRequired(true)
-	).addIntegerOption(option=>
-		option.setName("threshold").setDescription("How many reactions are needed to trigger starboard? (Default: 3)").setMinValue(1)
-	).addStringOption(option=>
-		option.setName("message_type").setDescription("What should the bot's starboard posts look like?").addChoices(
-			{"name":"Make it look like the user posted","value":"0"},
-			{"name":"Post an embed with the message and a greeting","value":"1"},
-			{"name":"Post an embed with the message","value":"2"}
-		)
-	).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages).setDMPermission(false),
+		.addStringOption(option=>
+			option.setName("emoji").setDescription("The emoji to react with to trigger the emojiboard").setRequired(true)
+		).addChannelOption(option=>
+			option.setName("channel").setDescription("The channel to post the emojiboard in").addChannelTypes(ChannelType.GuildText).setRequired(true)
+		).addIntegerOption(option=>
+			option.setName("threshold").setDescription("How many reactions are needed to trigger starboard? (Default: 3)").setMinValue(1)
+		).addStringOption(option=>
+			option.setName("message_type").setDescription("What should the bot's starboard posts look like?").addChoices(
+				{"name":"Make it look like the user posted","value":"0"},
+				{"name":"Post an embed with the message and a greeting","value":"1"},
+				{"name":"Post an embed with the message","value":"2"}
+			)
+		).addBooleanOption(option=>
+			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
+		).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages).setDMPermission(false),
 	new SlashCommandBuilder().setName("remove_emojiboard").setDescription("Remove an emojiboard")
-	.addStringOption(option=>
-		option.setName("emoji").setDescription("The emoji to remove the emojiboard for").setRequired(true)
-	).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages).setDMPermission(false),
+		.addStringOption(option=>
+			option.setName("emoji").setDescription("The emoji to remove the emojiboard for").setRequired(true)
+		).addBooleanOption(option=>
+			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
+		).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages).setDMPermission(false),
 	new SlashCommandBuilder().setName("edit_emojiboard").setDescription("Configure an emojiboard for this server").addStringOption(option=>
-		option.setName("emoji").setDescription("The emojiboard to edit").setRequired(true)
-	).addBooleanOption(option=>
-		option.setName("active").setDescription("Should I post messages to the configured channel?")
-	).addChannelOption(option=>
-		option.setName("channel").setDescription("The channel to post messages to (Required for first config)").addChannelTypes(ChannelType.GuildText)
-	).addIntegerOption(option=>
-		option.setName("threshold").setDescription("How many reactions are needed to trigger starboard? (Default: 3)").setMinValue(1)
-	).addStringOption(option=>
-		option.setName("message_type").setDescription("What should the bot's starboard posts look like?").addChoices(
-			{"name":"Make it look like the user posted","value":"0"},
-			{"name":"Post an embed with the message and a greeting","value":"1"},
-			{"name":"Post an embed with the message","value":"2"}
-		)
-	).addBooleanOption(option=>
-		option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
-	).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages).setDMPermission(false),
+			option.setName("emoji").setDescription("The emojiboard to edit").setRequired(true)
+		).addBooleanOption(option=>
+			option.setName("active").setDescription("Should I post messages to the configured channel?")
+		).addChannelOption(option=>
+			option.setName("channel").setDescription("The channel to post messages to (Required for first config)").addChannelTypes(ChannelType.GuildText)
+		).addIntegerOption(option=>
+			option.setName("threshold").setDescription("How many reactions are needed to trigger starboard? (Default: 3)").setMinValue(1)
+		).addStringOption(option=>
+			option.setName("message_type").setDescription("What should the bot's starboard posts look like?").addChoices(
+				{"name":"Make it look like the user posted","value":"0"},
+				{"name":"Post an embed with the message and a greeting","value":"1"},
+				{"name":"Post an embed with the message","value":"2"}
+			)
+		).addBooleanOption(option=>
+			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
+		).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages).setDMPermission(false),
 	new SlashCommandBuilder().setName("fun").setDescription("Posts something fun to enjoy").addSubcommand(command=>
 			command.setName("meme").setDescription("Posts a meme").addIntegerOption(option=>
 				option.setName("number").setDescription("Specific meme # to post (optional)").setMinValue(0)
+			).addBooleanOption(option=>
+				option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 			)
 		).addSubcommand(command=>
-			command.setName("joke").setDescription("Posts a joke")
+			command.setName("joke").setDescription("Posts a joke").addBooleanOption(option=>
+				option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
+			)
 		).addSubcommand(command=>
 			command.setName("wyr").setDescription("Posts a Would-You-Rather question")
 		).addSubcommand(command=>
-			command.setName("dne").setDescription("Posts a picture of a person - who never existed! (AI Person generation)")
+			command.setName("dne").setDescription("Posts a picture of a person - who never existed! (AI Person generation)").addBooleanOption(option=>
+				option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
+			)
 		).addSubcommand(command=>
 			command.setName("rac").setDescription("Play a game of Rows & Columns").addBooleanOption(option=>
 				option.setName("help").setDescription("View the rules instead of playing?")
 			).addIntegerOption(option=>
 				option.setName("size").setDescription("Set your amount of rows and start playing!").setMinValue(3).setMaxValue(25)
+			)
+		).addSubcommand(command=>
+			command.setName("rock_paper_scissors").setDescription("Play Rock Paper Scissors with the bot").addStringOption(option=>
+				option.setName("choice").setDescription("Rock, Paper, Scissors, Shoot!").addChoices(
+					{"name":"Rock","value":"Rock"},
+					{"name":"Paper","value":"Paper"},
+					{"name":"Scissors","value":"Scissors"}
+				).setRequired(true)
+			).addBooleanOption(option=>
+				option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 			)
 		),
 	new SlashCommandBuilder().setName("kick").setDescription("Kick a user").addUserOption(option=>
@@ -357,6 +379,8 @@ const commands = [
 		).setDefaultMemberPermissions(PermissionFlagsBits.KickMembers).setDMPermission(false),
 	new SlashCommandBuilder().setName("sticky-roles").setDescription("Add roles back to a user who left and rejoined").addBooleanOption(option=>
 			option.setName("active").setDescription("Should I add roles back to users who left and rejoined?").setRequired(true)
+		).addBooleanOption(option=>
+			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 		).setDefaultMemberPermissions(PermissionFlagsBits.ManageRoles).setDMPermission(false),
 	new SlashCommandBuilder().setName("random").setDescription("Get something random").addSubcommand(command=>
 			command.setName("rng").setDescription("Generate a random number").addIntegerOption(option=>
@@ -392,6 +416,8 @@ const commands = [
 			option.setName("chapter").setDescription("Which chapter do you want to look up?").setRequired(true)
 		).addStringOption(option=>
 			option.setName("verse").setDescription("What verse or verses do you want to look up? (Proper format for multiple verses is '1-3')").setRequired(true)
+		).addBooleanOption(option=>
+			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 		),
 	new SlashCommandBuilder().setName("levels_config").setDescription("Configure level ups").addBooleanOption(option=>
 			option.setName("active").setDescription("Should level ups be active?").setRequired(true)
@@ -436,7 +462,6 @@ const commands = [
 	new SlashCommandBuilder().setName("embed_message").setDescription("Embed a message link from another channel or server").addStringOption(option=>
 			option.setName("link").setDescription("The message link, or PRIMED if you used the /prime_embed context menu command").setRequired(true)
 		),
-
 	new SlashCommandBuilder().setName("secret").setDescription("It's a secret to everybody").addStringOption(option=>
 			option.setName("code").setDescription("Do you have something for me?")
 		).addBooleanOption(option=>
@@ -451,17 +476,6 @@ const commands = [
 			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 		).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages).setDMPermission(false),
 	new SlashCommandBuilder().setName("captcha").setDescription("Use this command if I've timed you out for spam").setDMPermission(true),
-	/*new SlashCommandBuilder().setName("unavailable").setDescription("Use this to automatically tell users who ping you that you're unavailable").addBooleanOption(option=>
-			option.setName("active").setDescription("Are you unavailable?").setRequired(true)
-		).addBooleanOption(option=>
-			option.setName("globally").setDescription("Unavailable in every server you're pinged in, or just this one? (Default: global)")
-		).addStringOption(option=>
-			option.setName("message").setDescription("Message to send when you get pinged (Use `\\n` for a line break)").setMinLength(5)
-		).addStringOption(option=>
-			option.setName("how_long").setDescription("How long will you be unavailable for? (Paste a Discord timestamp, use /timestamp to make one!)")
-		).addBooleanOption(option=>
-			option.setName("auto_deactivate").setDescription("Deactivate automatically the next time you send a message?")
-		).setDMPermission(true),*/
 	new SlashCommandBuilder().setName("user").setDescription("Display a user's profile").addBooleanOption(option=>
 			option.setName("large-pfp").setDescription("Display the PFP in large mode?")
 		).addUserOption(option=>
@@ -496,7 +510,14 @@ const commands = [
 			option.setName("active").setDescription("Should the persistent message be actively run in this channel?").setRequired(true)
 		).addStringOption(option=>
 			option.setName("content").setDescription("The message to have persist").setMinLength(1)
+		).addBooleanOption(option=>
+			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 		).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
+	new SlashCommandBuilder().setName("delete").setDescription("Delete messages").addIntegerOption(option=>
+			option.setName("amount").setDescription("The amount of the most recent messages to delete").setMinValue(1).setMaxValue(100).setRequired(true)
+		).addBooleanOption(option=>
+			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
+		).setDefaultMemberPermissions(PermissionFlagsBits.BanMembers),
 
 	new ContextMenuCommandBuilder().setName("submit_meme").setType(ApplicationCommandType.Message),
 	new ContextMenuCommandBuilder().setName("delete_message").setType(ApplicationCommandType.Message).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),//Leaving this in DMs to delete undesirable bot DMs
