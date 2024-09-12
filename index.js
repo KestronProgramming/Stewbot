@@ -1,5 +1,5 @@
+// Imports 
 process.env=require("./env.json");
-var client;
 const translate=require("@vitalets/google-translate-api").translate;
 const RSSParser=require("rss-parser");
 const rssParser=new RSSParser();
@@ -10,6 +10,12 @@ const {Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, Gatew
 const { getEmojiFromMessage, parseEmoji } = require('./util');
 const config=require("./config.json");
 const bible=require("./kjv.json");
+const fs=require("fs");
+const storage=require("./storage.json");
+const cmds=require("./commands.json");
+
+// Variables
+var client;
 var Bible={};
 var properNames={};
 Object.keys(bible).forEach(book=>{
@@ -18,143 +24,13 @@ Object.keys(bible).forEach(book=>{
 });
 const ignoreSize = 10 + Object.keys(Bible).reduce((a, b) => a.length > b.length ? a : b).length;
 const threshold = 3;
-function escapeRegex(input) {
-    return input.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
-}
-function levenshtein(s, t) {
-    if (s === t) {
-        return 0;
-    }
-    var n = s.length, m = t.length;
-    if (n === 0 || m === 0) {
-        return n + m;
-    }
-    var x = 0, y, a, b, c, d, g, h, k;
-    var p = new Array(n);
-    for (y = 0; y < n;) {
-        p[y] = ++y;
-    }
-    for (; (x + 3) < m; x += 4) {
-        var e1 = t.charCodeAt(x);
-        var e2 = t.charCodeAt(x + 1);
-        var e3 = t.charCodeAt(x + 2);
-        var e4 = t.charCodeAt(x + 3);
-        c = x;
-        b = x + 1;
-        d = x + 2;
-        g = x + 3;
-        h = x + 4;
-        for (y = 0; y < n; y++) {
-            k = s.charCodeAt(y);
-            a = p[y];
-            if (a < c || b < c) {
-                c = (a > b ? b + 1 : a + 1);
-            }
-            else {
-                if (e1 !== k) {
-                    c++;
-                }
-            }
-            if (c < b || d < b) {
-                b = (c > d ? d + 1 : c + 1);
-            }
-            else {
-                if (e2 !== k) {
-                    b++;
-                }
-            }
-            if (b < d || g < d) {
-                d = (b > g ? g + 1 : b + 1);
-            }
-            else {
-                if (e3 !== k) {
-                    d++;
-                }
-            }
-            if (d < g || h < g) {
-                g = (d > h ? h + 1 : d + 1);
-            }
-            else {
-                if (e4 !== k) {
-                    g++;
-                }
-            }
-            p[y] = h = g;
-            g = d;
-            d = b;
-            b = c;
-            c = a;
-        }
-    }
-    for (; x < m;) {
-        var e = t.charCodeAt(x);
-        c = x;
-        d = ++x;
-        for (y = 0; y < n; y++) {
-            a = p[y];
-            if (a < c || d < c) {
-                d = (a > d ? d + 1 : a + 1);
-            }
-            else {
-                if (e !== s.charCodeAt(y)) {
-                    d = c + 1;
-                }
-                else {
-                    d = c;
-                }
-            }
-            p[y] = d;
-            c = a;
-        }
-        h = d;
-    }
-    return h;
-}
-function getClosest(input) {
-    if (Object.keys(Bible).includes(input)) return input;
-    if (input.length > ignoreSize) return null;
+var kaProgramRegex =/\b(?!<)https?:\/\/(?:www\.)?khanacademy\.org\/(cs|computer-programming|hour-of-code|python-program)\/[a-z,\d,-]+\/\d+(?!>)\b/gi;
+var discordMessageRegex =/\b(?!<)https?:\/\/(ptb\.|canary\.)?discord(app)?.com\/channels\/(\@me|\d+)\/\d+\/\d+(?!>)\b/gi;
 
-    var best = [null, Infinity]; // [bestOption, bestThreshold]
-    for (option of Object.keys(Bible)) {
-        const editsNeeded = levenshtein(option, input)
-        if (editsNeeded < best[1]) {
-            best = [option, editsNeeded]
-        }
-    }
 
-    if (best[1] < threshold) return best[0];
-    else return null;
-}
-const fs=require("fs");
-var storage=require("./storage.json");
-const cmds=require("./commands.json");
-const m8ballResponses=["So it would seem","Yes","No","Perhaps","Absolutely","Positively","Unfortunately","I am unsure","I do not know","Absolutely not","Possibly","More likely than not","Unlikely","Probably not","Probably","Maybe","Random answers is not the answer"];
-setInterval(()=>{fs.writeFileSync("./storage.json",JSON.stringify(storage));},10000);
-function ll(s){
-    return s.length>1999?s.slice(0,1996)+"...":s;
-}
-function parsePoll(c,published){
-    try{
-        var ret={};
-        ret.title=c.split("**")[1];
-        ret.options=c.match(/(?<=^\d\.\s|\d\d\.\s).+(?:$)/gm)||[];
-        if(published){
-            var temp={};
-            ret.choices=[];
-            ret.options.forEach(a=>{
-                var t=+a.split("**")[a.split("**").length-1];
-                a=a.split("**")[0].trim();
-                ret.choices.push(a);
-                temp[a]=t;
-            });
-            ret.options=structuredClone(temp);
-            ret.starter=c.split("<@")[1].split(">")[0];
-        }
-        return ret;
-    }
-    catch(e){}
-}
-var pieCols=[
+// Data - TODO: store some in another json/js file
+const m8ballResponses = ["So it would seem", "Yes", "No", "Perhaps", "Absolutely", "Positively", "Unfortunately", "I am unsure", "I do not know", "Absolutely not", "Possibly", "More likely than not", "Unlikely", "Probably not", "Probably", "Maybe", "Random answers is not the answer"];
+const pieCols=[
     ["006400","Green"],
     ["00d7ff","Cyan"],
     ["ff0000","Red"],
@@ -176,121 +52,48 @@ var pieCols=[
     ["f5deb3","Wheat"],
     ["daa520","Goldenrod"]
 ];
-function checkHoliday(){
-    function Easter(Y) {//Thanks StackOverflow :) https://stackoverflow.com/questions/1284314/easter-date-in-javascript
-        var C = Math.floor(Y/100);
-        var N = Y - 19*Math.floor(Y/19);
-        var K = Math.floor((C - 17)/25);
-        var I = C - Math.floor(C/4) - Math.floor((C - K)/3) + 19*N + 15;
-        I = I - 30*Math.floor((I/30));
-        I = I - Math.floor(I/28)*(1 - Math.floor(I/28)*Math.floor(29/(I + 1))*Math.floor((21 - N)/11));
-        var J = Y + Math.floor(Y/4) + I + 2 - C + Math.floor(C/4);
-        J = J - 7*Math.floor(J/7);
-        var L = I - J;
-        var M = 3 + Math.floor((L + 40)/44);
-        var D = L + 28 - 31*Math.floor(M/4);
-        return M+'/'+D;
+const setDates=[
+    {
+        "pfp":"fireworks.jpg",
+        "days":["12/31","1/1"]
+    },
+    {
+        "pfp":"valentine.jpg",
+        "days":["2/14"]
+    },
+    {
+        "pfp":"clover.jpg",
+        "days":["3/17"]
+    },
+    {
+        "pfp":"hacker.png",
+        "days":["4/1"]
+    },
+    {
+        "pfp":"birthday.jpg",
+        "days":["4/19"]
+    },
+    {
+        "pfp":"patriot.jpg",
+        "days":["6/14","7/4","11/11"]
+    },
+    {
+        "pfp":"pumpkin.jpg",
+        "days":["10/31"]
+    },
+    {
+        "pfp":"santa.jpg",
+        "days":["12/1","12/2","12/3","12/4","12/5","12/6","12/7","12/8","12/9","12/10","12/11","12/12","12/13","12/14","12/15","12/16","12/17","12/18","12/19","12/20","12/21","12/22","12/23","12/24"]
+    },
+    {
+        "pfp":"manger.png",
+        "days":["12/25"]
+    },
+    {
+        "pfp":"turkey.jpg",
+        "days":["11/26"]
     }
-    var ret="";
-    var n=new Date();
-    var setDates=[
-        {
-            "pfp":"fireworks.jpg",
-            "days":["12/31","1/1"]
-        },
-        {
-            "pfp":"valentine.jpg",
-            "days":["2/14"]
-        },
-        {
-            "pfp":"clover.jpg",
-            "days":["3/17"]
-        },
-        {
-            "pfp":"hacker.png",
-            "days":["4/1"]
-        },
-        {
-            "pfp":"birthday.jpg",
-            "days":["4/19"]
-        },
-        {
-            "pfp":"patriot.jpg",
-            "days":["6/14","7/4","11/11"]
-        },
-        {
-            "pfp":"pumpkin.jpg",
-            "days":["10/31"]
-        },
-        {
-            "pfp":"santa.jpg",
-            "days":["12/1","12/2","12/3","12/4","12/5","12/6","12/7","12/8","12/9","12/10","12/11","12/12","12/13","12/14","12/15","12/16","12/17","12/18","12/19","12/20","12/21","12/22","12/23","12/24"]
-        },
-        {
-            "pfp":"manger.png",
-            "days":["12/25"]
-        },
-        {
-            "pfp":"turkey.jpg",
-            "days":["11/26"]
-        }
-    ];
-    setDates.forEach(holiday=>{
-        if(holiday.days.includes(`${n.getMonth()+1}/${n.getDate()-1}`)){
-            ret="main.jpg";
-        }
-        if(holiday.days.includes(`${n.getMonth()+1}/${n.getDate()}`)){
-            ret=holiday.pfp;
-        }
-    });
-    if(n.getMonth()===10&&n.getDay()===4&&Math.floor(n.getDate()/7)===3){
-        ret="turkey.jpg";
-    }
-    if(n.getMonth()===4&&n.getDay()===1&&n.getDate()+7>31){
-        ret="patriot.jpg";
-    }
-    if(n.getMonth()+1===Easter(n.getFullYear()).split("/")[0]&&n.getDate()===Easter(n.getFullYear()).split("/")[1]){
-        ret="easter.jpg";
-    }
-    if((n.getMonth()===10&&n.getDay()===5&&Math.floor((n.getDate()-1)/7)===3)||n.getMonth()===4&&n.getDay()===2&&(n.getDate()-1)+7>31||n.getMonth()+1===Easter(n.getFullYear()).split("/")[0]&&n.getDate()-1===Easter(n.getFullYear()).split("/")[1]){
-        ret="main.jpg";
-    }
-    if(ret!==""){
-        client.user.setAvatar(`./pfps/${ret}`);
-    }
-}
-async function checkRSS(){
-    if(!storage.hasOwnProperty("rss")) storage.rss={};
-    Object.keys(storage.rss).forEach(async feed=>{
-        feed=storage.rss[feed];
-        if(feed.channels.length===0){
-            delete storage.rss[feed.hash];
-        }
-        else{
-            var cont=true;
-            var parsed=await rssParser.parseURL(feed.url).catch(e=>{
-                delete storage.rss[feed.hash];
-                cont=false;
-            });
-            if(cont){
-                parsed.items.forEach(item=>{
-                    if(feed.lastSent<new Date(item.isoDate)){
-                        feed.lastSent=new Date(item.isoDate);
-                        feed.channels.forEach(chan=>{
-                            let c=client.channels.cache.get(chan);
-                            if(c===undefined||c===null||!c?.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
-                                feed.channels.splice(feed.channels.indexOf(chan),1);
-                            }
-                            else{
-                                c.send(`New notification from a followed RSS feed\n${item.link}`);
-                            }
-                        });
-                    }
-                });
-            }
-        }
-    });
-}
+];
 var helpPages=[
     {
         name:"General",
@@ -481,6 +284,462 @@ var helpPages=[
         ]
     }
 ];
+const inps={
+    "pollAdd":new ButtonBuilder().setCustomId("poll-addOption").setLabel("Add a poll option").setStyle(ButtonStyle.Primary),
+    "pollDel":new ButtonBuilder().setCustomId("poll-delOption").setLabel("Remove a poll option").setStyle(ButtonStyle.Danger),
+    "pollLaunch":new ButtonBuilder().setCustomId("poll-publish").setLabel("Publish the poll").setStyle(ButtonStyle.Success),
+    "pollVoters":new ButtonBuilder().setCustomId("poll-voters").setLabel("View voters").setStyle(ButtonStyle.Primary),
+
+    "pollInp":new TextInputBuilder().setCustomId("poll-addedInp").setLabel("What should the option be?").setStyle(TextInputStyle.Short).setMinLength(1).setMaxLength(70).setRequired(true),
+    "pollNum":new TextInputBuilder().setCustomId("poll-removedInp").setLabel("Which # option should I remove?").setStyle(TextInputStyle.Short).setMinLength(1).setMaxLength(2).setRequired(true),
+
+    "roleAdd":new RoleSelectMenuBuilder().setCustomId("role-addOption").setMinValues(1).setMaxValues(20).setPlaceholder("Select all the roles you would like to offer"),
+    "joinRoleAdd":new RoleSelectMenuBuilder().setCustomId("join-roleOption").setMinValues(1).setMaxValues(20).setPlaceholder("Select all the roles you would like to add to new users"),
+    "channels":new ChannelSelectMenuBuilder().setCustomId("move-message").setChannelTypes(ChannelType.GuildText).setMaxValues(1).setMinValues(1),
+
+    "delete":new ButtonBuilder().setCustomId("delete-all").setLabel("Delete message").setStyle(ButtonStyle.Danger),
+    "export":new ButtonBuilder().setCustomId("export").setLabel("Export to CSV").setStyle(ButtonStyle.Primary),
+
+    "approve":new ButtonBuilder().setCustomId("save_meme").setLabel("Approve meme").setStyle(ButtonStyle.Success),
+
+    "tzUp":new ButtonBuilder().setCustomId("tzUp").setEmoji("⬆️").setStyle(ButtonStyle.Primary),
+    "tzDown":new ButtonBuilder().setCustomId("tzDown").setEmoji("⬇️").setStyle(ButtonStyle.Primary),
+    "tzSave":new ButtonBuilder().setCustomId("tzSave").setEmoji("✅").setStyle(ButtonStyle.Success),
+
+    "tsHour":new ButtonBuilder().setCustomId("tsHour").setLabel("Hour").setStyle(ButtonStyle.Primary),
+    "tsMinutes":new ButtonBuilder().setCustomId("tsMinutes").setLabel("Minutes").setStyle(ButtonStyle.Primary),
+    "tsSeconds":new ButtonBuilder().setCustomId("tsSeconds").setLabel("Seconds").setStyle(ButtonStyle.Primary),
+    "tsMonth":new StringSelectMenuBuilder().setCustomId("tsMonth").setPlaceholder("Month...").addOptions(
+            new StringSelectMenuOptionBuilder().setLabel("January").setDescription("January").setValue("0"),
+            new StringSelectMenuOptionBuilder().setLabel("February").setDescription("February").setValue("1"),
+            new StringSelectMenuOptionBuilder().setLabel("March").setDescription("March").setValue("2"),
+            new StringSelectMenuOptionBuilder().setLabel("April").setDescription("April").setValue("3"),
+            new StringSelectMenuOptionBuilder().setLabel("May").setDescription("May").setValue("4"),
+            new StringSelectMenuOptionBuilder().setLabel("June").setDescription("June").setValue("5"),
+            new StringSelectMenuOptionBuilder().setLabel("July").setDescription("July").setValue("6"),
+            new StringSelectMenuOptionBuilder().setLabel("August").setDescription("August").setValue("7"),
+            new StringSelectMenuOptionBuilder().setLabel("September").setDescription("September").setValue("8"),
+            new StringSelectMenuOptionBuilder().setLabel("October").setDescription("October").setValue("9"),
+            new StringSelectMenuOptionBuilder().setLabel("November").setDescription("November").setValue("10"),
+            new StringSelectMenuOptionBuilder().setLabel("December").setDescription("December").setValue("11")
+        ),
+    "tsDay":new ButtonBuilder().setCustomId("tsDay").setLabel("Day").setStyle(ButtonStyle.Primary),
+    "tsYear":new ButtonBuilder().setCustomId("tsYear").setLabel("Year").setStyle(ButtonStyle.Primary),
+    "tsType":new StringSelectMenuBuilder().setCustomId("tsType").setPlaceholder("Display Type...").addOptions(
+            new StringSelectMenuOptionBuilder().setLabel("Relative").setDescription("Example: 10 seconds ago").setValue("R"),
+            new StringSelectMenuOptionBuilder().setLabel("Short Time").setDescription("Example: 1:48 PM").setValue("t"),
+            new StringSelectMenuOptionBuilder().setLabel("Short Date").setDescription("Example: 4/19/22").setValue("d"),
+            new StringSelectMenuOptionBuilder().setLabel("Short Time w/ Seconds").setDescription("Example: 1:48:00 PM").setValue("T"),
+            new StringSelectMenuOptionBuilder().setLabel("Long Date").setDescription("Example: April 19, 2022").setValue("D"),
+            new StringSelectMenuOptionBuilder().setLabel("Long Date & Short Time").setDescription("April 19, 2022 at 1:48 PM").setValue("f"),
+            new StringSelectMenuOptionBuilder().setLabel("Full Date").setDescription("Example: Tuesday, April 19, 2022 at 1:48 PM").setValue("F")
+        ),
+
+    "howToCopy":new ButtonBuilder().setCustomId("howToCopy").setLabel("How to Copy").setStyle(ButtonStyle.Danger),
+    "onDesktop":new ButtonBuilder().setCustomId("onDesktop").setLabel("On Desktop").setStyle(ButtonStyle.Success),
+
+    "tsHourModal":new TextInputBuilder().setCustomId("tsHourInp").setLabel("The hour of day...").setStyle(TextInputStyle.Short).setMinLength(1).setMaxLength(4).setRequired(true),
+    "tsMinutesModal":new TextInputBuilder().setCustomId("tsMinutesInp").setLabel("The minutes...").setStyle(TextInputStyle.Short).setMinLength(1).setMaxLength(2).setRequired(true),
+    "tsSecondsModal":new TextInputBuilder().setCustomId("tsSecondsInp").setLabel("The seconds...").setStyle(TextInputStyle.Short).setMinLength(1).setMaxLength(2).setRequired(true),
+    "tsDayModal":new TextInputBuilder().setCustomId("tsDayInp").setLabel("The day of the month...").setStyle(TextInputStyle.Short).setMinLength(1).setMaxLength(2).setRequired(true),
+    "tsYearModal":new TextInputBuilder().setCustomId("tsYearInp").setLabel("The year...").setStyle(TextInputStyle.Short).setMinLength(2).setMaxLength(4).setRequired(true),
+    "tsAmPm":new TextInputBuilder().setCustomId("tsAmPm").setLabel("If you used 12 hour, AM/PM").setStyle(TextInputStyle.Short).setMinLength(1).setMaxLength(2).setRequired(false),
+
+    "captcha0":new ButtonBuilder().setCustomId("captcha-0").setLabel("0").setStyle(ButtonStyle.Primary),
+    "captcha1":new ButtonBuilder().setCustomId("captcha-1").setLabel("1").setStyle(ButtonStyle.Primary),
+    "captcha2":new ButtonBuilder().setCustomId("captcha-2").setLabel("2").setStyle(ButtonStyle.Primary),
+    "captcha3":new ButtonBuilder().setCustomId("captcha-3").setLabel("3").setStyle(ButtonStyle.Primary),
+    "captcha4":new ButtonBuilder().setCustomId("captcha-4").setLabel("4").setStyle(ButtonStyle.Primary),
+    "captcha5":new ButtonBuilder().setCustomId("captcha-5").setLabel("5").setStyle(ButtonStyle.Primary),
+    "captcha6":new ButtonBuilder().setCustomId("captcha-6").setLabel("6").setStyle(ButtonStyle.Primary),
+    "captcha7":new ButtonBuilder().setCustomId("captcha-7").setLabel("7").setStyle(ButtonStyle.Primary),
+    "captcha8":new ButtonBuilder().setCustomId("captcha-8").setLabel("8").setStyle(ButtonStyle.Primary),
+    "captcha9":new ButtonBuilder().setCustomId("captcha-9").setLabel("9").setStyle(ButtonStyle.Primary),
+    "captchaBack":new ButtonBuilder().setCustomId("captcha-back").setEmoji("❌").setStyle(ButtonStyle.Danger),
+    "captchaDone":new ButtonBuilder().setCustomId("captcha-done").setEmoji("✅").setStyle(ButtonStyle.Success)
+};
+const presets={
+    "pollCreation":new ActionRowBuilder().addComponents(inps.pollAdd,inps.pollDel,inps.pollLaunch),
+    "rolesCreation":new ActionRowBuilder().addComponents(inps.roleAdd),
+    "autoJoinRoles":[new ActionRowBuilder().addComponents(inps.joinRoleAdd)],
+    "meme":[new ActionRowBuilder().addComponents(inps.approve,inps.delete)],
+    "moveMessage":new ActionRowBuilder().addComponents(inps.channels),
+    "tzConfig":[new ActionRowBuilder().addComponents(inps.tzUp,inps.tzDown,inps.tzSave)],
+    "timestamp":[new ActionRowBuilder().addComponents(inps.tsHour,inps.tsMinutes,inps.tsSeconds,inps.tsDay,inps.tsYear),new ActionRowBuilder().addComponents(inps.tsMonth),new ActionRowBuilder().addComponents(inps.tsType),new ActionRowBuilder().addComponents(inps.howToCopy,inps.onDesktop)],
+
+    "pollAddModal":new ModalBuilder().setCustomId("poll-added").setTitle("Add a poll option").addComponents(new ActionRowBuilder().addComponents(inps.pollInp)),
+    "pollRemModal":new ModalBuilder().setCustomId("poll-removed").setTitle("Remove a poll option").addComponents(new ActionRowBuilder().addComponents(inps.pollNum)),
+
+    "tsHourModal":new ModalBuilder().setCustomId("tsHourModal").setTitle("Set the Hour for the Timestamp").addComponents(new ActionRowBuilder().addComponents(inps.tsHourModal),new ActionRowBuilder().addComponents(inps.tsAmPm)),
+    "tsMinutesModal":new ModalBuilder().setCustomId("tsMinutesModal").setTitle("Set the Minutes for the Timestamp").addComponents(new ActionRowBuilder().addComponents(inps.tsMinutesModal)),
+    "tsSecondsModal":new ModalBuilder().setCustomId("tsSecondsModal").setTitle("Set the Seconds for the Timestamp").addComponents(new ActionRowBuilder().addComponents(inps.tsSecondsModal)),
+    "tsDayModal":new ModalBuilder().setCustomId("tsDayModal").setTitle("Set the Day for the Timestamp").addComponents(new ActionRowBuilder().addComponents(inps.tsDayModal)),
+    "tsYearModal":new ModalBuilder().setCustomId("tsYearModal").setTitle("Set the Year for the Timestamp").addComponents(new ActionRowBuilder().addComponents(inps.tsYearModal)),
+
+    "captcha":[new ActionRowBuilder().addComponents(inps.captcha1,inps.captcha2,inps.captcha3),new ActionRowBuilder().addComponents(inps.captcha4,inps.captcha5,inps.captcha6),new ActionRowBuilder().addComponents(inps.captcha7,inps.captcha8,inps.captcha9),new ActionRowBuilder().addComponents(inps.captchaBack,inps.captcha0,inps.captchaDone)]
+};
+const defaultGuild={
+    "persistence":{},
+    "daily":{
+        "memes":{
+            "active":false,
+            "channel":""
+        },
+        "wyrs":{
+            "active":false,
+            "channel":""
+        },
+        "jokes":{
+            "active":false,
+            "channel":""
+        },
+        "devos":{
+            "active":false,
+            "channel":""
+        },
+        "verses":{
+            "active":false,
+            "channel":""
+        },
+        "qotd":{
+            "active":false,
+            "channel":""
+        }
+    },
+    "stickyRoles":false,
+    "levels":{
+        "active":false,
+        "channel":"",
+        "msg":"Congratulations ${USERNAME}, you have leveled up to level ${LVL}!",
+        "location":"DM"
+    },
+    "filter":{
+        "blacklist":[],
+        "active":false,
+        "censor":true,
+        "log":false,
+        "channel":"",
+        "whitelist":[]
+    },
+    "starboard":{
+        "channel":"",
+        "emoji":"⭐",
+        "active":false,
+        "threshold":3,
+        "posted":{},
+        "messType":"0"
+    },
+    "emojiboards": {},
+    "logs":{
+        "channel":"",
+        "active":false,
+        "channel_events":false,
+        "emoji_events":false,
+        "user_change_events":false,
+        "joining_and_leaving":false,
+        "invite_events":false,
+        "role_events":false,
+        "mod_actions":false
+    },
+    "counting":{
+        "active":false,
+        "channel":"",
+        "nextNum":1,
+        "highestNum":0,
+        "legit":true, //If manually setting the next number, disqualify from the overarching leaderboard
+        "reset":true,
+        "public":true,
+        "takeTurns":1,
+        "failRoleActive":false,
+        "failRole":"",
+        "warnRoleActive":false,
+        "warnRole":""
+    },
+    "users":{},
+    "reactionRoles":[],
+    "invites":[],
+    "polls":{},
+    "config":{
+        "embedPreviews":true,
+        "ai":true
+    },
+    "ajm":{
+        "message":"Greetings ${@USER}! Welcome to the server!",
+        "dm":true,
+        "channel":"",
+        "active":false
+    },
+    "alm":{
+        "message":"Farewell ${@USER}. We'll miss you.",
+        "channel":"",
+        "active":false
+    }
+};
+const defaultGuildUser={
+    "infractions":0,
+    "stars":0,
+    "roles":[],
+    "inServer":true,
+    "countTurns":0,
+    "exp":0,
+    "expTimeout":0,
+    "lvl":0,
+    "beenCountWarned":false,
+    "gone":{
+        "active":false,
+        "message":"I'm not available right now",
+        "until":0,
+        "autoOff":false
+    }
+};
+const defaultUser={
+    "offenses":0,
+    "config":{
+        "dmOffenses":true,
+        "returnFiltered":true,
+        "embedPreviews":true,
+        "aiPings":true,
+        "levelUpMsgs":true,
+        "timeOffset":0,
+        "hasSetTZ":false
+    },
+    "gone":{
+        "active":false,
+        "message":"I'm not available right now",
+        "until":0,
+        "autoOff":false
+    },
+    "primedEmbed":{
+        "content":"",
+        "attachmentURLs":[],
+        "server":{
+            "id":"",
+            "name":"",
+            "channelId":"",
+            "channelName":"",
+            "icon":""
+        },
+        "author":{
+            "icon":"",
+            "name":"",
+            "id":""
+        },
+        "timestamp":"",
+        "id":""
+    }
+};
+
+
+// Rest is in the "order" of when it was added, probably
+
+function escapeRegex(input) {
+    return input.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+}
+function levenshtein(s, t) {
+    if (s === t) {
+        return 0;
+    }
+    var n = s.length, m = t.length;
+    if (n === 0 || m === 0) {
+        return n + m;
+    }
+    var x = 0, y, a, b, c, d, g, h, k;
+    var p = new Array(n);
+    for (y = 0; y < n;) {
+        p[y] = ++y;
+    }
+    for (; (x + 3) < m; x += 4) {
+        var e1 = t.charCodeAt(x);
+        var e2 = t.charCodeAt(x + 1);
+        var e3 = t.charCodeAt(x + 2);
+        var e4 = t.charCodeAt(x + 3);
+        c = x;
+        b = x + 1;
+        d = x + 2;
+        g = x + 3;
+        h = x + 4;
+        for (y = 0; y < n; y++) {
+            k = s.charCodeAt(y);
+            a = p[y];
+            if (a < c || b < c) {
+                c = (a > b ? b + 1 : a + 1);
+            }
+            else {
+                if (e1 !== k) {
+                    c++;
+                }
+            }
+            if (c < b || d < b) {
+                b = (c > d ? d + 1 : c + 1);
+            }
+            else {
+                if (e2 !== k) {
+                    b++;
+                }
+            }
+            if (b < d || g < d) {
+                d = (b > g ? g + 1 : b + 1);
+            }
+            else {
+                if (e3 !== k) {
+                    d++;
+                }
+            }
+            if (d < g || h < g) {
+                g = (d > h ? h + 1 : d + 1);
+            }
+            else {
+                if (e4 !== k) {
+                    g++;
+                }
+            }
+            p[y] = h = g;
+            g = d;
+            d = b;
+            b = c;
+            c = a;
+        }
+    }
+    for (; x < m;) {
+        var e = t.charCodeAt(x);
+        c = x;
+        d = ++x;
+        for (y = 0; y < n; y++) {
+            a = p[y];
+            if (a < c || d < c) {
+                d = (a > d ? d + 1 : a + 1);
+            }
+            else {
+                if (e !== s.charCodeAt(y)) {
+                    d = c + 1;
+                }
+                else {
+                    d = c;
+                }
+            }
+            p[y] = d;
+            c = a;
+        }
+        h = d;
+    }
+    return h;
+}
+function getClosest(input) {
+    if (Object.keys(Bible).includes(input)) return input;
+    if (input.length > ignoreSize) return null;
+
+    var best = [null, Infinity]; // [bestOption, bestThreshold]
+    for (option of Object.keys(Bible)) {
+        const editsNeeded = levenshtein(option, input)
+        if (editsNeeded < best[1]) {
+            best = [option, editsNeeded]
+        }
+    }
+
+    if (best[1] < threshold) return best[0];
+    else return null;
+}
+
+setInterval(()=>{fs.writeFileSync("./storage.json",JSON.stringify(storage));},10000);
+
+function limitLength(s){
+    return s.length>1999?s.slice(0,1996)+"...":s;
+}
+function parsePoll(c,published){
+    try{
+        var ret={};
+        ret.title=c.split("**")[1];
+        ret.options=c.match(/(?<=^\d\.\s|\d\d\.\s).+(?:$)/gm)||[];
+        if(published){
+            var temp={};
+            ret.choices=[];
+            ret.options.forEach(a=>{
+                var t=+a.split("**")[a.split("**").length-1];
+                a=a.split("**")[0].trim();
+                ret.choices.push(a);
+                temp[a]=t;
+            });
+            ret.options=structuredClone(temp);
+            ret.starter=c.split("<@")[1].split(">")[0];
+        }
+        return ret;
+    }
+    catch(e){}
+}
+function checkHoliday(){
+    function Easter(Y) {//Thanks StackOverflow :) https://stackoverflow.com/questions/1284314/easter-date-in-javascript
+        var C = Math.floor(Y/100);
+        var N = Y - 19*Math.floor(Y/19);
+        var K = Math.floor((C - 17)/25);
+        var I = C - Math.floor(C/4) - Math.floor((C - K)/3) + 19*N + 15;
+        I = I - 30*Math.floor((I/30));
+        I = I - Math.floor(I/28)*(1 - Math.floor(I/28)*Math.floor(29/(I + 1))*Math.floor((21 - N)/11));
+        var J = Y + Math.floor(Y/4) + I + 2 - C + Math.floor(C/4);
+        J = J - 7*Math.floor(J/7);
+        var L = I - J;
+        var M = 3 + Math.floor((L + 40)/44);
+        var D = L + 28 - 31*Math.floor(M/4);
+        return M+'/'+D;
+    }
+    var ret="";
+    var n=new Date();
+
+    setDates.forEach(holiday=>{
+        if(holiday.days.includes(`${n.getMonth()+1}/${n.getDate()-1}`)){
+            ret="main.jpg";
+        }
+        if(holiday.days.includes(`${n.getMonth()+1}/${n.getDate()}`)){
+            ret=holiday.pfp;
+        }
+    });
+    if(n.getMonth()===10&&n.getDay()===4&&Math.floor(n.getDate()/7)===3){
+        ret="turkey.jpg";
+    }
+    if(n.getMonth()===4&&n.getDay()===1&&n.getDate()+7>31){
+        ret="patriot.jpg";
+    }
+    if(n.getMonth()+1===Easter(n.getFullYear()).split("/")[0]&&n.getDate()===Easter(n.getFullYear()).split("/")[1]){
+        ret="easter.jpg";
+    }
+    if((n.getMonth()===10&&n.getDay()===5&&Math.floor((n.getDate()-1)/7)===3)||n.getMonth()===4&&n.getDay()===2&&(n.getDate()-1)+7>31||n.getMonth()+1===Easter(n.getFullYear()).split("/")[0]&&n.getDate()-1===Easter(n.getFullYear()).split("/")[1]){
+        ret="main.jpg";
+    }
+    if(ret!==""){
+        client.user.setAvatar(`./pfps/${ret}`);
+    }
+}
+async function checkRSS(){
+    if(!storage.hasOwnProperty("rss")) storage.rss={};
+    Object.keys(storage.rss).forEach(async feed=>{
+        feed=storage.rss[feed];
+        if(feed.channels.length===0){
+            delete storage.rss[feed.hash];
+        }
+        else{
+            var cont=true;
+            var parsed=await rssParser.parseURL(feed.url).catch(e=>{
+                delete storage.rss[feed.hash];
+                cont=false;
+            });
+            if(cont){
+                parsed.items.forEach(item=>{
+                    if(feed.lastSent<new Date(item.isoDate)){
+                        feed.lastSent=new Date(item.isoDate);
+                        feed.channels.forEach(chan=>{
+                            let c=client.channels.cache.get(chan);
+                            if(c===undefined||c===null||!c?.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
+                                feed.channels.splice(feed.channels.indexOf(chan),1);
+                            }
+                            else{
+                                c.send(`New notification from a followed RSS feed\n${item.link}`);
+                            }
+                        });
+                    }
+                });
+            }
+        }
+    });
+}
 function noPerms(where,what){
     if(where===false||where===undefined) return false;
     switch(what){
@@ -945,255 +1204,8 @@ const handleError = (msg, dm) => {
     }
 };
 
-const defaultGuild={
-    "persistence":{},
-    "daily":{
-        "memes":{
-            "active":false,
-            "channel":""
-        },
-        "wyrs":{
-            "active":false,
-            "channel":""
-        },
-        "jokes":{
-            "active":false,
-            "channel":""
-        },
-        "devos":{
-            "active":false,
-            "channel":""
-        },
-        "verses":{
-            "active":false,
-            "channel":""
-        },
-        "qotd":{
-            "active":false,
-            "channel":""
-        }
-    },
-    "stickyRoles":false,
-    "levels":{
-        "active":false,
-        "channel":"",
-        "msg":"Congratulations ${USERNAME}, you have leveled up to level ${LVL}!",
-        "location":"DM"
-    },
-    "filter":{
-        "blacklist":[],
-        "active":false,
-        "censor":true,
-        "log":false,
-        "channel":"",
-        "whitelist":[]
-    },
-    "starboard":{
-        "channel":"",
-        "emoji":"⭐",
-        "active":false,
-        "threshold":3,
-        "posted":{},
-        "messType":"0"
-    },
-    "emojiboards": {},
-    "logs":{
-        "channel":"",
-        "active":false,
-        "channel_events":false,
-        "emoji_events":false,
-        "user_change_events":false,
-        "joining_and_leaving":false,
-        "invite_events":false,
-        "role_events":false,
-        "mod_actions":false
-    },
-    "counting":{
-        "active":false,
-        "channel":"",
-        "nextNum":1,
-        "highestNum":0,
-        "legit":true, //If manually setting the next number, disqualify from the overarching leaderboard
-        "reset":true,
-        "public":true,
-        "takeTurns":1,
-        "failRoleActive":false,
-        "failRole":"",
-        "warnRoleActive":false,
-        "warnRole":""
-    },
-    "users":{},
-    "reactionRoles":[],
-    "invites":[],
-    "polls":{},
-    "config":{
-        "embedPreviews":true,
-        "ai":true
-    },
-    "ajm":{
-        "message":"Greetings ${@USER}! Welcome to the server!",
-        "dm":true,
-        "channel":"",
-        "active":false
-    },
-    "alm":{
-        "message":"Farewell ${@USER}. We'll miss you.",
-        "channel":"",
-        "active":false
-    }
-};
-const defaultGuildUser={
-    "infractions":0,
-    "stars":0,
-    "roles":[],
-    "inServer":true,
-    "countTurns":0,
-    "exp":0,
-    "expTimeout":0,
-    "lvl":0,
-    "beenCountWarned":false,
-    "gone":{
-        "active":false,
-        "message":"I'm not available right now",
-        "until":0,
-        "autoOff":false
-    }
-};
-const defaultUser={
-    "offenses":0,
-    "config":{
-        "dmOffenses":true,
-        "returnFiltered":true,
-        "embedPreviews":true,
-        "aiPings":true,
-        "levelUpMsgs":true,
-        "timeOffset":0,
-        "hasSetTZ":false
-    },
-    "gone":{
-        "active":false,
-        "message":"I'm not available right now",
-        "until":0,
-        "autoOff":false
-    },
-    "primedEmbed":{
-        "content":"",
-        "attachmentURLs":[],
-        "server":{
-            "id":"",
-            "name":"",
-            "channelId":"",
-            "channelName":"",
-            "icon":""
-        },
-        "author":{
-            "icon":"",
-            "name":"",
-            "id":""
-        },
-        "timestamp":"",
-        "id":""
-    }
-};
-const inps={
-    "pollAdd":new ButtonBuilder().setCustomId("poll-addOption").setLabel("Add a poll option").setStyle(ButtonStyle.Primary),
-    "pollDel":new ButtonBuilder().setCustomId("poll-delOption").setLabel("Remove a poll option").setStyle(ButtonStyle.Danger),
-    "pollLaunch":new ButtonBuilder().setCustomId("poll-publish").setLabel("Publish the poll").setStyle(ButtonStyle.Success),
-    "pollVoters":new ButtonBuilder().setCustomId("poll-voters").setLabel("View voters").setStyle(ButtonStyle.Primary),
-
-    "pollInp":new TextInputBuilder().setCustomId("poll-addedInp").setLabel("What should the option be?").setStyle(TextInputStyle.Short).setMinLength(1).setMaxLength(70).setRequired(true),
-    "pollNum":new TextInputBuilder().setCustomId("poll-removedInp").setLabel("Which # option should I remove?").setStyle(TextInputStyle.Short).setMinLength(1).setMaxLength(2).setRequired(true),
-
-    "roleAdd":new RoleSelectMenuBuilder().setCustomId("role-addOption").setMinValues(1).setMaxValues(20).setPlaceholder("Select all the roles you would like to offer"),
-    "joinRoleAdd":new RoleSelectMenuBuilder().setCustomId("join-roleOption").setMinValues(1).setMaxValues(20).setPlaceholder("Select all the roles you would like to add to new users"),
-    "channels":new ChannelSelectMenuBuilder().setCustomId("move-message").setChannelTypes(ChannelType.GuildText).setMaxValues(1).setMinValues(1),
-
-    "delete":new ButtonBuilder().setCustomId("delete-all").setLabel("Delete message").setStyle(ButtonStyle.Danger),
-    "export":new ButtonBuilder().setCustomId("export").setLabel("Export to CSV").setStyle(ButtonStyle.Primary),
-
-    "approve":new ButtonBuilder().setCustomId("save_meme").setLabel("Approve meme").setStyle(ButtonStyle.Success),
-
-    "tzUp":new ButtonBuilder().setCustomId("tzUp").setEmoji("⬆️").setStyle(ButtonStyle.Primary),
-    "tzDown":new ButtonBuilder().setCustomId("tzDown").setEmoji("⬇️").setStyle(ButtonStyle.Primary),
-    "tzSave":new ButtonBuilder().setCustomId("tzSave").setEmoji("✅").setStyle(ButtonStyle.Success),
-
-    "tsHour":new ButtonBuilder().setCustomId("tsHour").setLabel("Hour").setStyle(ButtonStyle.Primary),
-    "tsMinutes":new ButtonBuilder().setCustomId("tsMinutes").setLabel("Minutes").setStyle(ButtonStyle.Primary),
-    "tsSeconds":new ButtonBuilder().setCustomId("tsSeconds").setLabel("Seconds").setStyle(ButtonStyle.Primary),
-    "tsMonth":new StringSelectMenuBuilder().setCustomId("tsMonth").setPlaceholder("Month...").addOptions(
-            new StringSelectMenuOptionBuilder().setLabel("January").setDescription("January").setValue("0"),
-            new StringSelectMenuOptionBuilder().setLabel("February").setDescription("February").setValue("1"),
-            new StringSelectMenuOptionBuilder().setLabel("March").setDescription("March").setValue("2"),
-            new StringSelectMenuOptionBuilder().setLabel("April").setDescription("April").setValue("3"),
-            new StringSelectMenuOptionBuilder().setLabel("May").setDescription("May").setValue("4"),
-            new StringSelectMenuOptionBuilder().setLabel("June").setDescription("June").setValue("5"),
-            new StringSelectMenuOptionBuilder().setLabel("July").setDescription("July").setValue("6"),
-            new StringSelectMenuOptionBuilder().setLabel("August").setDescription("August").setValue("7"),
-            new StringSelectMenuOptionBuilder().setLabel("September").setDescription("September").setValue("8"),
-            new StringSelectMenuOptionBuilder().setLabel("October").setDescription("October").setValue("9"),
-            new StringSelectMenuOptionBuilder().setLabel("November").setDescription("November").setValue("10"),
-            new StringSelectMenuOptionBuilder().setLabel("December").setDescription("December").setValue("11")
-        ),
-    "tsDay":new ButtonBuilder().setCustomId("tsDay").setLabel("Day").setStyle(ButtonStyle.Primary),
-    "tsYear":new ButtonBuilder().setCustomId("tsYear").setLabel("Year").setStyle(ButtonStyle.Primary),
-    "tsType":new StringSelectMenuBuilder().setCustomId("tsType").setPlaceholder("Display Type...").addOptions(
-            new StringSelectMenuOptionBuilder().setLabel("Relative").setDescription("Example: 10 seconds ago").setValue("R"),
-            new StringSelectMenuOptionBuilder().setLabel("Short Time").setDescription("Example: 1:48 PM").setValue("t"),
-            new StringSelectMenuOptionBuilder().setLabel("Short Date").setDescription("Example: 4/19/22").setValue("d"),
-            new StringSelectMenuOptionBuilder().setLabel("Short Time w/ Seconds").setDescription("Example: 1:48:00 PM").setValue("T"),
-            new StringSelectMenuOptionBuilder().setLabel("Long Date").setDescription("Example: April 19, 2022").setValue("D"),
-            new StringSelectMenuOptionBuilder().setLabel("Long Date & Short Time").setDescription("April 19, 2022 at 1:48 PM").setValue("f"),
-            new StringSelectMenuOptionBuilder().setLabel("Full Date").setDescription("Example: Tuesday, April 19, 2022 at 1:48 PM").setValue("F")
-        ),
-
-    "howToCopy":new ButtonBuilder().setCustomId("howToCopy").setLabel("How to Copy").setStyle(ButtonStyle.Danger),
-    "onDesktop":new ButtonBuilder().setCustomId("onDesktop").setLabel("On Desktop").setStyle(ButtonStyle.Success),
-
-    "tsHourModal":new TextInputBuilder().setCustomId("tsHourInp").setLabel("The hour of day...").setStyle(TextInputStyle.Short).setMinLength(1).setMaxLength(4).setRequired(true),
-    "tsMinutesModal":new TextInputBuilder().setCustomId("tsMinutesInp").setLabel("The minutes...").setStyle(TextInputStyle.Short).setMinLength(1).setMaxLength(2).setRequired(true),
-    "tsSecondsModal":new TextInputBuilder().setCustomId("tsSecondsInp").setLabel("The seconds...").setStyle(TextInputStyle.Short).setMinLength(1).setMaxLength(2).setRequired(true),
-    "tsDayModal":new TextInputBuilder().setCustomId("tsDayInp").setLabel("The day of the month...").setStyle(TextInputStyle.Short).setMinLength(1).setMaxLength(2).setRequired(true),
-    "tsYearModal":new TextInputBuilder().setCustomId("tsYearInp").setLabel("The year...").setStyle(TextInputStyle.Short).setMinLength(2).setMaxLength(4).setRequired(true),
-    "tsAmPm":new TextInputBuilder().setCustomId("tsAmPm").setLabel("If you used 12 hour, AM/PM").setStyle(TextInputStyle.Short).setMinLength(1).setMaxLength(2).setRequired(false),
-
-    "captcha0":new ButtonBuilder().setCustomId("captcha-0").setLabel("0").setStyle(ButtonStyle.Primary),
-    "captcha1":new ButtonBuilder().setCustomId("captcha-1").setLabel("1").setStyle(ButtonStyle.Primary),
-    "captcha2":new ButtonBuilder().setCustomId("captcha-2").setLabel("2").setStyle(ButtonStyle.Primary),
-    "captcha3":new ButtonBuilder().setCustomId("captcha-3").setLabel("3").setStyle(ButtonStyle.Primary),
-    "captcha4":new ButtonBuilder().setCustomId("captcha-4").setLabel("4").setStyle(ButtonStyle.Primary),
-    "captcha5":new ButtonBuilder().setCustomId("captcha-5").setLabel("5").setStyle(ButtonStyle.Primary),
-    "captcha6":new ButtonBuilder().setCustomId("captcha-6").setLabel("6").setStyle(ButtonStyle.Primary),
-    "captcha7":new ButtonBuilder().setCustomId("captcha-7").setLabel("7").setStyle(ButtonStyle.Primary),
-    "captcha8":new ButtonBuilder().setCustomId("captcha-8").setLabel("8").setStyle(ButtonStyle.Primary),
-    "captcha9":new ButtonBuilder().setCustomId("captcha-9").setLabel("9").setStyle(ButtonStyle.Primary),
-    "captchaBack":new ButtonBuilder().setCustomId("captcha-back").setEmoji("❌").setStyle(ButtonStyle.Danger),
-    "captchaDone":new ButtonBuilder().setCustomId("captcha-done").setEmoji("✅").setStyle(ButtonStyle.Success)
-};
-const presets={
-    "pollCreation":new ActionRowBuilder().addComponents(inps.pollAdd,inps.pollDel,inps.pollLaunch),
-    "rolesCreation":new ActionRowBuilder().addComponents(inps.roleAdd),
-    "autoJoinRoles":[new ActionRowBuilder().addComponents(inps.joinRoleAdd)],
-    "meme":[new ActionRowBuilder().addComponents(inps.approve,inps.delete)],
-    "moveMessage":new ActionRowBuilder().addComponents(inps.channels),
-    "tzConfig":[new ActionRowBuilder().addComponents(inps.tzUp,inps.tzDown,inps.tzSave)],
-    "timestamp":[new ActionRowBuilder().addComponents(inps.tsHour,inps.tsMinutes,inps.tsSeconds,inps.tsDay,inps.tsYear),new ActionRowBuilder().addComponents(inps.tsMonth),new ActionRowBuilder().addComponents(inps.tsType),new ActionRowBuilder().addComponents(inps.howToCopy,inps.onDesktop)],
-
-    "pollAddModal":new ModalBuilder().setCustomId("poll-added").setTitle("Add a poll option").addComponents(new ActionRowBuilder().addComponents(inps.pollInp)),
-    "pollRemModal":new ModalBuilder().setCustomId("poll-removed").setTitle("Remove a poll option").addComponents(new ActionRowBuilder().addComponents(inps.pollNum)),
-
-    "tsHourModal":new ModalBuilder().setCustomId("tsHourModal").setTitle("Set the Hour for the Timestamp").addComponents(new ActionRowBuilder().addComponents(inps.tsHourModal),new ActionRowBuilder().addComponents(inps.tsAmPm)),
-    "tsMinutesModal":new ModalBuilder().setCustomId("tsMinutesModal").setTitle("Set the Minutes for the Timestamp").addComponents(new ActionRowBuilder().addComponents(inps.tsMinutesModal)),
-    "tsSecondsModal":new ModalBuilder().setCustomId("tsSecondsModal").setTitle("Set the Seconds for the Timestamp").addComponents(new ActionRowBuilder().addComponents(inps.tsSecondsModal)),
-    "tsDayModal":new ModalBuilder().setCustomId("tsDayModal").setTitle("Set the Day for the Timestamp").addComponents(new ActionRowBuilder().addComponents(inps.tsDayModal)),
-    "tsYearModal":new ModalBuilder().setCustomId("tsYearModal").setTitle("Set the Year for the Timestamp").addComponents(new ActionRowBuilder().addComponents(inps.tsYearModal)),
-
-    "captcha":[new ActionRowBuilder().addComponents(inps.captcha1,inps.captcha2,inps.captcha3),new ActionRowBuilder().addComponents(inps.captcha4,inps.captcha5,inps.captcha6),new ActionRowBuilder().addComponents(inps.captcha7,inps.captcha8,inps.captcha9),new ActionRowBuilder().addComponents(inps.captchaBack,inps.captcha0,inps.captchaDone)]
-};
-
-var kaProgramRegex =/\b(?!<)https?:\/\/(?:www\.)?khanacademy\.org\/(cs|computer-programming|hour-of-code|python-program)\/[a-z,\d,-]+\/\d+(?!>)\b/gi;
-var discordMessageRegex =/\b(?!<)https?:\/\/(ptb\.|canary\.)?discord(app)?.com\/channels\/(\@me|\d+)\/\d+\/\d+(?!>)\b/gi;
 function getStarMsg(msg){
-    var msgs=[
+    var starboardHeaders=[
         `Excuse me, there is a new message.`,
         `I have detected a notification for you.`,
         `Greetings, esteemed individuals, a new message has achieved popularity.`,
@@ -1203,7 +1215,7 @@ function getStarMsg(msg){
         `Got a message for you.`,
         `It's always a good day when @ posts`
     ];
-    return `**${msgs[Math.floor(Math.random()*msgs.length)].replaceAll("@",msg.author?.globalName||msg.author?.username||"this person")}**`;
+    return `**${starboardHeaders[Math.floor(Math.random()*starboardHeaders.length)].replaceAll("@",msg.author?.globalName||msg.author?.username||"this person")}**`;
 }
 function getPrimedEmbed(userId,guildIn){
     var mes=storage[userId].primedEmbed;
@@ -1395,18 +1407,18 @@ client.on("messageCreate",async msg=>{
                 const filteredMessageData = {
                     "username": msg.member?.nickname||msg.author.globalName||msg.author.username,
                     "avatarURL": msg.member?.displayAvatarURL(),
-                    "content": ll(`\`\`\`\nThe following message from ${msg.author.username} has been censored by Stewbot.\`\`\`${replyBlip}${msg.content.slice(0,1800).replace(/(https?\:\/\/|\n)/ig,"").replace(/\@/ig,"[@]")}`),
+                    "content": limitLength(`\`\`\`\nThe following message from ${msg.author.username} has been censored by Stewbot.\`\`\`${replyBlip}${msg.content.slice(0,1800).replace(/(https?\:\/\/|\n)/ig,"").replace(/\@/ig,"[@]")}`),
                 }
 
                 sendHook(filteredMessageData);
             }
             if(storage[msg.author.id].config.dmOffenses&&msg.webhookId===null){
-                try{msg.author.send(ll(`Your message in **${msg.guild.name}** was ${storage[msg.guildId].filter.censor?"censored":"deleted"} due to the following word${foundWords.length>1?"s":""} being in the filter: ||${foundWords.join("||, ||")}||${storage[msg.author.id].config.returnFiltered?"```\n"+msg.ogContent.replaceAll("`","\\`")+"```":""}`)).catch(e=>{});}catch(e){}
+                try{msg.author.send(limitLength(`Your message in **${msg.guild.name}** was ${storage[msg.guildId].filter.censor?"censored":"deleted"} due to the following word${foundWords.length>1?"s":""} being in the filter: ||${foundWords.join("||, ||")}||${storage[msg.author.id].config.returnFiltered?"```\n"+msg.ogContent.replaceAll("`","\\`")+"```":""}`)).catch(e=>{});}catch(e){}
             }
             if(storage[msg.guildId].filter.log&&storage[msg.guildId].filter.channel){
                 var c=client.channels.cache.get(storage[msg.guildId].filter.channel);
                 if(c.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
-                    c.send(ll(`I have ${storage[msg.guildId].filter.censor?"censored":"deleted"} a message from **${msg.author.username}** in <#${msg.channel.id}> for the following blocked word${foundWords.length>1?"s":""}: ||${foundWords.join("||, ||")}||\`\`\`\n${msg.ogContent.replaceAll("`","\\`").replaceAll(/(?<=https?:\/\/[^(\s|\/)]+)\./gi, "[.]").replaceAll(/(?<=https?):\/\//gi, "[://]")}\`\`\``));
+                    c.send(limitLength(`I have ${storage[msg.guildId].filter.censor?"censored":"deleted"} a message from **${msg.author.username}** in <#${msg.channel.id}> for the following blocked word${foundWords.length>1?"s":""}: ||${foundWords.join("||, ||")}||\`\`\`\n${msg.ogContent.replaceAll("`","\\`").replaceAll(/(?<=https?:\/\/[^(\s|\/)]+)\./gi, "[.]").replaceAll(/(?<=https?):\/\//gi, "[://]")}\`\`\``));
                 }
                 else{
                     storage[msg.guildId].filter.log=false;
@@ -2062,7 +2074,7 @@ client.on("interactionCreate",async cmd=>{
                                 addedWords.push(word);
                             }
                         });
-                        cmd.followUp(addedWords.length>0?ll(`Added the following words to the blacklist:\n- ||${addedWords.join("||\n- ||")}||`):`Unable to add any of the words to the filter. Either there aren't any in the CSV, it's not formatted right, or all of the words are in the blacklist already.`);
+                        cmd.followUp(addedWords.length>0?limitLength(`Added the following words to the blacklist:\n- ||${addedWords.join("||\n- ||")}||`):`Unable to add any of the words to the filter. Either there aren't any in the CSV, it's not formatted right, or all of the words are in the blacklist already.`);
                         
                     });
                 break;
@@ -3218,7 +3230,7 @@ client.on("interactionCreate",async cmd=>{
                 });
                 i++;
             }
-            await client.channels.cache.get(process.env.noticeChannel).send({content:ll(`User ${cmd.user.username} submitted a meme for evaluation.`),files:fs.readdirSync("./tempMemes").map(a=>`./tempMemes/${a}`),components:presets.meme});
+            await client.channels.cache.get(process.env.noticeChannel).send({content:limitLength(`User ${cmd.user.username} submitted a meme for evaluation.`),files:fs.readdirSync("./tempMemes").map(a=>`./tempMemes/${a}`),components:presets.meme});
             fs.readdirSync("./tempMemes").forEach(file=>{
                 fs.unlinkSync("./tempMemes/"+file);
             });
@@ -3296,7 +3308,7 @@ client.on("interactionCreate",async cmd=>{
             cmd.update({"content":"\u200b",components:[]});
         break;
         case 'poll-voters':
-            cmd.reply({content:ll(`**Voters**\n${Object.keys(storage[cmd.guildId].polls[cmd.message.id].options).map(opt=>`\n${opt}${storage[cmd.guildId].polls[cmd.message.id].options[opt].map(a=>`\n- <@${a}>`).join("")}`).join("")}`),ephemeral:true,allowedMentions:{parse:[]}});
+            cmd.reply({content:limitLength(`**Voters**\n${Object.keys(storage[cmd.guildId].polls[cmd.message.id].options).map(opt=>`\n${opt}${storage[cmd.guildId].polls[cmd.message.id].options[opt].map(a=>`\n- <@${a}>`).join("")}`).join("")}`),ephemeral:true,allowedMentions:{parse:[]}});
         break;
         case "racMove":
             let moveModal=new ModalBuilder().setCustomId("moveModal").setTitle("Rows & Columns Move");
@@ -3566,7 +3578,7 @@ client.on("interactionCreate",async cmd=>{
                 cmd.update({"content":"\u200b",components:[]});
             }
             else{
-                cmd.reply({ephemeral:true,content:ll(`I'm sorry, but I can't help with the following roles as I don't have high enough permissions to. If you'd like me to offer these roles, visit Server Settings and make sure I have a role listed above the following roles. You can do this by dragging the order around or adding roles.\n\n${badRoles.map(a=>`- **${a}**`).join("\n")}`)});
+                cmd.reply({ephemeral:true,content:limitLength(`I'm sorry, but I can't help with the following roles as I don't have high enough permissions to. If you'd like me to offer these roles, visit Server Settings and make sure I have a role listed above the following roles. You can do this by dragging the order around or adding roles.\n\n${badRoles.map(a=>`- **${a}**`).join("\n")}`)});
             }
         break;
         case 'join-roleOption':
@@ -3679,7 +3691,7 @@ client.on("interactionCreate",async cmd=>{
                 if(Object.keys(finalResults).length>1) ctx.stroke();
             });
             fs.writeFileSync("./tempPoll.png",canvas.toBuffer("image/png"));
-            cmd.update({content:ll(`**Poll Closed**\n<@${poll.starter}> asked: **${poll.title}**${poll.choices.map((a,i)=>`\n${i}. ${a} **${storage[cmd.guildId].polls[cmd.message.id].options[a].length}** - ${pieCols[i][1]}`).join("")}\n\n**Voters**${Object.keys(storage[cmd.guildId].polls[cmd.message.id].options).map(opt=>`\n${opt}${storage[cmd.guildId].polls[cmd.message.id].options[opt].map(a=>`\n- <@${a}>`).join("")}`).join("")}`),components:[],allowedMentions:{"parse":[]},files:["./tempPoll.png"]});
+            cmd.update({content:limitLength(`**Poll Closed**\n<@${poll.starter}> asked: **${poll.title}**${poll.choices.map((a,i)=>`\n${i}. ${a} **${storage[cmd.guildId].polls[cmd.message.id].options[a].length}** - ${pieCols[i][1]}`).join("")}\n\n**Voters**${Object.keys(storage[cmd.guildId].polls[cmd.message.id].options).map(opt=>`\n${opt}${storage[cmd.guildId].polls[cmd.message.id].options[opt].map(a=>`\n- <@${a}>`).join("")}`).join("")}`),components:[],allowedMentions:{"parse":[]},files:["./tempPoll.png"]});
             delete storage[cmd.guildId].polls[cmd.message.id];
             
         }
@@ -4069,7 +4081,7 @@ client.on("messageDelete",async msg=>{
                 if(firstEntry.target.id===msg?.author?.id&&BigInt(Date.now())-firstEntry.timestamp<BigInt(60000)){
                     var c=msg.guild.channels.cache.get(storage[msg.guild.id].logs.channel);
                     if(c?.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
-                        c.send({content:ll(`**Message from <@${firstEntry.target.id}> Deleted by <@${firstEntry.executor.id}> in <#${msg.channel.id}>**\n\n${msg.content.length>0?`\`\`\`\n${msg.content}\`\`\``:""}${msg.attachments?.size>0?`There were **${msg.attachments.size}** attachments on this message.`:""}`),allowedMentions:{parse:[]}});
+                        c.send({content:limitLength(`**Message from <@${firstEntry.target.id}> Deleted by <@${firstEntry.executor.id}> in <#${msg.channel.id}>**\n\n${msg.content.length>0?`\`\`\`\n${msg.content}\`\`\``:""}${msg.attachments?.size>0?`There were **${msg.attachments.size}** attachments on this message.`:""}`),allowedMentions:{parse:[]}});
                     }
                     else{
                         storage[msg.guild.id].logs.active=false;
@@ -4099,10 +4111,10 @@ client.on("messageUpdate",async (msgO,msg)=>{
             }
             msg.delete();
             if(storage[msg.author.id].config.dmOffenses&&!msg.author.bot){
-                msg.author.send(ll(`Your message in **${msg.guild.name}** was ${storage[msg.guildId].filter.censor?"censored":"deleted"} due to editing in the following word${foundWords.length>1?"s":""} that are in the filter: ||${foundWords.join("||, ||")}||${storage[msg.author.id].config.returnFiltered?"```\n"+msg.content.replaceAll("`","\\`")+"```":""}`));
+                msg.author.send(limitLength(`Your message in **${msg.guild.name}** was ${storage[msg.guildId].filter.censor?"censored":"deleted"} due to editing in the following word${foundWords.length>1?"s":""} that are in the filter: ||${foundWords.join("||, ||")}||${storage[msg.author.id].config.returnFiltered?"```\n"+msg.content.replaceAll("`","\\`")+"```":""}`));
             }
             if(storage[msg.guildId].filter.log&&storage[msg.guildId].filter.channel){
-                client.channels.cache.get(storage[msg.guildId].filter.channel).send(ll(`I have deleted a message from **${msg.author.username}** in <#${msg.channel.id}> for editing in the following blocked word${foundWords.length>1?"s":""}": ||${foundWords.join("||, ||")}||\`\`\`\n${msg.content.replaceAll("`","\\`")}\`\`\``));
+                client.channels.cache.get(storage[msg.guildId].filter.channel).send(limitLength(`I have deleted a message from **${msg.author.username}** in <#${msg.channel.id}> for editing in the following blocked word${foundWords.length>1?"s":""}": ||${foundWords.join("||, ||")}||\`\`\`\n${msg.content.replaceAll("`","\\`")}\`\`\``));
             }
             
             return;
