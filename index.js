@@ -3118,6 +3118,10 @@ client.on("interactionCreate",async cmd=>{
             cmd.followUp({content:`**Chronograph**\n<t:${Math.round(Date.now()/1000)}:R>`,components:presets.chrono});
         break;
         case 'warn':
+            if(cmd.options.getUser("who").bot){
+                cmd.followUp(`Bots cannot be warned. Consider reconfiguring or removing a bot if it's giving you issues.`);
+                break;
+            }
             if(!storage[cmd.guild.id].users.hasOwnProperty(cmd.options.getUser("who").id)){
                 storage[cmd.guild.id].users[cmd.options.getUser("who").id]=structuredClone(defaultGuildUser);
             }
@@ -3130,6 +3134,22 @@ client.on("interactionCreate",async cmd=>{
                 "severity":cmd.options.getInteger("severity")===null?0:cmd.options.getInteger("severity"),
                 "when":Math.round(Date.now()/1000)
             });
+            try{
+                cmd.options.getUser("who").send({embeds:[{
+                    type: "rich",
+                    title: cmd.guild.name.slice(0,80),
+                    description: `You were given a warning.\nReason: \`${cmd.options.getString("what")===null?`None given`:cmd.options.getString("what")}\`\nSeverity level: \`${cmd.options.getInteger("severity")===null?"None given":cmd.options.getInteger("severity")}\``,
+                    color: 0xff0000,
+                    thumbnail: {
+                        url: cmd.guild.iconURL(),
+                        height: 0,
+                        width: 0,
+                    },
+                    footer: {
+                        text:`This message was sent by a moderator of ${cmd.guild.name}`
+                    }
+                }]}).catch(e=>{});
+            }catch(e){}
             cmd.followUp({content:`Alright, I have warned <@${cmd.options.getUser("who").id}>${cmd.options.getString("what")===null?``:` with the reason \`${cmd.options.getString("what")}\``}${cmd.options.getInteger("severity")===null?``:` at a level \`${cmd.options.getInteger("severity")}\``}. This is warning #\`${storage[cmd.guild.id].users[cmd.options.getUser("who").id].warnings.length}\` for them.`,allowedMentions:{parse:[]}});
         break;
         case 'warnings':
