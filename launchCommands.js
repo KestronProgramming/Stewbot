@@ -71,6 +71,10 @@ const extraInfo={
 	"set_persistent_message":{"contexts":[0],"integration_types":[0],"cat":6},
 	"rock_paper_scissors":{"contexts":[0,1,2],"integration_types":[0,1],"cat":4},
 	"delete":{"contexts":[0],"integration_types":[0],"cat":5},
+	"timer":{"contexts":[0,1,2],"integration_types":[0,1],"cat":1},
+	"chronograph":{"contexts":[0,1,2],"integration_types":[0,1],"cat":1},
+	"warn":{"contexts":[0],"integration_types":[0],"cat":5},
+	"warnings":{"contexts":[0],"integration_types":[0],"cat":5},
 
 	//Context Menu Commands
 	"submit_meme":{"contexts":[0,1,2],"integration_types":[0,1],"cat":2,"desc":"Submit a meme to the Kestron moderators for verification to show up in `/fun meme`"},
@@ -117,7 +121,7 @@ const commands = [
 			).addBooleanOption(option=>
 				option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 			)
-		).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages).setDMPermission(false),
+		).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
 	new SlashCommandBuilder().setName("view_filter").setDescription("View the list of blacklisted words for this server").setDMPermission(false).addBooleanOption(option=>
 		option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 	),
@@ -137,7 +141,7 @@ const commands = [
 			)
 		).addBooleanOption(option=>
 			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
-		).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages).setDMPermission(false),
+		).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
 	new SlashCommandBuilder().setName("add_emojiboard").setDescription("Create a new emojiboard")
 		.addStringOption(option=>
 			option.setName("emoji").setDescription("The emoji to react with to trigger the emojiboard").setRequired(true)
@@ -153,13 +157,13 @@ const commands = [
 			)
 		).addBooleanOption(option=>
 			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
-		).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages).setDMPermission(false),
+		).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
 	new SlashCommandBuilder().setName("remove_emojiboard").setDescription("Remove an emojiboard")
 		.addStringOption(option=>
 			option.setName("emoji").setDescription("The emoji to remove the emojiboard for").setRequired(true)
 		).addBooleanOption(option=>
 			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
-		).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages).setDMPermission(false),
+		).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
 	new SlashCommandBuilder().setName("edit_emojiboard").setDescription("Configure an emojiboard for this server").addStringOption(option=>
 			option.setName("emoji").setDescription("The emojiboard to edit").setRequired(true)
 		).addBooleanOption(option=>
@@ -176,7 +180,7 @@ const commands = [
 			)
 		).addBooleanOption(option=>
 			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
-		).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages).setDMPermission(false),
+		).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
 	new SlashCommandBuilder().setName("fun").setDescription("Posts something fun to enjoy").addSubcommand(command=>
 			command.setName("meme").setDescription("Posts a meme").addIntegerOption(option=>
 				option.setName("number").setDescription("Specific meme # to post (optional)").setMinValue(0)
@@ -216,14 +220,14 @@ const commands = [
 			option.setName("reason").setDescription("What is the reason for this kick?")
 		).addBooleanOption(option=>
 			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
-		).setDefaultMemberPermissions(PermissionFlagsBits.KickMembers).setDMPermission(false),
+		).setDefaultMemberPermissions(PermissionFlagsBits.KickMembers),
 	new SlashCommandBuilder().setName("ban").setDescription("Ban a user").addUserOption(option=>
 			option.setName("target").setDescription("Who to ban?").setRequired(true)
 		).addStringOption(option=>
 			option.setName("reason").setDescription("What is the reason for this ban?")
 		).addBooleanOption(option=>
 			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
-		).setDefaultMemberPermissions(PermissionFlagsBits.BanMembers).setDMPermission(false),
+		).setDefaultMemberPermissions(PermissionFlagsBits.BanMembers),
 	new SlashCommandBuilder().setName("timeout").setDescription("Timeout a user").addUserOption(option=>
 			option.setName("target").setDescription("Who to timeout?").setRequired(true)
 		).addIntegerOption(option=>
@@ -236,7 +240,7 @@ const commands = [
 			option.setName("reason").setDescription("What is the reason for this timeout?")
 		).addBooleanOption(option=>
 			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
-		).setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers).setDMPermission(false),
+		).setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers),
 	new SlashCommandBuilder().setName("translate").setDescription("Translate a string of text").addStringOption(option=>
 			option.setName("what").setDescription("What to translate").setRequired(true)
 		).addStringOption(option=>
@@ -279,10 +283,10 @@ const commands = [
 			).addBooleanOption(option=>
 				option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 			)
-		).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages).setDMPermission(false),
+		).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
 	new SlashCommandBuilder().setName("next_counting_number").setDescription("View the next number to count at").addBooleanOption(option=>
 			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
-		).setDMPermission(false),
+		),
 	new SlashCommandBuilder().setName("general_config").setDescription("Configure general behaviors").addBooleanOption(option=>
 			option.setName("ai_pings").setDescription("Have the bot post an AI message when pinging it?")
 		).addBooleanOption(option=>
@@ -291,7 +295,7 @@ const commands = [
 			option.setName("disable_anti_hack").setDescription("Do you want to disable the anti hack/spam account protection for this server?")
 		).addBooleanOption(option=>
 			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
-		).setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers).setDMPermission(false),
+		).setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers),
 	new SlashCommandBuilder().setName("personal_config").setDescription("Configure the bot for you personally").addBooleanOption(option=>
 			option.setName("ai_pings").setDescription("Respond with an AI message to pings or DMs")
 		).addBooleanOption(option=>
@@ -307,10 +311,10 @@ const commands = [
 		),
 	new SlashCommandBuilder().setName("poll").setDescription("Make a poll with automatically tracked options").addStringOption(option=>
 			option.setName("prompt").setDescription("The prompt (We'll set options in a minute)").setRequired(true)
-		).setDMPermission(false),
+		),
 	new SlashCommandBuilder().setName("ticket").setDescription("Set up a ticket system here for users to contact mods").addChannelOption(option=>
 			option.setName("channel").setDescription("The channel for tickets to be opened in on the staff end").addChannelTypes(ChannelType.GuildText).setRequired(true)
-		).setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels).setDMPermission(false),
+		).setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels),
 	new SlashCommandBuilder().setName("auto-join-message").setDescription("Set up a message to be sent automatically when a user joins").addBooleanOption(option=>
 			option.setName("active").setDescription("Should I send a message when the user joins?").setRequired(true)
 		).addStringOption(option=>
@@ -324,7 +328,7 @@ const commands = [
 			option.setName("channel").setDescription("The channel to post the message to").addChannelTypes(ChannelType.GuildText)
 		).addBooleanOption(option=>
 			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
-		).setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers).setDMPermission(false),
+		).setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers),
 	new SlashCommandBuilder().setName("auto-leave-message").setDescription("Set up a message to be sent automatically when a user leaves").addBooleanOption(option=>
 			option.setName("active").setDescription("Should I send a message when the user leaves?").setRequired(true)
 		).addChannelOption(option=>
@@ -333,10 +337,10 @@ const commands = [
 			option.setName("message").setDescription("The message to be sent (Use \"${@USER}\" to use the user's username)")
 		).addBooleanOption(option=>
 			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
-		).setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers).setDMPermission(false),
+		).setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers),
 	new SlashCommandBuilder().setName("auto_roles").setDescription("Setup a message with auto roles").addStringOption(option=>
 			option.setName("message").setDescription("The message to be sent with the role options").setRequired(true)
-		).setDefaultMemberPermissions(PermissionFlagsBits.ManageRoles).setDMPermission(false),
+		).setDefaultMemberPermissions(PermissionFlagsBits.ManageRoles),
 	new SlashCommandBuilder().setName("report_problem").setDescription("Report an error to be looked at").addStringOption(option=>
 			option.setName("type").setDescription("What kind of problem are you reporting?").addChoices(
 				{"name":"Profanity","value":"profanity"},
@@ -371,17 +375,17 @@ const commands = [
 			option.setName("mod_actions").setDescription("Log when a moderator performs an action")
 		).addBooleanOption(option=>
 			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
-		).setDefaultMemberPermissions(PermissionFlagsBits.ViewAuditLog).setDMPermission(false),
+		).setDefaultMemberPermissions(PermissionFlagsBits.ViewAuditLog),
 	new SlashCommandBuilder().setName("admin_message").setDescription("Anonymously make a post in the server's name").addStringOption(option=>
 			option.setName("what").setDescription("What to say").setMaxLength(2000).setRequired(true)
 		).addUserOption(option=>
 			option.setName("target").setDescription("The user to message")
-		).setDefaultMemberPermissions(PermissionFlagsBits.KickMembers).setDMPermission(false),
+		).setDefaultMemberPermissions(PermissionFlagsBits.KickMembers),
 	new SlashCommandBuilder().setName("sticky-roles").setDescription("Add roles back to a user who left and rejoined").addBooleanOption(option=>
 			option.setName("active").setDescription("Should I add roles back to users who left and rejoined?").setRequired(true)
 		).addBooleanOption(option=>
 			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
-		).setDefaultMemberPermissions(PermissionFlagsBits.ManageRoles).setDMPermission(false),
+		).setDefaultMemberPermissions(PermissionFlagsBits.ManageRoles),
 	new SlashCommandBuilder().setName("random").setDescription("Get something random").addSubcommand(command=>
 			command.setName("rng").setDescription("Generate a random number").addIntegerOption(option=>
 				option.setName("low").setDescription("Lower bound of the random number? (Default: 1)")
@@ -409,7 +413,7 @@ const commands = [
 				option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 			)
 		),
-	new SlashCommandBuilder().setName("auto-join-roles").setDescription("Automatically add roles to a user when they join the server").setDefaultMemberPermissions(PermissionFlagsBits.ManageRoles).setDMPermission(false),
+	new SlashCommandBuilder().setName("auto-join-roles").setDescription("Automatically add roles to a user when they join the server").setDefaultMemberPermissions(PermissionFlagsBits.ManageRoles),
 	new SlashCommandBuilder().setName("bible").setDescription("Look up a verse or verses in the King James version of the Bible").addStringOption(option=>
 			option.setName("book").setDescription("What book of the Bible do you wish to look up?").setRequired(true)
 		).addIntegerOption(option=>
@@ -433,7 +437,7 @@ const commands = [
 			).setName("location").setDescription("Where should level up messages be sent?")
 		).addBooleanOption(option=>
 			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
-		).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages).setDMPermission(false),
+		).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
 	new SlashCommandBuilder().setName("leaderboard").setDescription("View a leaderboard").addStringOption(option=>
 			option.setName("which").setDescription("Which leaderboard do you want to see?").setChoices(
 				{name:"Counting",value:"counting"},
@@ -445,12 +449,12 @@ const commands = [
 			option.setName("who").setDescription("If applicable, who's spot on the leaderboard do you wish to highlight?")
 		).addBooleanOption(option=>
 			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
-		).setDMPermission(false),
+		),
 	new SlashCommandBuilder().setName("rank").setDescription("Your rank for this server's level ups").addUserOption(option=>
 			option.setName("target").setDescription("Who's rank are you trying to view?")
 		).addBooleanOption(option=>
 			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
-		).setDMPermission(false),
+		),
 	new SlashCommandBuilder().setName("links").setDescription("Get a list of links relevant for the bot").addBooleanOption(option=>
 			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 		),
@@ -474,15 +478,15 @@ const commands = [
 			option.setName("channel").setDescription("The channel for me to post this daily type in").addChannelTypes(ChannelType.GuildText).setRequired(true)
 		).addBooleanOption(option=>
 			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
-		).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages).setDMPermission(false),
-	new SlashCommandBuilder().setName("captcha").setDescription("Use this command if I've timed you out for spam").setDMPermission(true),
+		).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
+	new SlashCommandBuilder().setName("captcha").setDescription("Use this command if I've timed you out for spam"),
 	new SlashCommandBuilder().setName("user").setDescription("Display a user's profile").addBooleanOption(option=>
 			option.setName("large-pfp").setDescription("Display the PFP in large mode?")
 		).addUserOption(option=>
 			option.setName("who").setDescription("Who do you want to display?")
 		).addBooleanOption(option=>
 			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
-		).setDMPermission(false),
+		),
 	new SlashCommandBuilder().setName("rss").setDescription("Commands relating to RSS feeds").addSubcommand(command=>
 			command.setName("follow").setDescription("Follow an RSS feed").addChannelOption(option=>
 				option.setName("channel").setDescription("The channel to follow this RSS feed in").setRequired(true)
@@ -518,11 +522,29 @@ const commands = [
 		).addBooleanOption(option=>
 			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 		).setDefaultMemberPermissions(PermissionFlagsBits.BanMembers),
+	new SlashCommandBuilder().setName("warn").setDescription("Warn a user for bad behaviour").addUserOption(option=>
+			option.setName("who").setDescription("Who are you warning?").setRequired(true)
+		).addStringOption(option=>
+			option.setName("what").setDescription("What did they do?")
+		).addIntegerOption(option=>
+			option.setName("severity").setDescription("On a scale from 1 to 10, how would you rate the severity?").setMinValue(1).setMaxValue(10)
+		).setDefaultMemberPermissions(PermissionFlagsBits.ManageNicknames),
+	new SlashCommandBuilder().setName("warnings").setDescription("See the warnings that have been dealt in the server").addUserOption(option=>
+			option.setName("who").setDescription("Do you want to see the warnings for a specific person?")
+		),
+	/*new SlashCommandBuilder().setName("timer").setDescription("Set a timer").addIntegerOption(option=>
+			option.setName("minutes").setDescription("Amount of minutes").setMinValue(0).setMaxValue(59).setRequired(true)
+		).addIntegerOption(option=>
+			option.setName("hours").setDescription("Amount of hours").setMinValue(0).setMaxValue(6)
+		).addIntegerOption(option=>
+			option.setName("seconds").setDescription("Amount of seconds").setMinValue(0).setMaxValue(59)
+		),
+	new SlashCommandBuilder().setName("chronograph").setDescription("Start a stopwatch"),*/
 
 	new ContextMenuCommandBuilder().setName("submit_meme").setType(ApplicationCommandType.Message),
 	new ContextMenuCommandBuilder().setName("delete_message").setType(ApplicationCommandType.Message).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),//Leaving this in DMs to delete undesirable bot DMs
 	new ContextMenuCommandBuilder().setName("translate_message").setType(ApplicationCommandType.Message),
-	new ContextMenuCommandBuilder().setName("move_message").setType(ApplicationCommandType.Message).setDMPermission(false),
+	new ContextMenuCommandBuilder().setName("move_message").setType(ApplicationCommandType.Message),
 	new ContextMenuCommandBuilder().setName("prime_embed").setType(ApplicationCommandType.Message)
 ]
 .map(command => Object.assign(command.toJSON(),extraInfo[command.toJSON().name]));

@@ -13,6 +13,7 @@ const bible=require("./kjv.json");
 const fs=require("fs");
 const storage=require("./storage.json");
 const cmds=require("./commands.json");
+var timers=require("./timers.json");
 
 // Variables
 var client;
@@ -27,8 +28,6 @@ const threshold = 3;
 var kaProgramRegex =/\b(?!<)https?:\/\/(?:www\.)?khanacademy\.org\/(cs|computer-programming|hour-of-code|python-program)\/[a-z,\d,-]+\/\d+(?!>)\b/gi;
 var discordMessageRegex =/\b(?!<)https?:\/\/(ptb\.|canary\.)?discord(app)?.com\/channels\/(\@me|\d+)\/\d+\/\d+(?!>)\b/gi;
 
-
-// Data - TODO: store some in another json/js file
 const m8ballResponses = ["So it would seem", "Yes", "No", "Perhaps", "Absolutely", "Positively", "Unfortunately", "I am unsure", "I do not know", "Absolutely not", "Possibly", "More likely than not", "Unlikely", "Probably not", "Probably", "Maybe", "Random answers is not the answer"];
 const pieCols=[
     ["006400","Green"],
@@ -490,7 +489,8 @@ const defaultGuildUser={
         "message":"I'm not available right now",
         "until":0,
         "autoOff":false
-    }
+    },
+    "warnings":[]
 };
 const defaultUser={
     "offenses":0,
@@ -528,9 +528,6 @@ const defaultUser={
         "id":""
     }
 };
-
-
-// Rest is in the "order" of when it was added, probably
 
 function escapeRegex(input) {
     return input.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
@@ -771,38 +768,6 @@ function checkDirty(where,what){
         }
     });
     return dirty;
-}
-function getAwayCard(embed,user,guild,global){
-    if(embed){
-        var daUser=client.users.cache.get(user);
-        var daEmb={
-            "type": "rich",
-            "title": `Unavailable`,
-            "color": 0xff0000,
-            "author": {
-                "name": `${daUser.globalName||daUser.username}`,
-                "icon_url": `${daUser.displayAvatarURL()}`
-            },
-            "footer": {
-                "text": `Set up using /unavailable`
-            }
-        };
-        if(global){
-            daEmb.description=storage[user].gone.message
-        }
-        else{
-            daEmb.description=checkDirty(guild,storage[guild].users[user].gone.message)?checkDirty(guild,storage[guild].users[user].gone.message):storage[guild].users[user].gone.message;
-        }
-        return daEmb;
-    }
-    else{
-        if(global){
-            return storage[user].gone.message;
-        }
-        else{
-            return checkDirty(guild,storage[guild].users[user].gone.message)?checkDirty(guild,storage[guild].users[user].gone.message):storage[guild].users[user].gone.message;
-        }
-    }
 }
 function getLvl(lvl){
     var total=0;
@@ -3140,6 +3105,38 @@ client.on("interactionCreate",async cmd=>{
             }
             cmd.channel.bulkDelete(cmd.options.getInteger("amount")+1);
         break;
+        case 'chronograph':
+            cmd.followUp({content:`**Chronograph**\n<t:${Math.round(Date.now()/1000)}:R>`,components:presets.chrono});
+        break;
+        case 'warn':
+            if(!storage[cmd.guild.id].users.hasOwnProperty(cmd.options.getUser("who").id)){
+                storage[cmd.guild.id].users[cmd.options.getUser("who").id]=structuredClone(defaultGuildUser);
+            }
+            if(!storage[cmd.guild.id].users[cmd.options.getUser("who").id].hasOwnProperty("warnings")){
+                storage[cmd.guild.id].users[cmd.options.getUser("who").id].warnings=[];
+            }
+            storage[cmd.guild.id].users[cmd.options.getUser("who").id].warnings.push({
+                "moderator":cmd.user.id,
+                "reason":cmd.options.getString("what")===null?`None given`:cmd.options.getString("what"),
+                "severity":cmd.options.getInteger("severity")===null?0:cmd.options.getInteger("severity"),
+                "when":Math.round(Date.now()/1000)
+            });
+            cmd.followUp({content:`Alright, I have warned <@${cmd.options.getUser("who").id}>${cmd.options.getString("what")===null?``:` with the reason \`${cmd.options.getString("what")}\``}${cmd.options.getInteger("severity")===null?``:` at a level \`${cmd.options.getInteger("severity")}\``}. This is warning #\`${storage[cmd.guild.id].users[cmd.options.getUser("who").id].warnings.length}\` for them.`,allowedMentions:{parse:[]}});
+        break;
+        case 'warnings':
+            if(cmd.options.getUser("who")!==null){
+                if(!storage[cmd.guild.id].users.hasOwnProperty(cmd.options.getUser("who").id)){
+                    storage[cmd.guild.id].users[cmd.options.getUser("who").id]=structuredClone(defaultGuildUser);
+                }
+                if(!storage[cmd.guild.id].users[cmd.options.getUser("who").id].hasOwnProperty("warnings")){
+                    storage[cmd.guild.id].users[cmd.options.getUser("who").id].warnings=[];
+                }
+                cmd.followUp({content:limitLength(`${storage[cmd.guild.id].users[cmd.options.getUser("who").id].warnings.length>0?`There are ${storage[cmd.guild.id].users[cmd.options.getUser("who").id].warnings.length} warnings for <@${cmd.options.getUser("who").id}>.${storage[cmd.guild.id].users[cmd.options.getUser("who").id].warnings.map((a,i)=>`\n${i}. <@${a.moderator}>: \`${a.reason}\`, level **${a.severity}**, given <t:${a.when}:R>.`).join("")}`:`This user has no warnings currently present.`}`),allowedMentions:{parse:[]},components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setLabel("Remove a Warning").setStyle(ButtonStyle.Danger).setCustomId(`remWarn-${cmd.options.getUser("who").id}`),new ButtonBuilder().setLabel("Clear all Warnings").setStyle(ButtonStyle.Danger).setCustomId(`clearWarn-${cmd.options.getUser("who").id}`))]});
+            }
+            else{
+                cmd.followUp({content:limitLength(`**Warnings in ${cmd.guild.name}**${Object.keys(storage[cmd.guild.id].users).map(a=>storage[cmd.guild.id].users[a].hasOwnProperty("warnings")?storage[cmd.guild.id].users[a].warnings.length>0?`\n- <@${a}>: \`${storage[cmd.guild.id].users[a].warnings.length}\` warnings dealt. Sum of Severities: \`${storage[cmd.guild.id].users[a].warnings.length>1?storage[cmd.guild.id].users[a].warnings.reduce((b,c)=>(typeof b==="object"?b.severity:b)+c.severity):storage[cmd.guild.id].users[a].warnings[0].severity}\``:``:``).join("")}`),allowedMentions:{parse:[]}});
+            }
+        break;
 
         case 'restart':
             if(cmd.guild?.id==="983074750165299250"&&cmd.channel.id==="986097382267715604"){
@@ -3654,6 +3651,33 @@ client.on("interactionCreate",async cmd=>{
         case 'tsType':
             cmd.update(`<t:${Math.round(new Date(+cmd.message.content.split(":")[1]*1000)/1000)}:${cmd.values[0]}>`);
         break;
+    }
+    if(cmd.customId?.startsWith("remWarn-")){
+        cmd.showModal(new ModalBuilder().setTitle("Remove a Warning").setCustomId(`remWarning-${cmd.customId.split("remWarn-")[1]}`).addComponents(new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId("warning").setLabel("Warning to remove").setPlaceholder("1").setStyle(TextInputStyle.Short).setMaxLength(2))));
+    }
+    if(cmd.customId?.startsWith("clearWarn-")){
+        cmd.showModal(new ModalBuilder().setTitle("Clear All Warnings - Are you sure?").setCustomId(`clearWarning-${cmd.customId.split("clearWarn-")[1]}`).addComponents(new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId("confirm").setLabel("Are you sure?").setPlaceholder("\"Yes\"").setStyle(TextInputStyle.Short).setMaxLength(3).setMinLength(3))));
+    }
+    if(cmd.customId?.startsWith("remWarning-")){
+        if(!/\d\d?/ig.test(cmd.fields.getTextInputValue("warning"))){
+            cmd.deferUpdate();
+        }
+        else if(+cmd.fields.getTextInputValue("warning")>=storage[cmd.guild.id].users[cmd.customId.split("-")[1]].warnings.length){
+            cmd.deferUpdate();
+        }
+        else{
+            storage[cmd.guild.id].users[cmd.customId.split("-")[1]].warnings.splice(cmd.fields.getTextInputValue("warning")-1,1);
+            cmd.reply({content:`Alright, I have removed warning \`${cmd.fields.getTextInputValue("warning")}\` from <@${cmd.customId.split("-")[1]}>.`,allowedMentioned:{parse:[]}});
+        }
+    }
+    if(cmd.customId?.startsWith("clearWarning-")){
+        if(cmd.fields.getTextInputValue("confirm").toLowerCase()!=="yes"){
+            cmd.deferUpdate();
+        }
+        else{
+            storage[cmd.guild.id].users[cmd.customId.split("-")[1]].warnings=[];
+            cmd.reply({content:`Alright, I have cleared all warnings for <@${cmd.customId.split("-")[1]}>`,allowedMentions:{parse:[]}});
+        }
     }
     if(cmd.customId?.startsWith("delete-")){
         if(cmd.user.id===cmd.customId.split("-")[1]||cmd.customId==="delete-all"||cmd.member?.permissions.has(PermissionFlagsBits.ManageMessages)){
