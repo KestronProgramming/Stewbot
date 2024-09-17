@@ -13,6 +13,7 @@ const bible=require("./kjv.json");
 const fs=require("fs");
 const storage=require("./storage.json");
 const cmds=require("./commands.json");
+const startBackupThread = require("./backup.js");
 var timers=require("./timers.json");
 
 // Variables
@@ -637,7 +638,12 @@ function getClosest(input) {
     else return null;
 }
 
+// Backup handlers
+function backupThreadErrorCallback(error) {
+    notify(1, String(error));
+}
 setInterval(()=>{fs.writeFileSync("./storage.json",JSON.stringify(storage));},10000);
+// Cloud backups start inside the bot's on-ready listener
 
 function limitLength(s){
     return s.length>1999?s.slice(0,1996)+"...":s;
@@ -1235,6 +1241,9 @@ var statTog=0;
 
 //Actionable events
 client.once("ready",async ()=>{
+    // Schedule cloud backups every hour
+    startBackupThread("./storage.json", 60*60*1000, backupThreadErrorCallback, true)
+
     uptime=Math.round(Date.now()/1000);
     notify(1,`Started <t:${uptime}:R>`);
     console.log(`Logged Stewbot handles into ${client.user.tag}`);
