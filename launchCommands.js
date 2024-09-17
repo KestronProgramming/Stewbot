@@ -528,9 +528,13 @@ const commands = [
 			option.setName("what").setDescription("What did they do?")
 		).addIntegerOption(option=>
 			option.setName("severity").setDescription("On a scale from 1 to 10, how would you rate the severity?").setMinValue(1).setMaxValue(10)
+		).addBooleanOption(option=>
+			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 		).setDefaultMemberPermissions(PermissionFlagsBits.ManageNicknames),
 	new SlashCommandBuilder().setName("warnings").setDescription("See the warnings that have been dealt in the server").addUserOption(option=>
 			option.setName("who").setDescription("Do you want to see the warnings for a specific person?")
+		).addBooleanOption(option=>
+			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 		),
 	/*new SlashCommandBuilder().setName("timer").setDescription("Set a timer").addIntegerOption(option=>
 			option.setName("minutes").setDescription("Amount of minutes").setMinValue(0).setMaxValue(59).setRequired(true)
