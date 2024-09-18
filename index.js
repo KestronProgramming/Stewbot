@@ -3682,10 +3682,20 @@ client.on("interactionCreate",async cmd=>{
         break;
     }
     if(cmd.customId?.startsWith("remWarn-")){
-        cmd.showModal(new ModalBuilder().setTitle("Remove a Warning").setCustomId(`remWarning-${cmd.customId.split("remWarn-")[1]}`).addComponents(new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId("warning").setLabel("Warning to remove").setPlaceholder("1").setStyle(TextInputStyle.Short).setMaxLength(2))));
+        if(cmd.member.permissions.has(PermissionFlagsBits.ManageNicknames)){
+            cmd.showModal(new ModalBuilder().setTitle("Remove a Warning").setCustomId(`remWarning-${cmd.customId.split("remWarn-")[1]}`).addComponents(new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId("warning").setLabel("Warning to remove").setPlaceholder("1").setStyle(TextInputStyle.Short).setMaxLength(2))));
+        }
+        else{
+            cmd.deferUpdate();
+        }
     }
     if(cmd.customId?.startsWith("clearWarn-")){
-        cmd.showModal(new ModalBuilder().setTitle("Clear All Warnings - Are you sure?").setCustomId(`clearWarning-${cmd.customId.split("clearWarn-")[1]}`).addComponents(new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId("confirm").setLabel("Are you sure?").setPlaceholder("\"Yes\"").setStyle(TextInputStyle.Short).setMaxLength(3).setMinLength(3))));
+        if(cmd.member.permissions.has(PermissionFlagsBits.KickMembers)){
+            cmd.showModal(new ModalBuilder().setTitle("Clear All Warnings - Are you sure?").setCustomId(`clearWarning-${cmd.customId.split("clearWarn-")[1]}`).addComponents(new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId("confirm").setLabel("Are you sure?").setPlaceholder("\"Yes\"").setStyle(TextInputStyle.Short).setMaxLength(3).setMinLength(3))));
+        }
+        else{
+            cmd.deferUpdate();
+        }
     }
     if(cmd.customId?.startsWith("remWarning-")){
         if(!/\d\d?/ig.test(cmd.fields.getTextInputValue("warning"))){
