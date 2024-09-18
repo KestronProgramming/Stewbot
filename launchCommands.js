@@ -535,7 +535,7 @@ const commands = [
 			option.setName("who").setDescription("Do you want to see the warnings for a specific person?")
 		).addBooleanOption(option=>
 			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
-		),
+		).setDefaultMemberPermissions(PermissionFlagsBits.ManageNicknames),
 	/*new SlashCommandBuilder().setName("timer").setDescription("Set a timer").addIntegerOption(option=>
 			option.setName("minutes").setDescription("Amount of minutes").setMinValue(0).setMaxValue(59).setRequired(true)
 		).addIntegerOption(option=>
