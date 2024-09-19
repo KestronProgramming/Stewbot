@@ -1267,38 +1267,6 @@ client.once("ready",async ()=>{
     setInterval(checkRSS,600000);
 });
 
-async function sendHook(what){
-    if(typeof what==="string"){
-        what = what.replace(/\@(?=[^\]])/ig,"[@]"); // replace only @'s that are not already escaped
-    }
-    else{
-        what.content=what.content.replace(/\@(?=[^\]])/ig,"[@]");
-    }
-
-    // Thread IDs work a little different (channel is parent, and thread ID is channel ID)
-    let mainChannel;
-    if (msg.channel.isThread()) {
-        mainChannel = msg.channel.parent;
-        // Add in thread ID so it sends it there instead of the parent channel 
-        what.threadId = msg.channel.id;
-    } else {
-        mainChannel = msg.channel;
-    }
-
-    var hook=await mainChannel.fetchWebhooks();
-    hook=hook.find(h=>h.token);
-    if(hook){
-        hook.send(what);
-    }
-    else{
-        mainChannel.createWebhook({
-            name: config.name,
-            avatar: config.pfp,
-        }).then(d=>{
-            d.send(what);
-        });
-    }
-}
 
 client.on("messageCreate",async msg=>{
     // WARNING: DO NOT MOVE the below line - could allow exploits using AI.
@@ -1339,6 +1307,39 @@ client.on("messageCreate",async msg=>{
         }
         return;
     }
+
+    async function sendHook(what){
+        if(typeof what==="string"){
+            what = what.replace(/\@(?=[^\]])/ig,"[@]"); // replace only @'s that are not already escaped
+        }
+        else{
+            what.content=what.content.replace(/\@(?=[^\]])/ig,"[@]");
+        }
+    
+        // Thread IDs work a little different (channel is parent, and thread ID is channel ID)
+        let mainChannel;
+        if (msg.channel.isThread()) {
+            mainChannel = msg.channel.parent;
+            // Add in thread ID so it sends it there instead of the parent channel 
+            what.threadId = msg.channel.id;
+        } else {
+            mainChannel = msg.channel;
+        }
+    
+        var hook=await mainChannel.fetchWebhooks();
+        hook=hook.find(h=>h.token);
+        if(hook){
+            hook.send(what);
+        }
+        else{
+            mainChannel.createWebhook({
+                name: config.name,
+                avatar: config.pfp,
+            }).then(d=>{
+                d.send(what);
+            });
+        }
+    }    
 
     msg.guildId=msg.guildId||"0";
     if(msg.guildId!=="0"){
