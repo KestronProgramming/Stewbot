@@ -15,8 +15,10 @@ const storage=require("./storage.json");
 const cmds=require("./commands.json");
 const startBackupThread = require("./backup.js");
 var timers=require("./timers.json");
+// const Sentiment = require('sentiment');
 
 // Variables
+// const sentiment = new Sentiment();
 var client;
 var Bible={};
 var properNames={};
@@ -1264,7 +1266,44 @@ client.once("ready",async ()=>{
     checkRSS();
     setInterval(checkRSS,600000);
 });
+
+async function sendHook(what){
+    if(typeof what==="string"){
+        what = what.replace(/\@(?=[^\]])/ig,"[@]"); // replace only @'s that are not already escaped
+    }
+    else{
+        what.content=what.content.replace(/\@(?=[^\]])/ig,"[@]");
+    }
+
+    // Thread IDs work a little different (channel is parent, and thread ID is channel ID)
+    let mainChannel;
+    if (msg.channel.isThread()) {
+        mainChannel = msg.channel.parent;
+        // Add in thread ID so it sends it there instead of the parent channel 
+        what.threadId = msg.channel.id;
+    } else {
+        mainChannel = msg.channel;
+    }
+
+    var hook=await mainChannel.fetchWebhooks();
+    hook=hook.find(h=>h.token);
+    if(hook){
+        hook.send(what);
+    }
+    else{
+        mainChannel.createWebhook({
+            name: config.name,
+            avatar: config.pfp,
+        }).then(d=>{
+            d.send(what);
+        });
+    }
+}
+
 client.on("messageCreate",async msg=>{
+    // WARNING: DO NOT MOVE the below line - could allow exploits using AI.
+    if(msg.author.id===client.user.id) return;
+
     if(msg.content.startsWith("~sudo")){
         if(client.channels.cache.get("986097382267715604")?.permissionsFor(msg.author.id)?.has(PermissionFlagsBits.SendMessages)){
             switch(msg.content.split(" ")[1]){
@@ -1300,48 +1339,14 @@ client.on("messageCreate",async msg=>{
         }
         return;
     }
-    async function sendHook(what){
-        if(typeof what==="string"){
-            what = what.replace(/\@(?=[^\]])/ig,"[@]"); // replace only @'s that are not already escaped
-        }
-        else{
-            what.content=what.content.replace(/\@(?=[^\]])/ig,"[@]");
-        }
 
-        // Thread IDs work a little different (channel is parent, and thread ID is channel ID)
-        let mainChannel;
-        if (msg.channel.isThread()) {
-            mainChannel = msg.channel.parent;
-            // Add in thread ID so it sends it there instead of the parent channel 
-            what.threadId = msg.channel.id;
-        } else {
-            mainChannel = msg.channel;
-        }
-
-        var hook=await mainChannel.fetchWebhooks();
-        hook=hook.find(h=>h.token);
-        if(hook){
-            hook.send(what);
-        }
-        else{
-            mainChannel.createWebhook({
-                name: config.name,
-                avatar: config.pfp,
-            }).then(d=>{
-                d.send(what);
-            });
-        }
-    }
-    if(msg.author.id===client.user.id) return;
     msg.guildId=msg.guildId||"0";
     if(msg.guildId!=="0"){
         if(!storage.hasOwnProperty(msg.guildId)){
             storage[msg.guildId]=structuredClone(defaultGuild);
-            
         }
         if(!storage[msg.guildId].users.hasOwnProperty(msg.author.id)){
             storage[msg.guildId].users[msg.author.id]=structuredClone(defaultGuildUser);
-            
         }
     }
     if(!storage.hasOwnProperty(msg.author.id)){
