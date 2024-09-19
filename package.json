@@ -12,6 +12,7 @@
     "get-mp3-duration": "^1.0.0",
     "googleapis": "^105.0.0",
     "libsodium-wrappers": "^0.7.13",
-    "rss-parser": "^3.13.0"
+    "rss-parser": "^3.13.0",
+    "sentiment": "^5.0.2"
   }
 }
