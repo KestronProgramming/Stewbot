@@ -1361,6 +1361,7 @@ client.on("messageCreate",async msg=>{
         });
     }
 
+    // Filter
     if(storage[msg.guildId]?.filter.active){
         var foundWords=[];
         storage[msg.guildId].filter.blacklist.forEach(blockedWord=>{
@@ -1407,7 +1408,9 @@ client.on("messageCreate",async msg=>{
             return;
         }
     }
-    if(storage[msg.guildId]?.levels.active&&storage[msg.guildId]?.users[msg.author.id].expTimeout<Date.now()&&!msg.author.bot){
+    
+    // Level-up XP
+    if(!msg.author.bot&&storage[msg.guildId]?.levels.active&&storage[msg.guildId]?.users[msg.author.id].expTimeout<Date.now()){
         storage[msg.guildId].users[msg.author.id].expTimeout=Date.now()+60000;
         storage[msg.guildId].users[msg.author.id].exp+=Math.floor(Math.random()*11)+15;//Between 15 and 25
         if(storage[msg.guild.id].users[msg.author.id].exp>getLvl(storage[msg.guild.id].users[msg.author.id].lvl)){
@@ -1481,10 +1484,13 @@ client.on("messageCreate",async msg=>{
         }
         
     }
-    if(storage[msg.guildId]?.counting.active&&msg.channel.id===storage[msg.guildId]?.counting.channel&&!msg.author.bot&&(!msg.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.AddReactions)||!msg.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages))){
+    
+    // "The code is the comment" 🤓 - "If the server uses counting, but Stewbot cannot add reactions or send messages, don't do counting"
+    if(!msg.author.bot&&storage[msg.guildId]?.counting.active&&msg.channel.id===storage[msg.guildId]?.counting.channel&&(!msg.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.AddReactions)||!msg.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages))){
         storage[msg.guildId].counting.active=false;
     }
-    if(storage[msg.guildId]?.counting.active&&msg.channel.id===storage[msg.guildId]?.counting.channel&&!msg.author.bot){
+    // Counting
+    if(!msg.author.bot&&storage[msg.guildId]?.counting.active&&msg.channel.id===storage[msg.guildId]?.counting.channel){
         var num=msg.content.match(/^(\d|,)+(?:\b)/i);
         if(num!==null){
             num=+num[0].replaceAll(",","");
@@ -1598,7 +1604,9 @@ client.on("messageCreate",async msg=>{
             }
         }
     }
-    if(storage[msg.guildId]?.hasOwnProperty("persistence")&&!msg.author.bot){
+    
+    // Persistent messages - always at the bottom of the channel. 
+    if(!msg.author.bot&&storage[msg.guildId]?.hasOwnProperty("persistence")){
         if(!storage[msg.guild.id].persistence.hasOwnProperty(msg.channel.id)){
             storage[msg.guild.id].persistence[msg.channel.id]={
                 "active":false,
@@ -1644,6 +1652,7 @@ client.on("messageCreate",async msg=>{
         }
     }
 
+    // Discord message embeds
     var links=msg.content.match(discordMessageRegex)||[];
     var progs=msg.content.match(kaProgramRegex)||[];
     if(!storage[msg.author.id].config.embedPreviews||!storage[msg.guildId]?.config.embedPreviews||!msg.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)||!msg.channel.permissionsFor(msg.author.id)?.has(PermissionFlagsBits.EmbedLinks)){
@@ -1792,6 +1801,7 @@ client.on("messageCreate",async msg=>{
         msg.reply({content: `${cont} the KAP Archive, which you can visit [here](https://kap-archive.bhavjit.com/).`,embeds:embds,allowedMentions:{parse:[]}});
     }
 
+    // Super jank ticket system
     if(msg.channel.name?.startsWith("Ticket with ")&&!msg.author.bot){
         var resp={files:[],content:`Ticket response from **${msg.guild.name}**. To respond, make sure to reply to this message.\nTicket ID: ${msg.channel.name.split("Ticket with ")[1].split(" in ")[1]}/${msg.channel.id}`};
         msg.attachments.forEach((attached,i) => {
@@ -1872,6 +1882,7 @@ client.on("messageCreate",async msg=>{
         }
     }
 
+    // AFK messages
     if(msg.guild){
         var hash = crypto.createHash('md5').update(msg.content.slice(0,148)).digest('hex');
         if(!storage[msg.author.id].hasOwnProperty("hashStreak")) storage[msg.author.id].hashStreak=0;
