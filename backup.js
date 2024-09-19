@@ -77,7 +77,7 @@ async function authorizeDrive() {
   // Attempt to refresh token
   refreshToken = envs.google?.token?.refresh_token;
   if (refreshToken) {
-    console.log("Attempting to refresh google access token using " + refreshToken)
+    // console.log("Attempting to refresh google access token using " + refreshToken)
     try {
       oAuth2Client.setCredentials({ refresh_token: refreshToken });
       const tokens = await oAuth2Client.refreshAccessToken();
@@ -86,8 +86,8 @@ async function authorizeDrive() {
       return oAuth2Client;
     } catch (err) {
       // If we can't refresh, we have to login with gmail and generate a new token from scratch
-      console.log("Could not refresh access token:")
-      console.log(err);
+      // console.log("Could not refresh access token:")
+      console.err(err);
     }
   }
 
@@ -157,10 +157,10 @@ async function uploadTextFile(drive, filePath) {
       fields: 'id', // Fields to return in the response
     });
 
-    console.log('Backup saved to:', response.data.id);
+    // console.log('Backup saved to:', response.data.id);
     return response.data.id;
   } catch (error) {
-    console.error('Error uploading file:', error.message);
+    errorCallback('Error uploading file:', error.message);
     throw error;
   }
 }
@@ -171,9 +171,9 @@ async function removeFileFromFolder(drive, folderId, fileId) {
       fileId: fileId,
       removeParents: folderId
     });
-    console.log(`File with ID ${fileId} removed from folder ${folderId}`);
+    // console.log(`File with ID ${fileId} removed from folder ${folderId}`);
   } catch (err) {
-    console.error(`Failed to remove file from folder: ${err}`);
+    errorCallback(`Failed to remove file from folder: ${err}`);
   }
 }
 
@@ -198,7 +198,7 @@ async function deleteFileIfExists(drive, folderId, fileName) {
       // If a file with the same name exists, delete it (or remove from folder if we don't own it)
       const fileId = files[0].id;
 
-      console.log(`File "${fileName}" exists. Deleting file with ID: ${fileId}`);
+      // console.log(`File "${fileName}" exists. Deleting file with ID: ${fileId}`);
       try {
         // Try deleting
         await drive.files.delete({ fileId: fileId });
@@ -208,7 +208,7 @@ async function deleteFileIfExists(drive, folderId, fileName) {
       }
       
     } else {
-      console.log(`No file named "${fileName}" found.`);
+      // console.log(`No file named "${fileName}" found.`);
     }
   } catch (err) {
     console.error('Error deleting file:', err);
@@ -249,7 +249,7 @@ async function backupToDrive(filename, attempt=0) {
   // errorCallback("Backing up...");
   try {
     if (!googleDrive) {
-      console.log("Google drive has not been defined yet")
+      // console.log("Google drive has not been defined yet")
       throw new Error("Authenticate");
     }
     await deleteFileIfExists(googleDrive, envs.google.folderID, filename)
@@ -258,7 +258,7 @@ async function backupToDrive(filename, attempt=0) {
   } catch (err) {
     switch (attempt) {
       case 0:
-        errorCallback("Drive error caught, reauthenticating drive...");
+        // errorCallback("Drive error caught, reauthenticating drive...");
         await reauthenticate();
         return await backupToDrive(filename, attempt+1);
       case 1:
