@@ -16,6 +16,8 @@ do
 done
 echo "DNS is up"
 
+# TODO - this needs better handling maybe
+export PATH=/usr/bin:/bin:/usr/sbin:/sbin:$PATH
 
 while true; do
   # git pull # don't git pull atm, since we might have updated from pi
