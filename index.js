@@ -15,10 +15,10 @@ const storage=require("./storage.json");
 const cmds=require("./commands.json");
 const startBackupThread = require("./backup.js");
 var timers=require("./timers.json");
-// const Sentiment = require('sentiment');
+const Sentiment = require('sentiment');
 
 // Variables
-// const sentiment = new Sentiment();
+const sentiment = new Sentiment();
 var client;
 var Bible={};
 var properNames={};
@@ -1176,7 +1176,6 @@ const handleError = (msg, dm) => {
         }
     }
 };
-
 function getStarMsg(msg){
     var starboardHeaders=[
         `Excuse me, there is a new message.`,
@@ -1219,6 +1218,44 @@ function getPrimedEmbed(userId,guildIn){
     }
     return emb;
 }
+function textToEmojiSentiment(text) {
+    // returns: emoji, whether to react (via random test)
+
+    // Return if the message is too large (announcement that mentions stewbot among others, etc)
+    if (text.length > 200) {
+        return [ '😐', false ]
+    }
+
+    const result = sentiment.analyze(text);
+
+    // Take combined score and calculate final score based on size of message
+    const neutralizedScore = result.score / (result.calculation.length||1);
+
+    // The better model takes longer, so we'll swap to the fast one to prevent ddos if necessary
+
+    // Most words lie between 4 to -4, a very few of them go up to 5.
+    var [emoji, chance] = ((score) => {
+        const neutral = [ '👋', 0.2 ]
+        // Positive
+        if (score >= 5) return [env.beta?'<:jerry:1281416051409555486>':"<:jerry:1280238994277535846>", 1];
+        if (score >= 3) return ['🧡', 1];
+        if (score >= 1) return ['🍲', 0.7];
+        // No sentiment - TODO: wave should only react at random
+        if (score == 0) return neutral;
+        // Negative
+        if (score <=  5) return ['😭', 1];
+        if (score <= -3) return ['💔', 1];
+        if (score <= -1) return ['😕', 0.3];
+        // Fallback
+        return neutral;
+    })(neutralizedScore)
+
+    const toReact = Math.random() < chance;
+
+    // The above should always return, but if a mod breaks it this will catch it
+    return [emoji, toReact];
+}
+
 
 var ints=Object.keys(GatewayIntentBits).map(a=>GatewayIntentBits[a]);
 ints.splice(ints.indexOf(GatewayIntentBits.GuildPresences),1);
@@ -1369,6 +1406,7 @@ client.on("messageCreate",async msg=>{
             if(new RegExp(`\\b${blockedWord}(ing|s|ed|er|ism|ist|es|ual|y)?\\b`,"ig").test(msg.content)){
                 foundWords.push(blockedWord);
                 if(foundWords.length===1){
+                    filtered = true;
                     msg.ogContent=msg.content;
                 }
                 msg.content=msg.content.replace(new RegExp(`\\b${blockedWord}(ing|s|ed|er|ism|ist|es|ual|y)?\\b`,"ig"),"[\\_]");
@@ -1408,7 +1446,16 @@ client.on("messageCreate",async msg=>{
             return;
         }
     }
+    const messageFiltered = Boolean(msg.ogContent);
     
+    // Sentiment Analysis reactions
+    if (!messageFiltered && !msg.author.bot && msg.content.match(/\bstewbot\b/i)) {
+        var [emoji, toReact] = textToEmojiSentiment(msg.content);
+        if (toReact) {
+            msg.react(emoji);
+        }
+     }
+
     // Level-up XP
     if(!msg.author.bot&&storage[msg.guildId]?.levels.active&&storage[msg.guildId]?.users[msg.author.id].expTimeout<Date.now()){
         storage[msg.guildId].users[msg.author.id].expTimeout=Date.now()+60000;
