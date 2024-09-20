@@ -1,9 +1,16 @@
 #!/bin/bash
 
-# TODO: we need error handling when it glitches from trying to start...
-# Maybe force-downgrade to last revision if it couldn't start after an update?
+# WARNING: Do not run this script on machines you are developing from.
+# Local changes are overritten
 
-# TODO: allow flag to return registerCommands
+
+# TODO: we need error handling when an update glitches from trying to start...
+#  Otherwise we would have to ssh in to fix it.
+#  Maybe force-downgrade to last revision if it couldn't start after 3 attempts after an update?
+
+
+# Stash changes - these can be recoverd worst-case scenario
+git stash
 
 # Pull in from github
 git pull

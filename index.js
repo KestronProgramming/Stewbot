@@ -1368,7 +1368,7 @@ function notify(urgencyLevel,what){
             client.users.cache.get(process.env.ownerId).send(what);//Notify Kestron06 directly
         break;
         case 1:
-            client.channels.cache.get(process.env.noticeChannel).send(what);//Notify the staff of the Kestron Support server
+            client.channels.cache.get(process.env.noticeChannel).send(limitLength(what));//Notify the staff of the Kestron Support server
         break;
     }}catch(e){}
 }
