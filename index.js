@@ -18,6 +18,8 @@ var timers=require("./timers.json");
 const Sentiment = require('sentiment');
 const dns = require('dns');
 const { URL } = require('url');
+const { exec } = require('child_process');
+
 
 
 // Variables
@@ -3355,9 +3357,56 @@ client.on("interactionCreate",async cmd=>{
         break;
 
         case 'restart':
-            if(cmd.guild?.id==="983074750165299250"&&cmd.channel.id==="986097382267715604"){
-                notify(1,{content:`Bot restarted by <@${cmd.user.id}>`,allowedMentions:{parse:[]}});
-                cmd.followUp("Restarting...");
+            // TODO: move these IDs here and where the command is registered to be pulled from the env.json file
+            if(cmd.guild?.id==="983074750165299250" && cmd.channel.id==="986097382267715604") {
+                const updateCode = cmd.options.getBoolean("update")
+                const updateCommands = cmd.options.getBoolean("update_commands")
+
+                var infoData = ""
+                if (updateCode) infoData += " | Updating code"
+                if (updateCommands) infoData += " | Running launchCommands.js"
+
+                // Notify about restart
+                
+                notify(1,{content:`Bot restarted by <@${cmd.user.id}>`+infoData,allowedMentions:{parse:[]}});
+                cmd.followUp("Restarting..."+infoData);
+                
+                try {
+                    // Update code if requested
+                    if (updateCode) {
+                        await new Promise((resolve, reject) => {
+                            exec('sh ./update.sh', (error, stdout, stderr) => {
+                                if (error || stderr) {
+                                    var errNotif  =   `Error: ${error?.message||""}`
+                                        errNotif += `\nStderr: ${stderr}`
+                                    notify(1, errNotif);
+                                    reject(0);
+                                }
+                                stdout && notify(1, stdout);
+                                resolve(1);
+                            });                        
+                        });
+                    }
+
+                    // Update commands if requested
+                    if (updateCommands) {
+                        await new Promise((resolve, reject) => {
+                            exec('node ./launchCommands.js', (error, stdout, stderr) => {
+                                if (error || stderr) {
+                                    var errNotif  = `Error: ${error?.message||""}`
+                                        errNotif += `Stderr: ${stderr}`
+                                    notify(1, errNotif);
+                                    reject(0);
+                                }
+                                stdout && notify(1, stdout);
+                                resolve(1);
+                            });                        
+                        });
+                    }
+                } catch (err) {
+                    notify(1, String("Caught error while restarting: " + err))
+                }
+
                 fs.writeFileSync("./storage.json",JSON.stringify(storage));
                 setTimeout(()=>{process.exit(0)},5000);
             }
