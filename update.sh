@@ -11,8 +11,9 @@
 # This is run from node which is run from cron, so we need to add a few vars to the envirnment
 # TODO: Load this in using a file like "bashenv" because most nodes are going to be setup without needing SSH access to the repo 
 export PATH=/usr/local/bin/:/usr/bin:/bin:/usr/sbin:/sbin:$PATH
-eval "$(ssh-agent -s)"
-ssh-add ~/.ssh/GithubKey > /dev/null 2>&1
+export HOME=/home/guest
+eval "$(ssh-agent -s)" > /dev/null 2>&1
+ssh-add $HOME/.ssh/GithubKey > /dev/null 2>&1
 
 # Stash changes - these can be recoverd worst-case scenario
 git stash
