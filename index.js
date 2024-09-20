@@ -16,6 +16,9 @@ const cmds=require("./commands.json");
 const startBackupThread = require("./backup.js");
 var timers=require("./timers.json");
 const Sentiment = require('sentiment');
+const dns = require('dns');
+const { URL } = require('url');
+
 
 // Variables
 const sentiment = new Sentiment();
@@ -532,6 +535,9 @@ const defaultUser={
     }
 };
 
+
+
+
 function escapeRegex(input) {
     return input.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
 }
@@ -722,10 +728,17 @@ async function checkRSS(){
         }
         else{
             var cont=true;
-            var parsed=await rssParser.parseURL(feed.url).catch(e=>{
-                delete storage.rss[feed.hash];
-                cont=false;
-            });
+            var parsed;
+            try {
+                // Get the URL myself to prevent local IP redirects
+                const data = await (await fetchWithRedirectCheck(feed.url)).text();
+                parsed = await rssParser.parseString(data);
+            } catch (error) {
+                // delete storage.rss[feed.hash];
+                // TODO: readd delete once we know this code modification is sound
+                notify(1, String(error));
+                cont = false;
+            }
             if(cont){
                 parsed.items.forEach(item=>{
                     if(feed.lastSent<new Date(item.isoDate)){
@@ -745,6 +758,7 @@ async function checkRSS(){
         }
     });
 }
+
 function noPerms(where,what){
     if(where===false||where===undefined) return false;
     switch(what){
@@ -785,6 +799,87 @@ function getLvl(lvl){
     }
     return total;
 }
+function isPrivateIP(ip) {
+    const privateRanges = [
+        /^127\./,      // Loopback
+        /^10\./,       // Private
+        /^172\.(1[6-9]|2[0-9]|3[0-1])\./, // Private
+        /^192\.168\./, // Private
+        /^169\.254\./  // Link-local
+    ];
+    return privateRanges.some((range) => range.test(ip));
+};
+async function isUrlAllowed(inputUrl) {
+    try {
+        let url;
+        try {
+            url = new URL(inputUrl);
+        } catch {
+            return [false, "that is not a valid url."];
+        }
+
+        // Only allow http/https protocols
+        if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+            return [false, "only http and https are allowed."];
+        }
+
+        const addresses = await new Promise((resolve, reject) => {
+            dns.lookup(url.hostname, { all: true }, (err, addresses) => {
+                if (err) return reject(err);
+                resolve(addresses);
+            });
+        });
+
+        for (const { address } of addresses) {
+            if (isPrivateIP(address)) {
+                return [false, "private IPs are not allowed"];
+            }
+        }
+
+        // URL is safe
+        return [true, "valid"];
+
+    } catch (error) {
+        return [false, "URL validation failed - general failure"];
+    }
+}
+const validateDNSForPrivateIP = async (hostname) => {
+    return new Promise((resolve, reject) => {
+        dns.lookup(hostname, { all: true }, (err, addresses) => {
+            if (err) return reject(err);
+            for (const { address } of addresses) {
+                if (isPrivateIP(address)) {
+                    return reject(new Error('Redirected to restricted IP address'));
+                }
+            }
+            resolve();
+        });
+    });
+};
+const fetchWithRedirectCheck = async (inputUrl, maxRedirects = 5) => {
+    let url = new URL(inputUrl);
+    let redirects = 0;
+
+    while (redirects < maxRedirects) {
+        const response = await fetch(url.href, { redirect: 'manual' });
+        if (response.status < 300 || response.status >= 400) {
+            return response;
+        }
+        const location = response.headers.get('location');
+        if (!location) {
+            throw new Error('Redirect response without Location header');
+        }
+        // Resolve the new URL relative to the original
+        url = new URL(location, url);
+
+        // Perform DNS validation to prevent redirecting to private IPs
+        await validateDNSForPrivateIP(url.hostname);
+        redirects += 1;
+    }
+
+    throw new Error('Too many redirects');
+};
+
 
 /**
 * Handle the information when a user reacts to a message, for emojiboards
@@ -3112,11 +3207,40 @@ client.on("interactionCreate",async cmd=>{
                         cmd.followUp(`I'm not allowed to send messages in <#${cmd.options.getChannel("channel").id}> so this action cannot be completed.`);
                         break;
                     }
+
+                    // Validate URL
+                    const url = cmd.options.getString("feed");
+
+                    // Validate URL form
+                    const [urlAllowed, errorText] = await isUrlAllowed(url);
+                    if (!urlAllowed) {
+                        cmd.followUp(`This URL is not allowed: ${errorText}`);
+                        break;
+                    }
+
+                    // Make sure it is a valid link
+                    let response;
+                    try {
+                        response = await fetchWithRedirectCheck(url);
+                    } catch (error) {
+                        cmd.followUp(`URL validation failed: ${error.message}`);
+                        break
+                    }
+
+                    // Final make sure it is valid RSS
+                    try {
+                        await rssParser.parseURL(url)
+                    } catch (error) {
+                        cmd.followUp(`Error parsing RSS from link.`);
+                        break
+                    }
+
+                    // At this point, the URL is valid and all
                     var hash = crypto.createHash('md5').update(cmd.options.getString("feed")).digest('hex');
                     if(!storage.rss.hasOwnProperty(hash)){
                         storage.rss[hash]={
                             "hash":hash,
-                            "url":cmd.options.getString("feed"),
+                            "url":url,
                             "channels":[],
                             "lastSent":new Date()
                         };

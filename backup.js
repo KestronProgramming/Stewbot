@@ -41,7 +41,7 @@ async function loadSavedCredentialsIfExist() {
     if (hasDriveScope) {
       return client;  // Return client if the required scope exists
     } else {
-      console.log('Missing required Drive scope, regenerating token...');
+      // console.log('Missing required Drive scope, regenerating token...');
       return null;  // Return null to trigger token regeneration
     }
   } catch (err) {
