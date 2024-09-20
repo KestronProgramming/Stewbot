@@ -21,7 +21,6 @@ const { URL } = require('url');
 const { exec } = require('child_process');
 
 
-
 // Variables
 const sentiment = new Sentiment();
 var client;
