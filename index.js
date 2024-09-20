@@ -1243,7 +1243,7 @@ function textToEmojiSentiment(text) {
         // No sentiment - TODO: wave should only react at random
         if (score == 0) return neutral;
         // Negative
-        if (score <=  5) return ['😭', 1];
+        if (score <= -4) return ['😭', 1];
         if (score <= -3) return ['💔', 1];
         if (score <= -1) return ['😕', 0.3];
         // Fallback
