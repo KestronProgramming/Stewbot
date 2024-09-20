@@ -586,3 +586,20 @@ rest.put(Routes.applicationCommands(process.env.clientId),{body:commands}).then(
 	fs.writeFileSync("./commands.json",JSON.stringify(comms));
 	console.log("Updated commands on Discord and wrote commands to ./commands.json");
 }).catch(console.error);
+
+// Register stewbot-devadmin-only commands
+const devadminCommands = [
+	new SlashCommandBuilder()
+		.setName('restart')
+		.setDescription('Restart the bot')
+		.addBooleanOption(option=>
+			option.setName("update").setDescription("Update git and npm before restarting").setRequired(false)
+		)
+		.addBooleanOption(option=>
+			option.setName("update_commands").setDescription("Run launchCommands.js before restarting").setRequired(false)
+		)
+]
+rest.put(
+	Routes.applicationGuildCommands(process.env.clientId, "983074750165299250"),
+	{ body: devadminCommands },
+);
