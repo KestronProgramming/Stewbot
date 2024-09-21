@@ -3,14 +3,11 @@ const path = require('path');
 const process = require('process');
 const {google} = require('googleapis');
 const { OAuth2 } = google.auth;
-
 const envs = require("./env.json");
-const { file } = require('googleapis/build/src/apis/file');
+
+// TODO: these imports can be slow, import async
 
 const googleDriveScope = ['https://www.googleapis.com/auth/drive'];
-
-// TODO: maybe this should be class-ified
-// But if it ain't broke don't fix it
 
 // Google Auth utility functions
 async function checkTokenScopes(access_token) {

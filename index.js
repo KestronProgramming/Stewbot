@@ -1,24 +1,27 @@
 // Imports 
 process.env=require("./env.json");
+process.env.beta && console.log("Importing discord")
+const {Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction}=require("discord.js");
+process.env.beta && console.log("Discord imported")
 const translate=require("@vitalets/google-translate-api").translate;
 const RSSParser=require("rss-parser");
 const rssParser=new RSSParser();
 const crypto = require('crypto');
 const { createCanvas } = require('canvas');
-const { InworldClient, SessionToken, status } = require("@inworld/nodejs-sdk");
-const {Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction}=require("discord.js");
 const { getEmojiFromMessage, parseEmoji } = require('./util');
 const config=require("./config.json");
 const bible=require("./kjv.json");
 const fs=require("fs");
 const storage=require("./storage.json");
 const cmds=require("./commands.json");
-const startBackupThread = require("./backup.js");
 var timers=require("./timers.json");
 const Sentiment = require('sentiment');
 const dns = require('dns');
 const { URL } = require('url');
 const { exec } = require('child_process');
+process.env.beta && console.log("Importing backup.js")
+const startBackupThread = require("./backup.js");
+process.env.beta && console.log("Imports done")
 
 
 // Variables
@@ -800,16 +803,14 @@ function checkDirty(where,what){
     var dirty=false;
     storage[where].filter.blacklist.forEach(blockedWord=>{
         blockedWord = escapeRegex(blockedWord)
-        if(blockedWord.match(/^\<\:\w+\:\d+\>$/)){//Reduce custom emojis to their base
-            var blockedWord2=`:${blockedWord.split(":")[1]}:`;
-            if(new RegExp(`\\b${blockedWord2}(ing|s|ed|er|ism|ist|es|ual)?\\b`,"ig").test(what)||what===blockedWord2){
-                dirty=dirty?dirty.replace(new RegExp(`\\b${blockedWord2}(ing|s|ed|er|ism|ist|es|ual)?\\b`,"ig"),"[\\_]"):what.replace(new RegExp(`\\b${blockedWord2}(ing|s|ed|er|ism|ist|es|ual)?\\b`,"ig"),"[\\_]");
-            }
+        if (blockedWord.match(/^\<\:\w+\:\d+\>$/)) { //Reduce custom emojis to their base
+            blockedWord = `:${blockedWord.split(":")[1]}:`;
         }
         if(new RegExp(`\\b${blockedWord}(ing|s|ed|er|ism|ist|es|ual)?\\b`,"ig").test(what)||what===blockedWord){
             dirty=dirty?dirty.replace(new RegExp(`\\b${blockedWord}(ing|s|ed|er|ism|ist|es|ual)?\\b`,"ig"),"[\\_]"):what.replace(new RegExp(`\\b${blockedWord}(ing|s|ed|er|ism|ist|es|ual)?\\b`,"ig"),"[\\_]");
         }
     });
+    console.log(dirty);
     return dirty;
 }
 function getLvl(lvl){
@@ -1191,107 +1192,6 @@ function tallyRac() {
     return `**Rows & Columns**\n${mess}`;
 }
 
-//Inworld AI stuff
-var curText={};
-var conns = {};
-var msgs={};
-var lastChannels={};
-var sessions=[];
-function generateSessionToken(key) {
-    return async () => {
-        const inClient = new InworldClient().setApiKey({
-            key: process.env.inworldKey,
-            secret: process.env.inworldSecret
-        }).setScene(process.env.inworldScene);
-        const token = await inClient.generateSessionToken();
-        const sessionId = sessions[key];
-        const actualToken = new SessionToken({
-            expirationTime: token.expirationTime,
-            token: token.token,
-            type: token.type,
-            sessionId: sessionId || token.sessionId
-        });
-        if (!sessionId) {
-            sessions[key] = actualToken.sessionId;
-        }
-        return actualToken;
-    };
-}
-function createInWorldClient(args) {
-    var inClient = new InworldClient()
-        .setGenerateSessionToken(generateSessionToken(`${args.cmd?args.msg.user.id:args.msg.author.id}`))
-        .setConfiguration({
-            capabilities: { audio: false },
-            ...(args.dm ? {} : { connection: { disconnectTimeout: 60000 } })
-        })
-        .setUser({ fullName: args.cmd?args.msg.user.username:args.msg.author.globalName||args.msg.author.username})
-        .setScene(process.env.inworldScene)
-        .setOnError(handleError(args.msg))
-        .setOnMessage((packet) => {
-            if (packet.isText() && packet.text.final) {
-                curText[args.cmd?args.msg.user.username:args.msg.author.username].push(packet.text.text.startsWith(" ")?packet.text.text.slice(1,packet.text.text.length):packet.text.text);
-            }
-            if(packet.control){
-                if(packet.control.type==="INTERACTION_END"&&!args.cmd){
-                    if(curText[args.msg.author.username].length>0){
-                        msgs[args.msg.author.id].reply({content:checkDirty(args.msg.guild?.id,curText[args.msg.author.username].join("\n"))?checkDirty(args.msg.guild?.id,curText[args.msg.author.username].join("\n").replaceAll("@","\\@")):curText[args.msg.author.username].join("\n").replaceAll("@","\\@"),allowedMentions:{parse:[]}});
-                    }
-                    else{
-                        msgs[args.msg.author.id].reply("No comment");
-                    }
-                    inClient.close();
-                }
-                else if(packet.control.type==="INTERACTION_END"){
-                    if(curText[args.msg.user.username].length>0){
-                        msgs[args.msg.user.id].followUp({content:curText[args.msg.user.username].join("\n").replaceAll("@","\\@"),allowedMentions:{parse:[]}});
-                    }
-                    else{
-                        msgs[args.msg.user.id].followUp("No comment");
-                    }
-                    inClient.close();
-                }
-            }
-        })
-        .build();
-    return inClient;
-}
-async function sendMessage(msg, dm, cmd) {
-    if(!cmd){
-        curText[msg.author.username]=[];
-        if (conns[msg.author.id] === null || conns[msg.author.id] === undefined || lastChannels[msg.author.id]!==(msg.channel?.id||"private")||Date.now()-conns[msg.author.id].lastMsg>60000*30) {
-            conns[msg.author.id] = createInWorldClient({ dm: dm, msg: msg });
-            lastChannels[msg.author.id]=msg.channel?.id||"private";
-        }
-        conns[msg.author.id].sendText(`Message from ${msg.author.globalName||msg.author.username}: ${msg.content.replaceAll(`<@${client.user.id}>`, client.user.username)}`);
-        conns[msg.author.id].lastMsg=Date.now();
-        msgs[msg.author.id]=msg;
-    }
-    else{
-        curText[msg.user.username]=[];
-        if (conns[msg.user.id] === null || conns[msg.user.id] === undefined || lastChannels[msg.user.id]!=="private"||Date.now()-conns[msg.user.id].lastMsg>60000*30) {
-            conns[msg.user.id] = createInWorldClient({ cmd:cmd, msg:msg });
-            lastChannels[msg.user.id]="private";
-        }
-        conns[msg.user.id].sendText(`Message from ${msg.user.globalName||msg.user.username}: ${msg.options.getString("what").replaceAll(`<@${client.user.id}>`, client.user.username)}`);
-        conns[msg.user.id].lastMsg=Date.now();
-        msgs[msg.user.id]=msg;
-    }
-}
-const handleError = (msg, dm) => {
-    return (err) => {
-        switch (err.code) {
-            case status.ABORTED:
-            case status.CANCELLED:
-            break;
-            case status.FAILED_PRECONDITION:
-                sendMessage(msg, dm);
-            break;
-            default:
-                console.error(err);
-            break;
-        }
-    }
-};
 function getStarMsg(msg){
     var starboardHeaders=[
         `Excuse me, there is a new message.`,
@@ -2031,20 +1931,6 @@ client.on("messageCreate",async msg=>{
         }
     }
 
-    if(msg.channel instanceof DMChannel&&!msg.author.bot&&storage[msg.author.id].config.aiPings) {
-        msg.channel.sendTyping();
-        sendMessage(msg, true);
-    }
-    else if(msg.mentions.users.has(client.user.id)&&!msg.author.bot&&storage[msg.author.id].config.aiPings&&msg.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)) {
-        if (/^<[@|#|@&].*?>$/g.test(msg.content.replace(/\s+/g, ''))) {
-            msg.content = "*User says nothing*";
-        }
-        if(storage[msg.guild?.id]?.config.ai){
-            msg.channel.sendTyping();
-            sendMessage(msg);
-        }
-    }
-
     // AFK messages
     if(msg.guild){
         var hash = crypto.createHash('md5').update(msg.content.slice(0,148)).digest('hex');
@@ -2730,7 +2616,6 @@ client.on("interactionCreate",async cmd=>{
             ))]});
         break;
         case 'personal_config':
-            if(cmd.options.getBoolean("ai_pings")!==null) storage[cmd.user.id].config.aiPings=cmd.options.getBoolean("ai_pings");
             if(cmd.options.getBoolean("dm_infractions")!==null) storage[cmd.user.id].config.dmOffenses=cmd.options.getBoolean("dm_infractions");
             if(cmd.options.getBoolean("dm_infraction_content")!==null) storage[cmd.user.id].config.returnFiltered=cmd.options.getBoolean("dm_infraction_content");
             if(cmd.options.getBoolean("embeds")!==null) storage[cmd.user.id].config.embedPreviews=cmd.options.getBoolean("embeds");
@@ -2745,7 +2630,6 @@ client.on("interactionCreate",async cmd=>{
             }
         break;
         case 'general_config':
-            if(cmd.options.getBoolean("ai_pings")!==null) storage[cmd.guildId].config.ai=cmd.options.getBoolean("ai_pings");
             if(cmd.options.getBoolean("embeds")!==null) storage[cmd.guildId].config.embedPreviews=cmd.options.getBoolean("embeds");
             if(cmd.options.getBoolean("disable_anti_hack")!==null) storage[cmd.guildId].disableAntiHack=cmd.options.getBoolean("disable_anti_hack");
             cmd.followUp("Configured your personal setup");
@@ -3093,9 +2977,6 @@ client.on("interactionCreate",async cmd=>{
                     cmd.followUp(`I have rolled the dice.${rolls.map(r=>`\n- ${r}`).join("")}${rolls.length>1?`\nTotal: ${rolls.reduce((a,b)=>a+b)}`:""}`);
                 break;
             }
-        break;
-        case 'chat':
-            sendMessage(cmd,true,true);
         break;
         case 'embed_message':
             if(cmd.options.getString("link").toLowerCase()==="primed"&&storage[cmd.user.id].hasOwnProperty("primedEmbed")){
