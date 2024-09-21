@@ -810,7 +810,7 @@ function checkDirty(where,what){
             dirty=dirty?dirty.replace(new RegExp(`\\b${blockedWord}(ing|s|ed|er|ism|ist|es|ual)?\\b`,"ig"),"[\\_]"):what.replace(new RegExp(`\\b${blockedWord}(ing|s|ed|er|ism|ist|es|ual)?\\b`,"ig"),"[\\_]");
         }
     });
-    console.log(dirty);
+    env.beta && console.log(dirty);
     return dirty;
 }
 function getLvl(lvl){
