@@ -59,7 +59,7 @@ const extraInfo={
 	"leaderboard":{"contexts":[0,1,2],"integration_types":[0,1],"cat":2},
 	"rank":{"contexts":[0],"integration_types":[0],"cat":2},
 	"links":{"contexts":[0,1,2],"integration_types":[0,1],"cat":0},
-	"chat":{"contexts":[0,1,2],"integration_types":[0,1],"cat":4},
+	// "chat":{"contexts":[0,1,2],"integration_types":[0,1],"cat":4},
 	"embed_message":{"contexts":[0,1,2],"integration_types":[0,1],"cat":1},
 	"secret":{"contexts":[0,1,2],"integration_types":[0,1]},
 	"timestamp":{"contexts":[0,1,2],"integration_types":[0,1],"cat":1},
@@ -288,8 +288,6 @@ const commands = [
 			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 		),
 	new SlashCommandBuilder().setName("general_config").setDescription("Configure general behaviors").addBooleanOption(option=>
-			option.setName("ai_pings").setDescription("Have the bot post an AI message when pinging it?")
-		).addBooleanOption(option=>
 			option.setName("embeds").setDescription("If a message link is posted, should I post a preview?")
 		).addBooleanOption(option=>
 			option.setName("disable_anti_hack").setDescription("Do you want to disable the anti hack/spam account protection for this server?")
@@ -297,8 +295,6 @@ const commands = [
 			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 		).setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers),
 	new SlashCommandBuilder().setName("personal_config").setDescription("Configure the bot for you personally").addBooleanOption(option=>
-			option.setName("ai_pings").setDescription("Respond with an AI message to pings or DMs")
-		).addBooleanOption(option=>
 			option.setName("dm_infractions").setDescription("If you get filtered, should I DM you?")
 		).addBooleanOption(option=>
 			option.setName("dm_infraction_content").setDescription("If dm_infractions is true, should I include the content of the filtered message?")
@@ -458,11 +454,11 @@ const commands = [
 	new SlashCommandBuilder().setName("links").setDescription("Get a list of links relevant for the bot").addBooleanOption(option=>
 			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 		),
-	new SlashCommandBuilder().setName("chat").setDescription("Chat with the bot").addStringOption(option=>
-			option.setName("what").setDescription("What to say").setRequired(true)
-		).addBooleanOption(option=>
-			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
-		),
+	// new SlashCommandBuilder().setName("chat").setDescription("Chat with the bot").addStringOption(option=>
+	// 		option.setName("what").setDescription("What to say").setRequired(true)
+	// 	).addBooleanOption(option=>
+	// 		option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
+	// 	),
 	new SlashCommandBuilder().setName("embed_message").setDescription("Embed a message link from another channel or server").addStringOption(option=>
 			option.setName("link").setDescription("The message link, or PRIMED if you used the /prime_embed context menu command").setRequired(true)
 		),
