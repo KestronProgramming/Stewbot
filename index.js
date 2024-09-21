@@ -244,10 +244,6 @@ var helpPages=[
             {
                 name:cmds.leaderboard.mention,
                 desc:"View one of the leaderboards or rank cards"
-            },
-            {
-                name:cmds.chat.mention,
-                desc:"Use Stewbot's AI from a command, useful for DMs with anyone if you install the bot to your account"
             }
         ]
     },
