@@ -538,7 +538,27 @@ const defaultUser={
 
 
 
+function verifyRegex(regexStr) {
+    // returns: [isValid, error]
 
+    // Check for backtracing
+    if (!safe(regexStr)) {
+        return [false, "This regex has catastrophic backtracking, please improve the regex and try again"]
+    }
+
+    // Check for RE2 compatibility
+    try {
+        new RE2(regexStr, 'ui');
+    } catch {
+        return [false, "This regex is invalid or uses features unsupported by [RE2](https://github.com/google/re2-wasm)"]
+    }
+    return [true, "Added to the filter."];
+
+    // TODO evaluate user regexes like this:
+    // const regex = new RE2(userProvidedRegex, 'ui'); // TODO: figure out some system for flags - i should default on but some uses cases may need it off
+    // const result = regex.exec(msg.content);
+    // console.log(result);
+}
 function escapeRegex(input) {
     return input.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
 }
