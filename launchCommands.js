@@ -490,6 +490,7 @@ const commands = [
 	new SlashCommandBuilder().setName("rss").setDescription("Commands relating to RSS feeds").addSubcommand(command=>
 			command.setName("follow").setDescription("Follow an RSS feed").addChannelOption(option=>
 				option.setName("channel").setDescription("The channel to follow this RSS feed in").setRequired(true)
+				.addChannelTypes(ChannelType.GuildText)
 			).addStringOption(option=>
 				option.setName("feed").setDescription("The feed to follow").setRequired(true)
 			).addBooleanOption(option=>
