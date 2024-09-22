@@ -1337,7 +1337,6 @@ function notify(urgencyLevel,what){
     }}catch(e){}
 }
 var uptime=0;
-var statTog=0;
 
 //Actionable events
 client.once("ready",async ()=>{
@@ -1346,18 +1345,11 @@ client.once("ready",async ()=>{
 
     uptime=Math.round(Date.now()/1000);
     notify(1,`Started <t:${uptime}:R>`);
-    console.log(`Logged Stewbot handles into ${client.user.tag}`);
+    console.log(`Logged into ${client.user.tag}`);
     
-    client.user.setActivity("It's a `/secret` to everybody",{type:ActivityType.Custom},1000*60*60*4);
+    client.user.setActivity("𝐒teward 𝐓o 𝐄xpedite 𝐖ork",{type:ActivityType.Custom},1000*60*60*4);
     setInterval(()=>{
-        statTog++;
-        if(statTog>11){
-            client.user.setActivity("It's a `/secret` to everybody",{type:ActivityType.Custom},1000*60*60*4);
-            statTog=0;
-        }
-        else{
-            client.user.setActivity("𝐒teward 𝐓o 𝐄xpedite 𝐖ork",{type:ActivityType.Custom},1000*60*60*4);
-        }
+        client.user.setActivity("𝐒teward 𝐓o 𝐄xpedite 𝐖ork",{type:ActivityType.Custom},1000*60*60*4);
     },60000*5);
     var now=new Date();
     setTimeout(daily,((now.getHours()>11?11+24-now.getHours():11-now.getHours())*(60000*60))+((60-now.getMinutes())*60000));
@@ -2021,7 +2013,6 @@ client.on("messageCreate",async msg=>{
     }
 });
 client.on("interactionCreate",async cmd=>{
-    if(cmd.commandName==="secret") return;
     try{
         if(!cmd.isButton()&&!cmd.isModalSubmit()&&!cmd.isChannelSelectMenu()&&!cmd.isRoleSelectMenu()&&!cmd.isStringSelectMenu()) await cmd.deferReply({ephemeral:["poll","auto_roles","submit_meme","delete_message","move_message","auto-join-roles","join-roleOption","admin_message","personal_config","timestamp","unavailable","remove_embeds","prime_embed"].includes(cmd.commandName)||cmd.options.getBoolean("private")});
     }catch(e){}
