@@ -24,7 +24,3 @@ To run this code with your own tokens, make sure you have node installed, and th
 Make sure to `npm install` @discordjs/builders, @inworld/nodejs-sdk, @vitalets/google-translate-api, canvas, discord.js, and fs.
 You will also need to run `node launchCommands.js` before you start the bot, which will automatically fill commands.json.
 Then simply use either run.bat or run.sh depending on your system, or just node index.js.
-
-## I found a command, but there's nothing in the code for it
-There is currently a treasure hunt within the bot going on! This is being run via a second smaller script. It will not be made available so as to preserve the hunt aspect. Once the hunt is over, this treasure hunt file will be provided. All bot functions still adhere to the [Privacy Policy](https://stewbot.kestron.software/privacy). You should join the hunt and see what you can uncover.
-

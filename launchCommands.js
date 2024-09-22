@@ -61,7 +61,6 @@ const extraInfo={
 	"links":{"contexts":[0,1,2],"integration_types":[0,1],"cat":0},
 	// "chat":{"contexts":[0,1,2],"integration_types":[0,1],"cat":4},
 	"embed_message":{"contexts":[0,1,2],"integration_types":[0,1],"cat":1},
-	"secret":{"contexts":[0,1,2],"integration_types":[0,1]},
 	"timestamp":{"contexts":[0,1,2],"integration_types":[0,1],"cat":1},
 	"daily-config":{"contexts":[0],"integration_types":[0],"cat":6},
 	"captcha":{"contexts":[1],"integration_types":[0,1]},
@@ -461,11 +460,6 @@ const commands = [
 	// 	),
 	new SlashCommandBuilder().setName("embed_message").setDescription("Embed a message link from another channel or server").addStringOption(option=>
 			option.setName("link").setDescription("The message link, or PRIMED if you used the /prime_embed context menu command").setRequired(true)
-		),
-	new SlashCommandBuilder().setName("secret").setDescription("It's a secret to everybody").addStringOption(option=>
-			option.setName("code").setDescription("Do you have something for me?")
-		).addBooleanOption(option=>
-			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 		),
 	new SlashCommandBuilder().setName("timestamp").setDescription("Generate a timestamp for use in your message"),
 	new SlashCommandBuilder().setName("daily-config").setDescription("Configure daily devos (More types to come!)").addBooleanOption(option=>
