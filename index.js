@@ -1080,6 +1080,7 @@ function daily(){
         setInterval(daily,60000*60*24);
         started24=true;
     }
+    checkRSS();
     checkHoliday();
     var dailyDevo=[];
     fetch("https://www.biblegateway.com/devotionals/niv-365-devotional/today").then(d=>d.text()).then(d=>{
@@ -1360,8 +1361,6 @@ client.once("ready",async ()=>{
     },60000*5);
     var now=new Date();
     setTimeout(daily,((now.getHours()>11?11+24-now.getHours():11-now.getHours())*(60000*60))+((60-now.getMinutes())*60000));
-    checkRSS();
-    setInterval(checkRSS,600000);
 });
 
 async function sendHook(what, msg){
