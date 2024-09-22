@@ -794,20 +794,48 @@ function noPerms(where,what){
     }
     
 }
-function checkDirty(where,what){
-    if(where===false||where===undefined) return false;
-    var dirty=false;
-    storage[where].filter.blacklist.forEach(blockedWord=>{
-        blockedWord = escapeRegex(blockedWord)
-        if (blockedWord.match(/^\<\:\w+\:\d+\>$/)) { //Reduce custom emojis to their base
-            blockedWord = `:${blockedWord.split(":")[1]}:`;
+
+// If filter is false, it returns: hasBadWords
+// If filter is true, it returns [isFiltered, censoredMessage, foundWords]
+function checkDirty(where, what, filter=false) {
+    if (!where || !what) 
+        if (!filter) return false
+        else [false, '', []]
+
+    // Unsnowflake all custom emojis
+    what = String(what).replace(/<:(\w+):[0-9]+>/g, ":$1:")
+
+    let dirty = false;
+    let foundWords = []; // keep track of all filtered words to later tell the user what was filtered
+    for (blockedWord of storage[where].filter.blacklist) {
+        // Unsnowflake blocked word to match unsnowflaked message
+        blockedWord = blockedWord.replace(/<:(\w+):[0-9]+>/g, ":$1:");
+        
+        const blockedWordRegex = new RegExp(`(\\b|^)${escapeRegex(blockedWord)}(ing|s|ed|er|ism|ist|es|ual)?(\\b|$)`, "igu")
+        
+        // Check for the word 
+        if (blockedWordRegex.test(what) || what === blockedWord) {
+            dirty = true;
+            if (!filter) {
+                return true;
+            }
+            else {
+                foundWords.push(blockedWord)
+                what = what.replace(blockedWordRegex, "[\\_]");
+            }
         }
-        if(new RegExp(`\\b${blockedWord}(ing|s|ed|er|ism|ist|es|ual)?\\b`,"ig").test(what)||what===blockedWord){
-            dirty=dirty?dirty.replace(new RegExp(`\\b${blockedWord}(ing|s|ed|er|ism|ist|es|ual)?\\b`,"ig"),"[\\_]"):what.replace(new RegExp(`\\b${blockedWord}(ing|s|ed|er|ism|ist|es|ual)?\\b`,"ig"),"[\\_]");
-        }
-    });
-    return dirty;
+    }
+    
+    if (!filter) {
+        // If we passed the check without exiting, it's clean
+        return false;
+    } 
+    else {
+        // If we're filtering, the response needs more details.
+        return [dirty, what, foundWords];
+    }
 }
+
 function getLvl(lvl){
     var total=0;
     while(lvl>-1){
@@ -1411,19 +1439,13 @@ client.on("messageCreate",async msg=>{
 
     // Filter
     if(storage[msg.guildId]?.filter.active){
-        var foundWords=[];
-        storage[msg.guildId].filter.blacklist.forEach(blockedWord=>{
-            blockedWord = escapeRegex(blockedWord);
-            if(new RegExp(`\\b${blockedWord}(ing|s|ed|er|ism|ist|es|ual|y)?\\b`,"ig").test(msg.content)){
-                foundWords.push(blockedWord);
-                if(foundWords.length===1){
-                    filtered = true;
-                    msg.ogContent=msg.content;
-                }
-                msg.content=msg.content.replace(new RegExp(`\\b${blockedWord}(ing|s|ed|er|ism|ist|es|ual|y)?\\b`,"ig"),"[\\_]");
-            }
-        });
-        if(foundWords.length>0&&msg.webhookId===null){
+        
+        let [filtered, filteredContent, foundWords] = checkDirty(msg.guildId, msg.content, true)
+
+        if(filtered && msg.webhookId===null){
+            msg.ogContent = msg.content;
+            msg.content = filteredContent;
+
             storage[msg.guildId].users[msg.author.id].infractions++;
             msg.delete();
             if(storage[msg.guildId].filter.censor){
@@ -2046,7 +2068,7 @@ client.on("interactionCreate",async cmd=>{
                         }]});
                     }
                 }).catch(e=>{
-                    console.log(e);
+                    notify(1, "Dictionary error: " + String(e));
                     cmd.followUp("I'm sorry, I didn't find a definition for that");
                 });
         break;
@@ -4136,7 +4158,7 @@ client.on("messageReactionAdd",async (react,user)=>{
         
     }
     if(storage[react.message.guild?.id]?.filter.active&&react.message.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageMessages)){
-        if(checkDirty(react.message.guild.id,`${react._emoji.name.trim()}`)){
+        if(checkDirty(react.message.guild.id,`${react._emoji}`)){
             react.remove();
             if(storage[react.message.guild.id].filter.log){
                 var c=client.channels.cache.get(storage[react.message.guild.id].filter.channel);
@@ -4290,14 +4312,9 @@ client.on("messageDelete",async msg=>{
 client.on("messageUpdate",async (msgO,msg)=>{
     if(msg.guild?.id===undefined||client.user.id===msg.author?.id) return;
     if(storage[msg.guild.id]?.filter.active){
-        var foundWords=[];
-        storage[msg.guildId].filter.blacklist.forEach(blockedWord=>{
-            blockedWord = escapeRegex(blockedWord)
-            if(new RegExp(`\\b${blockedWord}(ing|s|ed|er|ism|ist|es|ual)?\\b`,"ig").test(msg.content)){
-                foundWords.push(blockedWord);
-            }
-        });
-        if(foundWords.length>0){
+        let [filtered, filteredContent, foundWords] = checkDirty(msg.guildId, msg.content, true)
+
+        if(filtered){
             storage[msg.guild.id].users[msg.author.id].infractions++;
             if(storage[msg.guildId].filter.censor){
                 msg.reply(`This post by **${msg.author.globalName||msg.author.username}** sent <t:${msg.createdTimestamp}:f> has been deleted due to retroactively editing a blocked word into the message.`);
