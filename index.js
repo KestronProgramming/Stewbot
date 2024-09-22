@@ -1,7 +1,7 @@
 // Imports 
 process.env=require("./env.json");
 process.env.beta && console.log("Importing discord")
-const {Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction}=require("discord.js");
+const {Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
 process.env.beta && console.log("Discord imported")
 const translate=require("@vitalets/google-translate-api").translate;
 const RSSParser=require("rss-parser");
@@ -536,7 +536,6 @@ const defaultUser={
 };
 
 
-
 function verifyRegex(regexStr) {
     // returns: [isValid, error]
 
@@ -778,7 +777,12 @@ async function checkRSS(){
         }
     });
 }
-
+function defangURL(message, whitelistDomain="TODO") {
+    const urlPattern = /(https?:\/\/[^\s]+)/g;
+    return message.replace(urlPattern, (url) => {
+        return url.replace(/:\/\//g, '[://]').replace(/\./g, '[.]');
+    });
+}
 function noPerms(where,what){
     if(where===false||where===undefined) return false;
     switch(what){
@@ -795,9 +799,10 @@ function noPerms(where,what){
     
 }
 
-// If filter is false, it returns: hasBadWords
-// If filter is true, it returns [isFiltered, censoredMessage, foundWords]
 function checkDirty(where, what, filter=false) {
+    // If filter is false, it returns: hasBadWords
+    // If filter is true, it returns [hadBadWords, censoredMessage, wordsFound]
+
     if (!where || !what) 
         if (!filter) return false
         else [false, '', []]
@@ -825,13 +830,19 @@ function checkDirty(where, what, filter=false) {
             }
         }
     }
-    
+
     if (!filter) {
         // If we passed the check without exiting, it's clean
         return false;
     } 
     else {
-        // If we're filtering, the response needs more details.
+        // If we're filtering, it needs a more structured output
+
+        // Additional sanitization content
+        if (dirty) {
+            what = defangURL(what)
+        }
+        
         return [dirty, what, foundWords];
     }
 }
@@ -1345,11 +1356,11 @@ client.once("ready",async ()=>{
 
 async function sendHook(what, msg){
     if(typeof what==="string"){
-        what = what.replace(/\@(?=[^\]])/ig,"[@]"); // replace only @'s that are not already escaped
+        what={"content": what}
     }
-    else{
-        what.content=what.content.replace(/\@(?=[^\]])/ig,"[@]");
-    }
+    
+    // Prevent pings
+    what.allowedMentions = { parse: [] };
 
     // Thread IDs work a little different (channel is parent, and thread ID is channel ID)
     let mainChannel;
@@ -1374,7 +1385,7 @@ async function sendHook(what, msg){
             d.send(what);
         });
     }
-}    
+}
 
 client.on("messageCreate",async msg=>{
     // WARNING: DO NOT MOVE the below line - could allow exploits using AI.
@@ -1450,7 +1461,7 @@ client.on("messageCreate",async msg=>{
             msg.delete();
             if(storage[msg.guildId].filter.censor){
                 var replyBlip="";
-                if(msg.type===19){
+                if(msg.type===MessageType.Reply){
                     var rMsg=await msg.fetchReference();
                     replyBlip=`_[Reply to **${rMsg.author.username}**: ${rMsg.content.slice(0,22).replace(/(https?\:\/\/|\n)/ig,"").replace(/\@/ig,"[@]")}${rMsg.content.length>22?"...":""}](<https://discord.com/channels/${rMsg.guild.id}/${rMsg.channel.id}/${rMsg.id}>)_\n`;
                 }
@@ -1458,7 +1469,7 @@ client.on("messageCreate",async msg=>{
                 const filteredMessageData = {
                     "username": msg.member?.nickname||msg.author.globalName||msg.author.username,
                     "avatarURL": msg.member?.displayAvatarURL(),
-                    "content": limitLength(`\`\`\`\nThe following message from ${msg.author.username} has been censored by Stewbot.\`\`\`${replyBlip}${msg.content.slice(0,1800).replace(/(https?\:\/\/|\n)/ig,"").replace(/\@/ig,"[@]")}`),
+                    "content": limitLength(`\`\`\`\nThe following message from ${msg.author.username} has been censored by Stewbot.\`\`\`${replyBlip}${msg.content.slice(0,1800)}`),
                 }
 
                 sendHook(filteredMessageData, msg);
