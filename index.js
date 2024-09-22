@@ -766,7 +766,7 @@ async function checkRSS(){
                     let thisArticleDate = new Date(item.isoDate);
                     if(lastSentDate < thisArticleDate){
                         // Keep track of most recent
-                        if (lastSentDate < thisArticleDate) {
+                        if (mostRecentArticle < thisArticleDate) {
                             mostRecentArticle = thisArticleDate;
                         }
 
