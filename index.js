@@ -669,7 +669,8 @@ function getClosest(input) {
 function backupThreadErrorCallback(error) {
     notify(1, String(error));
 }
-setInterval(()=>{fs.writeFileSync("./storage.json",JSON.stringify(storage));},10000);
+
+setInterval(()=>{fs.writeFileSync("./storage.json",process.env.beta?JSON.stringify(storage,null,4):JSON.stringify(storage));}, 10 * 1000);
 // Cloud backups start inside the bot's on-ready listener
 
 function limitLength(s){
@@ -759,9 +760,16 @@ async function checkRSS(){
                 cont = false;
             }
             if(cont){
+                let lastSentDate = new Date(feed.lastSent);
+                let mostRecentArticle = lastSentDate;
                 parsed.items.forEach(item=>{
-                    if(feed.lastSent<new Date(item.isoDate)){
-                        feed.lastSent=new Date(item.isoDate);
+                    let thisArticleDate = new Date(item.isoDate);
+                    if(lastSentDate < thisArticleDate){
+                        // Keep track of most recent
+                        if (lastSentDate < thisArticleDate) {
+                            mostRecentArticle = thisArticleDate;
+                        }
+
                         feed.channels.forEach(chan=>{
                             let c=client.channels.cache.get(chan);
                             if(c===undefined||c===null||!c?.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
@@ -773,6 +781,8 @@ async function checkRSS(){
                         });
                     }
                 });
+                // Update feed most recent now after sending all new ones since last time
+                feed.lastSent = mostRecentArticle.toISOString();
             }
         }
     });
@@ -3334,7 +3344,7 @@ client.on("interactionCreate",async cmd=>{
                     notify(1, String("Caught error while restarting: " + err))
                 }
 
-                fs.writeFileSync("./storage.json",JSON.stringify(storage));
+                fs.writeFileSync("./storage.json",process.env.beta?JSON.stringify(storage,null,4):JSON.stringify(storage));
                 setTimeout(()=>{process.exit(0)},5000);
             }
         break;
