@@ -503,6 +503,7 @@ const commands = [
 		).addSubcommand(command=>
 			command.setName("check").setDescription("Check the RSS feeds a channel follows").addChannelOption(option=>
 				option.setName("channel").setDescription("The channel to check RSS feeds for").setRequired(true)
+				.addChannelTypes(ChannelType.GuildText)
 			).addBooleanOption(option=>
 				option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 			)
