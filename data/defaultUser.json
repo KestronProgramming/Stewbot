@@ -1,0 +1,36 @@
+{
+    "offenses":0,
+    "config":{
+        "dmOffenses":true,
+        "returnFiltered":true,
+        "embedPreviews":true,
+        "aiPings":true,
+        "levelUpMsgs":true,
+        "timeOffset":0,
+        "hasSetTZ":false
+    },
+    "gone":{
+        "active":false,
+        "message":"I'm not available right now",
+        "until":0,
+        "autoOff":false
+    },
+    "primedEmbed":{
+        "content":"",
+        "attachmentURLs":[],
+        "server":{
+            "id":"",
+            "name":"",
+            "channelId":"",
+            "channelName":"",
+            "icon":""
+        },
+        "author":{
+            "icon":"",
+            "name":"",
+            "id":""
+        },
+        "timestamp":"",
+        "id":""
+    }
+}
