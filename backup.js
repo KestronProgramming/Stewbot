@@ -84,7 +84,7 @@ async function authorizeDrive() {
     } catch (err) {
       // If we can't refresh, we have to login with gmail and generate a new token from scratch
       // console.log("Could not refresh access token:")
-      console.err(err);
+      console.error(err);
     }
   }
 
