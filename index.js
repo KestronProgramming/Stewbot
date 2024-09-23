@@ -2948,7 +2948,7 @@ client.on("interactionCreate",async cmd=>{
                     }
 
                     // Validate URL
-                    const url = cmd.options.getString("feed");
+                    const url = cmd.options.getString("feed").trim();
 
                     // Validate URL form
                     const [urlAllowed, errorText] = await isUrlAllowed(url);
@@ -2975,7 +2975,7 @@ client.on("interactionCreate",async cmd=>{
                     }
 
                     // At this point, the URL is valid and all
-                    var hash = crypto.createHash('md5').update(cmd.options.getString("feed")).digest('hex');
+                    var hash = crypto.createHash('md5').update(url).digest('hex');
                     if(!storage.rss.hasOwnProperty(hash)){
                         storage.rss[hash]={
                             "hash":hash,
@@ -2990,9 +2990,9 @@ client.on("interactionCreate",async cmd=>{
                 break;
                 case 'unfollow':
                     if(cmd.options.getString("feed").toLowerCase()!=="all"){
-                        var hash = crypto.createHash('md5').update(cmd.options.getString("feed")).digest('hex');
-                        if(storage.rss.hasOwnProperty(hash)&&storage.rss[hash]?.channels.includes(cmd.options.getChannel("channel").id)){
-                            storage.rss.hash.channels.splice(storage.rss.hash.channels.indexOf(cmd.options.getChannel("channel").id),1);
+                        var hash = crypto.createHash('md5').update(cmd.options.getString("feed").trim()).digest('hex');
+                        if(storage.rss?.[hash]?.channels?.includes(cmd.options.getChannel("channel").id)){
+                            storage.rss[hash].channels.splice(storage.rss[hash].channels.indexOf(cmd.options.getChannel("channel").id), 1);
                             cmd.followUp("I have unfollowed the feed for that channel");
                         }
                         else{
