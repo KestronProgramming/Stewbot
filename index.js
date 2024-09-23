@@ -12,6 +12,7 @@ const { getEmojiFromMessage, parseEmoji } = require('./util');
 const config=require("./data/config.json");
 const bible=require("./data/kjv.json");
 const fs=require("fs");
+const path = require("path")
 const storage=require("./storage.json");
 const cmds=require("./data/commands.json");
 const Sentiment = require('sentiment');
@@ -20,8 +21,15 @@ const { URL } = require('url');
 const { exec } = require('child_process');
 process.env.beta && console.log("Importing backup.js")
 const startBackupThread = require("./backup.js");
-process.env.beta && console.log("Imports done")
 
+// Commands
+process.env.beta && console.log("Loading commands")
+const commands = {}
+for (file of fs.readdirSync("./commands")) {
+    const commandName = path.parse(file).name;
+    const command = require("./commands/"+commandName)
+    commands[commandName] = command;
+}
 
 // Variables
 const sentiment = new Sentiment();
@@ -37,6 +45,7 @@ const threshold = 3;
 var kaProgramRegex =/\b(?!<)https?:\/\/(?:www\.)?khanacademy\.org\/(cs|computer-programming|hour-of-code|python-program)\/[a-z,\d,-]+\/\d+(?!>)\b/gi;
 var discordMessageRegex =/\b(?!<)https?:\/\/(ptb\.|canary\.)?discord(app)?.com\/channels\/(\@me|\d+)\/\d+\/\d+(?!>)\b/gi;
 
+// Data
 const m8ballResponses = ["So it would seem", "Yes", "No", "Perhaps", "Absolutely", "Positively", "Unfortunately", "I am unsure", "I do not know", "Absolutely not", "Possibly", "More likely than not", "Unlikely", "Probably not", "Probably", "Maybe", "Random answers is not the answer"];
 const pieCols=require("./data/pieCols.json");
 const setDates=require("./data/setDates.json");
@@ -1824,20 +1833,31 @@ client.on("interactionCreate",async cmd=>{
         storage[cmd.user.id]=structuredClone(defaultUser);
         
     }
+
+    // Check if the command is migrated to ./commands/ folder
+    if (commands.hasOwnProperty(cmd.commandName)) {
+        // A mapping of everything every slash command needs - ideally this is small
+        const context = {
+            client: client,
+            uptime,
+        }
+        await commands[cmd.commandName].execute(cmd, context);
+    }
     //Slash Commands and Context Menus
-    switch(cmd.commandName){
+    else switch(cmd.commandName){
         //Slash Commands
-        case 'ping':
-            fetch("https://discord.com/api/v10/applications/@me",{
-                headers: {
-                Authorization: `Bot ${process.env.token}`,
-                'Content-Type': 'application/json; charset=UTF-8',
-                'User-Agent': 'DiscordBot (https://github.com/discord/discord-example-app, 1.0.0)',
-                }
-            }).then(d=>d.json()).then(d=>{
-                cmd.followUp(`**Online**\n- Latency: ${client.ws.ping} milliseconds\n- Last Started: <t:${uptime}:f>, <t:${uptime}:R>\n- Uptime: ${((Math.round(Date.now()/1000)-uptime)/(60*60)).toFixed(2)} hours\n- Server Count: ${client.guilds.cache.size} Servers\n- User Install Count: ${d.approximate_user_install_count} Users`);
-            });
-        break;
+        // case 'ping':
+        //     process.env.beta && console.log("Running old ping");
+        //     fetch("https://discord.com/api/v10/applications/@me",{
+        //         headers: {
+        //         Authorization: `Bot ${process.env.token}`,
+        //         'Content-Type': 'application/json; charset=UTF-8',
+        //         'User-Agent': 'DiscordBot (https://github.com/discord/discord-example-app, 1.0.0)',
+        //         }
+        //     }).then(d=>d.json()).then(d=>{
+        //         cmd.followUp(`**Online**\n- Latency: ${client.ws.ping} milliseconds\n- Last Started: <t:${uptime}:f>, <t:${uptime}:R>\n- Uptime: ${((Math.round(Date.now()/1000)-uptime)/(60*60)).toFixed(2)} hours\n- Server Count: ${client.guilds.cache.size} Servers\n- User Install Count: ${d.approximate_user_install_count} Users`);
+        //     });
+        // break;
         case 'define':
             fetch("https://api.dictionaryapi.dev/api/v2/entries/en/"+cmd.options.getString("what")).then(d=>d.json()).then(d=>{
                     d = d[0];
