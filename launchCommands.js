@@ -575,7 +575,7 @@ rest.put(Routes.applicationCommands(process.env.clientId),{body:commands}).then(
 			});
 		}
 	});
-	fs.writeFileSync("./commands.json",JSON.stringify(comms));
+	fs.writeFileSync("./data/commands.json",JSON.stringify(comms));
 	console.log("Updated commands on Discord and wrote commands to ./commands.json");
 }).catch(console.error);
 
