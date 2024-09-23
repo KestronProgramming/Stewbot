@@ -1,0 +1,18 @@
+{
+    "infractions":0,
+    "stars":0,
+    "roles":[],
+    "inServer":true,
+    "countTurns":0,
+    "exp":0,
+    "expTimeout":0,
+    "lvl":0,
+    "beenCountWarned":false,
+    "gone":{
+        "active":false,
+        "message":"I'm not available right now",
+        "until":0,
+        "autoOff":false
+    },
+    "warnings":[]
+}
