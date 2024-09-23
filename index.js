@@ -14,7 +14,6 @@ const bible=require("./data/kjv.json");
 const fs=require("fs");
 const storage=require("./storage.json");
 const cmds=require("./data/commands.json");
-var timers=require("./data/timers.json");
 const Sentiment = require('sentiment');
 const dns = require('dns');
 const { URL } = require('url');
