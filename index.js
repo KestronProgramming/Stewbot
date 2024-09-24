@@ -21,6 +21,8 @@ const { URL } = require('url');
 const { exec } = require('child_process');
 process.env.beta && console.log("Importing backup.js")
 const startBackupThread = require("./backup.js");
+const mathjs = require('mathjs');
+const nlp = require('compromise');
 
 // Commands
 process.env.beta && console.log("Loading commands")
@@ -334,6 +336,41 @@ const defaultGuildUser=require("./data/defaultGuildUser.json");
 const defaultUser=require("./data/defaultUser.json");
 
 
+
+function processForNumber(text) {
+    text = text?.toLowerCase() || '';
+
+    const text2MathMap = {
+        'plus': '+',
+        'minus': '-',
+        'times': '*',
+        'multiplied by': '*',
+        'divided by': '/', 
+        'to the power of': '^', 
+        'squared': '^2',
+        'cubed': '^3',
+    };
+
+    // First replace numbers using compromise
+    const doc = nlp(text);
+    doc.numbers().toNumber();
+    text = doc.text();
+
+    // Replace using our mappings
+    for (let [word, symbol] of Object.entries(text2MathMap)) {
+        text = text.replace(new RegExp(word, 'g'), symbol);
+    }
+
+    // Extract equation as far up as is possible
+    text = text.match(/^([0-9+\-*/^()\s]|sqrt)+/, '')?.[0]?.trim() || '';
+
+    // Try to calculate
+    try {
+        return mathjs.evaluate(text);
+    } catch (error) {
+        return null;
+    }
+}
 function verifyRegex(regexStr) {
     // returns: [isValid, error]
 
@@ -1395,11 +1432,11 @@ client.on("messageCreate",async msg=>{
     if(!msg.author.bot&&storage[msg.guildId]?.counting.active&&msg.channel.id===storage[msg.guildId]?.counting.channel&&(!msg.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.AddReactions)||!msg.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages))){
         storage[msg.guildId].counting.active=false;
     }
+    
     // Counting
     if(!msg.author.bot&&storage[msg.guildId]?.counting.active&&msg.channel.id===storage[msg.guildId]?.counting.channel){
-        var num=msg.content.match(/^(\d|,)+(?:\b)/i);
-        if(num!==null){
-            num=+num[0].replaceAll(",","");
+        var num = processForNumber(msg.content);
+        if(num){
             if(num===storage[msg.guild.id].counting.nextNum){
                 if(storage[msg.guild.id].users[msg.author.id].countTurns<=0){
                     msg.react("✅");
