@@ -552,10 +552,20 @@ async function checkRSS(){
                 const data = await (await fetchWithRedirectCheck(feed.url)).text();
                 parsed = await rssParser.parseString(data);
             } catch (error) {
-                // delete storage.rss[feed.hash];
-                // TODO: readd delete once we know this code modification is sound
-                notify(1, String(error));
                 cont = false;
+
+                // Track fails
+                if (feed.fails) {
+                    feed.fails++;
+                } 
+                else {
+                    feed.fails = 1;
+                }
+
+                // Remove failing URLs
+                if (feed.fails > 7) {
+                    delete storage.rss[feed.hash];
+                }
             }
             if(cont){
                 let lastSentDate = new Date(feed.lastSent);
@@ -1218,6 +1228,12 @@ client.on("messageCreate",async msg=>{
                     storage[msg.guild.id].counting.nextNum=+msg.content.split(" ")[2];
                     msg.reply(`The next number to enter is **${storage[msg.guild.id].counting.nextNum}**.`);
                 break;
+                case "eval":
+                    if (process.env.beta) {
+                        // eval(msg.content.substring(10));
+                    }
+                    else msg.reply("Eval is not available in production.")
+                break
             }
         }
         else{
