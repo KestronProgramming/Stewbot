@@ -462,7 +462,13 @@ const commands = [
 			option.setName("link").setDescription("The message link, or PRIMED if you used the /prime_embed context menu command").setRequired(true)
 		),
 	new SlashCommandBuilder().setName("timestamp").setDescription("Generate a timestamp for use in your message"),
-	new SlashCommandBuilder().setName("daily-config").setDescription("Configure daily devos (More types to come!)").addBooleanOption(option=>
+	new SlashCommandBuilder().setName("daily-config").setDescription("Configure daily postings").addStringOption(option=>
+			option.setName("type").setDescription("What kind of daily post are you configuring?").addChoices(
+				{"name":"Devotionals","value":"devos"},
+				{"name":"Memes","value":"memes"},
+				{"name":"Verse of the Day","value":"verses"}
+			).setRequired(true)
+		).addBooleanOption(option=>
 			option.setName("active").setDescription("Should I run this daily type?").setRequired(true)
 		).addChannelOption(option=>
 			option.setName("channel").setDescription("The channel for me to post this daily type in").addChannelTypes(ChannelType.GuildText).setRequired(true)

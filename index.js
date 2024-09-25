@@ -873,8 +873,8 @@ async function doEmojiboardReaction(react, client) {
 }
 
 var started24=false;
-function daily(){
-    if(!started24){
+function daily(dontLoop){
+    if(!started24||dontLoop){
         setInterval(daily,60000*60*24);
         started24=true;
     }
@@ -927,6 +927,46 @@ function daily(){
             }
         });
     });
+    fetch("https://www.bible.com/verse-of-the-day").then(d=>d.text()).then(d=>{
+        var verseContainer=d.split(`mbs-3 border border-l-large rounded-1 border-black dark:border-white pli-1 plb-1 pis-2`)[1].split("</div>")[0].split("</a>");
+        var now=new Date();
+        var votd={
+            "type":"rich",
+            "title":`Verse of the Day`,
+            "description":`${verseContainer[0].split(">")[verseContainer[0].split(">").length-1]}\n\\- ${verseContainer[1].split("</p>")[0].split(">")[verseContainer[1].split("</p>")[0].split(">").length-1]}`,
+            "color":0x773e09,
+            "url":"https://www.bible.com/verse-of-the-day",
+            "footer":{
+                "text":`${now.getMonth()+1}/${now.getDate()}/${now.getFullYear()}`
+            }
+        };
+        Object.keys(storage).forEach(s=>{
+            if(storage[s]?.daily?.verses?.active){
+                var c=client.channels.cache.get(storage[s].daily.verses.channel);
+                if(c.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
+                    c.send({embeds:[votd]});
+                }
+                else{
+                    storage[s].daily.verses.active=false;
+                }
+            }
+        });
+    });
+    if(storage.dailyMeme===undefined||storage.dailyMeme===null) storage.dailyMeme=-1;
+    storage.dailyMeme++;
+    if(storage.dailyMeme>=fs.readdirSync("./memes").length) storage.dailyMeme=0;
+    Object.keys(storage).forEach(s=>{
+        if(storage[s]?.daily?.memes?.active){
+            var c=client.channels.cache.get(storage[s].daily.memes.channel);
+            if(c.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
+                c.send({content:`## Daily Meme`,files:[`./memes/${storage.dailyMeme}.${fs.readdirSync("./memes").filter(a=>a.split(".")[0]===`${storage.dailyMeme}`)[0].split(".")[1]}`]});
+            }
+            else{
+                storage[s].daily.memes.active=false;
+            }
+        }
+    });
+
 }
 
 let rac = {
@@ -1217,6 +1257,10 @@ client.on("messageCreate",async msg=>{
                 case "countSet":
                     storage[msg.guild.id].counting.nextNum=+msg.content.split(" ")[2];
                     msg.reply(`The next number to enter is **${storage[msg.guild.id].counting.nextNum}**.`);
+                break;
+                case "runDaily":
+                    daily(true);
+                    msg.reply(`Running the daily function...`);
                 break;
             }
         }
@@ -2778,13 +2822,13 @@ client.on("interactionCreate",async cmd=>{
                     }
                 };
             }
-            storage[cmd.guildId].daily.devos.active=cmd.options.getBoolean("active");
-            storage[cmd.guildId].daily.devos.channel=cmd.options.getChannel("channel").id;
+            storage[cmd.guildId].daily[cmd.options.getString("type")].active=cmd.options.getBoolean("active");
+            storage[cmd.guildId].daily[cmd.options.getString("type")].channel=cmd.options.getChannel("channel").id;
             if(!cmd.options.getChannel("channel").permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
-                cmd.followUp(`I can't send messages in that channel, so I can't run daily devos for this server.`);
+                cmd.followUp(`I can't send messages in that channel, so I can't run daily ${cmd.options.getString("type")}.`);
                 break;
             }
-            cmd.followUp(`${storage[cmd.guildId].daily.devos.active?"A":"Dea"}ctivated daily \`devotions\` for this server in <#${storage[cmd.guildId].daily.devos.channel}>.`);
+            cmd.followUp(`${storage[cmd.guildId].daily[cmd.options.getString("type")].active?"A":"Dea"}ctivated daily \`${cmd.options.getString("type")}\` for this server in <#${storage[cmd.guildId].daily[cmd.options.getString("type")].channel}>.`);
             
         break;
         case 'links':
