@@ -1992,51 +1992,22 @@ client.on("interactionCreate",async cmd=>{
     // Check if the command is migrated to ./commands/ folder
     if (commands.hasOwnProperty(cmd.commandName)) {
         const commandScript = commands[cmd.commandName];
-        const providedGlobals = {};
+
+        // List of general globals it should have access to
+        const providedGlobals = {
+            notify, // TODO: Most of these functions should be required from a utility JS
+            checkDirty,
+        };
+
+        // Add any other requested globals
         requestedGlobals = commandScript.requestGlobals?.() || [];
         for (var name of requestedGlobals) {
-            // requestedGlobals[name] = this[name]; // wasn't working
-            // providedGlobals[name] = new Function('return ' + name.match(/[\w-]+/)[0])() // also was't working due to iife scope
             providedGlobals[name] = eval(name.match(/[\w-]+/)[0]);
         }
         await commands[cmd.commandName].execute(cmd, providedGlobals);
     }
     //Slash Commands and Context Menus
     else switch(cmd.commandName){
-        case 'define':
-            fetch("https://api.dictionaryapi.dev/api/v2/entries/en/"+cmd.options.getString("what")).then(d=>d.json()).then(d=>{
-                    d = d[0];
-                    let defs = [];
-                    for (var i = 0; i < d.meanings.length; i++) {
-                        for (var j = 0;j < d.meanings[i].definitions.length;j++) {
-                            let foundOne=checkDirty(cmd.guild?.id,d.meanings[i].definitions[j].example)||checkDirty(cmd.guild?.id,d.meanings[i].definitions[j].definition);
-                            defs.push({
-                                name:"Type: " +d.meanings[i].partOfSpeech,
-                                value:foundOne?"Blocked by this server's filter":d.meanings[i].definitions[j].definition+(d.meanings[i].definitions[j].example?"\nExample: " +d.meanings[i].definitions[j].example:""),
-                                inline: true
-                            });
-                        }
-                    }
-                    if(checkDirty(cmd.guild?.id,d.word)){
-                        cmd.followUp({content:"That word is blocked by this server's filter",ephemeral:true});
-                    }
-                    else{
-                        cmd.followUp({embeds:[{
-                            type: "rich",
-                            title: "Definition of "+d.word,
-                            description: d.origin,
-                            color: 0x773e09,
-                            fields: defs.slice(0,25),
-                            footer: {
-                                text: d.phonetic,
-                            }
-                        }]});
-                    }
-                }).catch(e=>{
-                    notify(1, "Dictionary error: " + String(e));
-                    cmd.followUp("I'm sorry, I didn't find a definition for that");
-                });
-        break;
         case "filter":
             if(!cmd.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageMessages)){
                 storage[cmd.guildId].filter.active=false;
