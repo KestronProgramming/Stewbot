@@ -123,7 +123,7 @@ const commands = [
 		).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
 	new SlashCommandBuilder().setName("view_filter").setDescription("View the list of blacklisted words for this server").setDMPermission(false).addBooleanOption(option=>
 		option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
-	),
+	),/*
 	new SlashCommandBuilder().setName("starboard_config").setDescription("Configure starboard for this server").addBooleanOption(option=>
 			option.setName("active").setDescription("Should I post messages to the configured channel?").setRequired(true)
 		).addChannelOption(option=>
@@ -140,7 +140,7 @@ const commands = [
 			)
 		).addBooleanOption(option=>
 			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
-		).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
+		).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),*/
 	new SlashCommandBuilder().setName("add_emojiboard").setDescription("Create a new emojiboard")
 		.addStringOption(option=>
 			option.setName("emoji").setDescription("The emoji to react with to trigger the emojiboard").setRequired(true)
