@@ -1991,28 +1991,18 @@ client.on("interactionCreate",async cmd=>{
 
     // Check if the command is migrated to ./commands/ folder
     if (commands.hasOwnProperty(cmd.commandName)) {
-        // A mapping of everything every slash command needs - ideally this is small
-        const context = {
-            client: client,
-            uptime,
+        const commandScript = commands[cmd.commandName];
+        const providedGlobals = {};
+        requestedGlobals = commandScript.requestGlobals?.() || [];
+        for (var name of requestedGlobals) {
+            // requestedGlobals[name] = this[name]; // wasn't working
+            // providedGlobals[name] = new Function('return ' + name.match(/[\w-]+/)[0])() // also was't working due to iife scope
+            providedGlobals[name] = eval(name.match(/[\w-]+/)[0]);
         }
-        await commands[cmd.commandName].execute(cmd, context);
+        await commands[cmd.commandName].execute(cmd, providedGlobals);
     }
     //Slash Commands and Context Menus
     else switch(cmd.commandName){
-        //Slash Commands
-        // case 'ping':
-        //     process.env.beta && console.log("Running old ping");
-        //     fetch("https://discord.com/api/v10/applications/@me",{
-        //         headers: {
-        //         Authorization: `Bot ${process.env.token}`,
-        //         'Content-Type': 'application/json; charset=UTF-8',
-        //         'User-Agent': 'DiscordBot (https://github.com/discord/discord-example-app, 1.0.0)',
-        //         }
-        //     }).then(d=>d.json()).then(d=>{
-        //         cmd.followUp(`**Online**\n- Latency: ${client.ws.ping} milliseconds\n- Last Started: <t:${uptime}:f>, <t:${uptime}:R>\n- Uptime: ${((Math.round(Date.now()/1000)-uptime)/(60*60)).toFixed(2)} hours\n- Server Count: ${client.guilds.cache.size} Servers\n- User Install Count: ${d.approximate_user_install_count} Users`);
-        //     });
-        // break;
         case 'define':
             fetch("https://api.dictionaryapi.dev/api/v2/entries/en/"+cmd.options.getString("what")).then(d=>d.json()).then(d=>{
                     d = d[0];
