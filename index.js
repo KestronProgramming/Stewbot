@@ -858,10 +858,9 @@ const fetchWithRedirectCheck = async (inputUrl, maxRedirects = 5) => {
 * Handle the information when a user reacts to a message, for emojiboards
 *
 * @param {MessageReaction | import("discord.js").PartialMessageReaction} react The reaction that was added
-* @param {Client} client The discord client
 * @returns {Promise<void>}
 */
-async function doEmojiboardReaction(react, client) {
+async function doEmojiboardReaction(react) {
     const emoji = getEmojiFromMessage(
         react.emoji.requiresColons ?
         `<:${react.emoji.name}:${react.emoji.id}>` :
@@ -977,7 +976,16 @@ async function doEmojiboardReaction(react, client) {
     }
 
     storage[react.message.guild.id].emojiboards[emoji] = emojiboard;
-    try{ storage[react.message.guild.id].users[react.message.author.id].stars++; }catch(e){}
+    try{
+        if(!storage[react.message.guild.id].emojiboards[emoji].hasOwnProperty("posters")){
+            storage[react.message.guild.id].emojiboards[emoji].posters={};
+        }
+        if(!storage[react.message.guild.id].emojiboards[emoji].posters.hasOwnProperty(react.message.author.id)){
+            storage[react.message.guild.id].emojiboards[emoji].posters[react.message.author.id]=0;
+        }
+        storage[react.message.guild.id].emojiboards[emoji].posters[react.message.author.id]++;
+        storage[react.message.guild.id].users[react.message.author.id].stars++;
+    }catch(e){}
     
 }
 
@@ -1437,6 +1445,11 @@ client.on("messageCreate",async msg=>{
                                             {
                                                 "name":`${cmds["sticky-roles"].mention} ${cmds["auto-join-roles"].mention}`,
                                                 "value":"Setup roles that stay even when the user leaves and automatically apply roles when any user joins.",
+                                                "inline":true
+                                            },
+                                            {
+                                                "name":`Have any issues or questions?`,
+                                                "value":`Can't figure something out? Have questions or just want to hang out? Join the support server! https://discord.gg/mTFKpBcvae`,
                                                 "inline":true
                                             }
                                         ],
@@ -2187,7 +2200,8 @@ client.on("interactionCreate",async cmd=>{
                 active: true,
                 threshold: cmd.options.getInteger("threshold") || 3,
                 messType: cmd.options.getString("message_type"),
-                posted: {}
+                posted: {},
+                posters:{}
             };
             cmd.followUp("Emojiboard for " + parseEmoji(emoji) + " emoji added.");
             
@@ -2816,32 +2830,45 @@ client.on("interactionCreate",async cmd=>{
                         }
                       }]});
                 break;
-                // This code should be converted into emojiboard - TODO
-                case "starboard":
-                    if(!storage[cmd.guildId].starboard.active){
-                        cmd.followUp(`This server doesn't use starboard at the moment. It can be configured using ${cmds.add_emojiboard.mention}.`);
-                        return;
+                case "emojiboard":
+                    if(Object.keys(storage[cmd.guildId]?.emojiboards).length<1){
+                        cmd.followUp(`This server doesn't use any emojiboards at the moment. It can be configured using ${cmds.add_emojiboard.mention}.`);
+                        break;
                     }
                     var searchId=cmd.options.getUser("who")?.id||cmd.user.id;
                     if(searchId!==cmd.user.id){
                         if(!storage[cmd.guildId].users.hasOwnProperty(searchId)){
                             cmd.followUp(`I am unaware of this user presently`);
-                            return;
+                            break;
                         }
                     }
-                    var place=Object.keys(storage[cmd.guildId].users).map(a=>Object.assign(storage[cmd.guildId].users[a],{"id":a})).sort((a,b)=>b.stars-a.stars).map(a=>a.id).indexOf(searchId);
-                    cmd.followUp({content:`**Starboard Leaderboard**`,embeds:[{
+                    var leaderboard="";
+                    var emote="Emoji";
+                    if(cmd.options.getString("emoji")===null){
+                        leaderboard=Object.keys(storage[cmd.guildId].users).map(a=>Object.assign(storage[cmd.guildId].users[a],{"id":a})).sort((a,b)=>b.stars-a.stars).slice(0,10).map((a,i)=>`\n${["🌠","🌟","⭐","4️⃣","5️⃣","6️⃣","7️⃣","8️⃣","9️⃣","🔟"][i]}. <@${a.id}> ${a.stars} emojiboards`).join("");
+                    }
+                    else{
+                        if(storage[cmd.guildId].emojiboards.hasOwnProperty(getEmojiFromMessage(cmd.options.getString("emoji")))){
+                            emote=getEmojiFromMessage(cmd.options.getString("emoji"));
+                            leaderboard=Object.keys(storage[cmd.guildId].emojiboards[emote].posters).map(a=>Object.assign(storage[cmd.guildId].emojiboards[emote].posters[a],{"id":a})).sort((a,b)=>b-a).slice(0,10).map((a,i)=>`\n${["🌠","🌟","⭐","4️⃣","5️⃣","6️⃣","7️⃣","8️⃣","9️⃣","🔟"][i]}. <@${a.id}> ${a} ${emote}boards`).join("");
+                        }
+                        else{
+                            cmd.followUp(`This server doesn't have that emojiboard setup.`);
+                            break;
+                        }
+                    }
+                    cmd.followUp({content:`**Emojiboard Leaderboard**`,embeds:[{
                         "type": "rich",
-                        "title": `${cmd.guild.name} Stars Leaderboard`,
-                        "description": Object.keys(storage[cmd.guildId].users).map(a=>Object.assign(storage[cmd.guildId].users[a],{"id":a})).sort((a,b)=>b.stars-a.stars).slice(0,10).map((a,i)=>`\n${["🌠","🌟","⭐","4️⃣","5️⃣","6️⃣","7️⃣","8️⃣","9️⃣","🔟"][i]}. <@${a.id}> ${a.stars} starboards`).join(""),
-                        "color": 0x006400,
+                        "title": `${cmd.guild.name} ${emote.includes(":")?emote:cmd.options.getString("emoji")!==null?cmd.options.getString("emoji"):"Emoji"}board Leaderboard`,
+                        "description": leaderboard,
+                        "color": 0xffff00,
                         "thumbnail": {
                           "url": cmd.guild.iconURL(),
                           "height": 0,
                           "width": 0
                         },
                         "footer": {
-                          "text": `${searchId===cmd.user.id?"You are":`<@${searchId}> is`} in ${place+1}${place===0?"st":place===1?"nd":place===2?"rd":"th"} place with ${storage[cmd.guildId].users[searchId].stars} starboards.`
+                          "text": `${emote.includes(":")?emote.split(":")[1]:cmd.options.getString("emoji")!==null?cmd.options.getString("emoji"):"Emoji"}board Leaderboards`
                         }
                       }]});
                 break;
@@ -4259,23 +4286,27 @@ client.on("messageReactionAdd",async (react,user)=>{
         }
     }
 
-    doEmojiboardReaction(react, client)
+    doEmojiboardReaction(react);
 });
 client.on("messageDelete",async msg=>{
     if(msg.guild?.id===undefined) return;
     if(!storage.hasOwnProperty(msg.guild.id)){
         storage[msg.guild.id]=structuredClone(defaultGuild);
-        
     }
-    if(storage[msg.guild.id]?.starboard.posted.hasOwnProperty(msg.id)){
-        if(storage[msg.guild.id].starboard.posted[msg.id].startsWith("webhook")){
-            var c=await client.channels.cache.get(storage[msg.guild.id].starboard.channel).messages.fetch(storage[msg.guild.id].starboard.posted[msg.id].split("webhook")[1]);
-            c.delete();
-        }
-        else{
-            var c=await client.channels.cache.get(storage[msg.guild.id].starboard.channel).messages.fetch(storage[msg.guild.id].starboard.posted[msg.id]);
-            c.edit({content:`I'm sorry, but it looks like this post by **${msg.author.globalName||msg.author.username}** was deleted.`,embeds:[],files:[]});
-        }
+    if(Object.keys(storage[msg.guild.id].emojiboards).length>0){
+        Object.keys(storage[msg.guild.id].emojiboards).forEach(async emoji=>{
+            emoji=storage[msg.guild.id].emojiboards[emoji];
+            if(emoji.posted.hasOwnProperty(msg.id)){
+                if(emoji.posted[msg.id].startsWith("webhook")&&emoji.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.ManageMessages)){
+                    var c=await client.channels.cache.get(emoji.channel).messages.fetch(emoji.posted[msg.id].split("webhook")[1]);
+                    c.delete();
+                }
+                else if(!emoji.posted[msg.id].startsWith("webhook")){
+                    var c=await client.channels.cache.get(emoji.channel).messages.fetch(emoji.posted[msg.id]);
+                    c.edit({content:`I'm sorry, but it looks like this post by **${msg.author?.globalName||msg.author?.username}** was deleted.`,embeds:[],files:[]});
+                }
+            }
+        });
     }
     if(storage[msg.guild.id]?.counting.active&&storage[msg.guild.id]?.counting.channel===msg.channel.id){
         var num=msg.content?.match(/^(\d|,)+(?:\b)/i);
@@ -4332,41 +4363,48 @@ client.on("messageUpdate",async (msgO,msg)=>{
             return;
         }
     }
-    if(storage[msg.guild.id]?.starboard.posted.hasOwnProperty(msg.id)&&!storage[msg.guild.id].starboard.posted[msg.id]?.startsWith("webhook")){
-        var resp={files:[]};
-        var replyBlip="";
-        if(msg.type===19){
-            var rMsg=await msg.fetchReference();
-            replyBlip=`_[Reply to **${rMsg.author.username}**: ${rMsg.content.slice(0,22).replace(/(https?\:\/\/|\n)/ig,"")}${rMsg.content.length>22?"...":""}](<https://discord.com/channels/${rMsg.guild.id}/${rMsg.channel.id}/${rMsg.id}>)_`;
-        }
-        msg.attachments.forEach((attached,i) => {
-            let url=attached.url.toLowerCase();
-            if(i!==0||(!url.includes(".jpg")&&!url.includes(".png")&&!url.includes(".jpeg")&&!url.includes(".gif"))||storage[cmd.guildId].starboard.messType==="0"){
-                resp.files.push(attached.url);
+    if(Object.keys(storage[msg.guild.id].emojiboards).length>0){
+        Object.keys(storage[msg.guild.id].emojiboards).forEach(async emote=>{
+            var emoji=storage[msg.guild.id].emojiboards[emote];
+            if(emoji.posted.hasOwnProperty(msg.id)&&!emoji.posted[msg.id]?.startsWith("webhook")){
+                var resp={files:[]};
+                var replyBlip="";
+                if(msg.type===19){
+                    var rMsg=await msg.fetchReference();
+                    replyBlip=`_[Reply to **${rMsg.author.username}**: ${rMsg.content.slice(0,22).replace(/(https?\:\/\/|\n)/ig,"")}${rMsg.content.length>22?"...":""}](<https://discord.com/channels/${rMsg.guild.id}/${rMsg.channel.id}/${rMsg.id}>)_`;
+                }
+                msg.attachments.forEach((attached,i) => {
+                    let url=attached.url.toLowerCase();
+                    if(i!==0||(!url.includes(".jpg")&&!url.includes(".png")&&!url.includes(".jpeg")&&!url.includes(".gif"))||emoji.messType==="0"){
+                        resp.files.push(attached.url);
+                    }
+                });
+                if(emote.includes(":")){
+                    footer.iconURL=``;
+                }
+                resp.embeds=[new EmbedBuilder()
+                    .setColor(0x006400)
+                    .setTitle("(Jump to message)")
+                    .setURL(`https://www.discord.com/channels/${msg.guild.id}/${msg.channel.id}/${msg.id}`)
+                    .setAuthor({
+                        name: `${msg.author?.globalName||msg.author?.username}`,
+                        iconURL:msg.author?.displayAvatarURL(),
+                        url:`https://discord.com/users/${msg.author?.id}`
+                    })
+                    .setDescription(`${replyBlip?`${replyBlip}\n`:""}${msg.content?msg.content:"⠀"}`)
+                    .setTimestamp(new Date(msg.createdTimestamp))
+                    .setFooter({
+                        name:msg.channel.name
+                    })
+                    .setImage(msg.attachments.first()?msg.attachments.first().url:null)
+                ];
+                if(emoji.messType==="1"){
+                    resp.content=getStarMsg(msg);
+                }
+                var c=await client.channels.cache.get(emoji.channel).messages.fetch(emoji.posted[msg.id]);
+                c.edit(resp);
             }
-        });
-        resp.embeds=[new EmbedBuilder()
-            .setColor(0x006400)
-            .setTitle("(Jump to message)")
-            .setURL(`https://www.discord.com/channels/${msg.guild.id}/${msg.channel.id}/${msg.id}`)
-            .setAuthor({
-                name: `${msg.author?.globalName||msg.author?.username}`,
-                iconURL:msg.author?.displayAvatarURL(),
-                url:`https://discord.com/users/${msg.author?.id}`
-            })
-            .setDescription(`${replyBlip?`${replyBlip}\n`:""}${msg.content?msg.content:"⠀"}`)
-            .setTimestamp(new Date(msg.createdTimestamp))
-            .setFooter({
-                text: msg.channel.name,
-                iconURL:"https://cdn.discordapp.com/attachments/1052328722860097538/1069496476687945748/141d49436743034a59dec6bd5618675d.png",
-            })
-            .setImage(msg.attachments.first()?msg.attachments.first().url:null)
-        ];
-        if(storage[msg.guild.id].starboard.messType==="1"){
-            resp.content=getStarMsg(msg);
-        }
-        var c=await client.channels.cache.get(storage[msg.guild.id].starboard.channel).messages.fetch(storage[msg.guild.id].starboard.posted[msg.id]);
-        c.edit(resp);
+        }); 
     }
     if(storage[msg.guild.id]?.counting.active&&storage[msg.guild.id]?.counting.channel===msg.channel.id){
         var num=msgO.content?.match(/^(\d|,)+(?:\b)/i);

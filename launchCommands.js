@@ -436,12 +436,14 @@ const commands = [
 	new SlashCommandBuilder().setName("leaderboard").setDescription("View a leaderboard").addStringOption(option=>
 			option.setName("which").setDescription("Which leaderboard do you want to see?").setChoices(
 				{name:"Counting",value:"counting"},
-				{name:"Starboard",value:"starboard"},
+				{name:"Emojiboard",value:"emojiboard"},
 				{name:"Cleanliness",value:"cleanliness"},
 				{name:"Level-Ups",value:"levels"}
 			).setRequired(true)
 		).addUserOption(option=>
 			option.setName("who").setDescription("If applicable, who's spot on the leaderboard do you wish to highlight?")
+		).addStringOption(option=>
+			option.setName("emoji").setDescription("If emojiboard, which emoji do you want a leaderboard for?")
 		).addBooleanOption(option=>
 			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 		),
