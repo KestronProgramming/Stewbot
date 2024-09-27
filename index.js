@@ -332,7 +332,9 @@ const defaultGuildUser=require("./data/defaultGuildUser.json");
 const defaultUser=require("./data/defaultUser.json");
 
 
-
+function escapeBackticks(text){
+    return text.replace(/(?<!\\)(?:\\\\)*`/g, "\\`");
+}
 function processForNumber(text) {
     text = text?.toLowerCase() || '';                                                                                     
     //     +@@*                                                            
@@ -2479,7 +2481,7 @@ client.on("interactionCreate",async cmd=>{
                     cmd.followUp({content:`I have been asked not to translate that by this server`,ephemeral:true});
                     return;
                 }
-                cmd.followUp(`Attempted to translate${t.text!==cmd.options.getString("what")?`: \`${t.text}\`. If this is incorrect, try using ${cmds.translate.mention} again and specify more.`:`, but I was unable to. Try using ${cmds.translate.mention} again and specify more.`}`);
+                cmd.followUp(`Attempted to translate${t.text!==cmd.options.getString("what")?`:\n\`\`\`\n${escapeBackticks(t.text)}\n\`\`\`\n-# If this is incorrect, try using ${cmds.translate.mention} again and specify more.`:`, but I was unable to. Try using ${cmds.translate.mention} again and specify more.`}`);
             });
         break;
         case 'ticket':
@@ -3417,7 +3419,7 @@ client.on("interactionCreate",async cmd=>{
             translate(cmd.targetMessage.content,{
                 to:cmd.locale.slice(0,2)
             }).then(t=>{
-                cmd.followUp(`Attempted to translate${t.text!==cmd.targetMessage.content?`: \`${t.text}\`. If this is incorrect, try using ${cmds.translate.mention}.`:`, but I was unable to. Try using ${cmds.translate.mention}.`}`);
+                cmd.followUp(`Attempted to translate${t.text!==cmd.targetMessage.content?`:\n\`\`\`\n${escapeBackticks(t.text)}\n\`\`\`\n-# If this is incorrect, try using ${cmds.translate.mention}.`:`, but I was unable to. Try using ${cmds.translate.mention}.`}`);
             });
         break;
         case 'remove_embeds':
