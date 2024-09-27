@@ -85,10 +85,6 @@ var helpPages=[
                 desc:"Configure different options for the filter, which will remove configurably blacklisted words"
             },
             {
-                name:cmds.starboard_config.mention,
-                desc:"Configure starboard, which is like a highlights reel of messages with a certain amount of a specific reaction"
-            },
-            {
                 name:`${cmds.timeout.mention}/${cmds.kick.mention}/${cmds.ban.mention}`,
                 desc:"Moderate a user"
             },
@@ -2174,33 +2170,6 @@ client.on("interactionCreate",async cmd=>{
                 cmd.followUp(`This server doesn't have any words blacklisted at the moment. To add some, you can use ${cmds.filter.add.mention}.`);
             }
         break;
-        case 'starboard_config':
-            if(!cmd.guild?.id){
-                cmd.followUp("Something is wrong");
-                break;
-            }
-            storage[cmd.guildId].starboard.active=cmd.options.getBoolean("active");
-            if(cmd.options.getChannel("channel")!==null) storage[cmd.guildId].starboard.channel=cmd.options.getChannel("channel").id;
-            if(cmd.options.getInteger("threshold")!==null) storage[cmd.guildId].starboard.threshold=cmd.options.getInteger("threshold");
-            if(cmd.options.getString("emoji")!==null) storage[cmd.guildId].starboard.emoji=cmd.options.getString("emoji").includes(":")?cmd.options.getString("emoji").split(":")[2].split(">")[0]:cmd.options.getString("emoji");
-            if(cmd.options.getString("message_type")!==null) storage[cmd.guildId].starboard.messType=cmd.options.getString("message_type");
-            
-            var disclaimers=[];
-            if(storage[cmd.guildId].starboard.channel===""&&storage[cmd.guildId].starboard.active){
-                storage[cmd.guildId].starboard.active=false;
-                disclaimers.push(`No channel was set to post starboarded messages to, so starboard has been turned off.`);
-            }
-            else if(storage[cmd.guildId].starboard.active&&!client.channels.cache.get(storage[cmd.guildId].starboard.channel).permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
-                storage[cmd.guildId].starboard.active=false;
-                disclaimers.push(`I cannot send messages to the specified starboard channel for this server, so starboard has been turned off.`);
-            }
-            if(storage[cmd.guildId].starboard.messType==="0"&&!cmd.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageWebhooks)){
-                storage[cmd.guildId].starboard.messType="2";
-                disclaimers.push(`I do not have the MANAGE_WEBHOOKS permissions, so I cannot use the starboard message type configured. I have changed the setting to "Post an embed with the message" instead.`);
-            }
-            cmd.followUp(`Starboard configured.${disclaimers.map(d=>`\n\n${d}`).join("")}`);
-            
-        break;
         case 'add_emojiboard':
             if(!cmd.guild?.id){
                 cmd.followUp("Something is wrong");
@@ -2845,9 +2814,10 @@ client.on("interactionCreate",async cmd=>{
                         }
                       }]});
                 break;
+                // This code should be converted into emojiboard - TODO
                 case "starboard":
                     if(!storage[cmd.guildId].starboard.active){
-                        cmd.followUp(`This server doesn't use starboard at the moment. It can be configured using ${cmds.starboard_config.mention}.`);
+                        cmd.followUp(`This server doesn't use starboard at the moment. It can be configured using ${cmds.add_emojiboard.mention}.`);
                         return;
                     }
                     var searchId=cmd.options.getUser("who")?.id||cmd.user.id;
