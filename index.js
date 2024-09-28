@@ -1864,7 +1864,7 @@ client.on("messageCreate",async msg=>{
         catch(e){}
     }
     var progsDeleted = false;
-    if(embs.length>0) msg.reply({content:`Embedded linked message${embs.length>1?"s":""}. You can prevent this behavior by surrounding message links in \`<\` and \`>\`.`,embeds:embs,files:fils,allowedMentions:{parse:[]}});
+    if(embs.length>0) msg.reply({content:`-# Embedded linked message${embs.length>1?"s":""}. You can prevent this behavior by surrounding message links in \`<\` and \`>\`.`,embeds:embs,files:fils,allowedMentions:{parse:[]}});
     for(var i=0;i<progs.length;i++){
         let prog=progs[i];
         var progId = prog.split("/")[prog.split("/").length-1].split("?")[0];
@@ -3030,7 +3030,7 @@ client.on("interactionCreate",async cmd=>{
         case 'embed_message':
             if(cmd.options.getString("link").toLowerCase()==="primed"&&storage[cmd.user.id].hasOwnProperty("primedEmbed")){
                 var primer=getPrimedEmbed(cmd.user.id,cmd.guild?.id);
-                cmd.followUp({"content":`Embedded primed message. Use the context menu command \`/prime_embed\` and type \`PRIMED\` into ${cmds.embed_message.mention} to do the same.`,embeds:[primer],files:primer.title==="Blocked"?[]:storage[cmd.user.id].primedEmbed.attachmentURLs});
+                cmd.followUp({"content":`-# Embedded primed message. Use the context menu command \`/prime_embed\` and type \`PRIMED\` into ${cmds.embed_message.mention} to do the same.`,embeds:[primer],files:primer.title==="Blocked"?[]:storage[cmd.user.id].primedEmbed.attachmentURLs});
             }
             else{
                 try{
@@ -3072,7 +3072,7 @@ client.on("interactionCreate",async cmd=>{
                         if(channelLinked?.permissionsFor(cmd.user.id)?.has(PermissionFlagsBits.ViewChannel)){
                             embs.push(messEmbed);
                         }
-                        cmd.followUp({content:embs.length>0?`Embedded linked message`:`Failed to embed message`,embeds:embs});
+                        cmd.followUp({content:embs.length>0?`-# Embedded linked message`:`Failed to embed message`,embeds:embs});
                     }
                     catch(e){
                         console.log(e);
