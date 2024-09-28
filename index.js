@@ -1756,7 +1756,7 @@ client.on("messageCreate",async msg=>{
     }
     
     // Persistent messages - always at the bottom of the channel. 
-    if((msg.author.webhookId===null||msg.author.webhookId===undefined)&&storage[msg.guildId]?.hasOwnProperty("persistence")){
+    if(msg.author.bot&&storage[msg.guildId]?.hasOwnProperty("persistence")){
         if(!storage[msg.guild.id].persistence.hasOwnProperty(msg.channel.id)){
             storage[msg.guild.id].persistence[msg.channel.id]={
                 "active":false,
