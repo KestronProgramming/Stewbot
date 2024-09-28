@@ -1768,7 +1768,7 @@ client.on("messageCreate",async msg=>{
             if(msg.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.ManageWebhooks)&&msg.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.ManageMessages)){
                 if(storage[msg.guild.id].persistence[msg.channel.id].lastPost!==null){
                     var mes=await msg.channel.messages.fetch(storage[msg.guild.id].persistence[msg.channel.id].lastPost);
-                    mes.delete();
+                    if(mes) mes.delete();
                 }
                 var resp={
                     "content":storage[msg.guild.id].persistence[msg.channel.id].content,
