@@ -2853,7 +2853,7 @@ client.on("interactionCreate",async cmd=>{
                     else{
                         if(storage[cmd.guildId].emojiboards.hasOwnProperty(getEmojiFromMessage(cmd.options.getString("emoji")))){
                             emote=getEmojiFromMessage(cmd.options.getString("emoji"));
-                            leaderboard=Object.keys(storage[cmd.guildId].emojiboards[emote].posters).map(a=>Object.assign(storage[cmd.guildId].emojiboards[emote].posters[a],{"id":a})).sort((a,b)=>b-a).slice(0,10).map((a,i)=>`\n${["🌠","🌟","⭐","4️⃣","5️⃣","6️⃣","7️⃣","8️⃣","9️⃣","🔟"][i]}. <@${a.id}> ${a} ${emote}boards`).join("");
+                            leaderboard=Object.keys(storage[cmd.guildId].emojiboards[emote].posters).map(a=>Object.assign(storage[cmd.guildId].emojiboards[emote].posters[a],{"id":a})).sort((a,b)=>b-a).slice(0,10).map((a,i)=>`\n${["🌠","🌟","⭐","4️⃣","5️⃣","6️⃣","7️⃣","8️⃣","9️⃣","🔟"][i]}. <@${a.id}> ${a} ${emote.includes(":")?emote:cmd.options.getString("emoji")!==null?cmd.options.getString("emoji"):"Emoji"}boards`).join("");
                         }
                         else{
                             cmd.followUp(`This server doesn't have that emojiboard setup.`);
