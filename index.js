@@ -1756,7 +1756,7 @@ client.on("messageCreate",async msg=>{
     }
     
     // Persistent messages - always at the bottom of the channel. 
-    if((!msg.author.bot||msg.author.id==="1286940022473490452")&&storage[msg.guildId]?.hasOwnProperty("persistence")){
+    if((msg.webhookId===null||msg.webhookId===undefined)&&storage[msg.guildId]?.hasOwnProperty("persistence")){
         if(!storage[msg.guild.id].persistence.hasOwnProperty(msg.channel.id)){
             storage[msg.guild.id].persistence[msg.channel.id]={
                 "active":false,
@@ -3239,6 +3239,29 @@ client.on("interactionCreate",async cmd=>{
             if(cmd.options.getString("content")!==null) storage[cmd.guild.id].persistence[cmd.channel.id].content=cmd.options.getString("content");
             if(cmd.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.ManageWebhooks)){
                 cmd.followUp(`I have set your settings for this channel's persistent messages.`);
+
+                var resp={
+                    "content":storage[cmd.guild.id].persistence[cmd.channel.id].content,
+                    "avatarURL":cmd.guild.iconURL(),
+                    "username":cmd.guild.name
+                };
+                var hook=await cmd.channel.fetchWebhooks();
+                hook=hook.find(h=>h.token);
+                if(hook){
+                    hook.send(resp).then(d=>{
+                        storage[cmd.guild.id].persistence[cmd.channel.id].lastPost=d.id;
+                    });
+                }
+                else{
+                    client.channels.cache.get(cmd.channel.id).createWebhook({
+                        name: config.name,
+                        avatar: config.pfp
+                    }).then(d=>{
+                        d.send(resp).then(d=>{
+                            storage[cmd.guild.id].persistence[cmd.channel.id].lastPost=d.id;
+                        });
+                    });
+                }
             }
             else{
                 cmd.followUp(`I need to be able to delete messages as well as manage webhooks for this channel. Without these permissions I cannot manage persistent messages here.`);
