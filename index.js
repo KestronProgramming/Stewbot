@@ -1767,8 +1767,11 @@ client.on("messageCreate",async msg=>{
         if(storage[msg.guild.id].persistence[msg.channel.id].active){
             if(msg.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.ManageWebhooks)&&msg.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.ManageMessages)){
                 if(storage[msg.guild.id].persistence[msg.channel.id].lastPost!==null){
-                    var mes=await msg.channel.messages.fetch(storage[msg.guild.id].persistence[msg.channel.id].lastPost);
-                    if(mes) mes.delete();
+                    try{
+                        var mes=await msg.channel.messages.fetch(storage[msg.guild.id].persistence[msg.channel.id].lastPost).catch(e=>{});
+                        if(mes) mes.delete();
+                    }
+                    catch(e){}
                 }
                 var resp={
                     "content":storage[msg.guild.id].persistence[msg.channel.id].content,
