@@ -41,7 +41,6 @@ const extraInfo={
 	"ticket":{"contexts":[0],"integration_types":[0],"cat":5},
 	"auto-join-message":{"contexts":[0],"integration_types":[0],"cat":6},
 	"auto-leave-message":{"contexts":[0],"integration_types":[0],"cat":6},
-	"report_problem":{"contexts":[0,1,2],"integration_types":[0,1],"cat":0},
 	"log_config":{"contexts":[0],"integration_types":[0],"cat":6},
 	"admin_message":{"contexts":[0],"integration_types":[0],"cat":5},
 	"sticky-roles":{"contexts":[0],"integration_types":[0],"cat":6},
@@ -176,20 +175,6 @@ let commands = [
 		).addBooleanOption(option=>
 			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 		).setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers),
-	new SlashCommandBuilder().setName("report_problem").setDescription("Report an error to be looked at").addStringOption(option=>
-			option.setName("type").setDescription("What kind of problem are you reporting?").addChoices(
-				{"name":"Profanity","value":"profanity"},
-				{"name":"Controversial","value":"controversy"},
-				{"name":"Bug or Error","value":"bug"},
-				{"name":"Suggestion","value":"suggestion"},
-				{"name":"Exploit","value":"exploit"},
-				{"name":"Other","value":"other"}
-			).setRequired(true)
-		).addStringOption(option=>
-			option.setName("details").setDescription("Can you please provide us some details?").setRequired(true)
-		).addBooleanOption(option=>
-			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
-		),
 	new SlashCommandBuilder().setName("log_config").setDescription("Configure log events").addBooleanOption(option=>
 			option.setName("active").setDescription("Log server and user events to the designated channel?").setRequired(true)
 		).addChannelOption(option=>
