@@ -7,10 +7,3 @@ memes/*
 tempMemes/*
 commands.json
 errorLogs/*
-timers.json
-
-test.json
-
-*.mp3
-hunt.js
-runHunt.sh

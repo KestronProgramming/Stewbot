@@ -409,56 +409,57 @@ for (let commandName in migratedCommands) {
 
 // Inject extra data that discord.js doesn't/didn't support natively
 commands = commands.map(command => Object.assign(command.toJSON(),extraInfo[command.toJSON().name]));
+function launchCommands(){
+	// Register
+	const rest = new REST({ version: '9' }).setToken(process.env.token);
+	var comms={};
+	rest.put(Routes.applicationCommands(process.env.clientId),{body:commands}).then(d=>{
+		d.forEach(c=>{
+			comms[c.name]={
+				mention:`</${c.name}:${c.id}>`,
+				id:c.id,
+				name:c.name,
+				description:c.description,
+				contexts:c.contexts,
+				integration_types:c.integration_types,
+				type:c.type,
+				default_member_permissions:c.default_member_permissions
+			};
+			if(c.hasOwnProperty("options")){
+				c.options.forEach(o=>{
+					if(o.type===1){
+						comms[c.name][o.name]={
+							mention:`</${c.name} ${o.name}:${c.id}>`,
+							id:c.id,
+							name:o.name,
+							description:o.description,
+							contexts:c.contexts,
+							integration_types:c.integration_types,
+							type:o.type,
+							default_member_permissions:c.default_member_permissions
+						};
+					}
+				});
+			}
+		});
+		fs.writeFileSync("./data/commands.json",JSON.stringify(comms));
+		console.log("Updated commands on Discord and wrote commands to ./commands.json");
+	}).catch(console.error);
 
-// Register
-const rest = new REST({ version: '9' }).setToken(process.env.token);
-var comms={};
-rest.put(Routes.applicationCommands(process.env.clientId),{body:commands}).then(d=>{
-	d.forEach(c=>{
-		comms[c.name]={
-			mention:`</${c.name}:${c.id}>`,
-			id:c.id,
-			name:c.name,
-			description:c.description,
-			contexts:c.contexts,
-			integration_types:c.integration_types,
-			type:c.type,
-			default_member_permissions:c.default_member_permissions
-		};
-		if(c.hasOwnProperty("options")){
-			c.options.forEach(o=>{
-				if(o.type===1){
-					comms[c.name][o.name]={
-						mention:`</${c.name} ${o.name}:${c.id}>`,
-						id:c.id,
-						name:o.name,
-						description:o.description,
-						contexts:c.contexts,
-						integration_types:c.integration_types,
-						type:o.type,
-						default_member_permissions:c.default_member_permissions
-					};
-				}
-			});
-		}
-	});
-	fs.writeFileSync("./data/commands.json",JSON.stringify(comms));
-	console.log("Updated commands on Discord and wrote commands to ./commands.json");
-}).catch(console.error);
-
-// Register stewbot-devadmin-only commands
-const devadminCommands = [
-	new SlashCommandBuilder()
-		.setName('restart')
-		.setDescription('Restart the bot')
-		.addBooleanOption(option=>
-			option.setName("update").setDescription("Update git and npm before restarting").setRequired(false)
-		)
-		.addBooleanOption(option=>
-			option.setName("update_commands").setDescription("Run launchCommands.js before restarting").setRequired(false)
-		)
-]
-rest.put(
-	Routes.applicationGuildCommands(process.env.clientId, "983074750165299250"),
-	{ body: devadminCommands },
-);
+	// Register stewbot-devadmin-only commands
+	const devadminCommands = [
+		new SlashCommandBuilder()
+			.setName('restart')
+			.setDescription('Restart the bot')
+			.addBooleanOption(option=>
+				option.setName("update").setDescription("Update git and npm before restarting").setRequired(false)
+			)
+			.addBooleanOption(option=>
+				option.setName("update_commands").setDescription("Run launchCommands.js before restarting").setRequired(false)
+			)
+	]
+	rest.put(
+		Routes.applicationGuildCommands(process.env.clientId, "983074750165299250"),
+		{ body: devadminCommands },
+	);
+}
