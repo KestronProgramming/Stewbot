@@ -58,7 +58,7 @@ var helpPages=[
         name:"General",
         commands:[
             {
-                name:cmds.help.mention,
+                name:commands.mention,
                 desc:"This help menu"
             },
             {
@@ -2112,7 +2112,7 @@ client.on("interactionCreate",async cmd=>{
         };
 
         // Add any other requested globals
-        requestedGlobals = commandScript.requestGlobals?.() || [];
+        requestedGlobals = commandScript.data?.requiredGlobals || commandScript.requestGlobals?.() || [];
         for (var name of requestedGlobals) {
             providedGlobals[name] = eval(name.match(/[\w-]+/)[0]);
         }

@@ -8,22 +8,33 @@ function applyContext(context={}) {
 // #endregion Boilerplate
 
 module.exports = {
-	// TODO: command registering code here
-	data: null,
+	data: {
+		// Slash command data
+		command: new SlashCommandBuilder()
+					.setName('ping')
+					.setDescription('Check uptime stats')
+					.addBooleanOption(option=>
+						option
+							.setName("private")
+							.setDescription("Make the response ephemeral?")
+							.setRequired(false)
+					),
+		extra: {"contexts": [0,1,2], "integration_types": [0,1]},
+		
+		// Required options
+		requiredGlobals: ["uptime", "client"],
 
-	// For major bot functionalities, a more detailed help message may be written up and returned as follows:
-	detailedHelp() {
-		// return false;
-		return ""+
+		// Optional fields
+		help: {
+			helpCategory: "General",
+			helpDesc: "View uptime stats",
+			helpSortPriority: 1
+		},
+		detailedHelp:
 			"## Ping" + 
 			"The `ping` command is used to test how fast Stewbot's connection is responding to events." +
 			"This command is also used to provide detailed information about the bot." +
 			"-# This is a detailed help message, and is primarily meant as a code example."
-	},
-
-	// Any variables created inside index.js may be requested as an array of var names here
-	requestGlobals() {
-		return ["uptime", "client"]
 	},
 
 	async execute(cmd, context) {

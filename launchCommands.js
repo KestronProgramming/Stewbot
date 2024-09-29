@@ -1,6 +1,8 @@
 process.env=require("./env.json");
 const { REST,Routes,PermissionFlagsBits,SlashCommandBuilder,ContextMenuCommandBuilder,ApplicationCommandType,ChannelType} = require('discord.js');
 const fs=require("fs");
+const path = require("path")
+
 
 //Command permissions should be set to the level you would need to do it manually (so if the bot is deleting messages, the permission to set it up would be the permission to delete messages)
 //Don't enable anything in DMs that is unusable in DMs (server configurations, multiplayer reliant commands, etc)
@@ -29,7 +31,6 @@ categories=[//For auto generated help pages
 const extraInfo={
 	//Slash commands
 	"help":{"contexts":[0,1,2],"integration_types":[0,1],"cat":0},
-	"ping":{"contexts":[0,1,2],"integration_types":[0,1],"cat":0},
 	"filter":{"contexts":[0],"integration_types":[0],"cat":6},
 	"view_filter":{"contexts":[0],"integration_types":[0],"cat":3},
 	"starboard_config":{"contexts":[0],"integration_types":[0],"cat":6},
@@ -83,13 +84,10 @@ const extraInfo={
 	"remove_embeds":{"contexts":[0],"integration_types":[0],"cat":5,"desc":"Remove embeds from a message"},
 	"prime_embed":{"contexts":[0,1,2],"integration_types":[0,1],"cat":1,"desc":"Get a message ready to be embedded using /embed_message"}
 };
-const commands = [
+let commands = [
 	new SlashCommandBuilder().setName("help").setDescription("View the help menu").addBooleanOption(option=>
 			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 		),
-	new SlashCommandBuilder().setName('ping').setDescription('Check uptime stats').addBooleanOption(option=>
-		option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
-	),
 	new SlashCommandBuilder().setName("filter").setDescription("Manage the filter for this server").addSubcommand(command=>
 		command.setName("config").setDescription("Configure the filter for this server").addBooleanOption(option=>
 				option.setName("active").setDescription("Should I remove messages that contain words configured in the blacklist?").setRequired(true)
@@ -551,7 +549,32 @@ const commands = [
 	new ContextMenuCommandBuilder().setName("move_message").setType(ApplicationCommandType.Message),
 	new ContextMenuCommandBuilder().setName("prime_embed").setType(ApplicationCommandType.Message)
 ]
-.map(command => Object.assign(command.toJSON(),extraInfo[command.toJSON().name]));
+
+
+// Load in migrated commands
+const migratedCommands = {}
+for (file of fs.readdirSync("./commands")) {
+    if (path.extname(file) === ".js") {
+        const commandName = path.parse(file).name;
+        const command = require("./commands/"+commandName)
+        migratedCommands[commandName] = command;
+    }
+}
+for (let commandName in migratedCommands) {
+	const command = migratedCommands[commandName];
+	if (command?.data) {
+		commands.push(command.data.command);
+	}
+	if (command?.data?.extra) {
+		extraInfo[commandName] = command.data.extra;
+	}
+}
+
+
+// Inject extra data that discord.js doesn't/didn't support natively
+commands = commands.map(command => Object.assign(command.toJSON(),extraInfo[command.toJSON().name]));
+
+// Register
 const rest = new REST({ version: '9' }).setToken(process.env.token);
 var comms={};
 rest.put(Routes.applicationCommands(process.env.clientId),{body:commands}).then(d=>{
