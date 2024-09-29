@@ -30,14 +30,11 @@ module.exports = {
 			cmd.followUp("That emoji is not valid.");
 			return;
 		}
-		storage[cmd.guildId].emojiboards[emoji] = {
-			channel: cmd.options.getChannel("channel").id,
-			active: true,
-			threshold: cmd.options.getInteger("threshold") || 3,
-			messType: cmd.options.getString("message_type"),
-			posted: {},
-			posters:{}
-		};
-		cmd.followUp("Emojiboard for " + parseEmoji(emoji) + " emoji added.");
-    }
+		if(!(emoji in storage[cmd.guildId].emojiboards)) {
+			cmd.followUp("That emoji is not in use for an emojiboard.");
+			return;
+		}
+		delete storage[cmd.guildId].emojiboards[emoji];
+		cmd.followUp("Emojiboard for " + parseEmoji(emoji) + " emoji removed.");
+	}
 };
