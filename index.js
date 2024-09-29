@@ -1868,7 +1868,12 @@ client.on("messageCreate",async msg=>{
         catch(e){}
     }
     var progsDeleted = false;
-    if(embs.length>0) msg.reply({content:`-# Embedded linked message${embs.length>1?"s":""}. You can prevent this behavior by surrounding message links in \`<\` and \`>\`.`,embeds:embs,files:fils,allowedMentions:{parse:[]}});
+    if(embs.length>0){
+        msg.reply({content:`-# Embedded linked message${embs.length>1?"s":""}. You can prevent this behavior by surrounding message links in \`<\` and \`>\`.`,embeds:embs,files:fils,allowedMentions:{parse:[]}});
+    }
+    else{
+        msg.reply({content:`Failed to embed message. Try opening the context menu (holding down on mobile, right clicking on desktop) and pressing Apps -> prime_embed, then use ${cmds.embed_message.mention} and type **PRIMED** into it. If I'm not in the server you want to embed a message from, you can use me anywhere by pressing my profile, then Add App, then Use it Everywhere.`,allowedMentions:{parse:[]}});
+    }
     for(var i=0;i<progs.length;i++){
         let prog=progs[i];
         var progId = prog.split("/")[prog.split("/").length-1].split("?")[0];
@@ -2760,7 +2765,7 @@ client.on("interactionCreate",async cmd=>{
                         if(channelLinked?.permissionsFor(cmd.user.id)?.has(PermissionFlagsBits.ViewChannel)){
                             embs.push(messEmbed);
                         }
-                        cmd.followUp({content:embs.length>0?`-# Embedded linked message`:`Failed to embed message`,embeds:embs});
+                        cmd.followUp({content:embs.length>0?`-# Embedded linked message`:`Failed to embed message. Try opening the context menu (holding down on mobile, right clicking on desktop) and pressing Apps -> prime_embed, then use ${cmds.embed_message.mention} and type **PRIMED** into it. If I'm not in the server you want to embed a message from, you can use me anywhere by pressing my profile, then Add App, then Use it Everywhere.`,embeds:embs});
                     }
                     catch(e){
                         console.log(e);
