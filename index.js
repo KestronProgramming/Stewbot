@@ -2120,27 +2120,26 @@ client.on("interactionCreate",async cmd=>{
     }
     //Slash Commands and Context Menus
     else switch(cmd.commandName){
-        case 'add_emojiboard':
-            if(!cmd.guild?.id){
-                cmd.followUp("Something is wrong");
-                break;
-            }
-            var emoji = getEmojiFromMessage(cmd.options.getString("emoji"));
-            if(!emoji) {
-                cmd.followUp("That emoji is not valid.");
-                break;
-            }
-            storage[cmd.guildId].emojiboards[emoji] = {
-                channel: cmd.options.getChannel("channel").id,
-                active: true,
-                threshold: cmd.options.getInteger("threshold") || 3,
-                messType: cmd.options.getString("message_type"),
-                posted: {},
-                posters:{}
-            };
-            cmd.followUp("Emojiboard for " + parseEmoji(emoji) + " emoji added.");
-            
-            break;
+        // case 'add_emojiboard':
+        //     if(!cmd.guild?.id){
+        //         cmd.followUp("Something is wrong");
+        //         break;
+        //     }
+        //     var emoji = getEmojiFromMessage(cmd.options.getString("emoji"));
+        //     if(!emoji) {
+        //         cmd.followUp("That emoji is not valid.");
+        //         break;
+        //     }
+        //     storage[cmd.guildId].emojiboards[emoji] = {
+        //         channel: cmd.options.getChannel("channel").id,
+        //         active: true,
+        //         threshold: cmd.options.getInteger("threshold") || 3,
+        //         messType: cmd.options.getString("message_type"),
+        //         posted: {},
+        //         posters:{}
+        //     };
+        //     cmd.followUp("Emojiboard for " + parseEmoji(emoji) + " emoji added.");
+        //     break;
         case 'remove_emojiboard':
             if(!cmd.guild?.id){
                 cmd.followUp("Something is wrong");
