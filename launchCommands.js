@@ -32,7 +32,6 @@ const extraInfo={
 	//Slash commands
 	"help":{"contexts":[0,1,2],"integration_types":[0,1],"cat":0},
 	"starboard_config":{"contexts":[0],"integration_types":[0],"cat":6},
-	"fun":{"contexts":[0,1,2],"integration_types":[0,1],"cat":4},
 	"kick":{"contexts":[0],"integration_types":[0],"cat":5},
 	"ban":{"contexts":[0],"integration_types":[0],"cat":5},
 	"timeout":{"contexts":[0],"integration_types":[0],"cat":5},
@@ -100,39 +99,6 @@ let commands = [
 		).addBooleanOption(option=>
 			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 		).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),*/
-	new SlashCommandBuilder().setName("fun").setDescription("Posts something fun to enjoy").addSubcommand(command=>
-			command.setName("meme").setDescription("Posts a meme").addIntegerOption(option=>
-				option.setName("number").setDescription("Specific meme # to post (optional)").setMinValue(0)
-			).addBooleanOption(option=>
-				option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
-			)
-		).addSubcommand(command=>
-			command.setName("joke").setDescription("Posts a joke").addBooleanOption(option=>
-				option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
-			)
-		).addSubcommand(command=>
-			command.setName("wyr").setDescription("Posts a Would-You-Rather question")
-		).addSubcommand(command=>
-			command.setName("dne").setDescription("Posts a picture of a person - who never existed! (AI Person generation)").addBooleanOption(option=>
-				option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
-			)
-		).addSubcommand(command=>
-			command.setName("rac").setDescription("Play a game of Rows & Columns").addBooleanOption(option=>
-				option.setName("help").setDescription("View the rules instead of playing?")
-			).addIntegerOption(option=>
-				option.setName("size").setDescription("Set your amount of rows and start playing!").setMinValue(3).setMaxValue(25)
-			)
-		).addSubcommand(command=>
-			command.setName("rock_paper_scissors").setDescription("Play Rock Paper Scissors with the bot").addStringOption(option=>
-				option.setName("choice").setDescription("Rock, Paper, Scissors, Shoot!").addChoices(
-					{"name":"Rock","value":"Rock"},
-					{"name":"Paper","value":"Paper"},
-					{"name":"Scissors","value":"Scissors"}
-				).setRequired(true)
-			).addBooleanOption(option=>
-				option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
-			)
-		),
 	new SlashCommandBuilder().setName("kick").setDescription("Kick a user").addUserOption(option=>
 			option.setName("target").setDescription("Who to kick?").setRequired(true)
 		).addStringOption(option=>
