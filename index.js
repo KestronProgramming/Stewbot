@@ -23,6 +23,7 @@ process.env.beta && console.log("Importing backup.js")
 const startBackupThread = require("./backup.js");
 const mathjs = require('mathjs');
 const nlp = require('compromise');
+const {launchCommands}=require("./launchCommands.js");
 
 // Commands
 process.env.beta && console.log("Loading commands")
@@ -3048,18 +3049,7 @@ client.on("interactionCreate",async cmd=>{
 
                     // Update commands if requested
                     if (updateCommands) {
-                        await new Promise((resolve, reject) => {
-                            exec('node ./launchCommands.js', (error, stdout, stderr) => {
-                                if (error || stderr) {
-                                    var errNotif  = `Error: ${error?.message||""}`
-                                        errNotif += `Stderr: ${stderr}`
-                                    notify(1, errNotif);
-                                    reject(0);
-                                }
-                                stdout && notify(1, stdout);
-                                resolve(1);
-                            });                        
-                        });
+                        launchCommands();
                     }
                 } catch (err) {
                     notify(1, String("Caught error while restarting: " + err))
