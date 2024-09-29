@@ -2127,10 +2127,6 @@ client.on("interactionCreate",async cmd=>{
     }
     //Slash Commands and Context Menus
     else switch(cmd.commandName){
-        case 'report_problem':
-            notify(1,`**${cmd.options.getString("type")[0].toUpperCase()}${cmd.options.getString("type").slice(1)} Reported by ${cmd.user.username}** (${cmd.user.id})\n\n\`\`\`\n${cmd.options.getString("details")}\`\`\``);
-            cmd.followUp({content:"I have reported the issue. Thank you.",ephemeral:true});
-        break;
         case 'auto-join-message':
             storage[cmd.guildId].ajm.active=cmd.options.getBoolean("active");
             if(cmd.options.getChannel("channel")!==null) storage[cmd.guildId].ajm.channel=cmd.options.getChannel("channel").id;
