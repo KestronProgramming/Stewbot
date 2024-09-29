@@ -2120,44 +2120,6 @@ client.on("interactionCreate",async cmd=>{
     }
     //Slash Commands and Context Menus
     else switch(cmd.commandName){
-        // case 'remove_emojiboard':
-        //     if(!cmd.guild?.id){
-        //         cmd.followUp("Something is wrong");
-        //         break;
-        //     }
-        //     var emoji = getEmojiFromMessage(cmd.options.getString("emoji"));
-        //     if(!emoji) {
-        //         cmd.followUp("That emoji is not valid.");
-        //         break;
-        //     }
-        //     if(!(emoji in storage[cmd.guildId].emojiboards)) {
-        //         cmd.followUp("That emoji is not in use for an emojiboard.");
-        //         break;
-        //     }
-        //     delete storage[cmd.guildId].emojiboards[emoji];
-        //     cmd.followUp("Emojiboard for " + parseEmoji(emoji) + " emoji removed.");
-            
-        //     break;
-        case 'edit_emojiboard':
-            if(!cmd.guild?.id){
-                cmd.followUp("Something is wrong");
-                break;
-            }
-            var emoji = getEmojiFromMessage(cmd.options.getString("emoji"));
-            if(!emoji) {
-                cmd.followUp("That emoji is not valid.");
-                break;
-            }
-            if(!(emoji in storage[cmd.guildId].emojiboards)) {
-                cmd.followUp("That emoji is not in use for an emojiboard.");
-                break;
-            }
-            if(cmd.options.getBoolean("active")!==null) storage[cmd.guildId].emojiboards[emoji].active=cmd.options.getBoolean("active");
-            if(cmd.options.getChannel("channel")!==null) storage[cmd.guildId].emojiboards[emoji].channel=cmd.options.getChannel("channel").id;
-            if(cmd.options.getInteger("threshold")!==null) storage[cmd.guildId].emojiboards[emoji].threshold=cmd.options.getInteger("threshold");
-            if(cmd.options.getString("message_type")!==null) storage[cmd.guildId].emojiboards[emoji].messType=cmd.options.getString("message_type");
-            cmd.followUp("Emojiboard for " + parseEmoji(emoji) + " emoji edited.");
-            break;
         case 'levels_config':
             storage[cmd.guildId].levels.active=cmd.options.getBoolean("active");
             if(cmd.options.getChannel("channel")!==null) storage[cmd.guildId].levels.channel=cmd.options.getChannel("channel").id;
