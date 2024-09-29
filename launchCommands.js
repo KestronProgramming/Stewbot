@@ -37,7 +37,6 @@ const extraInfo={
 	"ban":{"contexts":[0],"integration_types":[0],"cat":5},
 	"timeout":{"contexts":[0],"integration_types":[0],"cat":5},
 	"translate":{"contexts":[0,1,2],"integration_types":[0,1],"cat":1},
-	"counting":{"contexts":[0],"integration_types":[0],"cat":6},
 	"next_counting_number":{"contexts":[0],"integration_types":[0],"cat":3},
 	"general_config":{"contexts":[0],"integration_types":[0],"cat":6},
 	"personal_config":{"contexts":[0,1,2],"integration_types":[0,1],"cat":6},
@@ -171,35 +170,6 @@ let commands = [
 		).addBooleanOption(option=>
 			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 		),
-	new SlashCommandBuilder().setName("counting").setDescription("Manage counting functions for this server").addSubcommand(command=>
-			command.setName("config").setDescription("Configure counting for this server").addBooleanOption(option=>
-				option.setName("active").setDescription("Do counting things in this server?").setRequired(true)
-			).addChannelOption(option=>
-				option.setName("channel").setDescription("Channel to count in").addChannelTypes(ChannelType.GuildText)
-			).addBooleanOption(option=>
-				option.setName("reset").setDescription("Reset the count if a wrong number is posted (True to be on leaderboard)")
-			).addBooleanOption(option=>
-				option.setName("public").setDescription("Do you want this server to show up in the counting leaderboard?")
-			).addIntegerOption(option=>
-				option.setName("posts_between_turns").setDescription("How many posts do you need to wait between turns?").setMinValue(0)
-			).addBooleanOption(option=>
-				option.setName("apply-a-fail-role").setDescription("Should I apply a role to users who fail the count?")
-			).addRoleOption(option=>
-				option.setName("fail-role").setDescription("If fail roles are on, which role should be applied?")
-			).addBooleanOption(option=>
-				option.setName("apply-a-warn-role").setDescription("Should I apply a role to users who are warned?")
-			).addRoleOption(option=>
-				option.setName("warn-role").setDescription("If warn roles are on, which role should be applied?")
-			).addBooleanOption(option=>
-				option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
-			)
-		).addSubcommand(command=>
-			command.setName("set_number").setDescription("Set the next number to count at (Disqualifies from leaderboard)").addIntegerOption(option=>
-				option.setName("num").setDescription("The number to count at next").setRequired(true).setMinValue(0)
-			).addBooleanOption(option=>
-				option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
-			)
-		).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
 	new SlashCommandBuilder().setName("next_counting_number").setDescription("View the next number to count at").addBooleanOption(option=>
 			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 		),
