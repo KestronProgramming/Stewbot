@@ -2120,23 +2120,6 @@ client.on("interactionCreate",async cmd=>{
     }
     //Slash Commands and Context Menus
     else switch(cmd.commandName){
-        case 'levels_config':
-            storage[cmd.guildId].levels.active=cmd.options.getBoolean("active");
-            if(cmd.options.getChannel("channel")!==null) storage[cmd.guildId].levels.channel=cmd.options.getChannel("channel").id;
-            if(cmd.options.getString("location")!==null) storage[cmd.guildId].levels.location=cmd.options.getString("location");
-            if(cmd.options.getString("message")!==null) storage[cmd.guildId].levels.msg=cmd.options.getString("message");
-            var disclaimers=[];
-            if(storage[cmd.guildId].levels.channel===""&&storage[cmd.guildId].levels.location==="channel"){
-                storage[cmd.guildId].levels.location="DM";
-                disclaimers.push(`No channel was set to post level-ups to, so I have changed the level-up notification location to DMs.`);
-            }
-            if(storage[cmd.guildId].levels.location!=="DM"&&!cmd.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageWebhooks)){
-                storage[cmd.guildId].levels.location="DM";
-                disclaimers.push(`I do not have the MANAGE_WEBHOOKS permission for this server, so I cannot post level-up messages. I have set the location for level-up notifications to DMs instead.`);
-            }
-            cmd.followUp(`Level ups configured.${disclaimers.map(d=>`\n\n${d}`).join("")}`);
-            
-        break;
         case 'counting':
             switch(cmd.options.getSubcommand()){
                 case "config":

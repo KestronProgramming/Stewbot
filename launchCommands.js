@@ -53,7 +53,6 @@ const extraInfo={
 	"random":{"contexts":[0,1,2],"integration_types":[0,1],"cat":4},
 	"auto-join-roles":{"contexts":[0],"integration_types":[0],"cat":6},
 	"bible":{"contexts":[0,1,2],"integration_types":[0,1],"cat":1},
-	"levels_config":{"contexts":[0],"integration_types":[0],"cat":6},
 	"leaderboard":{"contexts":[0,1,2],"integration_types":[0,1],"cat":2},
 	"rank":{"contexts":[0],"integration_types":[0],"cat":2},
 	"links":{"contexts":[0,1,2],"integration_types":[0,1],"cat":0},
@@ -336,21 +335,6 @@ let commands = [
 		).addBooleanOption(option=>
 			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 		),
-	new SlashCommandBuilder().setName("levels_config").setDescription("Configure level ups").addBooleanOption(option=>
-			option.setName("active").setDescription("Should level ups be active?").setRequired(true)
-		).addChannelOption(option=>
-			option.setName("channel").setDescription("Which channel should level ups go to, if set to a specific channel?")
-		).addStringOption(option=>
-			option.setName("message").setDescription("What gets sent at a new level. Use ${USER} for ping, ${USERNAME} for username, ${LVL} for level.").setMinLength(1)
-		).addStringOption(option=>
-			option.addChoices(
-				{"name":"Specific Channel",value:"channel"},
-				{"name":"DM",value:"DM"},
-				{"name":"Inline","value":"inline"}
-			).setName("location").setDescription("Where should level up messages be sent?")
-		).addBooleanOption(option=>
-			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
-		).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
 	new SlashCommandBuilder().setName("leaderboard").setDescription("View a leaderboard").addStringOption(option=>
 			option.setName("which").setDescription("Which leaderboard do you want to see?").setChoices(
 				{name:"Counting",value:"counting"},
