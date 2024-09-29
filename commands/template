@@ -14,16 +14,16 @@ module.exports = {
 					.setName('name')
 					.setDescription('description'),
 		
-		extra: {"contexts": [0,1,2], "integration_types": [0,1]},
-		
 		// Optional fields
+		
+		// extra: {"contexts": [0,1,2], "integration_types": [0,1]},
 
 		requiredGlobals: [],
 
 		// help: {
 		// 	helpCategory: "General",
 		// 	helpDesc: "View uptime stats",
-		// 	helpSortPriority: 1
+		// 	// helpSortPriority: 1
 		// },
 		
 		// detailedHelp:
