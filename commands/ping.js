@@ -19,17 +19,17 @@ module.exports = {
 							.setDescription("Make the response ephemeral?")
 							.setRequired(false)
 					),
-		extra: {"contexts": [0,1,2], "integration_types": [0,1]},
+		extra: {"contexts":[0,1,2],"integration_types":[0,1]},
 		
-		// Required options
+		// Optional fields
 		requiredGlobals: ["uptime", "client"],
 
-		// Optional fields
 		help: {
 			helpCategory: "General",
 			helpDesc: "View uptime stats",
 			helpSortPriority: 1
 		},
+
 		detailedHelp:
 			"## Ping" + 
 			"The `ping` command is used to test how fast Stewbot's connection is responding to events." +

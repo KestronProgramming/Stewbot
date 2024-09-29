@@ -8,14 +8,30 @@ function applyContext(context={}) {
 // #endregion Boilerplate
 
 module.exports = {
-	data: null,
+	data: {
+		// Slash command data
+		command: new SlashCommandBuilder().setName("edit_emojiboard").setDescription("Configure an emojiboard for this server").addStringOption(option=>
+				option.setName("emoji").setDescription("The emojiboard to edit").setRequired(true)
+			).addBooleanOption(option=>
+				option.setName("active").setDescription("Should I post messages to the configured channel?")
+			).addChannelOption(option=>
+				option.setName("channel").setDescription("The channel to post messages to (Required for first config)").addChannelTypes(ChannelType.GuildText)
+			).addIntegerOption(option=>
+				option.setName("threshold").setDescription("How many reactions are needed to trigger starboard? (Default: 3)").setMinValue(1)
+			).addStringOption(option=>
+				option.setName("message_type").setDescription("What should the bot's starboard posts look like?").addChoices(
+					{"name":"Make it look like the user posted","value":"0"},
+					{"name":"Post an embed with the message and a greeting","value":"1"},
+					{"name":"Post an embed with the message","value":"2"}
+				)
+			).addBooleanOption(option=>
+				option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
+			).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
+		
+		// Optional fields
+		requiredGlobals: ["parseEmoji", "getEmojiFromMessage"],
 
-	detailedHelp() {
-		return false;
-	},
-
-	requestGlobals() {
-		return ["parseEmoji", "getEmojiFromMessage"]
+		help: null
 	},
 
 	async execute(cmd, context) {

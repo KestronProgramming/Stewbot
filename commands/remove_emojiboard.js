@@ -8,14 +8,19 @@ function applyContext(context={}) {
 // #endregion Boilerplate
 
 module.exports = {
-	data: null,
+	data: {
+		// Slash command data
+		command: new SlashCommandBuilder().setName("remove_emojiboard").setDescription("Remove an emojiboard")
+			.addStringOption(option=>
+				option.setName("emoji").setDescription("The emoji to remove the emojiboard for").setRequired(true)
+			).addBooleanOption(option=>
+				option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
+			).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
+		
+		// Optional fields
+		requiredGlobals: ["parseEmoji", "getEmojiFromMessage"],
 
-	detailedHelp() {
-		return false;
-	},
-
-	requestGlobals() {
-		return ["parseEmoji", "getEmojiFromMessage"]
+		help: null
 	},
 
 	async execute(cmd, context) {

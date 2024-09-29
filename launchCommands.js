@@ -31,15 +31,12 @@ categories=[//For auto generated help pages
 const extraInfo={
 	//Slash commands
 	"help":{"contexts":[0,1,2],"integration_types":[0,1],"cat":0},
-	"filter":{"contexts":[0],"integration_types":[0],"cat":6},
-	"view_filter":{"contexts":[0],"integration_types":[0],"cat":3},
 	"starboard_config":{"contexts":[0],"integration_types":[0],"cat":6},
 	"fun":{"contexts":[0,1,2],"integration_types":[0,1],"cat":4},
 	"kick":{"contexts":[0],"integration_types":[0],"cat":5},
 	"ban":{"contexts":[0],"integration_types":[0],"cat":5},
 	"timeout":{"contexts":[0],"integration_types":[0],"cat":5},
 	"translate":{"contexts":[0,1,2],"integration_types":[0,1],"cat":1},
-	"define":{"contexts":[0,1,2],"integration_types":[0,1],"cat":1},
 	"counting":{"contexts":[0],"integration_types":[0],"cat":6},
 	"next_counting_number":{"contexts":[0],"integration_types":[0],"cat":3},
 	"general_config":{"contexts":[0],"integration_types":[0],"cat":6},
@@ -88,40 +85,7 @@ let commands = [
 	new SlashCommandBuilder().setName("help").setDescription("View the help menu").addBooleanOption(option=>
 			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 		),
-	new SlashCommandBuilder().setName("filter").setDescription("Manage the filter for this server").addSubcommand(command=>
-		command.setName("config").setDescription("Configure the filter for this server").addBooleanOption(option=>
-				option.setName("active").setDescription("Should I remove messages that contain words configured in the blacklist?").setRequired(true)
-			).addBooleanOption(option=>
-				option.setName("censor").setDescription("Should I remove the filtered words from the message (true), or delete the message entirely (false)?")
-			).addBooleanOption(option=>
-				option.setName("log").setDescription("Post a summary of filtered messages to a staff channel? (Must set 'channel' on this command if true)")
-			).addChannelOption(option=>
-				option.setName("channel").setDescription("Which channel should I post summaries of deleted messages to?").addChannelTypes(ChannelType.GuildText)
-			).addBooleanOption(option=>
-				option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
-			)
-		).addSubcommand(command=>
-			command.setName("add").setDescription('Add a word to the filter').addStringOption(option=>
-				option.setName("word").setDescription("The word to blacklist").setRequired(true)
-			).addBooleanOption(option=>
-				option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
-			)
-		).addSubcommand(command=>
-			command.setName("remove").setDescription('Remove a word from the filter').addStringOption(option=>
-				option.setName("word").setDescription("The word to remove from the blacklist").setRequired(true)
-			).addBooleanOption(option=>
-				option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
-			)
-		).addSubcommand(command=>
-			command.setName("import").setDescription("Import a CSV wordlist").addAttachmentOption(option=>
-				option.setName("file").setDescription("A .csv with comma seperated words you'd like to block").setRequired(true)
-			).addBooleanOption(option=>
-				option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
-			)
-		).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
-	new SlashCommandBuilder().setName("view_filter").setDescription("View the list of blacklisted words for this server").setDMPermission(false).addBooleanOption(option=>
-		option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
-	),/*
+	/*
 	new SlashCommandBuilder().setName("starboard_config").setDescription("Configure starboard for this server").addBooleanOption(option=>
 			option.setName("active").setDescription("Should I post messages to the configured channel?").setRequired(true)
 		).addChannelOption(option=>
@@ -139,45 +103,6 @@ let commands = [
 		).addBooleanOption(option=>
 			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 		).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),*/
-	new SlashCommandBuilder().setName("add_emojiboard").setDescription("Create a new emojiboard")
-		.addStringOption(option=>
-			option.setName("emoji").setDescription("The emoji to react with to trigger the emojiboard").setRequired(true)
-		).addChannelOption(option=>
-			option.setName("channel").setDescription("The channel to post the emojiboard in").addChannelTypes(ChannelType.GuildText).setRequired(true)
-		).addIntegerOption(option=>
-			option.setName("threshold").setDescription("How many reactions are needed to trigger starboard? (Default: 3)").setMinValue(1)
-		).addStringOption(option=>
-			option.setName("message_type").setDescription("What should the bot's starboard posts look like?").addChoices(
-				{"name":"Make it look like the user posted","value":"0"},
-				{"name":"Post an embed with the message and a greeting","value":"1"},
-				{"name":"Post an embed with the message","value":"2"}
-			)
-		).addBooleanOption(option=>
-			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
-		).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
-	new SlashCommandBuilder().setName("remove_emojiboard").setDescription("Remove an emojiboard")
-		.addStringOption(option=>
-			option.setName("emoji").setDescription("The emoji to remove the emojiboard for").setRequired(true)
-		).addBooleanOption(option=>
-			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
-		).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
-	new SlashCommandBuilder().setName("edit_emojiboard").setDescription("Configure an emojiboard for this server").addStringOption(option=>
-			option.setName("emoji").setDescription("The emojiboard to edit").setRequired(true)
-		).addBooleanOption(option=>
-			option.setName("active").setDescription("Should I post messages to the configured channel?")
-		).addChannelOption(option=>
-			option.setName("channel").setDescription("The channel to post messages to (Required for first config)").addChannelTypes(ChannelType.GuildText)
-		).addIntegerOption(option=>
-			option.setName("threshold").setDescription("How many reactions are needed to trigger starboard? (Default: 3)").setMinValue(1)
-		).addStringOption(option=>
-			option.setName("message_type").setDescription("What should the bot's starboard posts look like?").addChoices(
-				{"name":"Make it look like the user posted","value":"0"},
-				{"name":"Post an embed with the message and a greeting","value":"1"},
-				{"name":"Post an embed with the message","value":"2"}
-			)
-		).addBooleanOption(option=>
-			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
-		).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
 	new SlashCommandBuilder().setName("fun").setDescription("Posts something fun to enjoy").addSubcommand(command=>
 			command.setName("meme").setDescription("Posts a meme").addIntegerOption(option=>
 				option.setName("number").setDescription("Specific meme # to post (optional)").setMinValue(0)
@@ -244,11 +169,6 @@ let commands = [
 			option.setName("language_from").setDescription("The language the original text is in (Default: autodetect)")
 		).addStringOption(option=>
 			option.setName("language_to").setDescription("The language you want the text translated into (Default: en)")
-		).addBooleanOption(option=>
-			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
-		),
-	new SlashCommandBuilder().setName("define").setDescription("Get the definition for a word").addStringOption(option=>
-			option.setName("what").setDescription("What to define").setRequired(true)
 		).addBooleanOption(option=>
 			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 		),

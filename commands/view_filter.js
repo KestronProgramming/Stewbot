@@ -8,14 +8,21 @@ function applyContext(context={}) {
 // #endregion Boilerplate
 
 module.exports = {
-	data: null,
+	data: {
+		// Slash command data
+		command: new SlashCommandBuilder().setName("view_filter").setDescription("View the list of blacklisted words for this server").setDMPermission(false).addBooleanOption(option=>
+				option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
+			),
+		extra: {"contexts":[0],"integration_types":[0]},
+		
+		// Optional fields
+		requiredGlobals: [],
 
-	detailedHelp() {
-		return false;
-	},
-
-	requestGlobals() {
-		return []
+		help: {
+			helpCategory: "Informational",
+			helpDesc: "Defines a word",
+			helpSortPriority: 1
+		},
 	},
 
 	async execute(cmd, context) {
