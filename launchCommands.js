@@ -39,8 +39,6 @@ const extraInfo={
 	"general_config":{"contexts":[0],"integration_types":[0],"cat":6},
 	"personal_config":{"contexts":[0,1,2],"integration_types":[0,1],"cat":6},
 	"ticket":{"contexts":[0],"integration_types":[0],"cat":5},
-	"auto-join-message":{"contexts":[0],"integration_types":[0],"cat":6},
-	"auto-leave-message":{"contexts":[0],"integration_types":[0],"cat":6},
 	"log_config":{"contexts":[0],"integration_types":[0],"cat":6},
 	"admin_message":{"contexts":[0],"integration_types":[0],"cat":5},
 	"sticky-roles":{"contexts":[0],"integration_types":[0],"cat":6},
@@ -152,29 +150,6 @@ let commands = [
 	new SlashCommandBuilder().setName("ticket").setDescription("Set up a ticket system here for users to contact mods").addChannelOption(option=>
 			option.setName("channel").setDescription("The channel for tickets to be opened in on the staff end").addChannelTypes(ChannelType.GuildText).setRequired(true)
 		).setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels),
-	new SlashCommandBuilder().setName("auto-join-message").setDescription("Set up a message to be sent automatically when a user joins").addBooleanOption(option=>
-			option.setName("active").setDescription("Should I send a message when the user joins?").setRequired(true)
-		).addStringOption(option=>
-			option.setName("message").setDescription("The message to be sent (Use \"${@USER}\" to mention the user)")
-		).addStringOption(option=>
-			option.setName("channel_or_dm").setDescription("Should I post this message in a channel or the user's DMs?").addChoices(
-				{"name":"Channel","value":"channel"},
-				{"name":"DM","value":"dm"}
-			)
-		).addChannelOption(option=>
-			option.setName("channel").setDescription("The channel to post the message to").addChannelTypes(ChannelType.GuildText)
-		).addBooleanOption(option=>
-			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
-		).setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers),
-	new SlashCommandBuilder().setName("auto-leave-message").setDescription("Set up a message to be sent automatically when a user leaves").addBooleanOption(option=>
-			option.setName("active").setDescription("Should I send a message when the user leaves?").setRequired(true)
-		).addChannelOption(option=>
-			option.setName("channel").setDescription("The channel to post the message to").addChannelTypes(ChannelType.GuildText).setRequired(true)
-		).addStringOption(option=>
-			option.setName("message").setDescription("The message to be sent (Use \"${@USER}\" to use the user's username)")
-		).addBooleanOption(option=>
-			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
-		).setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers),
 	new SlashCommandBuilder().setName("log_config").setDescription("Configure log events").addBooleanOption(option=>
 			option.setName("active").setDescription("Log server and user events to the designated channel?").setRequired(true)
 		).addChannelOption(option=>

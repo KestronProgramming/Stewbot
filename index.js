@@ -2127,37 +2127,6 @@ client.on("interactionCreate",async cmd=>{
     }
     //Slash Commands and Context Menus
     else switch(cmd.commandName){
-        case 'auto-join-message':
-            storage[cmd.guildId].ajm.active=cmd.options.getBoolean("active");
-            if(cmd.options.getChannel("channel")!==null) storage[cmd.guildId].ajm.channel=cmd.options.getChannel("channel").id;
-            if(cmd.options.getString("channel_or_dm")!==null) storage[cmd.guildId].ajm.dm=cmd.options.getString("channel_or_dm")==="dm";
-            if(cmd.options.getString("message")!==null) storage[cmd.guildId].ajm.message=cmd.options.getString("message");
-            var disclaimers=[];
-            if(!storage[cmd.guildId].ajm.dm&&storage[cmd.guildId].ajm.channel===""){
-                storage[cmd.guildId].ajm.dm=true;
-                disclaimers.push(`No channel was specified to post auto join messages in, so I have set it to DMs instead.`);
-            }
-            if(!storage[cmd.guildId].ajm.dm&&!client.channels.cache.get(storage[cmd.guildId].ajm.channel)?.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
-                storage[cmd.guildId].ajm.dm=true;
-                disclaimers.push(`I can't post in the specified channel, so I have set the location to DMs instead.`);
-            }
-            if(storage[cmd.guildId].ajm.message==="") storage[cmd.guildId].ajm.message=defaultGuild.ajm.message;
-            cmd.followUp(`Auto join messages configured.${disclaimers.map(d=>`\n\n${d}`).join("")}`);
-        break;
-        case 'auto-leave-message':
-            if(!storage[cmd.guildId].hasOwnProperty("alm")){
-                storage[cmd.guild.id].alm=structuredClone(defaultGuild.alm);
-            }
-            storage[cmd.guildId].alm.active=cmd.options.getBoolean("active");
-            storage[cmd.guildId].alm.channel=cmd.options.getChannel("channel").id;
-            var disclaimers=[];
-            if(!client.channels.cache.get(storage[cmd.guildId].alm.channel).permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
-                storage[cmd.guildId].alm.active=false;
-                disclaimers.push(`I can't post in the specified channel, so I cannot run auto leave messages.`);
-            }
-            if(cmd.options.getString("message")!==null) storage[cmd.guildId].alm.message=cmd.options.getString("message");
-            cmd.followUp(`Auto leave messages configured.${disclaimers.map(d=>`\n\n${d}`).join("")}`);
-        break;
         case 'translate':
             translate(cmd.options.getString("what"),Object.assign({
                 to:cmd.options.getString("language_to")||cmd.locale.slice(0,2)
