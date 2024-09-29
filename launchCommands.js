@@ -37,7 +37,6 @@ const extraInfo={
 	"ban":{"contexts":[0],"integration_types":[0],"cat":5},
 	"timeout":{"contexts":[0],"integration_types":[0],"cat":5},
 	"translate":{"contexts":[0,1,2],"integration_types":[0,1],"cat":1},
-	"next_counting_number":{"contexts":[0],"integration_types":[0],"cat":3},
 	"general_config":{"contexts":[0],"integration_types":[0],"cat":6},
 	"personal_config":{"contexts":[0,1,2],"integration_types":[0,1],"cat":6},
 	"poll":{"contexts":[0],"integration_types":[0],"cat":2},
@@ -168,9 +167,6 @@ let commands = [
 		).addStringOption(option=>
 			option.setName("language_to").setDescription("The language you want the text translated into (Default: en)")
 		).addBooleanOption(option=>
-			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
-		),
-	new SlashCommandBuilder().setName("next_counting_number").setDescription("View the next number to count at").addBooleanOption(option=>
 			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 		),
 	new SlashCommandBuilder().setName("general_config").setDescription("Configure general behaviors").addBooleanOption(option=>

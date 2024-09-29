@@ -2120,9 +2120,6 @@ client.on("interactionCreate",async cmd=>{
     }
     //Slash Commands and Context Menus
     else switch(cmd.commandName){
-        case 'next_counting_number':
-            cmd.followUp(storage[cmd.guildId].counting.active?`The next number to enter ${cmd.channel.id!==storage[cmd.guildId].counting.channel?`in <#${storage[cmd.guildId].counting.channel}> `:""}is \`${storage[cmd.guildId].counting.nextNum}\`.`:`Counting isn't active in this server! Use ${cmds.filter.config.mention} to set it up.`);
-        break;
         case 'fun':
             switch(cmd.options.getSubcommand()){
                 case 'dne':
