@@ -8,14 +8,50 @@ function applyContext(context={}) {
 // #endregion Boilerplate
 
 module.exports = {
-	data: null,
+	data: {
+		// Slash command data
+		command: new SlashCommandBuilder().setName("filter").setDescription("Manage the filter for this server").addSubcommand(command=>
+            command.setName("config").setDescription("Configure the filter for this server").addBooleanOption(option=>
+                    option.setName("active").setDescription("Should I remove messages that contain words configured in the blacklist?").setRequired(true)
+                ).addBooleanOption(option=>
+                    option.setName("censor").setDescription("Should I remove the filtered words from the message (true), or delete the message entirely (false)?")
+                ).addBooleanOption(option=>
+                    option.setName("log").setDescription("Post a summary of filtered messages to a staff channel? (Must set 'channel' on this command if true)")
+                ).addChannelOption(option=>
+                    option.setName("channel").setDescription("Which channel should I post summaries of deleted messages to?").addChannelTypes(ChannelType.GuildText)
+                ).addBooleanOption(option=>
+                    option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
+                )
+            ).addSubcommand(command=>
+                command.setName("add").setDescription('Add a word to the filter').addStringOption(option=>
+                    option.setName("word").setDescription("The word to blacklist").setRequired(true)
+                ).addBooleanOption(option=>
+                    option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
+                )
+            ).addSubcommand(command=>
+                command.setName("remove").setDescription('Remove a word from the filter').addStringOption(option=>
+                    option.setName("word").setDescription("The word to remove from the blacklist").setRequired(true)
+                ).addBooleanOption(option=>
+                    option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
+                )
+            ).addSubcommand(command=>
+                command.setName("import").setDescription("Import a CSV wordlist").addAttachmentOption(option=>
+                    option.setName("file").setDescription("A .csv with comma seperated words you'd like to block").setRequired(true)
+                ).addBooleanOption(option=>
+                    option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
+                )
+            ).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
+        
+        extra: {"contexts":[0],"integration_types":[0],"cat":6},
+            
+		// Optional fields
+		requiredGlobals: [],
 
-	detailedHelp() {
-		return false;
-	},
-
-	requestGlobals() {
-		return []
+		help: {
+			helpCategory: "Administration",
+			helpDesc: "Configure different options for the filter, which will remove configurably blacklisted words",
+			helpSortPriority: 1
+		},
 	},
 
 	async execute(cmd, context) {
