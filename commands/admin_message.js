@@ -10,17 +10,18 @@ function applyContext(context = {}) {
 module.exports = {
     data: {
         // Slash command data
-        command: new SlashCommandBuilder().setName("admin_message").setDescription("Anonymously make a post in the server's name").addStringOption(option =>
+        command: new SlashCommandBuilder().setName("admin_message").setDescription("Anonymously make a post in the server's name")
+            .addStringOption(option =>
                 option.setName("what").setDescription("What to say").setMaxLength(2000).setRequired(true)
             ).addUserOption(option =>
                 option.setName("target").setDescription("The user to message")
             ).setDefaultMemberPermissions(PermissionFlagsBits.KickMembers),
-
+        
         // Optional fields
-
+        
         extra: { "contexts": [0], "integration_types": [0] },
 
-        requiredGlobals: [],
+        requiredGlobals: ["config"],
 
         help: { 
             "helpCategory": "General", 
