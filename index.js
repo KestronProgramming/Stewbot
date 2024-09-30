@@ -2130,31 +2130,6 @@ client.on("interactionCreate",async cmd=>{
         case 'links':
             cmd.followUp(`Here is a list of links in relation with this bot you may find useful.\n- [Stewbot's Website](<https://stewbot.kestron.software/>)\n- [Stewbot's Invite Link](<https://stewbot.kestron.software/addIt>)\n- [Support Server](<https://discord.gg/k3yVkrrvez>)\n- [Stewbot's Source Code on Github](<https://github.com/KestronProgramming/Stewbot>)\n- [The Developer](<https://discord.com/users/949401296404905995>)\n- [The Developer's Website](<https://kestron.software/>)`);
         break;
-        case 'random':
-            switch(cmd.options.getSubcommand()){
-                case 'rng':
-                    cmd.followUp(`I have selected a random number between **${cmd.options.getInteger("low")||1}** and **${cmd.options.getInteger("high")||10}**: **${Math.round(Math.random()*((cmd.options.getInteger("high")||10)-(cmd.options.getInteger("low")||1))+(cmd.options.getInteger("low")||1))}**`);
-                break;
-                case '8-ball':
-                    cmd.followUp(`I have generated a random response to the question "**${cmd.options.getString("question")}**".\nThe answer is **${m8ballResponses[Math.floor(Math.random()*m8ballResponses.length)]}**.`);
-                break;
-                case 'coin-flip':
-                    let coinsToFlip=cmd.options.getInteger("number")||1;
-                    let coins=[];
-                    for(var coinOn=0;coinOn<coinsToFlip;coinOn++){
-                        coins.push(Math.floor(Math.random()*2));
-                    }
-                    cmd.followUp(`I have flipped the coin${coinsToFlip>1?"s":""}.\n${coins.map(a=>`\n- **${a===0?"Heads":"Tails"}**`).join("")}`);
-                break;
-                case 'dice-roll':
-                    var rolls=[];
-                    for(var roll=0;roll<(cmd.options.getInteger("number")!==null?cmd.options.getInteger("number"):1);roll++){
-                        rolls.push(Math.floor(Math.random()*6)+1);
-                    }
-                    cmd.followUp(`I have rolled the dice.${rolls.map(r=>`\n- ${r}`).join("")}${rolls.length>1?`\nTotal: ${rolls.reduce((a,b)=>a+b)}`:""}`);
-                break;
-            }
-        break;
         case 'embed_message':
             if(cmd.options.getString("link").toLowerCase()==="primed"&&storage[cmd.user.id].hasOwnProperty("primedEmbed")){
                 var primer=getPrimedEmbed(cmd.user.id,cmd.guild?.id);

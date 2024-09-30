@@ -2,7 +2,7 @@
 
 const fs = require("fs");
 
-const command = "daily-config";
+const command = "random";
 
 const code = fs.readFileSync("./index.js").toString()
 const launchCommands = fs.readFileSync("./launchCommands.js").toString()
@@ -54,7 +54,7 @@ try { delete thisExtraInfoTemp.cat } catch { }
 const thisExtraInfo = JSON.stringify(thisExtraInfoTemp)
 
 const thisHelpDesc = helpPages.match(new RegExp(`(?<=name.+\.${command}\..+\r?\n).+`, "mgi"))?.[0]?.match?.(/(?<=desc:").+(?=")/)?.[0]
-const thisHelpCat = helpPages.match(new RegExp(`name:"(.+)",(\n|\r|.)+?\.${command}\.`, "m"))?.[1] // this is a better method lol
+const thisHelpCat = helpPages.match(new RegExp(`name:"(.+?)",(?:(?!name:").|\n|\r)+?\.${command}\.`, "m"))?.[1] // this is a better method lol
 
 const thisCommand = commands.match(new RegExp(`new SlashC.+${command}(\r|\n|.)+?(?=new Slash)`))[0].trim();
 
