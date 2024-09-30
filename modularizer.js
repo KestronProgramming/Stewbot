@@ -2,7 +2,7 @@
 
 const fs = require("fs");
 
-const command = "timeout";
+const command = "ban";
 
 const code = fs.readFileSync("./index.js").toString()
 const launchCommands = fs.readFileSync("./launchCommands.js").toString()
