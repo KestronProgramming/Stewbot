@@ -32,7 +32,6 @@ const extraInfo={
 	//Slash commands
 	"help":{"contexts":[0,1,2],"integration_types":[0,1],"cat":0},
 	"starboard_config":{"contexts":[0],"integration_types":[0],"cat":6},
-	"kick":{"contexts":[0],"integration_types":[0],"cat":5},
 	"ban":{"contexts":[0],"integration_types":[0],"cat":5},
 	"timeout":{"contexts":[0],"integration_types":[0],"cat":5},
 	"general_config":{"contexts":[0],"integration_types":[0],"cat":6},
@@ -88,13 +87,6 @@ let commands = [
 		).addBooleanOption(option=>
 			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 		).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),*/
-	new SlashCommandBuilder().setName("kick").setDescription("Kick a user").addUserOption(option=>
-			option.setName("target").setDescription("Who to kick?").setRequired(true)
-		).addStringOption(option=>
-			option.setName("reason").setDescription("What is the reason for this kick?")
-		).addBooleanOption(option=>
-			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
-		).setDefaultMemberPermissions(PermissionFlagsBits.KickMembers),
 	new SlashCommandBuilder().setName("ban").setDescription("Ban a user").addUserOption(option=>
 			option.setName("target").setDescription("Who to ban?").setRequired(true)
 		).addStringOption(option=>
