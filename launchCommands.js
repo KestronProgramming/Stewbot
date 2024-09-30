@@ -37,7 +37,6 @@ const extraInfo={
 	"timeout":{"contexts":[0],"integration_types":[0],"cat":5},
 	"general_config":{"contexts":[0],"integration_types":[0],"cat":6},
 	"personal_config":{"contexts":[0,1,2],"integration_types":[0,1],"cat":6},
-	"sticky-roles":{"contexts":[0],"integration_types":[0],"cat":6},
 	"random":{"contexts":[0,1,2],"integration_types":[0,1],"cat":4},
 	"bible":{"contexts":[0,1,2],"integration_types":[0,1],"cat":1},
 	"leaderboard":{"contexts":[0,1,2],"integration_types":[0,1],"cat":2},
@@ -134,11 +133,6 @@ let commands = [
 		).addBooleanOption(option=>
 			option.setName("configure_timezone").setDescription("Open up a menu to configure your timezone?")
 		),
-	new SlashCommandBuilder().setName("sticky-roles").setDescription("Add roles back to a user who left and rejoined").addBooleanOption(option=>
-			option.setName("active").setDescription("Should I add roles back to users who left and rejoined?").setRequired(true)
-		).addBooleanOption(option=>
-			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
-		).setDefaultMemberPermissions(PermissionFlagsBits.ManageRoles),
 	new SlashCommandBuilder().setName("random").setDescription("Get something random").addSubcommand(command=>
 			command.setName("rng").setDescription("Generate a random number").addIntegerOption(option=>
 				option.setName("low").setDescription("Lower bound of the random number? (Default: 1)")

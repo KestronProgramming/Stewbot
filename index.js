@@ -2127,15 +2127,6 @@ client.on("interactionCreate",async cmd=>{
     }
     //Slash Commands and Context Menus
     else switch(cmd.commandName){
-        case 'sticky-roles':
-            if(!cmd.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageRoles)){
-                storage[cmd.guildId].stickyRoles=false;
-                cmd.followUp(`I do not have the MANAGE_ROLES permission for this server, so I cannot run sticky roles.`);
-                break;
-            }
-            storage[cmd.guildId].stickyRoles=cmd.options.getBoolean("active");
-            cmd.followUp("Sticky roles configured. Please be aware I can only manage roles lower than my highest role in the server roles list.");
-        break;
         case 'kick':
             cmd.guild.members.cache.get(cmd.options.getUser("target").id).kick(`Instructed to kick by ${cmd.user.username}: ${cmd.options.getString("reason")}`);
             cmd.followUp({content:`I have attempted to kick <@${cmd.user.username}>`,allowedMentions:{parse:[]}});
