@@ -2127,55 +2127,6 @@ client.on("interactionCreate",async cmd=>{
     }
     //Slash Commands and Context Menus
     else switch(cmd.commandName){
-        case 'bible':
-            let book=getClosest(cmd.options.getString("book").toLowerCase());
-            if(cmd.options.getString("verse").includes("-")&&+cmd.options.getString("verse").split("-")[1]>+cmd.options.getString("verse")[0]){
-                try{
-                    let verses=[];
-                    for(var v=+cmd.options.getString("verse").split("-")[0];v<+cmd.options.getString("verse").split("-")[0]+5&&v<+cmd.options.getString("verse").split("-")[1];v++){
-                        verses.push(Bible[book][cmd.options.getInteger("chapter")][v]);
-                    }
-                    if(verses.join(" ")===undefined){ 
-                        cmd.followUp(`I'm sorry, I don't think that passage exists - at least, I couldn't find it. Perhaps something is typoed?`);
-                    }
-                    else{
-                        cmd.followUp({content:`${properNames[book]} ${cmd.options.getInteger("chapter")}:${cmd.options.getString("verse")}`,embeds:[{
-                            "type": "rich",
-                            "title": `${properNames[book]} ${cmd.options.getInteger("chapter")}:${cmd.options.getString("verse")}`,
-                            "description": verses.join(" "),
-                            "color": 0x773e09,
-                            "footer": {
-                                "text": `King James Version`
-                            }
-                        }]});
-                    }
-                }
-                catch(e){
-                    cmd.followUp(`I'm sorry, I don't think that passage exists - at least, I couldn't find it. Perhaps something is typoed?`);
-                }
-            }
-            else{
-                try{
-                    if(Bible[book][cmd.options.getInteger("chapter")][+cmd.options.getString("verse")]!==undefined){
-                        cmd.followUp({content:`${properNames[book]} ${cmd.options.getInteger("chapter")}:${cmd.options.getString("verse")}`,embeds:[{
-                            "type": "rich",
-                            "title": `${properNames[book]} ${cmd.options.getInteger("chapter")}:${cmd.options.getString("verse")}`,
-                            "description": Bible[book][cmd.options.getInteger("chapter")][+cmd.options.getString("verse")],
-                            "color": 0x773e09,
-                            "footer": {
-                                "text": `King James Version`
-                            }
-                        }]});
-                    }
-                    else{
-                        cmd.followUp(`I'm sorry, I couldn't find \`${book} ${cmd.options.getInteger("chapter")}:${cmd.options.getString("verse")}\`. Are you sure it exists? Perhaps something is typoed.`);
-                    }
-                }
-                catch(e){
-                    cmd.followUp(`I'm sorry, I couldn't find \`${book} ${cmd.options.getInteger("chapter")}:${cmd.options.getString("verse")}\`. Are you sure it exists? Perhaps something is typoed.`);
-                }
-            }
-        break;
         case 'rank':
             if(!storage[cmd.guildId].levels.active){
                 cmd.followUp(`This server doesn't use level ups at the moment. It can be configured using ${cmds.levels_config.mention}.`);

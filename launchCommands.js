@@ -32,7 +32,6 @@ const extraInfo={
 	//Slash commands
 	"starboard_config":{"contexts":[0],"integration_types":[0],"cat":6},
 	"random":{"contexts":[0,1,2],"integration_types":[0,1],"cat":4},
-	"bible":{"contexts":[0,1,2],"integration_types":[0,1],"cat":1},
 	"leaderboard":{"contexts":[0,1,2],"integration_types":[0,1],"cat":2},
 	"rank":{"contexts":[0],"integration_types":[0],"cat":2},
 	"links":{"contexts":[0,1,2],"integration_types":[0,1],"cat":0},
@@ -105,15 +104,6 @@ let commands = [
 			).addBooleanOption(option=>
 				option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 			)
-		),
-	new SlashCommandBuilder().setName("bible").setDescription("Look up a verse or verses in the King James version of the Bible").addStringOption(option=>
-			option.setName("book").setDescription("What book of the Bible do you wish to look up?").setRequired(true)
-		).addIntegerOption(option=>
-			option.setName("chapter").setDescription("Which chapter do you want to look up?").setRequired(true)
-		).addStringOption(option=>
-			option.setName("verse").setDescription("What verse or verses do you want to look up? (Proper format for multiple verses is '1-3')").setRequired(true)
-		).addBooleanOption(option=>
-			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 		),
 	new SlashCommandBuilder().setName("leaderboard").setDescription("View a leaderboard").addStringOption(option=>
 			option.setName("which").setDescription("Which leaderboard do you want to see?").setChoices(
