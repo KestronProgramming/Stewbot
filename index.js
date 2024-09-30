@@ -2030,7 +2030,7 @@ client.on("messageCreate",async msg=>{
         }
     }
 
-    // AFK messages
+    // Anti-hack message
     if(msg.guild){
         var hash = crypto.createHash('md5').update(msg.content.slice(0,148)).digest('hex');
         if(!storage[msg.author.id].hasOwnProperty("hashStreak")) storage[msg.author.id].hashStreak=0;
@@ -2061,7 +2061,9 @@ client.on("messageCreate",async msg=>{
                             msg.reply({content:`I have detected unusual activity from this account. I have temporarily applied a timeout. To remove this timeout, please use ${cmds.captcha.mention} in a DM with me, or a moderator can remove this timeout manually.\n\nIf a mod wishes to disable this behaviour, designed to protect servers from mass spam, ping, and NSFW hacked or spam accounts, run ${cmds.general_config.mention} and specify to disable Anti Hack Protection.`,components:[new ActionRowBuilder().addComponents(...sendRow)]});
                         }
                     }
-                    catch(e){}
+                    catch(e){
+                        notify(1, "anti-hack error: " +String(e))
+                    }
                 }
             }
         }
@@ -2127,14 +2129,6 @@ client.on("interactionCreate",async cmd=>{
     }
     //Slash Commands and Context Menus
     else switch(cmd.commandName){
-        case 'timestamp':
-            if(storage[cmd.user.id].config.hasSetTZ){
-                cmd.followUp({content:`<t:${Math.round((new Date().setSeconds(0))/1000)}:t>`,components:presets.timestamp});
-            }
-            else{
-                cmd.followUp(`This command needs you to set your timezone first! Run ${cmds.personal_config.mention} and specify \`configure_timezone\` to get started,`);
-            }
-        break;
         case 'captcha':
             var captcha="";
             for(var ca=0;ca<5;ca++){
