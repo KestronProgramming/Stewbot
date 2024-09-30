@@ -33,7 +33,6 @@ const extraInfo={
 	"starboard_config":{"contexts":[0],"integration_types":[0],"cat":6},
 	// "chat":{"contexts":[0,1,2],"integration_types":[0,1],"cat":4},
 	"unavailable":{"contexts":[0,1,2],"integration_types":[0,1],"cat":2},
-	"rss":{"contexts":[0],"integration_types":[0],"cat":6},
 	"set_persistent_message":{"contexts":[0],"integration_types":[0],"cat":6},
 	"rock_paper_scissors":{"contexts":[0,1,2],"integration_types":[0,1],"cat":4},
 	"delete":{"contexts":[0],"integration_types":[0],"cat":5},
@@ -74,31 +73,6 @@ let commands = [
 	// 	).addBooleanOption(option=>
 	// 		option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 	// 	),
-	new SlashCommandBuilder().setName("rss").setDescription("Commands relating to RSS feeds").addSubcommand(command=>
-			command.setName("follow").setDescription("Follow an RSS feed").addChannelOption(option=>
-				option.setName("channel").setDescription("The channel to follow this RSS feed in").setRequired(true)
-				.addChannelTypes(ChannelType.GuildText)
-			).addStringOption(option=>
-				option.setName("feed").setDescription("The feed to follow").setRequired(true)
-			).addBooleanOption(option=>
-				option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
-			)
-		).addSubcommand(command=>
-			command.setName("unfollow").setDescription("Unfollow an RSS feed").addChannelOption(option=>
-				option.setName("channel").setDescription("The channel to unfollow this RSS feed from").setRequired(true)
-			).addStringOption(option=>
-				option.setName("feed").setDescription("The feed to unfollow (Type 'all' to unfollow all)").setRequired(true)
-			).addBooleanOption(option=>
-				option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
-			)
-		).addSubcommand(command=>
-			command.setName("check").setDescription("Check the RSS feeds a channel follows").addChannelOption(option=>
-				option.setName("channel").setDescription("The channel to check RSS feeds for").setRequired(true)
-				.addChannelTypes(ChannelType.GuildText)
-			).addBooleanOption(option=>
-				option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
-			)
-		).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
 	new SlashCommandBuilder().setName("set_persistent_message").setDescription("Set a message that will ALWAYS be visible as the latest message posted in this channel").addBooleanOption(option=>
 			option.setName("active").setDescription("Should the persistent message be actively run in this channel?").setRequired(true)
 		).addStringOption(option=>
