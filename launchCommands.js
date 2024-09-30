@@ -455,3 +455,8 @@ function launchCommands(){
 		{ body: devadminCommands },
 	);
 }
+
+// Run if it's being run directly
+if (require.main === module) {
+    launchCommands();
+}
