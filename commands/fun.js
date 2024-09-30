@@ -96,6 +96,10 @@ module.exports = {
 						"X-RapidAPI-Host": "would-you-rather.p.rapidapi.com",
 					},
 				}).then(d=>d.json()).then(async d=>{
+					if (d?.message?.startsWith?.("You have exceeded the ")) {
+						cmd.followUp("This command has been ratelimited");
+						return;
+					}
 					let firstQues=d[0].question.split("Would you rather ")[1];
 					let firstQuest=firstQues[0].toUpperCase()+firstQues.slice(1,firstQues.length).split(" or ")[0];
 					let nextQues=firstQues.split(" or ")[1];
