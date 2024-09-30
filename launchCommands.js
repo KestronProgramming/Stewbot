@@ -33,7 +33,6 @@ const extraInfo={
 	"help":{"contexts":[0,1,2],"integration_types":[0,1],"cat":0},
 	"starboard_config":{"contexts":[0],"integration_types":[0],"cat":6},
 	"ban":{"contexts":[0],"integration_types":[0],"cat":5},
-	"timeout":{"contexts":[0],"integration_types":[0],"cat":5},
 	"general_config":{"contexts":[0],"integration_types":[0],"cat":6},
 	"personal_config":{"contexts":[0,1,2],"integration_types":[0,1],"cat":6},
 	"random":{"contexts":[0,1,2],"integration_types":[0,1],"cat":4},
@@ -94,19 +93,6 @@ let commands = [
 		).addBooleanOption(option=>
 			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 		).setDefaultMemberPermissions(PermissionFlagsBits.BanMembers),
-	new SlashCommandBuilder().setName("timeout").setDescription("Timeout a user").addUserOption(option=>
-			option.setName("target").setDescription("Who to timeout?").setRequired(true)
-		).addIntegerOption(option=>
-			option.setName("hours").setDescription("Hours to timeout the user for?")
-		).addIntegerOption(option=>
-			option.setName("minutes").setDescription("Minutes to timeout the user for?")
-		).addIntegerOption(option=>
-			option.setName("seconds").setDescription("Seconds to timeout the user for?")
-		).addStringOption(option=>
-			option.setName("reason").setDescription("What is the reason for this timeout?")
-		).addBooleanOption(option=>
-			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
-		).setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers),
 	new SlashCommandBuilder().setName("general_config").setDescription("Configure general behaviors").addBooleanOption(option=>
 			option.setName("embeds").setDescription("If a message link is posted, should I post a preview?")
 		).addBooleanOption(option=>
