@@ -2,7 +2,7 @@
 
 const fs = require("fs");
 
-const command = "sticky-roles";
+const command = "kick";
 
 const code = fs.readFileSync("./index.js").toString()
 const launchCommands = fs.readFileSync("./launchCommands.js").toString()
