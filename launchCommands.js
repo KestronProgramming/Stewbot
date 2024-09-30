@@ -38,7 +38,6 @@ const extraInfo={
 	"general_config":{"contexts":[0],"integration_types":[0],"cat":6},
 	"personal_config":{"contexts":[0,1,2],"integration_types":[0,1],"cat":6},
 	"log_config":{"contexts":[0],"integration_types":[0],"cat":6},
-	"admin_message":{"contexts":[0],"integration_types":[0],"cat":5},
 	"sticky-roles":{"contexts":[0],"integration_types":[0],"cat":6},
 	"random":{"contexts":[0,1,2],"integration_types":[0,1],"cat":4},
 	"bible":{"contexts":[0,1,2],"integration_types":[0,1],"cat":1},
@@ -157,11 +156,6 @@ let commands = [
 		).addBooleanOption(option=>
 			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 		).setDefaultMemberPermissions(PermissionFlagsBits.ViewAuditLog),
-	new SlashCommandBuilder().setName("admin_message").setDescription("Anonymously make a post in the server's name").addStringOption(option=>
-			option.setName("what").setDescription("What to say").setMaxLength(2000).setRequired(true)
-		).addUserOption(option=>
-			option.setName("target").setDescription("The user to message")
-		).setDefaultMemberPermissions(PermissionFlagsBits.KickMembers),
 	new SlashCommandBuilder().setName("sticky-roles").setDescription("Add roles back to a user who left and rejoined").addBooleanOption(option=>
 			option.setName("active").setDescription("Should I add roles back to users who left and rejoined?").setRequired(true)
 		).addBooleanOption(option=>
