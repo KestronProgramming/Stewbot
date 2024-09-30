@@ -2,7 +2,7 @@
 
 const fs = require("fs");
 
-const command = "help";
+const command = "personal_config";
 
 const code = fs.readFileSync("./index.js").toString()
 const launchCommands = fs.readFileSync("./launchCommands.js").toString()

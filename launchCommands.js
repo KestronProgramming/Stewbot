@@ -30,10 +30,8 @@ categories=[//For auto generated help pages
 ];*/
 const extraInfo={
 	//Slash commands
-	"help":{"contexts":[0,1,2],"integration_types":[0,1],"cat":0},
 	"starboard_config":{"contexts":[0],"integration_types":[0],"cat":6},
 	"general_config":{"contexts":[0],"integration_types":[0],"cat":6},
-	"personal_config":{"contexts":[0,1,2],"integration_types":[0,1],"cat":6},
 	"random":{"contexts":[0,1,2],"integration_types":[0,1],"cat":4},
 	"bible":{"contexts":[0,1,2],"integration_types":[0,1],"cat":1},
 	"leaderboard":{"contexts":[0,1,2],"integration_types":[0,1],"cat":2},
@@ -64,9 +62,6 @@ const extraInfo={
 	"prime_embed":{"contexts":[0,1,2],"integration_types":[0,1],"cat":1,"desc":"Get a message ready to be embedded using /embed_message"}
 };
 let commands = [
-	new SlashCommandBuilder().setName("help").setDescription("View the help menu").addBooleanOption(option=>
-			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
-		),
 	/*
 	new SlashCommandBuilder().setName("starboard_config").setDescription("Configure starboard for this server").addBooleanOption(option=>
 			option.setName("active").setDescription("Should I post messages to the configured channel?").setRequired(true)
@@ -92,17 +87,6 @@ let commands = [
 		).addBooleanOption(option=>
 			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 		).setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers),
-	new SlashCommandBuilder().setName("personal_config").setDescription("Configure the bot for you personally").addBooleanOption(option=>
-			option.setName("dm_infractions").setDescription("If you get filtered, should I DM you?")
-		).addBooleanOption(option=>
-			option.setName("dm_infraction_content").setDescription("If dm_infractions is true, should I include the content of the filtered message?")
-		).addBooleanOption(option=>
-			option.setName("embeds").setDescription("If you link a Discord message, should I embed a preview for you?")
-		).addBooleanOption(option=>
-			option.setName("level_up_messages").setDescription("Do you want to receive messages letting you know you leveled up?")
-		).addBooleanOption(option=>
-			option.setName("configure_timezone").setDescription("Open up a menu to configure your timezone?")
-		),
 	new SlashCommandBuilder().setName("random").setDescription("Get something random").addSubcommand(command=>
 			command.setName("rng").setDescription("Generate a random number").addIntegerOption(option=>
 				option.setName("low").setDescription("Lower bound of the random number? (Default: 1)")
