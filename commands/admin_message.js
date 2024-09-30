@@ -24,7 +24,7 @@ module.exports = {
         requiredGlobals: ["config"],
 
         help: { 
-            "helpCategory": "General", 
+            "helpCategory": "Administration", 
             "helpDesc": "Send a message anonymously in the server's name" 
         },
     },

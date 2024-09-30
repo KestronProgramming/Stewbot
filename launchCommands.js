@@ -36,7 +36,6 @@ const extraInfo={
 	// "chat":{"contexts":[0,1,2],"integration_types":[0,1],"cat":4},
 	"embed_message":{"contexts":[0,1,2],"integration_types":[0,1],"cat":1},
 	"timestamp":{"contexts":[0,1,2],"integration_types":[0,1],"cat":1},
-	"daily-config":{"contexts":[0],"integration_types":[0],"cat":6},
 	"captcha":{"contexts":[1],"integration_types":[0,1]},
 	"unavailable":{"contexts":[0,1,2],"integration_types":[0,1],"cat":2},
 	"user":{"contexts":[0],"integration_types":[0],"cat":1},
@@ -115,19 +114,6 @@ let commands = [
 			option.setName("link").setDescription("The message link, or PRIMED if you used the /prime_embed context menu command").setRequired(true)
 		),
 	new SlashCommandBuilder().setName("timestamp").setDescription("Generate a timestamp for use in your message"),
-	new SlashCommandBuilder().setName("daily-config").setDescription("Configure daily postings").addStringOption(option=>
-			option.setName("type").setDescription("What kind of daily post are you configuring?").addChoices(
-				{"name":"Devotionals","value":"devos"},
-				{"name":"Memes","value":"memes"},
-				{"name":"Verse of the Day","value":"verses"}
-			).setRequired(true)
-		).addBooleanOption(option=>
-			option.setName("active").setDescription("Should I run this daily type?").setRequired(true)
-		).addChannelOption(option=>
-			option.setName("channel").setDescription("The channel for me to post this daily type in").addChannelTypes(ChannelType.GuildText).setRequired(true)
-		).addBooleanOption(option=>
-			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
-		).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
 	new SlashCommandBuilder().setName("captcha").setDescription("Use this command if I've timed you out for spam"),
 	new SlashCommandBuilder().setName("user").setDescription("Display a user's profile").addBooleanOption(option=>
 			option.setName("large-pfp").setDescription("Display the PFP in large mode?")

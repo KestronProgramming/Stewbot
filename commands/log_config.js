@@ -40,7 +40,7 @@ module.exports = {
 		requiredGlobals: [],
 
 		help: {
-			"helpCategory":"General",
+			"helpCategory":"Administration",
 			"helpDesc":"Automatically be notified of different server and user events you may need to know about for moderation purposes"
 		},
 	},

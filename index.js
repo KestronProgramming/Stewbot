@@ -2127,44 +2127,6 @@ client.on("interactionCreate",async cmd=>{
     }
     //Slash Commands and Context Menus
     else switch(cmd.commandName){
-        case 'daily-config':
-            if(!storage[cmd.guildId].hasOwnProperty("daily")){
-                storage[cmd.guildId].daily={
-                    "memes":{
-                        "active":false,
-                        "channel":""
-                    },
-                    "wyrs":{
-                        "active":false,
-                        "channel":""
-                    },
-                    "jokes":{
-                        "active":false,
-                        "channel":""
-                    },
-                    "devos":{
-                        "active":false,
-                        "channel":""
-                    },
-                    "verses":{
-                        "active":false,
-                        "channel":""
-                    },
-                    "qotd":{
-                        "active":false,
-                        "channel":""
-                    }
-                };
-            }
-            storage[cmd.guildId].daily[cmd.options.getString("type")].active=cmd.options.getBoolean("active");
-            storage[cmd.guildId].daily[cmd.options.getString("type")].channel=cmd.options.getChannel("channel").id;
-            if(!cmd.options.getChannel("channel").permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
-                cmd.followUp(`I can't send messages in that channel, so I can't run daily ${cmd.options.getString("type")}.`);
-                break;
-            }
-            cmd.followUp(`${storage[cmd.guildId].daily[cmd.options.getString("type")].active?"A":"Dea"}ctivated daily \`${cmd.options.getString("type")}\` for this server in <#${storage[cmd.guildId].daily[cmd.options.getString("type")].channel}>.`);
-            
-        break;
         case 'links':
             cmd.followUp(`Here is a list of links in relation with this bot you may find useful.\n- [Stewbot's Website](<https://stewbot.kestron.software/>)\n- [Stewbot's Invite Link](<https://stewbot.kestron.software/addIt>)\n- [Support Server](<https://discord.gg/k3yVkrrvez>)\n- [Stewbot's Source Code on Github](<https://github.com/KestronProgramming/Stewbot>)\n- [The Developer](<https://discord.com/users/949401296404905995>)\n- [The Developer's Website](<https://kestron.software/>)`);
         break;

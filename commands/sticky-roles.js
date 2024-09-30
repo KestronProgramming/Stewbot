@@ -24,8 +24,8 @@ module.exports = {
 		requiredGlobals: [],
 
 		help: { 
-			"helpCategory": "General", "helpDesc": 
-			"Automatically reapply roles if a user leaves and then rejoins" 
+			"helpCategory": "Administration", 
+			"helpDesc": "Automatically reapply roles if a user leaves and then rejoins" 
 		},
 	},
 

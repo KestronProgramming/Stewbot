@@ -33,7 +33,7 @@ module.exports = {
         requiredGlobals: ["cmds", "getLvl"],
 
         help: {
-            "helpCategory": "General", 
+            "helpCategory": "Entertainment", 
             "helpDesc": "View one of the leaderboards or rank cards"
         },
 

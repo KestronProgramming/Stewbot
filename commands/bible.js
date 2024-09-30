@@ -28,7 +28,7 @@ module.exports = {
 		requiredGlobals: ["getClosest", "Bible", "properNames"],
 
 		help: {
-            "helpCategory":"General",
+            "helpCategory":"Informational",
             "helpDesc":"Look up one or more verses in the King James Bible"
         },
 	},
