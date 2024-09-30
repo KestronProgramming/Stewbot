@@ -32,7 +32,6 @@ const extraInfo={
 	//Slash commands
 	"starboard_config":{"contexts":[0],"integration_types":[0],"cat":6},
 	// "chat":{"contexts":[0,1,2],"integration_types":[0,1],"cat":4},
-	"embed_message":{"contexts":[0,1,2],"integration_types":[0,1],"cat":1},
 	"timestamp":{"contexts":[0,1,2],"integration_types":[0,1],"cat":1},
 	"captcha":{"contexts":[1],"integration_types":[0,1]},
 	"unavailable":{"contexts":[0,1,2],"integration_types":[0,1],"cat":2},
@@ -78,9 +77,6 @@ let commands = [
 	// 	).addBooleanOption(option=>
 	// 		option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 	// 	),
-	new SlashCommandBuilder().setName("embed_message").setDescription("Embed a message link from another channel or server").addStringOption(option=>
-			option.setName("link").setDescription("The message link, or PRIMED if you used the /prime_embed context menu command").setRequired(true)
-		),
 	new SlashCommandBuilder().setName("timestamp").setDescription("Generate a timestamp for use in your message"),
 	new SlashCommandBuilder().setName("captcha").setDescription("Use this command if I've timed you out for spam"),
 	new SlashCommandBuilder().setName("user").setDescription("Display a user's profile").addBooleanOption(option=>

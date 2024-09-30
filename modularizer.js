@@ -2,7 +2,7 @@
 
 const fs = require("fs");
 
-const command = "embed_message";
+const command = "timestamp";
 
 const code = fs.readFileSync("./index.js").toString()
 const launchCommands = fs.readFileSync("./launchCommands.js").toString()
