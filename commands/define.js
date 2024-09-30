@@ -33,11 +33,12 @@ module.exports = {
         fetch("https://api.dictionaryapi.dev/api/v2/entries/en/"+cmd.options.getString("what")).then(d=>d.json()).then(d=>{
             d = d[0];
             
-            if(checkDirty(cmd.guild?.id,d.word)){
-                cmd.followUp({content:"That word is blocked by this server's filter",ephemeral:true});
-            }
-            
-            else if (d.meanings) {
+            if (d?.meanings) {
+                if(checkDirty(cmd.guild?.id,d.word)){
+                    cmd.followUp({content:"That word is blocked by this server's filter",ephemeral:true});
+                    return;
+                }
+
                 let defs = [];
                 for (var i = 0; i < d.meanings.length; i++) {
                     for (var j = 0;j < d.meanings[i].definitions.length;j++) {
