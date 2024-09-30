@@ -31,7 +31,6 @@ categories=[//For auto generated help pages
 const extraInfo={
 	//Slash commands
 	"starboard_config":{"contexts":[0],"integration_types":[0],"cat":6},
-	"random":{"contexts":[0,1,2],"integration_types":[0,1],"cat":4},
 	"links":{"contexts":[0,1,2],"integration_types":[0,1],"cat":0},
 	// "chat":{"contexts":[0,1,2],"integration_types":[0,1],"cat":4},
 	"embed_message":{"contexts":[0,1,2],"integration_types":[0,1],"cat":1},
@@ -75,33 +74,6 @@ let commands = [
 		).addBooleanOption(option=>
 			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 		).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),*/
-	new SlashCommandBuilder().setName("random").setDescription("Get something random").addSubcommand(command=>
-			command.setName("rng").setDescription("Generate a random number").addIntegerOption(option=>
-				option.setName("low").setDescription("Lower bound of the random number? (Default: 1)")
-			).addIntegerOption(option=>
-				option.setName("high").setDescription("Upper bound of the random number? (Default: 10)")
-			).addBooleanOption(option=>
-				option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
-			)
-		).addSubcommand(command=>
-			command.setName("coin-flip").setDescription("Flip a number of coins").addIntegerOption(option=>
-				option.setName("number").setDescription("How many coins should I flip?").setMinValue(1).setMaxValue(10)
-			).addBooleanOption(option=>
-				option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
-			)
-		).addSubcommand(command=>
-			command.setName("8-ball").setDescription("Ask a question and receive an entirely random response").addStringOption(option=>
-				option.setName("question").setDescription("What question are you asking?").setRequired(true)
-			).addBooleanOption(option=>
-				option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
-			)
-		).addSubcommand(command=>
-			command.setName("dice-roll").setDescription("Roll a number of dice").addIntegerOption(option=>
-				option.setName("number").setDescription("How many dice to roll?").setMinValue(1).setMaxValue(10)
-			).addBooleanOption(option=>
-				option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
-			)
-		),
 	new SlashCommandBuilder().setName("links").setDescription("Get a list of links relevant for the bot").addBooleanOption(option=>
 			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 		),
