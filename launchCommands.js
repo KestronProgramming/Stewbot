@@ -35,7 +35,6 @@ const extraInfo={
 	"kick":{"contexts":[0],"integration_types":[0],"cat":5},
 	"ban":{"contexts":[0],"integration_types":[0],"cat":5},
 	"timeout":{"contexts":[0],"integration_types":[0],"cat":5},
-	"translate":{"contexts":[0,1,2],"integration_types":[0,1],"cat":1},
 	"general_config":{"contexts":[0],"integration_types":[0],"cat":6},
 	"personal_config":{"contexts":[0,1,2],"integration_types":[0,1],"cat":6},
 	"ticket":{"contexts":[0],"integration_types":[0],"cat":5},
@@ -120,15 +119,6 @@ let commands = [
 		).addBooleanOption(option=>
 			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 		).setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers),
-	new SlashCommandBuilder().setName("translate").setDescription("Translate a string of text").addStringOption(option=>
-			option.setName("what").setDescription("What to translate").setRequired(true)
-		).addStringOption(option=>
-			option.setName("language_from").setDescription("The language the original text is in (Default: autodetect)")
-		).addStringOption(option=>
-			option.setName("language_to").setDescription("The language you want the text translated into (Default: en)")
-		).addBooleanOption(option=>
-			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
-		),
 	new SlashCommandBuilder().setName("general_config").setDescription("Configure general behaviors").addBooleanOption(option=>
 			option.setName("embeds").setDescription("If a message link is posted, should I post a preview?")
 		).addBooleanOption(option=>
