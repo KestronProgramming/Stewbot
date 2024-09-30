@@ -46,7 +46,6 @@ const extraInfo={
 	"admin_message":{"contexts":[0],"integration_types":[0],"cat":5},
 	"sticky-roles":{"contexts":[0],"integration_types":[0],"cat":6},
 	"random":{"contexts":[0,1,2],"integration_types":[0,1],"cat":4},
-	"auto-join-roles":{"contexts":[0],"integration_types":[0],"cat":6},
 	"bible":{"contexts":[0,1,2],"integration_types":[0,1],"cat":1},
 	"leaderboard":{"contexts":[0,1,2],"integration_types":[0,1],"cat":2},
 	"rank":{"contexts":[0],"integration_types":[0],"cat":2},
@@ -249,7 +248,6 @@ let commands = [
 				option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 			)
 		),
-	new SlashCommandBuilder().setName("auto-join-roles").setDescription("Automatically add roles to a user when they join the server").setDefaultMemberPermissions(PermissionFlagsBits.ManageRoles),
 	new SlashCommandBuilder().setName("bible").setDescription("Look up a verse or verses in the King James version of the Bible").addStringOption(option=>
 			option.setName("book").setDescription("What book of the Bible do you wish to look up?").setRequired(true)
 		).addIntegerOption(option=>
