@@ -2127,22 +2127,6 @@ client.on("interactionCreate",async cmd=>{
     }
     //Slash Commands and Context Menus
     else switch(cmd.commandName){
-        case 'ticket':
-            cmd.followUp({embeds:[{
-                "type": "rich",
-                "title": `${cmd.guild.name} Moderator Tickets`,
-                "description": `Press the button below to open up a private ticket with ${cmd.guild.name} moderators.`,
-                "color": 0x006400,
-                "thumbnail": {
-                    "url": cmd.guild.iconURL(),
-                    "height": 0,
-                    "width": 0
-                },
-                "footer": {
-                    "text": `Tickets will take place over DMs, make sure to have DMs open to ${client.user.username}.`
-                }
-            }],components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId(`ticket-${cmd.options.getChannel("channel").id}`).setLabel("Create private ticket with staff").setStyle(ButtonStyle.Success))]});
-        break;
         case 'admin_message':
             if(cmd.options.getUser("target")?.id){
                 try{
