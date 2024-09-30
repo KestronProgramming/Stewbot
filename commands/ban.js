@@ -26,7 +26,7 @@ module.exports = {
 		requiredGlobals: ["cmds"],
 
 		help: {
-			"helpCategory":"General",
+			"helpCategory":"Administration",
 			"helpDesc":"Moderate a user"
 		},
 	},
