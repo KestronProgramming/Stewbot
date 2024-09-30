@@ -32,8 +32,6 @@ const extraInfo={
 	//Slash commands
 	"starboard_config":{"contexts":[0],"integration_types":[0],"cat":6},
 	"random":{"contexts":[0,1,2],"integration_types":[0,1],"cat":4},
-	"leaderboard":{"contexts":[0,1,2],"integration_types":[0,1],"cat":2},
-	"rank":{"contexts":[0],"integration_types":[0],"cat":2},
 	"links":{"contexts":[0,1,2],"integration_types":[0,1],"cat":0},
 	// "chat":{"contexts":[0,1,2],"integration_types":[0,1],"cat":4},
 	"embed_message":{"contexts":[0,1,2],"integration_types":[0,1],"cat":1},
@@ -104,25 +102,6 @@ let commands = [
 			).addBooleanOption(option=>
 				option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 			)
-		),
-	new SlashCommandBuilder().setName("leaderboard").setDescription("View a leaderboard").addStringOption(option=>
-			option.setName("which").setDescription("Which leaderboard do you want to see?").setChoices(
-				{name:"Counting",value:"counting"},
-				{name:"Emojiboard",value:"emojiboard"},
-				{name:"Cleanliness",value:"cleanliness"},
-				{name:"Level-Ups",value:"levels"}
-			).setRequired(true)
-		).addUserOption(option=>
-			option.setName("who").setDescription("If applicable, who's spot on the leaderboard do you wish to highlight?")
-		).addStringOption(option=>
-			option.setName("emoji").setDescription("If emojiboard, which emoji do you want a leaderboard for?")
-		).addBooleanOption(option=>
-			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
-		),
-	new SlashCommandBuilder().setName("rank").setDescription("Your rank for this server's level ups").addUserOption(option=>
-			option.setName("target").setDescription("Who's rank are you trying to view?")
-		).addBooleanOption(option=>
-			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 		),
 	new SlashCommandBuilder().setName("links").setDescription("Get a list of links relevant for the bot").addBooleanOption(option=>
 			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
