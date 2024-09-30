@@ -32,7 +32,6 @@ const extraInfo={
 	//Slash commands
 	"help":{"contexts":[0,1,2],"integration_types":[0,1],"cat":0},
 	"starboard_config":{"contexts":[0],"integration_types":[0],"cat":6},
-	"ban":{"contexts":[0],"integration_types":[0],"cat":5},
 	"general_config":{"contexts":[0],"integration_types":[0],"cat":6},
 	"personal_config":{"contexts":[0,1,2],"integration_types":[0,1],"cat":6},
 	"random":{"contexts":[0,1,2],"integration_types":[0,1],"cat":4},
@@ -86,13 +85,6 @@ let commands = [
 		).addBooleanOption(option=>
 			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 		).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),*/
-	new SlashCommandBuilder().setName("ban").setDescription("Ban a user").addUserOption(option=>
-			option.setName("target").setDescription("Who to ban?").setRequired(true)
-		).addStringOption(option=>
-			option.setName("reason").setDescription("What is the reason for this ban?")
-		).addBooleanOption(option=>
-			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
-		).setDefaultMemberPermissions(PermissionFlagsBits.BanMembers),
 	new SlashCommandBuilder().setName("general_config").setDescription("Configure general behaviors").addBooleanOption(option=>
 			option.setName("embeds").setDescription("If a message link is posted, should I post a preview?")
 		).addBooleanOption(option=>

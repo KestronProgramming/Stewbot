@@ -59,7 +59,7 @@ var helpPages=[
         name:"General",
         commands:[
             {
-                name:commands.mention,
+                name:cmds.help.mention,
                 desc:"This help menu"
             },
             {
@@ -2127,26 +2127,6 @@ client.on("interactionCreate",async cmd=>{
     }
     //Slash Commands and Context Menus
     else switch(cmd.commandName){
-        case 'ban':
-            if(cmd.options.getUser("target").id===client.user.id){
-                cmd.followUp(`I cannot ban myself. I apologize for any inconveniences I may have caused. You can use ${cmds.report_problem.mention} if there's something that needs improvement.`);
-                break;
-            }
-            if(cmd.user.id===cmd.options.getUser("target").id){
-                cmd.followUp(`I cannot ban you as the one invoking the command. If you feel the need to ban yourself, consider changing your actions and mindset instead.`);
-                break;
-            }
-            var b=cmd.guild.members.cache.get(cmd.options.getUser("target").id);
-            if(b.bannable){
-                b.ban({reason:`Instructed to ban by ${cmd.user.username}: ${cmd.options.getString("reason")}`});
-                cmd.followUp(`I have banned <@${cmd.options.getUser("target").id}>`);
-                break;
-            }
-            else{
-                cmd.followUp(`I cannot ban this person. Make sure that I have a role higher than their highest role in the server settings before running this command.`);
-                break;
-            }
-        break;
         case 'help':
             cmd.followUp({content:`**General**`,embeds:[{
                 "type": "rich",
