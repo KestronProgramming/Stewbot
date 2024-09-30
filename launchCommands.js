@@ -32,9 +32,7 @@ const extraInfo={
 	//Slash commands
 	"starboard_config":{"contexts":[0],"integration_types":[0],"cat":6},
 	// "chat":{"contexts":[0,1,2],"integration_types":[0,1],"cat":4},
-	"captcha":{"contexts":[1],"integration_types":[0,1]},
 	"unavailable":{"contexts":[0,1,2],"integration_types":[0,1],"cat":2},
-	"user":{"contexts":[0],"integration_types":[0],"cat":1},
 	"rss":{"contexts":[0],"integration_types":[0],"cat":6},
 	"set_persistent_message":{"contexts":[0],"integration_types":[0],"cat":6},
 	"rock_paper_scissors":{"contexts":[0,1,2],"integration_types":[0,1],"cat":4},
@@ -76,14 +74,6 @@ let commands = [
 	// 	).addBooleanOption(option=>
 	// 		option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 	// 	),
-	new SlashCommandBuilder().setName("captcha").setDescription("Use this command if I've timed you out for spam"),
-	new SlashCommandBuilder().setName("user").setDescription("Display a user's profile").addBooleanOption(option=>
-			option.setName("large-pfp").setDescription("Display the PFP in large mode?")
-		).addUserOption(option=>
-			option.setName("who").setDescription("Who do you want to display?")
-		).addBooleanOption(option=>
-			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
-		),
 	new SlashCommandBuilder().setName("rss").setDescription("Commands relating to RSS feeds").addSubcommand(command=>
 			command.setName("follow").setDescription("Follow an RSS feed").addChannelOption(option=>
 				option.setName("channel").setDescription("The channel to follow this RSS feed in").setRequired(true)
