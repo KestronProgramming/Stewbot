@@ -31,7 +31,6 @@ categories=[//For auto generated help pages
 const extraInfo={
 	//Slash commands
 	"starboard_config":{"contexts":[0],"integration_types":[0],"cat":6},
-	"general_config":{"contexts":[0],"integration_types":[0],"cat":6},
 	"random":{"contexts":[0,1,2],"integration_types":[0,1],"cat":4},
 	"bible":{"contexts":[0,1,2],"integration_types":[0,1],"cat":1},
 	"leaderboard":{"contexts":[0,1,2],"integration_types":[0,1],"cat":2},
@@ -80,13 +79,6 @@ let commands = [
 		).addBooleanOption(option=>
 			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 		).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),*/
-	new SlashCommandBuilder().setName("general_config").setDescription("Configure general behaviors").addBooleanOption(option=>
-			option.setName("embeds").setDescription("If a message link is posted, should I post a preview?")
-		).addBooleanOption(option=>
-			option.setName("disable_anti_hack").setDescription("Do you want to disable the anti hack/spam account protection for this server?")
-		).addBooleanOption(option=>
-			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
-		).setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers),
 	new SlashCommandBuilder().setName("random").setDescription("Get something random").addSubcommand(command=>
 			command.setName("rng").setDescription("Generate a random number").addIntegerOption(option=>
 				option.setName("low").setDescription("Lower bound of the random number? (Default: 1)")
