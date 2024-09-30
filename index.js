@@ -2127,51 +2127,6 @@ client.on("interactionCreate",async cmd=>{
     }
     //Slash Commands and Context Menus
     else switch(cmd.commandName){
-        case 'admin_message':
-            if(cmd.options.getUser("target")?.id){
-                try{
-                    cmd.options.getUser("target").send({embeds:[{
-                        type: "rich",
-                        title: cmd.guild.name.slice(0,80),
-                        description: cmd.options.getString("what").replaceAll("\\n","\n"),
-                        color: 0x006400,
-                        thumbnail: {
-                            url: cmd.guild.iconURL(),
-                            height: 0,
-                            width: 0,
-                        },
-                        footer: {
-                            text:`This message was sent by a moderator of ${cmd.guild.name}`
-                        }
-                    }]}).catch(e=>{});
-                    cmd.followUp("Messaged them");
-                }catch(e){}
-            }
-            else if(cmd.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.ManageWebhooks)){
-                var resp={
-                    "content":cmd.options.getString("what").replaceAll("\\n","\n"),
-                    "avatarURL":cmd.guild.iconURL(),
-                    "username":cmd.guild.name.slice(0,80)
-                };
-                var hook=await cmd.channel.fetchWebhooks();
-                hook=hook.find(h=>h.token);
-                if(hook){
-                    hook.send(resp);
-                }
-                else{
-                    cmd.channel.createWebhook({
-                        name: config.name,
-                        avatar: config.pfp
-                    }).then(d=>{
-                        d.send(resp);
-                    });
-                }
-                cmd.followUp({content:"Posted",ephemeral:true});
-            }
-            else{
-                cmd.followUp(`I don't have the MANAGE_WEBHOOKS permission, so I can't post an admin message in this server.`);
-            }
-        break;
         case 'log_config':
             storage[cmd.guildId].logs.active=cmd.options.getBoolean("active");
             storage[cmd.guildId].logs.channel=cmd.options.getChannel("channel").id;
