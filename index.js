@@ -1482,6 +1482,10 @@ client.on("messageCreate",async msg=>{
                         }
                     });
                 break;
+                case "resetHackSafe":
+                    delete storage[msg.guild.id].users[msg.author.id].safeTimestamp;
+                    msg.reply("Removed your anti-hack safe time");
+                break
             }
         }
         else{
