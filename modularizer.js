@@ -2,7 +2,7 @@
 
 const fs = require("fs");
 
-const command = "links";
+const command = "embed_message";
 
 const code = fs.readFileSync("./index.js").toString()
 const launchCommands = fs.readFileSync("./launchCommands.js").toString()
