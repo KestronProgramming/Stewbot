@@ -41,7 +41,6 @@ const extraInfo={
 	"ticket":{"contexts":[0],"integration_types":[0],"cat":5},
 	"auto-join-message":{"contexts":[0],"integration_types":[0],"cat":6},
 	"auto-leave-message":{"contexts":[0],"integration_types":[0],"cat":6},
-	"auto_roles":{"contexts":[0],"integration_types":[0],"cat":5},
 	"report_problem":{"contexts":[0,1,2],"integration_types":[0,1],"cat":0},
 	"log_config":{"contexts":[0],"integration_types":[0],"cat":6},
 	"admin_message":{"contexts":[0],"integration_types":[0],"cat":5},
@@ -178,9 +177,6 @@ let commands = [
 		).addBooleanOption(option=>
 			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 		).setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers),
-	new SlashCommandBuilder().setName("auto_roles").setDescription("Setup a message with auto roles").addStringOption(option=>
-			option.setName("message").setDescription("The message to be sent with the role options").setRequired(true)
-		).setDefaultMemberPermissions(PermissionFlagsBits.ManageRoles),
 	new SlashCommandBuilder().setName("report_problem").setDescription("Report an error to be looked at").addStringOption(option=>
 			option.setName("type").setDescription("What kind of problem are you reporting?").addChoices(
 				{"name":"Profanity","value":"profanity"},
