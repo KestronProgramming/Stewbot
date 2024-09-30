@@ -2127,17 +2127,6 @@ client.on("interactionCreate",async cmd=>{
     }
     //Slash Commands and Context Menus
     else switch(cmd.commandName){
-        case 'translate':
-            translate(cmd.options.getString("what"),Object.assign({
-                to:cmd.options.getString("language_to")||cmd.locale.slice(0,2)
-            },cmd.options.getString("language_from")?cmd.options.getString("languageFrom"):{})).then(t=>{
-                if(checkDirty(cmd.guild?.id,t.text)||checkDirty(cmd.guild?.id,cmd.options.getString("what"))){
-                    cmd.followUp({content:`I have been asked not to translate that by this server`,ephemeral:true});
-                    return;
-                }
-                cmd.followUp(`Attempted to translate${t.text!==cmd.options.getString("what")?`:\n\`\`\`\n${escapeBackticks(t.text)}\n\`\`\`\n-# If this is incorrect, try using ${cmds.translate.mention} again and specify more.`:`, but I was unable to. Try using ${cmds.translate.mention} again and specify more.`}`);
-            });
-        break;
         case 'ticket':
             cmd.followUp({embeds:[{
                 "type": "rich",
