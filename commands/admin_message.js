@@ -11,10 +11,10 @@ module.exports = {
     data: {
         // Slash command data
         command: new SlashCommandBuilder().setName("admin_message").setDescription("Anonymously make a post in the server's name").addStringOption(option =>
-            option.setName("what").setDescription("What to say").setMaxLength(2000).setRequired(true)
-        ).addUserOption(option =>
-            option.setName("target").setDescription("The user to message")
-        ).setDefaultMemberPermissions(PermissionFlagsBits.KickMembers),
+                option.setName("what").setDescription("What to say").setMaxLength(2000).setRequired(true)
+            ).addUserOption(option =>
+                option.setName("target").setDescription("The user to message")
+            ).setDefaultMemberPermissions(PermissionFlagsBits.KickMembers),
 
         // Optional fields
 
@@ -22,13 +22,10 @@ module.exports = {
 
         requiredGlobals: [],
 
-        help: { "helpCategory": "General", "helpDesc": "Send a message anonymously in the server's name" },
-
-        // detailedHelp:
-        // 	"## Ping" + 
-        // 	"The `ping` command is used to test how fast Stewbot's connection is responding to events." +
-        // 	"This command is also used to provide detailed information about the bot." +
-        // 	"-# This is a detailed help message, and is primarily meant as a code example."
+        help: { 
+            "helpCategory": "General", 
+            "helpDesc": "Send a message anonymously in the server's name" 
+        },
     },
 
     async execute(cmd, context) {
