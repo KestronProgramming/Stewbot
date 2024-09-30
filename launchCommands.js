@@ -38,7 +38,6 @@ const extraInfo={
 	"translate":{"contexts":[0,1,2],"integration_types":[0,1],"cat":1},
 	"general_config":{"contexts":[0],"integration_types":[0],"cat":6},
 	"personal_config":{"contexts":[0,1,2],"integration_types":[0,1],"cat":6},
-	"poll":{"contexts":[0],"integration_types":[0],"cat":2},
 	"ticket":{"contexts":[0],"integration_types":[0],"cat":5},
 	"auto-join-message":{"contexts":[0],"integration_types":[0],"cat":6},
 	"auto-leave-message":{"contexts":[0],"integration_types":[0],"cat":6},
@@ -152,9 +151,6 @@ let commands = [
 			option.setName("level_up_messages").setDescription("Do you want to receive messages letting you know you leveled up?")
 		).addBooleanOption(option=>
 			option.setName("configure_timezone").setDescription("Open up a menu to configure your timezone?")
-		),
-	new SlashCommandBuilder().setName("poll").setDescription("Make a poll with automatically tracked options").addStringOption(option=>
-			option.setName("prompt").setDescription("The prompt (We'll set options in a minute)").setRequired(true)
 		),
 	new SlashCommandBuilder().setName("ticket").setDescription("Set up a ticket system here for users to contact mods").addChannelOption(option=>
 			option.setName("channel").setDescription("The channel for tickets to be opened in on the staff end").addChannelTypes(ChannelType.GuildText).setRequired(true)

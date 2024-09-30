@@ -2127,13 +2127,6 @@ client.on("interactionCreate",async cmd=>{
     }
     //Slash Commands and Context Menus
     else switch(cmd.commandName){
-        case 'poll':
-            if(checkDirty(cmd.guild?.id,cmd.options.getString("prompt"))){
-                cmd.followUp({content:"This server doesn't want me to process that prompt.","ephemeral":true});
-                break;
-            }
-            cmd.followUp({"content":`**${cmd.options.getString("prompt")}**`,"ephemeral":true,"components":[presets.pollCreation]});
-        break;
         case 'auto_roles':
             if(!cmd.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageRoles)){
                 cmd.followUp(`I do not have the MANAGE_ROLES permission for this server, so I cannot run auto roles.`);
