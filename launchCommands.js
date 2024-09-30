@@ -37,7 +37,6 @@ const extraInfo={
 	"timeout":{"contexts":[0],"integration_types":[0],"cat":5},
 	"general_config":{"contexts":[0],"integration_types":[0],"cat":6},
 	"personal_config":{"contexts":[0,1,2],"integration_types":[0,1],"cat":6},
-	"ticket":{"contexts":[0],"integration_types":[0],"cat":5},
 	"log_config":{"contexts":[0],"integration_types":[0],"cat":6},
 	"admin_message":{"contexts":[0],"integration_types":[0],"cat":5},
 	"sticky-roles":{"contexts":[0],"integration_types":[0],"cat":6},
@@ -137,9 +136,6 @@ let commands = [
 		).addBooleanOption(option=>
 			option.setName("configure_timezone").setDescription("Open up a menu to configure your timezone?")
 		),
-	new SlashCommandBuilder().setName("ticket").setDescription("Set up a ticket system here for users to contact mods").addChannelOption(option=>
-			option.setName("channel").setDescription("The channel for tickets to be opened in on the staff end").addChannelTypes(ChannelType.GuildText).setRequired(true)
-		).setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels),
 	new SlashCommandBuilder().setName("log_config").setDescription("Configure log events").addBooleanOption(option=>
 			option.setName("active").setDescription("Log server and user events to the designated channel?").setRequired(true)
 		).addChannelOption(option=>
