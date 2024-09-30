@@ -2133,55 +2133,6 @@ client.on("interactionCreate",async cmd=>{
     }
     //Slash Commands and Context Menus
     else switch(cmd.commandName){
-        case 'captcha':
-            var captcha="";
-            for(var ca=0;ca<5;ca++){
-                captcha+=Math.floor(Math.random()*10);
-            }
-            cmd.followUp({content:`Please enter the following: \`${captcha}\`\n\nEntered: \`\``,components:presets.captcha});
-            
-        break;
-        case 'user':
-            var who=cmd.guild.members.cache.get(cmd.options.getUser("who")?cmd.options.getUser("who").id:cmd.user.id);
-            if(!who){
-                cmd.followUp(`I can't seem to locate them.`);
-                break;
-            }
-            cmd.followUp({content:`User card for <@${who.id}>`,embeds:[{
-                "type": "rich",
-                "title": `${who.nickname?who.nickname:who.user.globalName}`,
-                "description": who.roles.cache.map(r=>r.name!=="@everyone"?`<@&${r.id}>`:"").join(", "),
-                "color": 0x006400,
-                "fields": [
-                  {
-                    "name": `Joined Discord`,
-                    "value": `<t:${Math.floor(who.joinedTimestamp/1000)}:f>, <t:${Math.floor(who.joinedTimestamp/1000)}:R>`,
-                    "inline": true
-                  }
-                ],
-                "timestamp": new Date(),
-                "image": {
-                  "url": cmd.options.getBoolean("large-pfp")?`${who.displayAvatarURL()}?size=1024`:null,
-                  "height": 0,
-                  "width": 0
-                },
-                "thumbnail": {
-                  "url": who.displayAvatarURL(),
-                  "height": 0,
-                  "width": 0
-                },
-                "author": {
-                  "name": who.user.globalName,
-                  "url": `https://discord.com/users/${who.id}`,
-                  "icon_url": who.user.displayAvatarURL()
-                },
-                "footer": {
-                  "text": who.user.username,
-                  "icon_url":who.user.displayAvatarURL()
-                },
-                "url": `https://discord.com/users/949401296404905995`
-              }],allowedMentions:{parse:[]}});
-        break;
         case 'rss':
             switch(cmd.options.getSubcommand()){
                 case 'check':
