@@ -31,7 +31,6 @@ categories=[//For auto generated help pages
 const extraInfo={
 	//Slash commands
 	"starboard_config":{"contexts":[0],"integration_types":[0],"cat":6},
-	"links":{"contexts":[0,1,2],"integration_types":[0,1],"cat":0},
 	// "chat":{"contexts":[0,1,2],"integration_types":[0,1],"cat":4},
 	"embed_message":{"contexts":[0,1,2],"integration_types":[0,1],"cat":1},
 	"timestamp":{"contexts":[0,1,2],"integration_types":[0,1],"cat":1},
@@ -74,9 +73,6 @@ let commands = [
 		).addBooleanOption(option=>
 			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 		).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),*/
-	new SlashCommandBuilder().setName("links").setDescription("Get a list of links relevant for the bot").addBooleanOption(option=>
-			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
-		),
 	// new SlashCommandBuilder().setName("chat").setDescription("Chat with the bot").addStringOption(option=>
 	// 		option.setName("what").setDescription("What to say").setRequired(true)
 	// 	).addBooleanOption(option=>
