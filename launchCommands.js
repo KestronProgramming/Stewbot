@@ -37,7 +37,6 @@ const extraInfo={
 	"timeout":{"contexts":[0],"integration_types":[0],"cat":5},
 	"general_config":{"contexts":[0],"integration_types":[0],"cat":6},
 	"personal_config":{"contexts":[0,1,2],"integration_types":[0,1],"cat":6},
-	"log_config":{"contexts":[0],"integration_types":[0],"cat":6},
 	"sticky-roles":{"contexts":[0],"integration_types":[0],"cat":6},
 	"random":{"contexts":[0,1,2],"integration_types":[0,1],"cat":4},
 	"bible":{"contexts":[0,1,2],"integration_types":[0,1],"cat":1},
@@ -135,27 +134,6 @@ let commands = [
 		).addBooleanOption(option=>
 			option.setName("configure_timezone").setDescription("Open up a menu to configure your timezone?")
 		),
-	new SlashCommandBuilder().setName("log_config").setDescription("Configure log events").addBooleanOption(option=>
-			option.setName("active").setDescription("Log server and user events to the designated channel?").setRequired(true)
-		).addChannelOption(option=>
-			option.setName("channel").setDescription("Which channel to post events to?").addChannelTypes(ChannelType.GuildText).setRequired(true)
-		).addBooleanOption(option=>
-			option.setName("channel_events").setDescription("Log channel events?")
-		).addBooleanOption(option=>
-			option.setName("emoji_events").setDescription("Log emoji and sticker events?")
-		).addBooleanOption(option=>
-			option.setName("user_change_events").setDescription("Log user changes?")
-		).addBooleanOption(option=>
-			option.setName("joining_and_leaving").setDescription("Log when a user joins/leaves?")
-		).addBooleanOption(option=>
-			option.setName("invite_events").setDescription("Log when an invite is made or deleted?")
-		).addBooleanOption(option=>
-			option.setName("role_events").setDescription("Log role events?")
-		).addBooleanOption(option=>
-			option.setName("mod_actions").setDescription("Log when a moderator performs an action")
-		).addBooleanOption(option=>
-			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
-		).setDefaultMemberPermissions(PermissionFlagsBits.ViewAuditLog),
 	new SlashCommandBuilder().setName("sticky-roles").setDescription("Add roles back to a user who left and rejoined").addBooleanOption(option=>
 			option.setName("active").setDescription("Should I add roles back to users who left and rejoined?").setRequired(true)
 		).addBooleanOption(option=>
