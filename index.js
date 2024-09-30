@@ -2127,45 +2127,6 @@ client.on("interactionCreate",async cmd=>{
     }
     //Slash Commands and Context Menus
     else switch(cmd.commandName){
-        case 'help':
-            cmd.followUp({content:`**General**`,embeds:[{
-                "type": "rich",
-                "title": `General`,
-                "description": `Help Menu General Category`,
-                "color": 0x006400,
-                "fields": helpPages[0].commands.map(a=>{
-                    return {
-                        "name":a.name,
-                        "value":a.desc,
-                        "inline":true
-                    };
-                }),
-                "thumbnail": {
-                    "url": config.pfp,
-                    "height": 0,
-                    "width": 0
-                },
-                "footer": {
-                    "text": `Help Menu for Stewbot`
-                }
-            }],components:[new ActionRowBuilder().addComponents(...helpPages.map(a=>
-                new ButtonBuilder().setCustomId(`switch-${a.name}`).setLabel(a.name).setStyle(ButtonStyle.Primary)
-            ))]});
-        break;
-        case 'personal_config':
-            if(cmd.options.getBoolean("dm_infractions")!==null) storage[cmd.user.id].config.dmOffenses=cmd.options.getBoolean("dm_infractions");
-            if(cmd.options.getBoolean("dm_infraction_content")!==null) storage[cmd.user.id].config.returnFiltered=cmd.options.getBoolean("dm_infraction_content");
-            if(cmd.options.getBoolean("embeds")!==null) storage[cmd.user.id].config.embedPreviews=cmd.options.getBoolean("embeds");
-            if(cmd.options.getBoolean("level_up_messages"!==null)) storage[cmd.user.id].config.levelUpMsgs=cmd.options.getBoolean("level_up_messages");
-            if(!cmd.options.getBoolean("configure_timezone")){
-                cmd.followUp("Configured your personal setup");
-            }
-            else{
-                var cur=new Date();
-                if(!storage[cmd.user.id].config.hasSetTZ) storage[cmd.user.id].config.timeOffset=0;
-                cmd.followUp({content:`## Timezone Configuration\n\nPlease use the buttons to make the following number your current time (you can ignore minutes)\n${(cur.getHours()+storage[cmd.user.id].config.timeOffset)===0?"12":(cur.getHours()+storage[cmd.user.id].config.timeOffset)>12?(cur.getHours()+storage[cmd.user.id].config.timeOffset)-12:(cur.getHours()+storage[cmd.user.id].config.timeOffset)}:${(cur.getMinutes()+"").padStart(2,"0")} ${(cur.getHours()+storage[cmd.user.id].config.timeOffset)>11?"PM":"AM"}\n${((cur.getHours()+storage[cmd.user.id].config.timeOffset)+"").padStart(2,"0")}${(cur.getMinutes()+"").padStart(2,"0")}`,components:presets.tzConfig});
-            }
-        break;
         case 'general_config':
             if(cmd.options.getBoolean("embeds")!==null) storage[cmd.guildId].config.embedPreviews=cmd.options.getBoolean("embeds");
             if(cmd.options.getBoolean("disable_anti_hack")!==null) storage[cmd.guildId].disableAntiHack=cmd.options.getBoolean("disable_anti_hack");
