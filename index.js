@@ -416,6 +416,7 @@ function processForNumber(text) {
 
     // Temporarily replace " - " or "-" with a unique marker
     text = text.replace(/(\s*-\s+)|(\s+-\s*)/g, ' __HYD__ ');  // Replace spaces around hyphen or just hyphen
+    text = text.replace(/(\s*minus\s+)|(\s+minus\s*)/g, ' __HYD__ ');
 
     var doc = nlp(text);
     doc.numbers().toNumber();
@@ -436,6 +437,7 @@ function processForNumber(text) {
         return null;
     }
 }
+
 function verifyRegex(regexStr) {
     // returns: [isValid, error]
 
