@@ -2065,9 +2065,7 @@ client.on("messageCreate",async msg=>{
                             msg.reply({content:`I have detected unusual activity from this account. I have temporarily applied a timeout. To remove this timeout, please use ${cmds.captcha.mention} in a DM with me, or a moderator can remove this timeout manually.\n\nIf a mod wishes to disable this behaviour, designed to protect servers from mass spam, ping, and NSFW hacked or spam accounts, run ${cmds.general_config.mention} and specify to disable Anti Hack Protection.`,components:[new ActionRowBuilder().addComponents(...sendRow)]});
                         }
                     }
-                    catch(e){
-                        notify(1, "anti-hack error: " +String(e))
-                    }
+                    catch(e){}
                 }
             }
         }
