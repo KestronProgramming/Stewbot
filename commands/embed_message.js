@@ -19,7 +19,7 @@ module.exports = {
 		
 		extra: {"contexts":[0,1,2],"integration_types":[0,1]},
 
-		requiredGlobals: [],
+		requiredGlobals: ["getPrimedEmbed"],
 
 		help: {
             "helpCategory":"Informational",

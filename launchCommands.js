@@ -33,7 +33,6 @@ const extraInfo={
 	"starboard_config":{"contexts":[0],"integration_types":[0],"cat":6},
 	// "chat":{"contexts":[0,1,2],"integration_types":[0,1],"cat":4},
 	"unavailable":{"contexts":[0,1,2],"integration_types":[0,1],"cat":2},
-	"set_persistent_message":{"contexts":[0],"integration_types":[0],"cat":6},
 	"rock_paper_scissors":{"contexts":[0,1,2],"integration_types":[0,1],"cat":4},
 	"delete":{"contexts":[0],"integration_types":[0],"cat":5},
 	"timer":{"contexts":[0,1,2],"integration_types":[0,1],"cat":1},
@@ -73,13 +72,6 @@ let commands = [
 	// 	).addBooleanOption(option=>
 	// 		option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 	// 	),
-	new SlashCommandBuilder().setName("set_persistent_message").setDescription("Set a message that will ALWAYS be visible as the latest message posted in this channel").addBooleanOption(option=>
-			option.setName("active").setDescription("Should the persistent message be actively run in this channel?").setRequired(true)
-		).addStringOption(option=>
-			option.setName("content").setDescription("The message to have persist").setMinLength(1)
-		).addBooleanOption(option=>
-			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
-		).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
 	new SlashCommandBuilder().setName("delete").setDescription("Delete messages").addIntegerOption(option=>
 			option.setName("amount").setDescription("The amount of the most recent messages to delete").setMinValue(1).setMaxValue(100).setRequired(true)
 		).addBooleanOption(option=>
