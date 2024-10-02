@@ -2116,34 +2116,21 @@ client.on("interactionCreate",async cmd=>{
         
     }
 
-    // Check if the command is migrated to ./commands/ folder
+    // Slash commands
     if (commands.hasOwnProperty(cmd.commandName)) {
         const commandScript = commands[cmd.commandName];
-
         // List of general globals it should have access to
         const providedGlobals = {
             client,
             storage,
-            notify, // TODO: Most of these functions should be required from a utility JS
+            notify, // TODO: schema for some commands like /filter to preload and provide these functions
             checkDirty,
         };
-
-        // Add any other requested globals
         requestedGlobals = commandScript.data?.requiredGlobals || commandScript.requestGlobals?.() || [];
         for (var name of requestedGlobals) {
             providedGlobals[name] = eval(name.match(/[\w-]+/)[0]);
         }
         await commands[cmd.commandName].execute(cmd, providedGlobals);
-    }
-    // Context Menu Commands
-    else switch(cmd.commandName){
-        case 'translate_message':
-            translate(cmd.targetMessage.content,{
-                to:cmd.locale.slice(0,2)
-            }).then(t=>{
-                cmd.followUp(`Attempted to translate${t.text!==cmd.targetMessage.content?`:\n\`\`\`\n${escapeBackticks(t.text)}\n\`\`\`\n-# If this is incorrect, try using ${cmds.translate.mention}.`:`, but I was unable to. Try using ${cmds.translate.mention}.`}`);
-            });
-        break;
     }
 
     //Buttons, Modals, and Select Menus

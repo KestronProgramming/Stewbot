@@ -10,7 +10,7 @@ function applyContext(context={}) {
 module.exports = {
 	data: {
 		// Slash command data
-		command: null, // TODO
+		command: new SlashCommandBuilder().setName("chronograph").setDescription("Start a stopwatch"),
 		
 		// Optional fields
 		

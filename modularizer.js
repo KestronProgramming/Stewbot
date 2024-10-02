@@ -2,7 +2,7 @@
 
 const fs = require("fs");
 
-const command = "submit_meme";
+const command = "translate_message";
 
 const code = fs.readFileSync("./index.js").toString()
 const launchCommands = fs.readFileSync("./launchCommands.js").toString()
@@ -58,7 +58,7 @@ const thisHelpCat = helpPages.match(new RegExp(`name:"(.+?)",(?:(?!name:").|\n|\
 
 const thisCommand = commands.match(new RegExp(`new .+CommandBuilder.+${command}(\r|\n|.)+?(?=new Slash)`))?.[0]?.trim?.() || "TODO";
 
-const thisCode = switchCase.match(new RegExp(`case '${command}'.+\r?\n((\n|\r|.)+?)break.+\r?\n.+case`, "m"))[1];
+const thisCode = switchCase.match(new RegExp(`case '${command}'.+\r?\n((\n|\r|.)+?)break.+\r?\n.+case`, "m"))?.[1];
 
 // Grab template
 var template = fs.readFileSync("./commands/template").toString()
