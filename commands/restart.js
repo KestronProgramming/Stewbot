@@ -6,6 +6,7 @@ function applyContext(context = {}) {
     }
 }
 // #endregion Boilerplate
+const fs = require("fs");
 
 module.exports = {
     data: {
