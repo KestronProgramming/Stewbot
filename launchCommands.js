@@ -75,8 +75,6 @@ let commands = [
 
 	new ContextMenuCommandBuilder().setName("submit_meme").setType(ApplicationCommandType.Message),
 	new ContextMenuCommandBuilder().setName("translate_message").setType(ApplicationCommandType.Message),
-	new ContextMenuCommandBuilder().setName("move_message").setType(ApplicationCommandType.Message),
-	
 ]
 
 

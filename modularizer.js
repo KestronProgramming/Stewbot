@@ -2,7 +2,7 @@
 
 const fs = require("fs");
 
-const command = "delete_message";
+const command = "move_message";
 
 const code = fs.readFileSync("./index.js").toString()
 const launchCommands = fs.readFileSync("./launchCommands.js").toString()
