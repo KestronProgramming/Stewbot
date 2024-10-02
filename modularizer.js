@@ -2,7 +2,7 @@
 
 const fs = require("fs");
 
-const command = "chronograph";
+const command = "warn";
 
 const code = fs.readFileSync("./index.js").toString()
 const launchCommands = fs.readFileSync("./launchCommands.js").toString()
