@@ -34,7 +34,6 @@ const extraInfo={
 	// "chat":{"contexts":[0,1,2],"integration_types":[0,1],"cat":4},
 	"unavailable":{"contexts":[0,1,2],"integration_types":[0,1],"cat":2},
 	"rock_paper_scissors":{"contexts":[0,1,2],"integration_types":[0,1],"cat":4},
-	"delete":{"contexts":[0],"integration_types":[0],"cat":5},
 	"timer":{"contexts":[0,1,2],"integration_types":[0,1],"cat":1},
 	"chronograph":{"contexts":[0,1,2],"integration_types":[0,1],"cat":1},
 	"warn":{"contexts":[0],"integration_types":[0],"cat":5},
@@ -72,11 +71,6 @@ let commands = [
 	// 	).addBooleanOption(option=>
 	// 		option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 	// 	),
-	new SlashCommandBuilder().setName("delete").setDescription("Delete messages").addIntegerOption(option=>
-			option.setName("amount").setDescription("The amount of the most recent messages to delete").setMinValue(1).setMaxValue(100).setRequired(true)
-		).addBooleanOption(option=>
-			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
-		).setDefaultMemberPermissions(PermissionFlagsBits.BanMembers),
 	new SlashCommandBuilder().setName("warn").setDescription("Warn a user for bad behaviour").addUserOption(option=>
 			option.setName("who").setDescription("Who are you warning?").setRequired(true)
 		).addStringOption(option=>
