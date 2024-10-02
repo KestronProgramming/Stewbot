@@ -29,13 +29,11 @@ categories=[//For auto generated help pages
 	"Configuration"//6
 ];*/
 const extraInfo={
-	//Slash commands
-	"starboard_config":{"contexts":[0],"integration_types":[0],"cat":6},
+	//Archived slash command data:
 	// "chat":{"contexts":[0,1,2],"integration_types":[0,1],"cat":4},
-	"unavailable":{"contexts":[0,1,2],"integration_types":[0,1],"cat":2},
-	"rock_paper_scissors":{"contexts":[0,1,2],"integration_types":[0,1],"cat":4},
-	"timer":{"contexts":[0,1,2],"integration_types":[0,1],"cat":1},
-	"chronograph":{"contexts":[0,1,2],"integration_types":[0,1],"cat":1},
+	// "unavailable":{"contexts":[0,1,2],"integration_types":[0,1],"cat":2},
+	// "rock_paper_scissors":{"contexts":[0,1,2],"integration_types":[0,1],"cat":4},
+	// "timer":{"contexts":[0,1,2],"integration_types":[0,1],"cat":1},
 
 	//Context Menu Commands
 	"submit_meme":{"contexts":[0,1,2],"integration_types":[0,1],"cat":2,"desc":"Submit a meme to the Kestron moderators for verification to show up in `/fun meme`"},
@@ -43,7 +41,6 @@ const extraInfo={
 	"move_message":{"contexts":[0],"integration_types":[0],"cat":5,"desc":"Move a message from one channel into another"},
 	//"delete_message":{"contexts":[0,1],"integration_types":[0],"cat":5,"desc":"Delete a message using Stewbot; can be used to delete Stewbot DMs"},
 	"remove_embeds":{"contexts":[0],"integration_types":[0],"cat":5,"desc":"Remove embeds from a message"},
-	"prime_embed":{"contexts":[0,1,2],"integration_types":[0,1],"cat":1,"desc":"Get a message ready to be embedded using /embed_message"}
 };
 let commands = [
 	/*
@@ -82,7 +79,7 @@ let commands = [
 	new ContextMenuCommandBuilder().setName("delete_message").setType(ApplicationCommandType.Message).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),//Leaving this in DMs to delete undesirable bot DMs
 	new ContextMenuCommandBuilder().setName("translate_message").setType(ApplicationCommandType.Message),
 	new ContextMenuCommandBuilder().setName("move_message").setType(ApplicationCommandType.Message),
-	new ContextMenuCommandBuilder().setName("prime_embed").setType(ApplicationCommandType.Message)
+	
 ]
 
 
