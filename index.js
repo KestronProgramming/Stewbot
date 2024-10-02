@@ -2548,7 +2548,12 @@ client.on("interactionCreate",async cmd=>{
                 });
                 p++;
             }
-            resp.files=fs.readdirSync("tempMove").map(a=>`./tempMove/${a}`);
+            try{
+                resp.files=fs.readdirSync("tempMove").map(a=>`./tempMove/${a}`);
+            } catch {
+                fs.mkdirSync('tempMove');
+                resp.files=fs.readdirSync("tempMove").map(a=>`./tempMove/${a}`);
+            }
             var hook=await client.channels.cache.get(cmd.values[0]).fetchWebhooks();
             hook=hook.find(h=>h.token);
             if(hook){
