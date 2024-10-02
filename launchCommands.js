@@ -3,7 +3,6 @@ const { REST,Routes,PermissionFlagsBits,SlashCommandBuilder,ContextMenuCommandBu
 const fs=require("fs");
 const path = require("path")
 
-
 //Command permissions should be set to the level you would need to do it manually (so if the bot is deleting messages, the permission to set it up would be the permission to delete messages)
 //Don't enable anything in DMs that is unusable in DMs (server configurations, multiplayer reliant commands, etc)
 
@@ -18,64 +17,11 @@ Integration Types
 0: Only as a server command
 1: Only as a user command
 */
-/*
-categories=[//For auto generated help pages
-	"General Bot Usage",//0
-	"Reference",//1
-	"Multiplayer",//2
-	"Supporting Command",//3
-	"Entertainment",//4
-	"Administration",//5
-	"Configuration"//6
-];*/
-const extraInfo={
-	//Archived slash command data:
-	// "chat":{"contexts":[0,1,2],"integration_types":[0,1],"cat":4},
-	// "unavailable":{"contexts":[0,1,2],"integration_types":[0,1],"cat":2},
-	// "rock_paper_scissors":{"contexts":[0,1,2],"integration_types":[0,1],"cat":4},
-	// "timer":{"contexts":[0,1,2],"integration_types":[0,1],"cat":1},
-
-	//Context Menu Commands
-	"translate_message":{"contexts":[0,1,2],"integration_types":[0,1],"cat":1,"desc":"Attempt to autodetect the language of a message and translate it"},
-};
-let commands = [
-	/*
-	new SlashCommandBuilder().setName("starboard_config").setDescription("Configure starboard for this server").addBooleanOption(option=>
-			option.setName("active").setDescription("Should I post messages to the configured channel?").setRequired(true)
-		).addChannelOption(option=>
-			option.setName("channel").setDescription("The channel to post messages to (Required for first config)").addChannelTypes(ChannelType.GuildText)
-		).addStringOption(option=>
-			option.setName("emoji").setDescription("The emoji to react with to trigger starboard (Default: ⭐)")
-		).addIntegerOption(option=>
-			option.setName("threshold").setDescription("How many reactions are needed to trigger starboard? (Default: 3)").setMinValue(1)
-		).addStringOption(option=>
-			option.setName("message_type").setDescription("What should the bot's starboard posts look like?").addChoices(
-				{"name":"Make it look like the user posted","value":"0"},
-				{"name":"Post an embed with the message and a greeting","value":"1"},
-				{"name":"Post an embed with the message","value":"2"}
-			)
-		).addBooleanOption(option=>
-			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
-		).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),*/
-	// new SlashCommandBuilder().setName("chat").setDescription("Chat with the bot").addStringOption(option=>
-	// 		option.setName("what").setDescription("What to say").setRequired(true)
-	// 	).addBooleanOption(option=>
-	// 		option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
-	// 	),
-	/*new SlashCommandBuilder().setName("timer").setDescription("Set a timer").addIntegerOption(option=>
-			option.setName("minutes").setDescription("Amount of minutes").setMinValue(0).setMaxValue(59).setRequired(true)
-		).addIntegerOption(option=>
-			option.setName("hours").setDescription("Amount of hours").setMinValue(0).setMaxValue(6)
-		).addIntegerOption(option=>
-			option.setName("seconds").setDescription("Amount of seconds").setMinValue(0).setMaxValue(59)
-		),
-	new SlashCommandBuilder().setName("chronograph").setDescription("Start a stopwatch"),*/
-
-	new ContextMenuCommandBuilder().setName("translate_message").setType(ApplicationCommandType.Message),
-]
 
 
-// Load in migrated commands
+// Build command info from slash commands
+const extraInfo = {};
+let commands = []
 const migratedCommands = {}
 for (file of fs.readdirSync("./commands")) {
     if (path.extname(file) === ".js") {
