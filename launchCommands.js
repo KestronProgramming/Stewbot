@@ -36,7 +36,6 @@ const extraInfo={
 	"rock_paper_scissors":{"contexts":[0,1,2],"integration_types":[0,1],"cat":4},
 	"timer":{"contexts":[0,1,2],"integration_types":[0,1],"cat":1},
 	"chronograph":{"contexts":[0,1,2],"integration_types":[0,1],"cat":1},
-	"warn":{"contexts":[0],"integration_types":[0],"cat":5},
 	"warnings":{"contexts":[0],"integration_types":[0],"cat":5},
 
 	//Context Menu Commands
@@ -71,15 +70,6 @@ let commands = [
 	// 	).addBooleanOption(option=>
 	// 		option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 	// 	),
-	new SlashCommandBuilder().setName("warn").setDescription("Warn a user for bad behaviour").addUserOption(option=>
-			option.setName("who").setDescription("Who are you warning?").setRequired(true)
-		).addStringOption(option=>
-			option.setName("what").setDescription("What did they do?")
-		).addIntegerOption(option=>
-			option.setName("severity").setDescription("On a scale from 1 to 10, how would you rate the severity?").setMinValue(1).setMaxValue(10)
-		).addBooleanOption(option=>
-			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
-		).setDefaultMemberPermissions(PermissionFlagsBits.ManageNicknames),
 	new SlashCommandBuilder().setName("warnings").setDescription("See the warnings that have been dealt in the server").addUserOption(option=>
 			option.setName("who").setDescription("Do you want to see the warnings for a specific person?")
 		).addBooleanOption(option=>

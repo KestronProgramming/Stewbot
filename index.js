@@ -2133,44 +2133,6 @@ client.on("interactionCreate",async cmd=>{
     }
     //Slash Commands and Context Menus
     else switch(cmd.commandName){
-        case 'chronograph':
-            cmd.followUp({content:`**Chronograph**\n<t:${Math.round(Date.now()/1000)}:R>`,components:presets.chrono});
-        break;
-        case 'warn':
-            if(cmd.options.getUser("who").bot){
-                cmd.followUp(`Bots cannot be warned. Consider reconfiguring or removing a bot if it's giving you issues.`);
-                break;
-            }
-            if(!storage[cmd.guild.id].users.hasOwnProperty(cmd.options.getUser("who").id)){
-                storage[cmd.guild.id].users[cmd.options.getUser("who").id]=structuredClone(defaultGuildUser);
-            }
-            if(!storage[cmd.guild.id].users[cmd.options.getUser("who").id].hasOwnProperty("warnings")){
-                storage[cmd.guild.id].users[cmd.options.getUser("who").id].warnings=[];
-            }
-            storage[cmd.guild.id].users[cmd.options.getUser("who").id].warnings.push({
-                "moderator":cmd.user.id,
-                "reason":cmd.options.getString("what")===null?`None given`:cmd.options.getString("what"),
-                "severity":cmd.options.getInteger("severity")===null?0:cmd.options.getInteger("severity"),
-                "when":Math.round(Date.now()/1000)
-            });
-            try{
-                cmd.options.getUser("who").send({embeds:[{
-                    type: "rich",
-                    title: cmd.guild.name.slice(0,80),
-                    description: `You were given a warning.\nReason: \`${cmd.options.getString("what")===null?`None given`:cmd.options.getString("what")}\`\nSeverity level: \`${cmd.options.getInteger("severity")===null?"None given":cmd.options.getInteger("severity")}\``,
-                    color: 0xff0000,
-                    thumbnail: {
-                        url: cmd.guild.iconURL(),
-                        height: 0,
-                        width: 0,
-                    },
-                    footer: {
-                        text:`This message was sent by a moderator of ${cmd.guild.name}`
-                    }
-                }]}).catch(e=>{});
-            }catch(e){}
-            cmd.followUp({content:`Alright, I have warned <@${cmd.options.getUser("who").id}>${cmd.options.getString("what")===null?``:` with the reason \`${cmd.options.getString("what")}\``}${cmd.options.getInteger("severity")===null?``:` at a level \`${cmd.options.getInteger("severity")}\``}. This is warning #\`${storage[cmd.guild.id].users[cmd.options.getUser("who").id].warnings.length}\` for them.`,allowedMentions:{parse:[]}});
-        break;
         case 'warnings':
             if(cmd.options.getUser("who")!==null){
                 if(!storage[cmd.guild.id].users.hasOwnProperty(cmd.options.getUser("who").id)){
