@@ -97,7 +97,7 @@ for (file of fs.readdirSync("./commands")) {
 }
 for (let commandName in migratedCommands) {
 	const command = migratedCommands[commandName];
-	if (command?.data) {
+	if (command?.data?.command) {
 		commands.push(command.data.command);
 	}
 	if (command?.data?.extra) {

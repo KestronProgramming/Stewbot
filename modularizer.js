@@ -49,7 +49,7 @@ const extraInfo = launchCommands.match(/const extraInfo(.|\n|\r)+?^\}/mgui)[0]
 const commands = launchCommands.match(/let commands(.|\n|\r)+?^\]/mgui)[0]
 
 // Extract this data
-const thisExtraInfoTemp = JSON.parse(extraInfo.match(new RegExp(`.+"${command}".+`))[0].match(/\{.+\}/)[0]);
+const thisExtraInfoTemp = JSON.parse(extraInfo?.match(new RegExp(`.+"${command}".+`))?.[0]?.match?.(/\{.+\}/)?.[0]  || "{}");
 try { delete thisExtraInfoTemp.cat } catch { }
 const thisExtraInfo = JSON.stringify(thisExtraInfoTemp)
 
