@@ -2133,29 +2133,6 @@ client.on("interactionCreate",async cmd=>{
     }
     // Context Menu Commands
     else switch(cmd.commandName){
-        case 'delete_message':
-            if(cmd.guild?.id){
-                if(!cmd.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.ManageMessages)){
-                    cmd.followUp(`I cannot delete this message.`);
-                    break;
-                }
-                cmd.targetMessage.delete();
-                if(storage[cmd.guildId].logs.mod_actions&&storage[cmd.guildId].logs.active){
-                    var c=client.channels.cache.get(storage[cmd.guildId].logs.channel);
-                    if(c.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
-                        c.send({content:`Message from <@${cmd.targetMessage.author.id}> deleted by **${cmd.user.username}**.\n\n${cmd.targetMessage.content}`,allowedMentions:{parse:[]}});
-                    }
-                    else{
-                        storage[cmd.guildId].logs.active=false;
-                    }
-                }
-                cmd.followUp({"content":"Success","ephemeral":true});
-            }
-            else if(cmd.targetMessage.author.id===client.user.id){
-                cmd.targetMessage.delete();
-                cmd.followUp({"content":"Success","ephemeral":true});
-            }
-        break;
         case 'move_message':
             if(!cmd.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageWebhooks)){
                 cmd.followUp("I do not have the MANAGE_WEBHOOKS permission, so I cannot move this message.").
@@ -2198,15 +2175,6 @@ client.on("interactionCreate",async cmd=>{
             }).then(t=>{
                 cmd.followUp(`Attempted to translate${t.text!==cmd.targetMessage.content?`:\n\`\`\`\n${escapeBackticks(t.text)}\n\`\`\`\n-# If this is incorrect, try using ${cmds.translate.mention}.`:`, but I was unable to. Try using ${cmds.translate.mention}.`}`);
             });
-        break;
-        case 'remove_embeds':
-            if(cmd.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageMessages)){
-                cmd.targetMessage.suppressEmbeds(true);
-                cmd.followUp(`Suppressed embeds`);
-            }
-            else{
-                cmd.followUp(`I don't seem to have the MANAGE_MESSAGES permission, so I can't fulfill this request.`);
-            }
         break;
     }
 
