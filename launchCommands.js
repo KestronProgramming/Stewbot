@@ -36,7 +36,6 @@ const extraInfo={
 	"rock_paper_scissors":{"contexts":[0,1,2],"integration_types":[0,1],"cat":4},
 	"timer":{"contexts":[0,1,2],"integration_types":[0,1],"cat":1},
 	"chronograph":{"contexts":[0,1,2],"integration_types":[0,1],"cat":1},
-	"warnings":{"contexts":[0],"integration_types":[0],"cat":5},
 
 	//Context Menu Commands
 	"submit_meme":{"contexts":[0,1,2],"integration_types":[0,1],"cat":2,"desc":"Submit a meme to the Kestron moderators for verification to show up in `/fun meme`"},
@@ -70,11 +69,6 @@ let commands = [
 	// 	).addBooleanOption(option=>
 	// 		option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 	// 	),
-	new SlashCommandBuilder().setName("warnings").setDescription("See the warnings that have been dealt in the server").addUserOption(option=>
-			option.setName("who").setDescription("Do you want to see the warnings for a specific person?")
-		).addBooleanOption(option=>
-			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
-		).setDefaultMemberPermissions(PermissionFlagsBits.ManageNicknames),
 	/*new SlashCommandBuilder().setName("timer").setDescription("Set a timer").addIntegerOption(option=>
 			option.setName("minutes").setDescription("Amount of minutes").setMinValue(0).setMaxValue(59).setRequired(true)
 		).addIntegerOption(option=>
