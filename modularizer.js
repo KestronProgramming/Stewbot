@@ -2,7 +2,7 @@
 
 const fs = require("fs");
 
-const command = "move_message";
+const command = "submit_meme";
 
 const code = fs.readFileSync("./index.js").toString()
 const launchCommands = fs.readFileSync("./launchCommands.js").toString()

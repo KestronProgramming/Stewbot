@@ -36,9 +36,7 @@ const extraInfo={
 	// "timer":{"contexts":[0,1,2],"integration_types":[0,1],"cat":1},
 
 	//Context Menu Commands
-	"submit_meme":{"contexts":[0,1,2],"integration_types":[0,1],"cat":2,"desc":"Submit a meme to the Kestron moderators for verification to show up in `/fun meme`"},
 	"translate_message":{"contexts":[0,1,2],"integration_types":[0,1],"cat":1,"desc":"Attempt to autodetect the language of a message and translate it"},
-	"move_message":{"contexts":[0],"integration_types":[0],"cat":5,"desc":"Move a message from one channel into another"},
 };
 let commands = [
 	/*
@@ -73,7 +71,6 @@ let commands = [
 		),
 	new SlashCommandBuilder().setName("chronograph").setDescription("Start a stopwatch"),*/
 
-	new ContextMenuCommandBuilder().setName("submit_meme").setType(ApplicationCommandType.Message),
 	new ContextMenuCommandBuilder().setName("translate_message").setType(ApplicationCommandType.Message),
 ]
 
