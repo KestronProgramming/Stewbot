@@ -2133,21 +2133,6 @@ client.on("interactionCreate",async cmd=>{
     }
     //Slash Commands and Context Menus
     else switch(cmd.commandName){
-        case 'warnings':
-            if(cmd.options.getUser("who")!==null){
-                if(!storage[cmd.guild.id].users.hasOwnProperty(cmd.options.getUser("who").id)){
-                    storage[cmd.guild.id].users[cmd.options.getUser("who").id]=structuredClone(defaultGuildUser);
-                }
-                if(!storage[cmd.guild.id].users[cmd.options.getUser("who").id].hasOwnProperty("warnings")){
-                    storage[cmd.guild.id].users[cmd.options.getUser("who").id].warnings=[];
-                }
-                cmd.followUp({content:limitLength(`${storage[cmd.guild.id].users[cmd.options.getUser("who").id].warnings.length>0?`There are ${storage[cmd.guild.id].users[cmd.options.getUser("who").id].warnings.length} warnings for <@${cmd.options.getUser("who").id}>.${storage[cmd.guild.id].users[cmd.options.getUser("who").id].warnings.map((a,i)=>`\n${i}. <@${a.moderator}>: \`${a.reason}\`, level **${a.severity}**, given <t:${a.when}:R>.`).join("")}`:`This user has no warnings currently present.`}`),allowedMentions:{parse:[]},components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setLabel("Remove a Warning").setStyle(ButtonStyle.Danger).setCustomId(`remWarn-${cmd.options.getUser("who").id}`),new ButtonBuilder().setLabel("Clear all Warnings").setStyle(ButtonStyle.Danger).setCustomId(`clearWarn-${cmd.options.getUser("who").id}`))]});
-            }
-            else{
-                cmd.followUp({content:limitLength(`**Warnings in ${cmd.guild.name}**${Object.keys(storage[cmd.guild.id].users).map(a=>storage[cmd.guild.id].users[a].hasOwnProperty("warnings")?storage[cmd.guild.id].users[a].warnings.length>0?`\n- <@${a}>: \`${storage[cmd.guild.id].users[a].warnings.length}\` warnings dealt. Sum of Severities: \`${storage[cmd.guild.id].users[a].warnings.length>1?storage[cmd.guild.id].users[a].warnings.reduce((b,c)=>(typeof b==="object"?b.severity:b)+c.severity):storage[cmd.guild.id].users[a].warnings[0].severity}\``:``:``).join("")}`),allowedMentions:{parse:[]}});
-            }
-        break;
-
         case 'restart':
             // TODO: move these IDs here and where the command is registered to be pulled from the env.json file
             if(cmd.guild?.id==="983074750165299250" && cmd.channel.id==="986097382267715604") {
