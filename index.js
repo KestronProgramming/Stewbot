@@ -3224,7 +3224,7 @@ client.on("messageUpdate",async (msgO,msg)=>{
         if(filtered){
             storage[msg.guild.id].users[msg.author.id].infractions++;
             if(storage[msg.guildId].filter.censor){
-                msg.reply(`This post by **${msg.author.globalName||msg.author.username}** sent <t:${msg.createdTimestamp}:f> has been deleted due to retroactively editing a blocked word into the message.`);
+                await msg.reply(`This post by **${msg.author.globalName||msg.author.username}** sent <t:${msg.createdTimestamp}:f> has been deleted due to retroactively editing a blocked word into the message.`);
             }
             msg.delete();
             if(storage[msg.author.id].config.dmOffenses&&!msg.author.bot){
