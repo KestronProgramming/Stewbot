@@ -25,6 +25,10 @@ const mathjs = require('mathjs');
 const nlp = require('compromise');
 const {launchCommands}=require("./launchCommands.js");
 
+// Preliminary setup (TODO: move to a setup.sh)
+if (!fs.existsSync("tempMove")) fs.mkdirSync('tempMove');
+if (!fs.existsSync("tempMemes")) fs.mkdirSync('tempMemes');
+
 // Commands
 process.env.beta && console.log("Loading commands")
 const commands = {}
@@ -2133,42 +2137,6 @@ client.on("interactionCreate",async cmd=>{
     }
     // Context Menu Commands
     else switch(cmd.commandName){
-        case 'move_message':
-            if(!cmd.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageWebhooks)){
-                cmd.followUp("I do not have the MANAGE_WEBHOOKS permission, so I cannot move this message.").
-                break;
-            }
-            if(cmd.member.permissions.has(PermissionFlagsBits.ManageMessages)||cmd.user.id===cmd.targetMessage.author.id){
-                cmd.followUp({"content":`Where do you want to move message \`${cmd.targetMessage.id}\` by **${cmd.targetMessage.author.username}**?`,"ephemeral":true,"components":[presets.moveMessage]});
-            }
-            else{
-                cmd.followUp(`To use this command, you need to either be the one to have sent the message, or be a moderator with the MANAGE MESSAGES permission.`);
-            }
-        break;
-        case 'submit_meme':
-            if(cmd.targetMessage.attachments.size===0){
-                cmd.followUp({ephemeral:true,content:"I'm sorry, but I didn't detect any attachments on that message. Note that it has to be attached (uploaded), and that I don't visit embedded links."});
-                break;
-            }
-            cmd.followUp({content:`Submitted for evaluation`,ephemeral:true});
-            let i=0;
-            for(a of cmd.targetMessage.attachments){
-                var dots=a[1].url.split("?")[0].split(".");
-                dots=dots[dots.length-1];
-                if(!["mov","png","jpg","jpeg","gif","mp4","mp3","wav","webm","ogg"].includes(dots)){
-                    cmd.reply({content:`I don't support/recognize the file extension \`.${dots}\``,ephemeral:true});
-                    return;
-                }
-                await fetch(a[1].url).then(d=>d.arrayBuffer()).then(d=>{
-                    fs.writeFileSync(`./tempMemes/${i}.${dots}`,Buffer.from(d));
-                });
-                i++;
-            }
-            await client.channels.cache.get(process.env.noticeChannel).send({content:limitLength(`User ${cmd.user.username} submitted a meme for evaluation.`),files:fs.readdirSync("./tempMemes").map(a=>`./tempMemes/${a}`),components:presets.meme});
-            fs.readdirSync("./tempMemes").forEach(file=>{
-                fs.unlinkSync("./tempMemes/"+file);
-            });
-        break;
         case 'translate_message':
             translate(cmd.targetMessage.content,{
                 to:cmd.locale.slice(0,2)
@@ -2548,12 +2516,7 @@ client.on("interactionCreate",async cmd=>{
                 });
                 p++;
             }
-            try{
-                resp.files=fs.readdirSync("tempMove").map(a=>`./tempMove/${a}`);
-            } catch {
-                fs.mkdirSync('tempMove');
-                resp.files=fs.readdirSync("tempMove").map(a=>`./tempMove/${a}`);
-            }
+            resp.files=fs.readdirSync("tempMove").map(a=>`./tempMove/${a}`);
             var hook=await client.channels.cache.get(cmd.values[0]).fetchWebhooks();
             hook=hook.find(h=>h.token);
             if(hook){
