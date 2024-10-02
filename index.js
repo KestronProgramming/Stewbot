@@ -2133,13 +2133,6 @@ client.on("interactionCreate",async cmd=>{
     }
     //Slash Commands and Context Menus
     else switch(cmd.commandName){
-        case 'delete':
-            if(!cmd.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.ManageMessages)){
-                cmd.followUp(`I do not have the necessary permissions to execute this command.`);
-                break;
-            }
-            cmd.channel.bulkDelete(cmd.options.getInteger("amount")+1);
-        break;
         case 'chronograph':
             cmd.followUp({content:`**Chronograph**\n<t:${Math.round(Date.now()/1000)}:R>`,components:presets.chrono});
         break;
