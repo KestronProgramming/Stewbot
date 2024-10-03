@@ -30,7 +30,7 @@ module.exports = {
 
         extra: { "contexts": [0, 1, 2], "integration_types": [0, 1] },
 
-        requiredGlobals: ["cmds", "getLvl"],
+        requiredGlobals: ["cmds", "getLvl", "getEmojiFromMessage"],
 
         help: {
             "helpCategory": "Entertainment", 
