@@ -3,7 +3,6 @@ const { REST,Routes,PermissionFlagsBits,SlashCommandBuilder,ContextMenuCommandBu
 const fs=require("fs");
 const path = require("path")
 
-
 //Command permissions should be set to the level you would need to do it manually (so if the bot is deleting messages, the permission to set it up would be the permission to delete messages)
 //Don't enable anything in DMs that is unusable in DMs (server configurations, multiplayer reliant commands, etc)
 
@@ -18,97 +17,11 @@ Integration Types
 0: Only as a server command
 1: Only as a user command
 */
-/*
-categories=[//For auto generated help pages
-	"General Bot Usage",//0
-	"Reference",//1
-	"Multiplayer",//2
-	"Supporting Command",//3
-	"Entertainment",//4
-	"Administration",//5
-	"Configuration"//6
-];*/
-const extraInfo={
-	//Slash commands
-	"starboard_config":{"contexts":[0],"integration_types":[0],"cat":6},
-	// "chat":{"contexts":[0,1,2],"integration_types":[0,1],"cat":4},
-	"unavailable":{"contexts":[0,1,2],"integration_types":[0,1],"cat":2},
-	"rock_paper_scissors":{"contexts":[0,1,2],"integration_types":[0,1],"cat":4},
-	"delete":{"contexts":[0],"integration_types":[0],"cat":5},
-	"timer":{"contexts":[0,1,2],"integration_types":[0,1],"cat":1},
-	"chronograph":{"contexts":[0,1,2],"integration_types":[0,1],"cat":1},
-	"warn":{"contexts":[0],"integration_types":[0],"cat":5},
-	"warnings":{"contexts":[0],"integration_types":[0],"cat":5},
-
-	//Context Menu Commands
-	"submit_meme":{"contexts":[0,1,2],"integration_types":[0,1],"cat":2,"desc":"Submit a meme to the Kestron moderators for verification to show up in `/fun meme`"},
-	"translate_message":{"contexts":[0,1,2],"integration_types":[0,1],"cat":1,"desc":"Attempt to autodetect the language of a message and translate it"},
-	"move_message":{"contexts":[0],"integration_types":[0],"cat":5,"desc":"Move a message from one channel into another"},
-	//"delete_message":{"contexts":[0,1],"integration_types":[0],"cat":5,"desc":"Delete a message using Stewbot; can be used to delete Stewbot DMs"},
-	"remove_embeds":{"contexts":[0],"integration_types":[0],"cat":5,"desc":"Remove embeds from a message"},
-	"prime_embed":{"contexts":[0,1,2],"integration_types":[0,1],"cat":1,"desc":"Get a message ready to be embedded using /embed_message"}
-};
-let commands = [
-	/*
-	new SlashCommandBuilder().setName("starboard_config").setDescription("Configure starboard for this server").addBooleanOption(option=>
-			option.setName("active").setDescription("Should I post messages to the configured channel?").setRequired(true)
-		).addChannelOption(option=>
-			option.setName("channel").setDescription("The channel to post messages to (Required for first config)").addChannelTypes(ChannelType.GuildText)
-		).addStringOption(option=>
-			option.setName("emoji").setDescription("The emoji to react with to trigger starboard (Default: ⭐)")
-		).addIntegerOption(option=>
-			option.setName("threshold").setDescription("How many reactions are needed to trigger starboard? (Default: 3)").setMinValue(1)
-		).addStringOption(option=>
-			option.setName("message_type").setDescription("What should the bot's starboard posts look like?").addChoices(
-				{"name":"Make it look like the user posted","value":"0"},
-				{"name":"Post an embed with the message and a greeting","value":"1"},
-				{"name":"Post an embed with the message","value":"2"}
-			)
-		).addBooleanOption(option=>
-			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
-		).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),*/
-	// new SlashCommandBuilder().setName("chat").setDescription("Chat with the bot").addStringOption(option=>
-	// 		option.setName("what").setDescription("What to say").setRequired(true)
-	// 	).addBooleanOption(option=>
-	// 		option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
-	// 	),
-	new SlashCommandBuilder().setName("delete").setDescription("Delete messages").addIntegerOption(option=>
-			option.setName("amount").setDescription("The amount of the most recent messages to delete").setMinValue(1).setMaxValue(100).setRequired(true)
-		).addBooleanOption(option=>
-			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
-		).setDefaultMemberPermissions(PermissionFlagsBits.BanMembers),
-	new SlashCommandBuilder().setName("warn").setDescription("Warn a user for bad behaviour").addUserOption(option=>
-			option.setName("who").setDescription("Who are you warning?").setRequired(true)
-		).addStringOption(option=>
-			option.setName("what").setDescription("What did they do?")
-		).addIntegerOption(option=>
-			option.setName("severity").setDescription("On a scale from 1 to 10, how would you rate the severity?").setMinValue(1).setMaxValue(10)
-		).addBooleanOption(option=>
-			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
-		).setDefaultMemberPermissions(PermissionFlagsBits.ManageNicknames),
-	new SlashCommandBuilder().setName("warnings").setDescription("See the warnings that have been dealt in the server").addUserOption(option=>
-			option.setName("who").setDescription("Do you want to see the warnings for a specific person?")
-		).addBooleanOption(option=>
-			option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
-		).setDefaultMemberPermissions(PermissionFlagsBits.ManageNicknames),
-	/*new SlashCommandBuilder().setName("timer").setDescription("Set a timer").addIntegerOption(option=>
-			option.setName("minutes").setDescription("Amount of minutes").setMinValue(0).setMaxValue(59).setRequired(true)
-		).addIntegerOption(option=>
-			option.setName("hours").setDescription("Amount of hours").setMinValue(0).setMaxValue(6)
-		).addIntegerOption(option=>
-			option.setName("seconds").setDescription("Amount of seconds").setMinValue(0).setMaxValue(59)
-		),
-	new SlashCommandBuilder().setName("chronograph").setDescription("Start a stopwatch"),*/
-
-	new ContextMenuCommandBuilder().setName("submit_meme").setType(ApplicationCommandType.Message),
-	new ContextMenuCommandBuilder().setName("delete_message").setType(ApplicationCommandType.Message).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),//Leaving this in DMs to delete undesirable bot DMs
-	new ContextMenuCommandBuilder().setName("translate_message").setType(ApplicationCommandType.Message),
-	new ContextMenuCommandBuilder().setName("move_message").setType(ApplicationCommandType.Message),
-	new ContextMenuCommandBuilder().setName("prime_embed").setType(ApplicationCommandType.Message)
-]
 
 
-// Load in migrated commands
+// Build command info from slash commands
+const extraInfo = {};
+let commands = []
 const migratedCommands = {}
 for (file of fs.readdirSync("./commands")) {
     if (path.extname(file) === ".js") {
@@ -119,7 +32,7 @@ for (file of fs.readdirSync("./commands")) {
 }
 for (let commandName in migratedCommands) {
 	const command = migratedCommands[commandName];
-	if (command?.data) {
+	if (command?.data?.command) {
 		commands.push(command.data.command);
 	}
 	if (command?.data?.extra) {

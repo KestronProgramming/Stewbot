@@ -25,6 +25,10 @@ const mathjs = require('mathjs');
 const nlp = require('compromise');
 const {launchCommands}=require("./launchCommands.js");
 
+// Preliminary setup (TODO: move to a setup.sh)
+if (!fs.existsSync("tempMove")) fs.mkdirSync('tempMove');
+if (!fs.existsSync("tempMemes")) fs.mkdirSync('tempMemes');
+
 // Commands
 process.env.beta && console.log("Loading commands")
 const commands = {}
@@ -2112,225 +2116,21 @@ client.on("interactionCreate",async cmd=>{
         
     }
 
-    // Check if the command is migrated to ./commands/ folder
+    // Slash commands
     if (commands.hasOwnProperty(cmd.commandName)) {
         const commandScript = commands[cmd.commandName];
-
         // List of general globals it should have access to
         const providedGlobals = {
             client,
             storage,
-            notify, // TODO: Most of these functions should be required from a utility JS
+            notify, // TODO: schema for some commands like /filter to preload and provide these functions
             checkDirty,
         };
-
-        // Add any other requested globals
         requestedGlobals = commandScript.data?.requiredGlobals || commandScript.requestGlobals?.() || [];
         for (var name of requestedGlobals) {
             providedGlobals[name] = eval(name.match(/[\w-]+/)[0]);
         }
         await commands[cmd.commandName].execute(cmd, providedGlobals);
-    }
-    //Slash Commands and Context Menus
-    else switch(cmd.commandName){
-        case 'chronograph':
-            cmd.followUp({content:`**Chronograph**\n<t:${Math.round(Date.now()/1000)}:R>`,components:presets.chrono});
-        break;
-        case 'warn':
-            if(cmd.options.getUser("who").bot){
-                cmd.followUp(`Bots cannot be warned. Consider reconfiguring or removing a bot if it's giving you issues.`);
-                break;
-            }
-            if(!storage[cmd.guild.id].users.hasOwnProperty(cmd.options.getUser("who").id)){
-                storage[cmd.guild.id].users[cmd.options.getUser("who").id]=structuredClone(defaultGuildUser);
-            }
-            if(!storage[cmd.guild.id].users[cmd.options.getUser("who").id].hasOwnProperty("warnings")){
-                storage[cmd.guild.id].users[cmd.options.getUser("who").id].warnings=[];
-            }
-            storage[cmd.guild.id].users[cmd.options.getUser("who").id].warnings.push({
-                "moderator":cmd.user.id,
-                "reason":cmd.options.getString("what")===null?`None given`:cmd.options.getString("what"),
-                "severity":cmd.options.getInteger("severity")===null?0:cmd.options.getInteger("severity"),
-                "when":Math.round(Date.now()/1000)
-            });
-            try{
-                cmd.options.getUser("who").send({embeds:[{
-                    type: "rich",
-                    title: cmd.guild.name.slice(0,80),
-                    description: `You were given a warning.\nReason: \`${cmd.options.getString("what")===null?`None given`:cmd.options.getString("what")}\`\nSeverity level: \`${cmd.options.getInteger("severity")===null?"None given":cmd.options.getInteger("severity")}\``,
-                    color: 0xff0000,
-                    thumbnail: {
-                        url: cmd.guild.iconURL(),
-                        height: 0,
-                        width: 0,
-                    },
-                    footer: {
-                        text:`This message was sent by a moderator of ${cmd.guild.name}`
-                    }
-                }]}).catch(e=>{});
-            }catch(e){}
-            cmd.followUp({content:`Alright, I have warned <@${cmd.options.getUser("who").id}>${cmd.options.getString("what")===null?``:` with the reason \`${cmd.options.getString("what")}\``}${cmd.options.getInteger("severity")===null?``:` at a level \`${cmd.options.getInteger("severity")}\``}. This is warning #\`${storage[cmd.guild.id].users[cmd.options.getUser("who").id].warnings.length}\` for them.`,allowedMentions:{parse:[]}});
-        break;
-        case 'warnings':
-            if(cmd.options.getUser("who")!==null){
-                if(!storage[cmd.guild.id].users.hasOwnProperty(cmd.options.getUser("who").id)){
-                    storage[cmd.guild.id].users[cmd.options.getUser("who").id]=structuredClone(defaultGuildUser);
-                }
-                if(!storage[cmd.guild.id].users[cmd.options.getUser("who").id].hasOwnProperty("warnings")){
-                    storage[cmd.guild.id].users[cmd.options.getUser("who").id].warnings=[];
-                }
-                cmd.followUp({content:limitLength(`${storage[cmd.guild.id].users[cmd.options.getUser("who").id].warnings.length>0?`There are ${storage[cmd.guild.id].users[cmd.options.getUser("who").id].warnings.length} warnings for <@${cmd.options.getUser("who").id}>.${storage[cmd.guild.id].users[cmd.options.getUser("who").id].warnings.map((a,i)=>`\n${i}. <@${a.moderator}>: \`${a.reason}\`, level **${a.severity}**, given <t:${a.when}:R>.`).join("")}`:`This user has no warnings currently present.`}`),allowedMentions:{parse:[]},components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setLabel("Remove a Warning").setStyle(ButtonStyle.Danger).setCustomId(`remWarn-${cmd.options.getUser("who").id}`),new ButtonBuilder().setLabel("Clear all Warnings").setStyle(ButtonStyle.Danger).setCustomId(`clearWarn-${cmd.options.getUser("who").id}`))]});
-            }
-            else{
-                cmd.followUp({content:limitLength(`**Warnings in ${cmd.guild.name}**${Object.keys(storage[cmd.guild.id].users).map(a=>storage[cmd.guild.id].users[a].hasOwnProperty("warnings")?storage[cmd.guild.id].users[a].warnings.length>0?`\n- <@${a}>: \`${storage[cmd.guild.id].users[a].warnings.length}\` warnings dealt. Sum of Severities: \`${storage[cmd.guild.id].users[a].warnings.length>1?storage[cmd.guild.id].users[a].warnings.reduce((b,c)=>(typeof b==="object"?b.severity:b)+c.severity):storage[cmd.guild.id].users[a].warnings[0].severity}\``:``:``).join("")}`),allowedMentions:{parse:[]}});
-            }
-        break;
-
-        case 'restart':
-            // TODO: move these IDs here and where the command is registered to be pulled from the env.json file
-            if(cmd.guild?.id==="983074750165299250" && cmd.channel.id==="986097382267715604") {
-                const updateCode = cmd.options.getBoolean("update")
-                const updateCommands = cmd.options.getBoolean("update_commands")
-
-                var infoData = ""
-                if (updateCode) infoData += " | Updating code"
-                if (updateCommands) infoData += " | Running launchCommands.js"
-
-                // Notify about restart
-                notify(1,{content:`Bot restarted by <@${cmd.user.id}>`+infoData,allowedMentions:{parse:[]}});
-                cmd.followUp("Restarting..."+infoData);
-                
-                try {
-                    // Update code if requested
-                    if (updateCode) {
-                        await new Promise((resolve, reject) => {
-                            exec('sh ./update.sh', (error, stdout, stderr) => {
-                                if (error || stderr) {
-                                    var errNotif  =   `Error: ${error?.message||""}`
-                                        errNotif += `\nStderr: ${stderr}`
-                                    notify(1, errNotif);
-                                    reject(0);
-                                }
-                                stdout && notify(1, stdout);
-                                resolve(1);
-                            });                        
-                        });
-                    }
-
-                    // Update commands if requested
-                    if (updateCommands) {
-                        launchCommands();
-                    }
-                } catch (err) {
-                    notify(1, String("Caught error while restarting: " + err))
-                }
-
-                fs.writeFileSync("./storage.json",process.env.beta?JSON.stringify(storage,null,4):JSON.stringify(storage));
-                setTimeout(()=>{process.exit(0)},5000);
-            }
-        break;
-
-        //Context Menu Commands
-        case 'prime_embed':
-            storage[cmd.user.id].primedEmbed={
-                "content":cmd.targetMessage.content,
-                "timestamp":cmd.targetMessage.createdTimestamp,
-                "author":{
-                    "icon":cmd.targetMessage.author.displayAvatarURL(),
-                    "name":cmd.targetMessage.author.globalName||cmd.targetMessage.author.username,
-                    "id":cmd.targetMessage.author.id
-                },
-                "server":{
-                    "channelName":cmd.targetMessage.channel?.name?cmd.targetMessage.channel.name:(cmd.targetMessage.author.globalName||cmd.targetMessage.author.username),
-                    "name":cmd.targetMessage.guild?.name?cmd.targetMessage.guild.name:"",
-                    "channelId":cmd.targetMessage.channel?.id,
-                    "id":cmd.targetMessage.guild?.id?cmd.targetMessage.guild.id:"@me",
-                    "icon":cmd.targetMessage.guild?cmd.targetMessage.guild.iconURL():cmd.targetMessage.author.displayAvatarURL()
-                },
-                "id":cmd.targetMessage.id,
-                "attachmentURLs":[]
-            };
-            cmd.targetMessage.attachments.forEach(a => {
-                storage[cmd.user.id].primedEmbed.attachmentURLs.push(a.url);
-            });
-            cmd.followUp({content:`I have prepared the message to be embedded. Use ${cmds.embed_message.mention} and type **PRIMED** to embed this message.`,embeds:[getPrimedEmbed(cmd.user.id)],files:storage[cmd.user.id].primedEmbed.attachmentURLs});
-            
-        break;
-        case 'delete_message':
-            if(cmd.guild?.id){
-                if(!cmd.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.ManageMessages)){
-                    cmd.followUp(`I cannot delete this message.`);
-                    break;
-                }
-                cmd.targetMessage.delete();
-                if(storage[cmd.guildId].logs.mod_actions&&storage[cmd.guildId].logs.active){
-                    var c=client.channels.cache.get(storage[cmd.guildId].logs.channel);
-                    if(c.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
-                        c.send({content:`Message from <@${cmd.targetMessage.author.id}> deleted by **${cmd.user.username}**.\n\n${cmd.targetMessage.content}`,allowedMentions:{parse:[]}});
-                    }
-                    else{
-                        storage[cmd.guildId].logs.active=false;
-                    }
-                }
-                cmd.followUp({"content":"Success","ephemeral":true});
-            }
-            else if(cmd.targetMessage.author.id===client.user.id){
-                cmd.targetMessage.delete();
-                cmd.followUp({"content":"Success","ephemeral":true});
-            }
-        break;
-        case 'move_message':
-            if(!cmd.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageWebhooks)){
-                cmd.followUp("I do not have the MANAGE_WEBHOOKS permission, so I cannot move this message.").
-                break;
-            }
-            if(cmd.member.permissions.has(PermissionFlagsBits.ManageMessages)||cmd.user.id===cmd.targetMessage.author.id){
-                cmd.followUp({"content":`Where do you want to move message \`${cmd.targetMessage.id}\` by **${cmd.targetMessage.author.username}**?`,"ephemeral":true,"components":[presets.moveMessage]});
-            }
-            else{
-                cmd.followUp(`To use this command, you need to either be the one to have sent the message, or be a moderator with the MANAGE MESSAGES permission.`);
-            }
-        break;
-        case 'submit_meme':
-            if(cmd.targetMessage.attachments.size===0){
-                cmd.followUp({ephemeral:true,content:"I'm sorry, but I didn't detect any attachments on that message. Note that it has to be attached (uploaded), and that I don't visit embedded links."});
-                break;
-            }
-            cmd.followUp({content:`Submitted for evaluation`,ephemeral:true});
-            let i=0;
-            for(a of cmd.targetMessage.attachments){
-                var dots=a[1].url.split("?")[0].split(".");
-                dots=dots[dots.length-1];
-                if(!["mov","png","jpg","jpeg","gif","mp4","mp3","wav","webm","ogg"].includes(dots)){
-                    cmd.reply({content:`I don't support/recognize the file extension \`.${dots}\``,ephemeral:true});
-                    return;
-                }
-                await fetch(a[1].url).then(d=>d.arrayBuffer()).then(d=>{
-                    fs.writeFileSync(`./tempMemes/${i}.${dots}`,Buffer.from(d));
-                });
-                i++;
-            }
-            await client.channels.cache.get(process.env.noticeChannel).send({content:limitLength(`User ${cmd.user.username} submitted a meme for evaluation.`),files:fs.readdirSync("./tempMemes").map(a=>`./tempMemes/${a}`),components:presets.meme});
-            fs.readdirSync("./tempMemes").forEach(file=>{
-                fs.unlinkSync("./tempMemes/"+file);
-            });
-        break;
-        case 'translate_message':
-            translate(cmd.targetMessage.content,{
-                to:cmd.locale.slice(0,2)
-            }).then(t=>{
-                cmd.followUp(`Attempted to translate${t.text!==cmd.targetMessage.content?`:\n\`\`\`\n${escapeBackticks(t.text)}\n\`\`\`\n-# If this is incorrect, try using ${cmds.translate.mention}.`:`, but I was unable to. Try using ${cmds.translate.mention}.`}`);
-            });
-        break;
-        case 'remove_embeds':
-            if(cmd.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageMessages)){
-                cmd.targetMessage.suppressEmbeds(true);
-                cmd.followUp(`Suppressed embeds`);
-            }
-            else{
-                cmd.followUp(`I don't seem to have the MANAGE_MESSAGES permission, so I can't fulfill this request.`);
-            }
-        break;
     }
 
     //Buttons, Modals, and Select Menus
