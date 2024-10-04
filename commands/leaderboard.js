@@ -188,10 +188,14 @@ module.exports = {
                 break;
             case "cleanliness":
                 if (!storage[cmd.guildId].filter.active) {
-                    cmd.followUp(`This server doesn't use the at the moment. It can be configured using ${cmds.filter.config.mention}.`);
+                    cmd.followUp(`This server doesn't use the filter at the moment. It can be configured using ${cmds.filter.config.mention}.`);
                     return;
                 }
                 if (cmd.options.getUser("who")?.id) {
+                    if(!cmd.member?.permissions.has(PermissionFlagsBits.ManageMessages)){
+                        cmd.followUp(`I'm sorry, to prevent being filtered being used as a game this leaderboard is only available to moderators.`);
+                        return;
+                    }
                     var usr = cmd.options.getUser("who")?.id || cmd.user.id;
                     if (!storage[cmd.guildId].users.hasOwnProperty(usr)) {
                         cmd.followUp(`I am unaware of this user presently`);
@@ -211,7 +215,7 @@ module.exports = {
                                 },
                                 {
                                     "name": `Cleanliness Rank`,
-                                    "value": `#${Object.keys(storage[cmd.guildId].users).map(a => Object.assign(storage[cmd.guildId].users[a], { "id": a })).sort((a, b) => a.infractions - b.infractions).map(a => a.id).indexOf(usr) + 1}`,
+                                    "value": `#${Object.keys(storage[cmd.guildId].users).map(a => Object.assign(storage[cmd.guildId].users[a], { "id": a })).sort((a, b) => b.infractions - a.infractions).map(a => a.id).indexOf(usr) + 1}`,
                                     "inline": true
                                 }
                             ],
