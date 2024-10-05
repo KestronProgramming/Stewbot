@@ -102,3 +102,6 @@ function launchCommands(){
 if (require.main == module) {
 	launchCommands();
 }
+else {
+	module.exports.launchCommands = launchCommands;
+}
