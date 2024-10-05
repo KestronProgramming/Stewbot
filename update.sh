@@ -15,7 +15,10 @@ export HOME=/home/guest
 eval "$(ssh-agent -s)" > /dev/null 2>&1
 ssh-add $HOME/.ssh/GithubKey > /dev/null 2>&1
 
-# Stash changes - these can be recoverd worst-case scenario
+# Stash changes in worst-case scenario in case someone accidentally runs this while devving.
+git stash
+
+# Now force-update to latest
 git fetch origin
 git reset --hard origin/main
 
