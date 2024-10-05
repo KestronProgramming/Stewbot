@@ -338,6 +338,42 @@ const defaultGuild=require("./data/defaultGuild.json");
 const defaultGuildUser=require("./data/defaultGuildUser.json");
 const defaultUser=require("./data/defaultUser.json");
 
+async function finTimer(who){
+    if(!storage[who].hasOwnProperty("timer")){
+        return;
+    }
+    if(storage[who].timer.respLocation==="DM"){
+        try{
+            client.users.cache.get(who).send(`Your timer is done!`).catch(e=>{console.log(e)});
+        }
+        catch(e){console.log(e)}
+    }
+    else{
+        try{
+            var chan=await client.channels.cache.get(storage[who].timer.respLocation.split("/")[0]);
+            try{
+                if(chan&&chan?.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
+                    var msg=await chan.messages.fetch(storage[who].timer.respLocation.split("/")[1]);
+                    if(msg){
+                        msg.reply(`<@${who}>, your timer is done!`);
+                    }
+                    else{
+                        chan.send(`<@${who}>, your timer is done!`);
+                    }
+                }
+                else{
+                    client.users.cache.get(who).send(`Your timer is done!`).catch(e=>{console.log(e)});
+                }
+            }
+            catch(e){
+                client.users.cache.get(who).send(`Your timer is done!`).catch(e=>{console.log(e)});
+            }
+        }
+        catch(e){console.log(e)}
+    }
+    delete storage[who].timer;
+}
+
 
 function escapeBackticks(text){
     return text.replace(/(?<!\\)(?:\\\\)*`/g, "\\`");
@@ -1318,6 +1354,17 @@ client.once("ready",async ()=>{
     },60000*5);
     var now=new Date();
     setTimeout(daily,((now.getHours()>11?11+24-now.getHours():11-now.getHours())*(60000*60))+((60-now.getMinutes())*60000));
+
+    Object.keys(storage).forEach(key=>{
+        if(storage[key].hasOwnProperty("timer")){
+            if(storage[key].timer.time-Date.now()>0){
+                setTimeout(()=>{finTimer(key)},storage[key].timer.time-Date.now());
+            }
+            else{
+                finTimer(key);
+            }
+        }
+    });
 });
 
 async function sendHook(what, msg){
@@ -2841,6 +2888,15 @@ client.on("interactionCreate",async cmd=>{
         }
         else{
             cmd.update(`${cmd.message.content.split("Entered: ")[0]}Entered: \`${cmd.message.content.split("Entered: ")[1].replaceAll("`","")}${action}\``);
+        }
+    }
+    if(cmd.customId?.startsWith("clearTimer-")){
+        if(!(cmd.memberPermissions.has(PermissionFlagsBits.ManageMessages)&&cmd.targetMessage.id===storage[cmd.user.id].timer?.respLocation.split("/")[1])||cmd.user.id===cmd.customId.split("-")[1]){
+            delete storage[cmd.user.id].timer;
+            cmd.followUp(`I have cleared the timer.`);
+        }
+        else{
+            cmd.followUp(`That is not your timer to clear.`)
         }
     }
 });

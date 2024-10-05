@@ -123,7 +123,7 @@ module.exports = {
 			break;
 			case "set_number":
 				if(!storage[cmd.guildId].counting.active){
-					cmd.followUp(`This server doesn't use counting at the moment, configure it with ${commands["counting config"]}.`);
+					cmd.followUp(`This server doesn't use counting at the moment, configure it with ${cmds["counting config"]}.`);
 					break;
 				}
 				storage[cmd.guildId].counting.nextNum=cmd.options.getInteger("num");
