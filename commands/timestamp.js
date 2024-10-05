@@ -16,7 +16,7 @@ module.exports = {
 		
 		extra: {"contexts":[0,1,2],"integration_types":[0,1]},
 
-		requiredGlobals: ["cmds", "presets"],
+		requiredGlobals: ["presets"],
 
 		help: {
 			"helpCategory": "Informational",

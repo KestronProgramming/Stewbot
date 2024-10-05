@@ -19,7 +19,7 @@ module.exports = {
 			"desc": "Get a message ready to be embedded using /embed_message"
 		},
 
-		requiredGlobals: ["cmds", "getPrimedEmbed"],
+		requiredGlobals: ["getPrimedEmbed"],
 	},
 
 	async execute(cmd, context) {

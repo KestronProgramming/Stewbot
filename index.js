@@ -18,7 +18,6 @@ const cmds=require("./data/commands.json");
 const Sentiment = require('sentiment');
 const dns = require('dns');
 const { URL } = require('url');
-const { exec } = require('child_process');
 process.env.beta && console.log("Importing backup.js")
 const startBackupThread = require("./backup.js");
 const mathjs = require('mathjs');
@@ -2172,6 +2171,7 @@ client.on("interactionCreate",async cmd=>{
             storage,
             notify, // TODO: schema for some commands like /filter to preload and provide these functions
             checkDirty,
+            cmds,
         };
         requestedGlobals = commandScript.data?.requiredGlobals || commandScript.requestGlobals?.() || [];
         for (var name of requestedGlobals) {

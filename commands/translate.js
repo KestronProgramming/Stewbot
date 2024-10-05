@@ -25,7 +25,7 @@ module.exports = {
 		
 		extra: {"contexts":[0,1,2],"integration_types":[0,1]},
 
-		requiredGlobals: ["translate", "escapeBackticks", "cmds"],
+		requiredGlobals: ["translate", "escapeBackticks"],
 
 		help: {
 			helpCategory: "Informational",
