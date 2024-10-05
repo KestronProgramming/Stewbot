@@ -19,7 +19,7 @@ module.exports = {
 			"desc":"Attempt to autodetect the language of a message and translate it"
 		},
 
-		requiredGlobals: ["translate", "escapeBackticks", "cmds"],
+		requiredGlobals: ["translate", "escapeBackticks"],
 
 		help: {
 			helpCategory: "Informational",
