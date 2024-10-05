@@ -2891,7 +2891,7 @@ client.on("interactionCreate",async cmd=>{
         }
     }
     if(cmd.customId?.startsWith("clearTimer-")){
-        if(!(cmd.memberPermissions.has(PermissionFlagsBits.ManageMessages)&&cmd.targetMessage.id===storage[cmd.user.id].timer?.respLocation.split("/")[1])||cmd.user.id===cmd.customId.split("-")[1]){
+        if((cmd.memberPermissions.has(PermissionFlagsBits.ManageMessages)&&cmd.targetMessage.id===storage[cmd.user.id].timer?.respLocation.split("/")[1])||cmd.user.id===cmd.customId.split("-")[1]){
             delete storage[cmd.user.id].timer;
             cmd.followUp(`I have cleared the timer.`);
         }
