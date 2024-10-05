@@ -409,7 +409,9 @@ function processForNumber(text) {
     text = text.match(/^([0-9+\-*/^()\s\.]|sqrt)+/, '')?.[0]?.trim() || '';
     
     try {
-        return mathjs.evaluate(text);
+        let result = mathjs.evaluate(text);
+        result = +result.toFixed(1)
+        return result;
     } catch (error) {
         return null;
     }
