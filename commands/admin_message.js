@@ -37,8 +37,8 @@ module.exports = {
                 cmd.options.getUser("target").send({
                     embeds: [{
                         type: "rich",
-                        title: cmd.guild.name.slice(0, 80),
-                        description: cmd.options.getString("what").replaceAll("\\n", "\n"),
+                        title: checkDirty(config.homeServer,cmd.guild.name.slice(0, 80),true)[1],
+                        description: checkDirty(config.homeServer,cmd.options.getString("what").replaceAll("\\n", "\n"),true)[1],
                         color: 0x006400,
                         thumbnail: {
                             url: cmd.guild.iconURL(),
@@ -55,9 +55,9 @@ module.exports = {
         }
         else if (cmd.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.ManageWebhooks)) {
             var resp = {
-                "content": cmd.options.getString("what").replaceAll("\\n", "\n"),
+                "content": checkDirty(config.homeServer,cmd.options.getString("what").replaceAll("\\n", "\n"),true)[1],
                 "avatarURL": cmd.guild.iconURL(),
-                "username": cmd.guild.name.slice(0, 80)
+                "username": checkDirty(config.homeServer,cmd.guild.name.slice(0, 80),true)[1]
             };
             var hook = await cmd.channel.fetchWebhooks();
             hook = hook.find(h => h.token);

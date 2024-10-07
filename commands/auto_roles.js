@@ -28,6 +28,6 @@ module.exports = {
 			cmd.followUp(`I do not have the MANAGE_ROLES permission for this server, so I cannot run auto roles.`);
 			return;
 		}
-		cmd.followUp({"content":`${cmd.options.getString("message")}`,"ephemeral":true,"components":[presets.rolesCreation]});
+		cmd.followUp({"content":`${checkDirty(config.homeServer,cmd.options.getString("message"),true)[1]}`,"ephemeral":true,"components":[presets.rolesCreation]});
 	}
 };

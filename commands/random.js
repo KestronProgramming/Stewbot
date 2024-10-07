@@ -59,7 +59,9 @@ module.exports = {
 				cmd.followUp(`I have selected a random number between **${cmd.options.getInteger("low")||1}** and **${cmd.options.getInteger("high")||10}**: **${Math.round(Math.random()*((cmd.options.getInteger("high")||10)-(cmd.options.getInteger("low")||1))+(cmd.options.getInteger("low")||1))}**`);
 			break;
 			case '8-ball':
-				cmd.followUp(`I have generated a random response to the question "**${cmd.options.getString("question")}**".\nThe answer is **${m8ballResponses[Math.floor(Math.random()*m8ballResponses.length)]}**.`);
+				var ques=checkDirty(config.homeServer,cmd.options.getString("question"),true)[1];
+				if(cmd.guildId&&storage[cmd.guildId]?.filter.active) ques=checkDirty(cmd.guildId,ques,true)[1];
+				cmd.followUp(`I have generated a random response to the question "**${ques}**".\nThe answer is **${m8ballResponses[Math.floor(Math.random()*m8ballResponses.length)]}**.`);
 			break;
 			case 'coin-flip':
 				let coinsToFlip=cmd.options.getInteger("number")||1;

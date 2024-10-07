@@ -191,11 +191,11 @@ module.exports = {
                     cmd.followUp(`This server doesn't use the filter at the moment. It can be configured using ${cmds.filter.config.mention}.`);
                     return;
                 }
+                if(!cmd.member?.permissions.has(PermissionFlagsBits.ManageMessages)){
+                    cmd.followUp(`I'm sorry, to prevent being filtered being used as a game this leaderboard is only available to moderators.`);
+                    return;
+                }
                 if (cmd.options.getUser("who")?.id) {
-                    if(!cmd.member?.permissions.has(PermissionFlagsBits.ManageMessages)){
-                        cmd.followUp(`I'm sorry, to prevent being filtered being used as a game this leaderboard is only available to moderators.`);
-                        return;
-                    }
                     var usr = cmd.options.getUser("who")?.id || cmd.user.id;
                     if (!storage[cmd.guildId].users.hasOwnProperty(usr)) {
                         cmd.followUp(`I am unaware of this user presently`);
@@ -239,7 +239,7 @@ module.exports = {
                     content: `**Cleanliness Leaderboard**`, embeds: [{
                         "type": "rich",
                         "title": `${cmd.guild.name} Cleanliness Leaderboard`,
-                        "description": Object.keys(storage[cmd.guildId].users).map(a => Object.assign(storage[cmd.guildId].users[a], { "id": a })).sort((a, b) => a.infractions - b.infractions).slice(0, 10).map((a, i) => `\n${["🥇", "🥈", "🥉", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"][i]}. <@${a.id}>, ${a.infractions} times filtered`).join(""),
+                        "description": Object.keys(storage[cmd.guildId].users).map(a => Object.assign(storage[cmd.guildId].users[a], { "id": a })).sort((a, b) => b.infractions - a.infractions).slice(0, 10).map((a, i) => `\n${["🥇", "🥈", "🥉", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"][i]}. <@${a.id}>, ${a.infractions} times filtered`).join(""),
                         "color": 0x006400,
                         "thumbnail": {
                             "url": cmd.guild.iconURL(),

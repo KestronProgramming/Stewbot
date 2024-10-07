@@ -38,7 +38,7 @@ module.exports = {
         applyContext(context);
 
         const who = cmd.options.getUser("who");
-        const what = cmd.options.getString("what");
+        const what = checkDirty(config.homeServer,cmd.options.getString("what"),true)[1];
         const severity = cmd.options.getInteger("severity");
 
         if (who.bot) {

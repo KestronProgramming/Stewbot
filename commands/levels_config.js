@@ -44,7 +44,7 @@ module.exports = {
 		storage[cmd.guildId].levels.active=cmd.options.getBoolean("active");
 		if(cmd.options.getChannel("channel")!==null) storage[cmd.guildId].levels.channel=cmd.options.getChannel("channel").id;
 		if(cmd.options.getString("location")!==null) storage[cmd.guildId].levels.location=cmd.options.getString("location");
-		if(cmd.options.getString("message")!==null) storage[cmd.guildId].levels.msg=cmd.options.getString("message");
+		if(cmd.options.getString("message")!==null) storage[cmd.guildId].levels.msg=checkDirty(config.homeServer,cmd.options.getString("message"),true)[1];
 		var disclaimers=[];
 		if(storage[cmd.guildId].levels.channel===""&&storage[cmd.guildId].levels.location==="channel"){
 			storage[cmd.guildId].levels.location="DM";
