@@ -1992,7 +1992,7 @@ client.on("messageCreate",async msg=>{
         if(rmsg.author.id===client.user.id&&rmsg.content.includes("Ticket ID: ")){
             var resp={
                 content:msg.content,
-                username:msg.author.nickname||msg.author.globalName||msg.author.username,
+                username:msg.member?.nickname||msg.author.globalName||msg.author.username,
                 avatar_url:msg.author.displayAvatarURL()
             };
             var c=client.channels.cache.get(rmsg.content.split("Ticket ID: ")[1].split("/")[0]);
@@ -2480,7 +2480,7 @@ client.on("interactionCreate",async cmd=>{
                 replyBlip=`_[Reply to **${rMsg.author.username}**: ${rMsg.content.slice(0,22).replace(/(https?\:\/\/|\n)/ig,"")}${rMsg.content.length>22?"...":""}](<https://discord.com/channels/${rMsg.guild.id}/${rMsg.channel.id}/${rMsg.id}>)_\n`;
             }
             resp.content=`\`\`\`\nThis message has been moved from ${cmd.channel.name} by Stewbot.\`\`\`${replyBlip}${msg.content}`;
-            resp.username=msg.author.nickname||msg.author.globalName||msg.author.username;
+            resp.username=msg.member?.nickname||msg.author.globalName||msg.author.username;
             resp.avatarURL=msg.author.displayAvatarURL();
             var p=0;
             for(a of msg.attachments){
