@@ -34,6 +34,6 @@ module.exports = {
 			cmd.followUp({content:"This server doesn't want me to process that prompt.","ephemeral":true});
 			return;
 		}
-		cmd.followUp({"content":`**${cmd.options.getString("prompt")}**`,"ephemeral":true,"components":[presets.pollCreation]});
+		cmd.followUp({"content":`**${checkDirty(config.homeServer,cmd.options.getString("prompt"),true)[1]}**`,"ephemeral":true,"components":[presets.pollCreation]});
 	}
 };

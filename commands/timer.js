@@ -9,7 +9,9 @@ function applyContext(context={}) {
 module.exports = {
 	data: {
 		// Slash command data
-		command: new SlashCommandBuilder().setName('timer').setDescription('Set a timer/reminder').addIntegerOption(option=>
+		command: new SlashCommandBuilder().setName('timer').setDescription('Set a timer/reminder').addStringOption(option=>
+                option.setName("reminder").setDescription("What is the timer for?").setMaxLength(150)
+            ).addIntegerOption(option=>
                 option.setName("hours").setDescription("How many hours?").setMinValue(0).setMaxValue(24)
             ).addIntegerOption(option=>
                 option.setName("minutes").setDescription("How many minutes?").setMinValue(0).setMaxValue(59)
@@ -55,16 +57,24 @@ module.exports = {
             }
             var respondHere=cmd.options.getBoolean("respond_here")||false;
             var resp;
+            var reminder="";
+            if(cmd.options.getString("reminder")!==null){
+                reminder=checkDirty(config.homeServer,cmd.options.getString("reminder"),true)[1];
+                if(cmd.guildId&&storage[cmd.guildId]?.filter.active){
+                    reminder=checkDirty(cmd.guildId,reminder,true)[1];
+                }
+            }
             if(respondHere&&!cmd.channel?.id){
                 respondHere=false;
-                resp=await cmd.followUp({content:`Alright, I have set a timer that expires <t:${Math.round((Date.now()+timer)/1000)}:R> at <t:${Math.round((Date.now()+timer)/1000)}:f>. I was asked to ping you here, but I cannot do that in this channel. I will DM you instead.`,components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setLabel("Clear Timer").setCustomId(`clearTimer-${cmd.user.id}`).setStyle(ButtonStyle.Danger))]});
+                resp=await cmd.followUp({content:`Alright, I have set a timer that expires <t:${Math.round((Date.now()+timer)/1000)}:R> at <t:${Math.round((Date.now()+timer)/1000)}:f>. I was asked to ping you here, but I cannot do that in this channel. I will DM you instead.\n\`${reminder}\``,components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setLabel("Clear Timer").setCustomId(`clearTimer-${cmd.user.id}`).setStyle(ButtonStyle.Danger))]});
             }
             else{
-                resp=await cmd.followUp({content:`Alright, I have set a timer that expires <t:${Math.round((Date.now()+timer)/1000)}:R> at <t:${Math.round((Date.now()+timer)/1000)}:f>. I will ${respondHere?`ping you here`:`DM you`} when it finishes.`,components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setLabel("Clear Timer").setCustomId(`clearTimer-${cmd.user.id}`).setStyle(ButtonStyle.Danger))]});
+                resp=await cmd.followUp({content:`Alright, I have set a timer that expires <t:${Math.round((Date.now()+timer)/1000)}:R> at <t:${Math.round((Date.now()+timer)/1000)}:f>. I will ${respondHere?`ping you here`:`DM you`} when it finishes.\n\`${reminder}\``,components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setLabel("Clear Timer").setCustomId(`clearTimer-${cmd.user.id}`).setStyle(ButtonStyle.Danger))]});
             }
             storage[cmd.user.id].timer={
                 "time":Date.now()+timer,
-                "respLocation":respondHere?`${cmd.channel.id}/${resp.id}`:"DM"
+                "respLocation":respondHere?`${cmd.channel.id}/${resp.id}`:"DM",
+                "reminder":reminder
             };
             setTimeout(()=>{finTimer(cmd.user.id)},timer);
         }

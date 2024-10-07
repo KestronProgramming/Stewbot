@@ -41,8 +41,8 @@ module.exports = {
                 try{
                     var channelLinked=await client.channels.cache.get(slashes[slashes.length-2]);
                     var mes=await channelLinked.messages.fetch(slashes[slashes.length-1]);
-                    if(checkDirty(cmd.guild?.id,mes.content) || checkDirty(cmd.guild?.id,mes.author.nickname||mes.author.globalName||mes.author.username) || checkDirty(cmd.guild?.id,mes.guild.name) || checkDirty(cmd.guild?.id,mes.channel.name)){
-                        cmd.followUp(`I'm sorry, that message is blocked by this server's filter.`);
+                    if(checkDirty(cmd.guild?.id,mes.content) || checkDirty(cmd.guild?.id,mes.author.nickname||mes.author.globalName||mes.author.username) || checkDirty(cmd.guild?.id,mes.guild.name) || checkDirty(cmd.guild?.id,mes.channel.name)||checkDirty(config.homeServer,mes.content) || checkDirty(config.homeServer,mes.author.nickname||mes.author.globalName||mes.author.username) || checkDirty(config.homeServer,mes.guild.name) || checkDirty(config.homeServer,mes.channel.name)){
+                        cmd.followUp(`I'm sorry, I am unable to embed that message due to its content.`);
                         return;
                     }
                     let messEmbed = new EmbedBuilder()

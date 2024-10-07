@@ -47,7 +47,7 @@ module.exports = {
 			storage[cmd.guildId].alm.active=false;
 			disclaimers.push(`I can't post in the specified channel, so I cannot run auto leave messages.`);
 		}
-		if(cmd.options.getString("message")!==null) storage[cmd.guildId].alm.message=cmd.options.getString("message");
+		if(cmd.options.getString("message")!==null) storage[cmd.guildId].alm.message=checkDirty(config.homeServer,cmd.options.getString("message"),true)[1];
 		cmd.followUp(`Auto leave messages configured.${disclaimers.map(d=>`\n\n${d}`).join("")}`);
 	}
 };

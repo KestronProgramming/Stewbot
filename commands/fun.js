@@ -97,7 +97,7 @@ module.exports = {
 					},
 				}).then(d=>d.json()).then(async d=>{
 					if (d?.message?.startsWith?.("You have exceeded the ")) {
-						cmd.followUp("This command has been ratelimited");
+						cmd.followUp("I'm sorry, I need to wait a little bit before I can run this command again.");
 						return;
 					}
 					let firstQues=d[0].question.split("Would you rather ")[1];
@@ -128,7 +128,7 @@ module.exports = {
 					meme = memes.filter(m=>m.split(".")[0] === cmd.options.getInteger("number").toString())[0];
 					if (!meme) meme = memes[Math.floor(Math.random()*memes.length)];
 				}
-				catch(e) { // Give a random meme if it failes becaues there is no number. OPTIMIZE: check if there were options passed rather than try-catching
+				catch(e) { // Give a random meme if it fails becaues there is no number. OPTIMIZE: check if there were options passed rather than try-catching
 					meme=memes[Math.floor(Math.random()*memes.length)];
 				}
 				cmd.followUp({content:`Meme #${meme.split(".")[0]}`,files:[`./memes/${meme}`]});

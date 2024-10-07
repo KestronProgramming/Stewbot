@@ -45,7 +45,7 @@ module.exports = {
 		storage[cmd.guildId].ajm.active=cmd.options.getBoolean("active");
 		if(cmd.options.getChannel("channel")!==null) storage[cmd.guildId].ajm.channel=cmd.options.getChannel("channel").id;
 		if(cmd.options.getString("channel_or_dm")!==null) storage[cmd.guildId].ajm.dm=cmd.options.getString("channel_or_dm")==="dm";
-		if(cmd.options.getString("message")!==null) storage[cmd.guildId].ajm.message=cmd.options.getString("message");
+		if(cmd.options.getString("message")!==null) storage[cmd.guildId].ajm.message=checkDirty(config.homeServer,cmd.options.getString("message"),true)[1];
 		var disclaimers=[];
 		if(!storage[cmd.guildId].ajm.dm&&storage[cmd.guildId].ajm.channel===""){
 			storage[cmd.guildId].ajm.dm=true;
@@ -57,6 +57,5 @@ module.exports = {
 		}
 		if(storage[cmd.guildId].ajm.message==="") storage[cmd.guildId].ajm.message=defaultGuild.ajm.message;
 		cmd.followUp(`Auto join messages configured.${disclaimers.map(d=>`\n\n${d}`).join("")}`);
-
 	}
 };

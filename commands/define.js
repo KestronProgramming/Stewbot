@@ -34,18 +34,18 @@ module.exports = {
             d = d[0];
             
             if (d?.meanings) {
-                if(checkDirty(cmd.guild?.id,d.word)){
-                    cmd.followUp({content:"That word is blocked by this server's filter",ephemeral:true});
+                if(checkDirty(cmd.guild?.id,d.word)||checkDirty(config.homeServer,d.word)){
+                    cmd.followUp({content:"I am not able to provide a definition for that word.",ephemeral:true});
                     return;
                 }
 
                 let defs = [];
                 for (var i = 0; i < d.meanings.length; i++) {
                     for (var j = 0;j < d.meanings[i].definitions.length;j++) {
-                        let foundOne=checkDirty(cmd.guild?.id,d.meanings[i].definitions[j].example)||checkDirty(cmd.guild?.id,d.meanings[i].definitions[j].definition);
+                        let foundOne=checkDirty(cmd.guild?.id,d.meanings[i].definitions[j].example)||checkDirty(cmd.guild?.id,d.meanings[i].definitions[j].definition)||checkDirty(config.homeServer,d.meanings[i].definitions[j].example)||checkDirty(config.homeServer,d.meanings[i].definitions[j].definition);
                         defs.push({
                             name:"Type: " +d.meanings[i].partOfSpeech,
-                            value:foundOne?"Blocked by this server's filter":d.meanings[i].definitions[j].definition+(d.meanings[i].definitions[j].example?"\nExample: " +d.meanings[i].definitions[j].example:""),
+                            value:foundOne?"Blocked definition":d.meanings[i].definitions[j].definition+(d.meanings[i].definitions[j].example?"\nExample: " +d.meanings[i].definitions[j].example:""),
                             inline: true
                         });
                     }

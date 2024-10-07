@@ -42,6 +42,53 @@ for (file of fs.readdirSync("./commands")) {
 // Variables
 const sentiment = new Sentiment();
 var client;
+function checkDirty(where, what, filter=false) {
+    // If filter is false, it returns: hasBadWords
+    // If filter is true, it returns [hadBadWords, censoredMessage, wordsFound]
+
+    if (!where || !what) 
+        if (!filter) return false
+        else [false, '', []]
+
+    // Unsnowflake all custom emojis
+    what = String(what).replace(/<:(\w+):[0-9]+>/g, ":$1:")
+
+    let dirty = false;
+    let foundWords = []; // keep track of all filtered words to later tell the user what was filtered
+    for (blockedWord of storage[where].filter.blacklist) {
+        // Unsnowflake blocked word to match unsnowflaked message
+        blockedWord = blockedWord.replace(/<:(\w+):[0-9]+>/g, ":$1:");
+        
+        const blockedWordRegex = new RegExp(`(\\b|^)${escapeRegex(blockedWord)}(ing|s|ed|er|ism|ist|es|ual)?(\\b|$)`, "igu")
+        
+        // Check for the word 
+        if (blockedWordRegex.test(what) || what === blockedWord) {
+            dirty = true;
+            if (!filter) {
+                return true;
+            }
+            else {
+                foundWords.push(blockedWord)
+                what = what.replace(blockedWordRegex, "[\\_]");
+            }
+        }
+    }
+
+    if (!filter) {
+        // If we passed the check without exiting, it's clean
+        return false;
+    } 
+    else {
+        // If we're filtering, it needs a more structured output
+
+        // Additional sanitization content
+        if (dirty) {
+            what = defangURL(what)
+        }
+        
+        return [dirty, what, foundWords];
+    }
+}
 var Bible={};
 var properNames={};
 Object.keys(bible).forEach(book=>{
@@ -354,18 +401,19 @@ async function finTimer(who){
                 if(chan&&chan?.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
                     var msg=await chan.messages.fetch(storage[who].timer.respLocation.split("/")[1]);
                     if(msg){
-                        msg.reply(`<@${who}>, your timer is done!`);
+                        msg.reply(`<@${who}>, your timer is done!${storage[who].timer.reminder.length>0?`\n\`${storage[who].timer.reminder}\``:``}`);
+                        msg.edit({components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setLabel("Clear Timer").setStyle(ButtonStyle.Danger).setDisabled(true))]});
                     }
                     else{
-                        chan.send(`<@${who}>, your timer is done!`);
+                        chan.send(`<@${who}>, your timer is done!${storage[who].timer.reminder.length>0?`\n\`${storage[who].timer.reminder}\``:``}`);
                     }
                 }
                 else{
-                    client.users.cache.get(who).send(`Your timer is done!`).catch(e=>{console.log(e)});
+                    client.users.cache.get(who).send(`Your timer is done!${storage[who].timer.reminder.length>0?`\n\`${storage[who].timer.reminder}\``:``}`).catch(e=>{console.log(e)});
                 }
             }
             catch(e){
-                client.users.cache.get(who).send(`Your timer is done!`).catch(e=>{console.log(e)});
+                client.users.cache.get(who).send(`Your timer is done!${storage[who].timer.reminder.length>0?`\n\`${storage[who].timer.reminder}\``:``}`).catch(e=>{console.log(e)});
             }
         }
         catch(e){console.log(e)}
@@ -700,54 +748,6 @@ function noPerms(where,what){
     
 }
 
-function checkDirty(where, what, filter=false) {
-    // If filter is false, it returns: hasBadWords
-    // If filter is true, it returns [hadBadWords, censoredMessage, wordsFound]
-
-    if (!where || !what) 
-        if (!filter) return false
-        else [false, '', []]
-
-    // Unsnowflake all custom emojis
-    what = String(what).replace(/<:(\w+):[0-9]+>/g, ":$1:")
-
-    let dirty = false;
-    let foundWords = []; // keep track of all filtered words to later tell the user what was filtered
-    for (blockedWord of storage[where].filter.blacklist) {
-        // Unsnowflake blocked word to match unsnowflaked message
-        blockedWord = blockedWord.replace(/<:(\w+):[0-9]+>/g, ":$1:");
-        
-        const blockedWordRegex = new RegExp(`(\\b|^)${escapeRegex(blockedWord)}(ing|s|ed|er|ism|ist|es|ual)?(\\b|$)`, "igu")
-        
-        // Check for the word 
-        if (blockedWordRegex.test(what) || what === blockedWord) {
-            dirty = true;
-            if (!filter) {
-                return true;
-            }
-            else {
-                foundWords.push(blockedWord)
-                what = what.replace(blockedWordRegex, "[\\_]");
-            }
-        }
-    }
-
-    if (!filter) {
-        // If we passed the check without exiting, it's clean
-        return false;
-    } 
-    else {
-        // If we're filtering, it needs a more structured output
-
-        // Additional sanitization content
-        if (dirty) {
-            what = defangURL(what)
-        }
-        
-        return [dirty, what, foundWords];
-    }
-}
-
 function getLvl(lvl){
     var total=0;
     while(lvl>-1){
@@ -974,8 +974,8 @@ async function doEmojiboardReaction(react) {
 }
 
 var started24=false;
-function daily(dontLoop){
-    if(!started24||dontLoop){
+function daily(dontLoop=false){
+    if(!started24&&!dontLoop){
         setInterval(daily,60000*60*24);
         started24=true;
     }
@@ -1188,7 +1188,7 @@ function getStarMsg(msg){
         `Got a message for you.`,
         `It's always a good day when @ posts`
     ];
-    return `**${starboardHeaders[Math.floor(Math.random()*starboardHeaders.length)].replaceAll("@",msg.author?.globalName||msg.author?.username||"this person")}**`;
+    return `**${starboardHeaders[Math.floor(Math.random()*starboardHeaders.length)].replaceAll("@",msg.member?.nickname||msg.author?.globalName||msg.author?.username||"this person")}**`;
 }
 function getPrimedEmbed(userId,guildIn){
     var mes=storage[userId].primedEmbed;
@@ -1207,7 +1207,7 @@ function getPrimedEmbed(userId,guildIn){
             iconURL: "" + mes.author.icon,
             url: "https://discord.com/users/" + mes.author.id
         })
-        .setDescription(mes.content||null)
+        .setDescription(checkDirty(config.homeServer,mes.content,true)[1]||null)
         .setTimestamp(new Date(mes.timestamp))
         .setFooter({
             text: mes.server.name + " / " + mes.server.channelName,
@@ -1310,6 +1310,7 @@ async function sendHook(what, msg){
     if(typeof what==="string"){
         what={"content": what}
     }
+    what.content=checkDirty(config.homeServer,what.content,true)[1];
     
     // Prevent pings
     what.allowedMentions = { parse: [] };
@@ -1552,7 +1553,7 @@ client.on("messageCreate",async msg=>{
     const messageFiltered = Boolean(msg.ogContent);
     
     // Sentiment Analysis reactions
-    if (!messageFiltered && !msg.author.bot && msg.content.match(/\bstewbot\b/i)) {
+    if (!messageFiltered && !msg.author.bot && msg.content.match(/\bstewbot\'?s?\b/i)) {
         var [emoji, toReact] = textToEmojiSentiment(msg.content);
         if (toReact) {
             msg.react(emoji);
@@ -1560,7 +1561,7 @@ client.on("messageCreate",async msg=>{
      }
 
     // Level-up XP
-    if(!msg.author.bot&&storage[msg.guildId]?.levels.active&&storage[msg.guildId]?.users[msg.author.id].expTimeout<Date.now()){
+    if(!msg.author.bot&&storage[msg.guildId]?.levels.active&&storage[msg.guildId]?.users[msg.author.id].expTimeout<Date.now()&&!checkDirty(config.homeServer,msg.content)){
         storage[msg.guildId].users[msg.author.id].expTimeout=Date.now()+60000;
         storage[msg.guildId].users[msg.author.id].exp+=Math.floor(Math.random()*11)+15;//Between 15 and 25
         if(storage[msg.guild.id].users[msg.author.id].exp>getLvl(storage[msg.guild.id].users[msg.author.id].lvl)){
@@ -1635,7 +1636,7 @@ client.on("messageCreate",async msg=>{
         
     }
     
-    // "The code is the comment" 🤓 - "If the server uses counting, but Stewbot cannot add reactions or send messages, don't do counting"
+    // If the server uses counting, but Stewbot cannot add reactions or send messages, don't do counting
     if(!msg.author.bot&&storage[msg.guildId]?.counting.active&&msg.channel.id===storage[msg.guildId]?.counting.channel&&(!msg.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.AddReactions)||!msg.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages))){
         storage[msg.guildId].counting.active=false;
     }
@@ -1836,11 +1837,11 @@ client.on("messageCreate",async msg=>{
                 .setTitle("(Jump to message)")
                 .setURL(links[i])
                 .setAuthor({
-                    name: mes.author.nickname||mes.author.globalName||mes.author.username,
+                    name: checkDirty(config.homeServer,mes.member?.nickname||mes.author.globalName||mes.author.username,true)[1],
                     iconURL: "" + mes.author.displayAvatarURL(),
                     url: "https://discord.com/users/" + mes.author.id,
                 })
-                .setDescription(mes.content||null)
+                .setDescription(checkDirty(config.homeServer,mes.content,true)[1]||null)
                 .setTimestamp(new Date(mes.createdTimestamp))
                 .setFooter({
                     text: mes.guild?.name?mes.guild.name + " / " + mes.channel.name:`DM with ${client.user.username}`,
@@ -1959,7 +1960,7 @@ client.on("messageCreate",async msg=>{
         msg.reply({content: `${cont} the KAP Archive, which you can visit [here](https://kap-archive.bhavjit.com/).`,embeds:embds,allowedMentions:{parse:[]}});
     }
 
-    // Super jank ticket system
+    // Ticket system
     if(msg.channel.name?.startsWith("Ticket with ")&&!msg.author.bot){
         var resp={files:[],content:`Ticket response from **${msg.guild.name}**. To respond, make sure to reply to this message.\nTicket ID: ${msg.channel.name.split("Ticket with ")[1].split(" in ")[1]}/${msg.channel.id}`};
         msg.attachments.forEach((attached,i) => {
@@ -2099,7 +2100,6 @@ client.on("interactionCreate",async cmd=>{
     }
     if(!storage.hasOwnProperty(cmd.user.id)){
         storage[cmd.user.id]=structuredClone(defaultUser);
-        
     }
 
     // Slash commands
@@ -2112,6 +2112,7 @@ client.on("interactionCreate",async cmd=>{
             notify, // TODO: schema for some commands like /filter to preload and provide these functions
             checkDirty,
             cmds,
+            config
         };
         requestedGlobals = commandScript.data?.requiredGlobals || commandScript.requestGlobals?.() || [];
         for (var name of requestedGlobals) {
@@ -2313,7 +2314,7 @@ client.on("interactionCreate",async cmd=>{
                 break;
             }
             poll.options.push(cmd.fields.getTextInputValue("poll-addedInp"));
-            cmd.update(`**${poll.title}**${poll.options.map((a,i)=>`\n${i}. ${a}`).join("")}`);
+            cmd.update(checkDirty(config.homeServer,`**${poll.title}**${poll.options.map((a,i)=>`\n${i}. ${a}`).join("")}`,true)[1]);
         break;
         case 'poll-removed':
             var i=cmd.fields.getTextInputValue("poll-removedInp");
@@ -2833,6 +2834,7 @@ client.on("interactionCreate",async cmd=>{
     if(cmd.customId?.startsWith("clearTimer-")){
         if((cmd.memberPermissions.has(PermissionFlagsBits.ManageMessages)&&cmd.targetMessage.id===storage[cmd.user.id].timer?.respLocation.split("/")[1])||cmd.user.id===cmd.customId.split("-")[1]){
             delete storage[cmd.user.id].timer;
+            cmd.targetMessage.edit({components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setLabel("Clear Timer").setStyle(ButtonStyle.Danger).setDisabled(true))]});
             cmd.followUp(`I have cleared the timer.`);
         }
         else{
@@ -3026,11 +3028,11 @@ client.on("messageUpdate",async (msgO,msg)=>{
         if(filtered){
             storage[msg.guild.id].users[msg.author.id].infractions++;
             if(storage[msg.guildId].filter.censor){
-                await msg.reply(`This post by **${msg.author.globalName||msg.author.username}** sent <t:${msg.createdTimestamp}:f> has been deleted due to retroactively editing a blocked word into the message.`);
+                await msg.reply(`This post by **${msg.author.globalName||msg.author.username}** sent <t:${Math.round(msg.createdTimestamp/1000)}:f> has been deleted due to retroactively editing a blocked word into the message.`);
             }
-            msg.delete();
+            setTimeout(()=>{msg.delete()},2000);
             if(storage[msg.author.id].config.dmOffenses&&!msg.author.bot){
-                msg.author.send(limitLength(`Your message in **${msg.guild.name}** was ${storage[msg.guildId].filter.censor?"censored":"deleted"} due to editing in the following word${foundWords.length>1?"s":""} that are in the filter: ||${foundWords.join("||, ||")}||${storage[msg.author.id].config.returnFiltered?"```\n"+msg.content.replaceAll("`","\\`")+"```":""}`));
+                msg.author.send(limitLength(`Your message in **${msg.guild.name}** was deleted due to editing in the following word${foundWords.length>1?"s":""} that are in the filter: ||${foundWords.join("||, ||")}||${storage[msg.author.id].config.returnFiltered?"```\n"+msg.content.replaceAll("`","\\`")+"```":""}`));
             }
             if(storage[msg.guildId].filter.log&&storage[msg.guildId].filter.channel){
                 client.channels.cache.get(storage[msg.guildId].filter.channel).send(limitLength(`I have deleted a message from **${msg.author.username}** in <#${msg.channel.id}> for editing in the following blocked word${foundWords.length>1?"s":""}: ||${foundWords.join("||, ||")}||\`\`\`\n${msg.content.replaceAll("`","\\`")}\`\`\``));
