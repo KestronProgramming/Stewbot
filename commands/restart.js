@@ -13,7 +13,7 @@ module.exports = {
     data: {
         command: null, // TODO: devadmin command globals. Really this is the only one rn
 
-        requiredGlobals: ["launchCommands"],
+        requiredGlobals: [],
     },
 
     async execute(cmd, context) {
@@ -51,7 +51,11 @@ module.exports = {
 
                 // Update commands if requested
                 if (updateCommands) {
-                    launchCommands();
+                    // Grab the latest version
+                    const cachedLaunchFile = require.resolve('../launchCommands.js')
+                    if (cachedLaunchFile) delete require.cache[cachedLaunchFile]
+                    const { launchCommands } = require("../launchCommands.js");
+                    notify(1, launchCommands());
                 }
             } catch (err) {
                 notify(1, String("Caught error while restarting: " + err))

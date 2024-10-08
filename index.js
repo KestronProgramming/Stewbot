@@ -22,7 +22,6 @@ process.env.beta && console.log("Importing backup.js")
 const startBackupThread = require("./backup.js");
 const mathjs = require('mathjs');
 const nlp = require('compromise');
-const {launchCommands}=require("./launchCommands.js");
 
 // Preliminary setup (TODO: move to a setup.sh)
 if (!fs.existsSync("tempMove")) fs.mkdirSync('tempMove');
