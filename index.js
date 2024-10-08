@@ -2835,13 +2835,13 @@ client.on("interactionCreate",async cmd=>{
         }
     }
     if(cmd.customId?.startsWith("clearTimer-")){
-        if((cmd.memberPermissions.has(PermissionFlagsBits.ManageMessages)&&cmd.targetMessage.id===storage[cmd.user.id].timer?.respLocation.split("/")[1])||cmd.user.id===cmd.customId.split("-")[1]){
+        if((cmd.member?.permissions.has(PermissionFlagsBits.ManageMessages)&&cmd.message.id===storage[cmd.user.id].timer?.respLocation.split("/")[1])||cmd.user.id===cmd.customId.split("-")[1]){
             delete storage[cmd.user.id].timer;
-            cmd.targetMessage.edit({components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setLabel("Clear Timer").setStyle(ButtonStyle.Danger).setDisabled(true))]});
-            cmd.followUp(`I have cleared the timer.`);
+            cmd.message.edit({components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setLabel("Clear Timer").setStyle(ButtonStyle.Danger).setDisabled(true).setCustomId("disabled"))]});
+            cmd.reply({content:`I have cleared the timer.`,ephemeral:true});
         }
         else{
-            cmd.followUp(`That is not your timer to clear.`)
+            cmd.reply({content:`That is not your timer to clear.`,ephemeral:true});
         }
     }
 });
