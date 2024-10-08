@@ -1353,7 +1353,7 @@ client.on("messageCreate",async msg=>{
                         }
                     });
                     if(missingPerms.length===0) missingPerms.push(`No issues found`);
-                    msg.reply(`As you command.${missingPerms.map(m=>`\n- ${m}`).join("")}`);
+                    msg.reply(`As you command. My highest role is ${msg.guild.members.cache.get(client.user.id).roles.highest.name} at ${msg.guild.members.cache.get(client.user.id).roles.highest.rawPosition}.${missingPerms.map(m=>`\n- ${m}`).join("")}`);
                 break;
                 case "configStatus":
                     switch(msg.content.split(" ")[2]){
@@ -2660,7 +2660,7 @@ client.on("interactionCreate",async cmd=>{
         }
         else{
             if(!cmd.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageRoles)){
-                cmd.reply({content:`I cannot apply roles at the moment. Please let the moderators know to grant me the MANAGE_ROLES permission, and to place any roles they want me to manage below my highest role in the roles list.`});
+                cmd.reply({content:`I cannot apply roles at the moment. Please let the moderators know to grant me the MANAGE_ROLES permission, and to place any roles they want me to manage below my highest role in the roles list.`,ephemeral:true});
             }
             else{
                 if(!cmd.member.roles.cache.find(r=>r.id===id)){
