@@ -77,7 +77,6 @@ function launchCommands(){
 			}
 		});
 		fs.writeFileSync("./data/commands.json",JSON.stringify(comms));
-		console.log("Updated commands on Discord and wrote commands to ./commands.json");
 	}).catch(console.error);
 
 	// Register stewbot-devadmin-only commands
@@ -96,11 +95,13 @@ function launchCommands(){
 		Routes.applicationGuildCommands(process.env.clientId, "983074750165299250"),
 		{ body: devadminCommands },
 	);
+
+	return "Updated commands on Discord and wrote commands to ./commands.json";
 }
 
 // Run if being run directly
 if (require.main == module) {
-	launchCommands();
+	console.log(launchCommands());
 }
 else {
 	module.exports.launchCommands = launchCommands;
