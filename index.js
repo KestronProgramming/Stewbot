@@ -390,7 +390,7 @@ async function finTimer(who){
     }
     if(storage[who].timer.respLocation==="DM"){
         try{
-            client.users.cache.get(who).send(`Your timer is done!`).catch(e=>{console.log(e)});
+            client.users.cache.get(who).send(`Your timer is done!${storage[who].timer.reminder.length>0?`\n\`${storage[who].timer.reminder}\``:``}`).catch(e=>{console.log(e)});
         }
         catch(e){console.log(e)}
     }
@@ -1479,6 +1479,9 @@ client.on("messageCreate",async msg=>{
                     delete storage[msg.guild.id].users[msg.author.id].safeTimestamp;
                     msg.reply("Removed your anti-hack safe time");
                 break
+                case "echo":
+                    msg.channel.send(msg.content.slice("~sudo echo ".length,msg.content.length));
+                break;
             }
         }
         else{
@@ -1553,7 +1556,7 @@ client.on("messageCreate",async msg=>{
     const messageFiltered = Boolean(msg.ogContent);
     
     // Sentiment Analysis reactions
-    if (!messageFiltered && !msg.author.bot && msg.content.match(/\bstewbot\'?s?\b/i)) {
+    if (!messageFiltered && !msg.author.bot && /\bstewbot\'?s?\b/i.test(msg.content)) {
         var [emoji, toReact] = textToEmojiSentiment(msg.content);
         if (toReact) {
             msg.react(emoji);
