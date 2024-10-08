@@ -2434,6 +2434,7 @@ client.on("interactionCreate",async cmd=>{
             var rows=[];
             var tempRow=[];
             cmd.values.forEach(role=>{
+                if(cmd.roles.get(role).name===null||cmd.roles.get(role).name===undefined) return;
                 tempRow.push(new ButtonBuilder().setCustomId("autoRole-"+role).setLabel(cmd.roles.get(role).name).setStyle(ButtonStyle.Success));
                 if(myRole<=cmd.roles.get(role).rawPosition){
                     badRoles.push(cmd.roles.get(role).name);
@@ -2650,7 +2651,7 @@ client.on("interactionCreate",async cmd=>{
         let myRole=cmd.guild.members.cache.get(client.user.id).roles.highest.position;
         let id=cmd.customId.split("autoRole-")[1];
         let role=cmd.guild.roles.cache.get(id);
-        if(!role){
+        if(role===undefined||role===null){
             cmd.reply({content:`That role doesn't seem to exist anymore.`,ephemeral:true});
             return;
         }
@@ -3160,9 +3161,11 @@ client.on("guildMemberAdd",async member=>{
                 try{
                     let myRole=member.guild.members.cache.get(client.user.id).roles.highest.position;
                     var role=member.guild.roles.cache.find(r=>r.id===role);
-                    if(role&&myRole>role.rawPosition){
-                        member.roles.add(role);
-                        addedStickyRoles++;
+                    if(role!==undefined&&role!==null){
+                        if(myRole>role.rawPosition){
+                            member.roles.add(role);
+                            addedStickyRoles++;
+                        }
                     }
                 }
                 catch(e){}
@@ -3177,8 +3180,10 @@ client.on("guildMemberAdd",async member=>{
             storage[member.guild.id].autoJoinRoles.forEach(role=>{
                 let myRole=member.guild.members.cache.get(client.user.id).roles.highest.position;
                 var role=member.guild.roles.cache.find(r=>r.id===role);
-                if(role&&myRole>role.rawPosition){
-                    member.roles.add(role);
+                if(role!==undefined&&role!==null){
+                    if(myRole>role.rawPosition){
+                        member.roles.add(role);
+                    }
                 }
             });
         }
