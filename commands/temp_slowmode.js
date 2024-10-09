@@ -71,7 +71,7 @@ module.exports = {
             storage[cmd.guild.id].tempSlow={};
         }
         if(storage[cmd.guild.id].tempSlow.hasOwnProperty(cmd.channel.id)){
-            cmd.followUp(`You already have a temp slowmode running in this channel. You must clear it or let it expire before you add a new one. It expires on its own in <>.`);
+            cmd.followUp({content:`You already have a temp slowmode running in this channel. You must clear it or let it expire before you add a new one. It expires on its own <t:${Math.round(storage[cmd.guild.id].tempSlow[cmd.channel.id].ends/1000)}:R>.`,components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setStyle(ButtonStyle.Danger).setLabel("Revert Now").setCustomId(`revertTempSlow`))]});
             return;
         }
         storage[cmd.guild.id].tempSlow[cmd.channel.id]={
@@ -83,6 +83,6 @@ module.exports = {
         };
         setTimeout(()=>{finTempSlow(cmd.guild.id,cmd.channel.id)},timer);
         cmd.channel.setRateLimitPerUser(cmd.options.getInteger("mode"));
-        cmd.followUp(`Alright, I have set a temporary slowmode setting for this channel until <t:${Math.round(storage[cmd.guild.id].tempSlow[cmd.channel.id].ends/1000)}:f> <t:${Math.round(storage[cmd.guild.id].tempSlow[cmd.channel.id].ends/1000)}:R>.`);
+        cmd.followUp({content:`Alright, I have set a temporary slowmode setting for this channel until <t:${Math.round(storage[cmd.guild.id].tempSlow[cmd.channel.id].ends/1000)}:f> <t:${Math.round(storage[cmd.guild.id].tempSlow[cmd.channel.id].ends/1000)}:R>.`,components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setStyle(ButtonStyle.Danger).setLabel("Revert Now").setCustomId(`revertTempSlow`))]});
 	}
 };

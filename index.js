@@ -2334,6 +2334,19 @@ client.on("interactionCreate",async cmd=>{
         case 'tsYear':
             cmd.showModal(presets.tsYearModal);
         break;
+        case 'revertTempSlow':
+            if(!cmd.channel.permissionsFor(cmd.user.id).has(PermissionFlagsBits.ManageChannels)){
+                cmd.reply({content:`You don't have sufficient permissions to use this button.`,ephemeral:true});
+                break;
+            }
+            if(!cmd.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.ManageChannels)){
+                cmd.reply({content:`I don't have the \`ManageChannels\` permission and so I'm unable to revert the slowmode setting.`,ephemeral:true});
+                break;
+            }
+            finTempSlow(cmd.guild.id,cmd.channel.id);
+            cmd.message.edit({components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setStyle(ButtonStyle.Danger).setLabel("Revert Now").setCustomId("revertTempSlow").setDisabled(true))]});
+            cmd.reply({content:`Alright, reverted the setting early.`,ephemeral:true});
+        break;
 
         //Modals
         case 'poll-added':
