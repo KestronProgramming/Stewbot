@@ -419,6 +419,24 @@ async function finTimer(who){
     }
     delete storage[who].timer;
 }
+async function finTempSlow(guild,channel){
+    var chan=client.channels.cache.get(channel);
+    if(!storage[guild]?.hasOwnProperty("tempSlow")||!storage[guild]?.tempSlow?.hasOwnProperty(channel)){
+        return;
+    }
+    if(chan===null||chan===undefined){
+        client.users.cache.get(storage[guild].tempSlow[channel].invoker).send(`I was unable to remove the temporary slowmode setting in <#${channel}>.`).catch(e=>{});
+        return;
+    }
+    if(!chan.permissionsFor(client.user.id).has(PermissionFlagsBits.ManageChannels)){
+        client.users.cache.get(storage[guild].tempSlow[channel].invoker).send(`I was unable to remove the temporary slowmode setting in <#${channel}> due to not having the \`ManageChannels\` permission.`).catch(e=>{});
+        return;
+    }
+    chan.setRateLimitPerUser(storage[guild].tempSlow[channel].origMode);
+    if(!storage[guild].tempSlow[channel].private){
+        chan.send(`Temporary slowmode setting reverted.`);
+    }
+}
 
 
 function escapeBackticks(text){
@@ -1301,6 +1319,16 @@ client.once("ready",async ()=>{
             else{
                 finTimer(key);
             }
+        }
+        if(storage[key].hasOwnProperty("tempSlow")){
+            Object.keys(storage[key].tempSlow).forEach(slow=>{
+                if(storage[key].tempSlow[slow].ends-Date.now()>0){
+                    setTimeout(()=>{finTempSlow(key,slow)},storage[key].tempSlow[slow].ends-Date.now());
+                }
+                else{
+                    finTempSlow(key,slow);
+                }
+            });
         }
     });
 });
