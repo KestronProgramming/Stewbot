@@ -426,15 +426,18 @@ async function finTempSlow(guild,channel){
     }
     if(chan===null||chan===undefined){
         client.users.cache.get(storage[guild].tempSlow[channel].invoker).send(`I was unable to remove the temporary slowmode setting in <#${channel}>.`).catch(e=>{});
+        delete storage[guild].tempSlow[channel];
         return;
     }
     if(!chan.permissionsFor(client.user.id).has(PermissionFlagsBits.ManageChannels)){
         client.users.cache.get(storage[guild].tempSlow[channel].invoker).send(`I was unable to remove the temporary slowmode setting in <#${channel}> due to not having the \`ManageChannels\` permission.`).catch(e=>{});
+        delete storage[guild].tempSlow[channel];
         return;
     }
     chan.setRateLimitPerUser(storage[guild].tempSlow[channel].origMode);
     if(!storage[guild].tempSlow[channel].private){
         chan.send(`Temporary slowmode setting reverted.`);
+        delete storage[guild].tempSlow[channel];
     }
 }
 
