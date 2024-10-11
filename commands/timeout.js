@@ -14,11 +14,14 @@ module.exports = {
 			.addUserOption(option=>
 				option.setName("target").setDescription("Who to timeout?").setRequired(true)
 			).addIntegerOption(option=>
-				option.setName("hours").setDescription("Hours to timeout the user for?")
-			).addIntegerOption(option=>
-				option.setName("minutes").setDescription("Minutes to timeout the user for?")
-			).addIntegerOption(option=>
-				option.setName("seconds").setDescription("Seconds to timeout the user for?")
+				option.setName("length").setDescription("Amount of time to timeout the user for?").addChoices(
+					{name:"60 sec",value:60000},
+					{name:"5 min",value:60000*5},
+					{name:"10 min",value:600000},
+					{name:"1 hour",value:60000*60},
+					{name:"1 day",value:60000*60*24},
+					{name:"1 week",value:60000*60*24*7}
+				).setRequired(true)
 			).addStringOption(option=>
 				option.setName("reason").setDescription("What is the reason for this timeout?")
 			).addBooleanOption(option=>
@@ -48,8 +51,7 @@ module.exports = {
 			cmd.followUp(`I cannot timeout you as the one invoking the command. If you feel the need to timeout yourself, consider changing your actions and mindset instead.`);
 			return;
 		}
-		var time=(cmd.options.getInteger("hours")*60000*60)+(cmd.options.getInteger("minutes")*60000)+(cmd.options.getInteger("seconds")*1000);
-		cmd.guild.members.cache.get(cmd.options.getUser("target").id).timeout(time>0?time:60000,`Instructed to timeout by ${cmd.user.username}: ${cmd.options.getString("reason")}`);
+		cmd.guild.members.cache.get(cmd.options.getUser("target").id).timeout(cmd.options.getInteger("length"),`Instructed to timeout by ${cmd.user.username}: ${cmd.options.getString("reason")}`);
 		cmd.followUp({content:`I have attempted to timeout <@${cmd.options.getUser("target").id}>`,allowedMentions:{parse:[]}});
 	}
 };
