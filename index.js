@@ -423,6 +423,23 @@ async function finTimer(who){
     }
     delete storage[who].timer;
 }
+async function finTempRole(guild,user,role){
+    if(!storage[guild].users[user].tempRoles.hasOwnProperty(role)){
+        return;
+    }
+    guild=client.guilds.cache.get(guild);
+    if(guild===null||guild===undefined) return;
+    user=guild.members.cache.get(user);
+    role=guild.roles.cache.get(role);
+    if(role===null||role===undefined||user===null||user===undefined) return;
+    if(user.roles.cache.has(role.id)){
+        user.roles.remove(role).catch(e=>{});
+    }
+    else{
+        user.roles.add(role).catch(e=>{});
+    }
+    delete storage[guild.id].users[user.id].tempRoles[role.id];
+}
 async function finTempSlow(guild,channel){
     var chan=client.channels.cache.get(channel);
     if(!storage[guild]?.hasOwnProperty("tempSlow")||!storage[guild]?.tempSlow?.hasOwnProperty(channel)){
@@ -1391,6 +1408,20 @@ client.once("ready",async ()=>{
                 }
                 else{
                     finTempSlow(key,slow);
+                }
+            });
+        }
+        if(storage[key].hasOwnProperty("users")){
+            Object.keys(storage[key].users).forEach(user=>{
+                if(storage[key].users[user].hasOwnProperty("tempRoles")){
+                    Object.keys(storage[key].users[user].tempRoles).forEach(role=>{
+                        if(storage[key].users[user].tempRoles[role]-Date.now()>0){
+                            setTimeout(()=>{finTempRole(key,user,role)},storage[key].users[user].tempRoles[role]-Date.now());
+                        }
+                        else{
+                            finTempRole(key,user,role);
+                        }
+                    });
                 }
             });
         }
@@ -3008,6 +3039,16 @@ client.on("interactionCreate",async cmd=>{
         }
         else{
             cmd.reply({content:`That is not your timer to clear.`,ephemeral:true});
+        }
+    }
+    if(cmd.customId?.startsWith("finishTempRole-")){
+        if(cmd.member.permissions.has(PermissionFlagsBits.ManageRoles)){
+            cmd.deferUpdate();
+            finTempRole(cmd.guild.id,cmd.customId.split("-")[1],cmd.customId.split("-")[2]);
+            cmd.message.edit({components:[]});
+        }
+        else{
+            cmd.reply({content:`You do not have sufficient permissions.`,ephemeral:true});
         }
     }
 });
