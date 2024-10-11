@@ -37,6 +37,10 @@ module.exports = {
 
 	async execute(cmd, context) {
 		applyContext(context);
+		if(!cmd.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.ModerateMembers)){
+			cmd.followUp(`I can't help with groupmutes because I don't have the ModerateMembers permission.`);
+			return;
+		}
 		var emoji = getEmojiFromMessage(cmd.options.getString("emoji"));
 		if(!emoji) {
 			cmd.followUp("That emoji is not valid.");
