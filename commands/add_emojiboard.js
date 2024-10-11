@@ -45,6 +45,10 @@ module.exports = {
 			cmd.followUp("That emoji is not valid.");
 			return;
 		}
+		if(storage[cmd.guildId].groupmute===emoji){
+			cmd.followUp(`That emoji is in use for groupmute.`);
+			return;
+		}
 		storage[cmd.guildId].emojiboards[emoji] = {
 			channel: cmd.options.getChannel("channel").id,
 			active: true,

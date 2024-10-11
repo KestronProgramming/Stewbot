@@ -15,7 +15,7 @@ module.exports = {
 				option.setName("target").setDescription("Who to timeout?").setRequired(true)
 			).addIntegerOption(option=>
 				option.setName("length").setDescription("Amount of time to timeout the user for?").addChoices(
-					{name:"60 sec",value:60000},
+					{name:"1 min",value:60000},
 					{name:"5 min",value:60000*5},
 					{name:"10 min",value:600000},
 					{name:"1 hour",value:60000*60},
@@ -42,9 +42,12 @@ module.exports = {
 
 	async execute(cmd, context) {
 		applyContext(context);
-		
-		if(cmd.options.getUser("target").id===client.id){
-			cmd.followUp(`I cannot timeout myself. I apologize for any inconveniences I may have caused. You can use ${cmds.report_problem.mention} if there's something that needs improvement.`);
+		if(!cmd.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.ModerateMembers)){
+			cmd.followUp(`I cannot timeout right now as I'm missing the ModerateMembers permission.`);
+			return;
+		}
+		if(cmd.options.getUser("target").bot){
+			cmd.followUp(`I cannot timeout bots. ${cmd.options.getUser("target").id===client.user.id?`I apologize for any inconveniences I may have caused. You can use ${cmds.report_problem.mention} if there's something that needs improvement. You can try reconfiguring me as well.`:`Try reconfiguring the bot, or removing it if necessary.`}`);
 			return;
 		}
 		if(cmd.user.id===cmd.options.getUser("target").id){
