@@ -459,23 +459,23 @@ async function finHatPull(who){
         return;
     }
     var winners=[];
-    for(var i=0;i<storage[who].hat_pull.winners;i++){
+    for(var i=0;i<storage[who].hat_pull.winCount;i++){
         winners.push(storage[who].hat_pull.entered[Math.floor(Math.random()*storage[who].hat_pull.entered.length)]);
     }
-    var chan=client.channels.cache.get(storage[who].hat_pull.location.split("/")[0]);
-    if(!chan){
+    var chan=client.channels.cache.get(storage[who].hat_pull.location.split("/")[1]);
+    if(chan===null||chan===undefined){
         client.users.cache.get(who).send(`I could not end the hat pull.\nhttps://discord.com/channels/${storage[who].hat_pull.location}${winners.map(a=>`\n- <@${a}>`).join("")}`).catch(e=>{});
         delete storage[who].hat_pull;
         return;
     }
-    var cont=`This has ended! Here ${winners.length>1?`are our winners!${winners.map(a=>`\n- <@${a}>`).join("")}`:`is our winner: ${winners[0]}!`}`;
-    var msg=chan.messages.fetch(storage[who].hat_pull.location.split("/")[1]);
-    if(msg){
-        msg.edit({components:[]});
-        msg.reply(cont);
+    var cont=`This has ended! ${winners.length===0?`Nobody entered though.`:winners.length>1?`Here are our winners!${winners.map(a=>`\n- <@${a}>`).join("")}`:`Here is our winner: <@${winners[0]}>!`}`;
+    var msg=await chan.messages.fetch(storage[who].hat_pull.location.split("/")[2]);
+    if(msg===null||msg===undefined){
+        chan.send(cont);
     }
     else{
-        chan.send(cont);
+        msg.edit({components:[]});
+        msg.reply(cont);
     }
     delete storage[who].hat_pull;
 }
@@ -2408,61 +2408,61 @@ client.on("interactionCreate",async cmd=>{
             cmd.reply({content:`Alright, reverted the setting early.`,ephemeral:true});
         break;
         case 'enterHatPull':
-            cmd.deferUpdate();
+            await cmd.deferUpdate();
             Object.keys(storage).forEach(key=>{
                 if(storage[key].hasOwnProperty("hat_pull")){
-                    if(storage[key].hat_pull.location===`${cmd.message.channel.id}/${cmd.message.id}`){
+                    if(storage[key].hat_pull.location===`${cmd.guild.id}/${cmd.channel.id}/${cmd.message.id}`){
                         if(!storage[key].hat_pull.entered.includes(cmd.user.id)){
                             storage[key].hat_pull.entered.push(cmd.user.id);
                         }
                         else{
-                            cmd.reply({content:`You've already entered this`,ephemeral:true});
+                            cmd.followUp({content:`You've already entered this`,ephemeral:true});
                         }
                     }
                 }
             });
         break;
         case 'leaveHatPull':
-            cmd.deferUpdate();
+            await cmd.deferUpdate();
             Object.keys(storage).forEach(key=>{
                 if(storage[key].hasOwnProperty("hat_pull")){
-                    if(storage[key].hat_pull.location===`${cmd.message.channel.id}/${cmd.message.id}`){
+                    if(storage[key].hat_pull.location===`${cmd.guild.id}/${cmd.channel.id}/${cmd.message.id}`){
                         if(storage[key].hat_pull.entered.includes(cmd.user.id)){
                             storage[key].hat_pull.entered.splice(storage[key].hat_pull.entered.indexOf(cmd.user.id),1);
                         }
                         else{
-                            cmd.reply({content:`You haven't entered this`,ephemeral:true});
+                            cmd.followUp({content:`You haven't entered this`,ephemeral:true});
                         }
                     }
                 }
             });
         break;
         case 'closeHatPull':
-            cmd.deferUpdate();
+            await cmd.deferUpdate();
             Object.keys(storage).forEach(key=>{
                 if(storage[key].hasOwnProperty("hat_pull")){
-                    if(storage[key].hat_pull.location===`${cmd.message.channel.id}/${cmd.message.id}`){
+                    if(storage[key].hat_pull.location===`${cmd.guild.id}/${cmd.channel.id}/${cmd.message.id}`){
                         if(key===cmd.user.id||cmd.memberPermissions?.has(PermissionFlagsBits.ManageMessages)){
                             finHatPull(key);
                         }
                         else{
-                            cmd.reply({content:`This isn't yours to close`,ephemeral:true});
+                            cmd.followUp({content:`This isn't yours to close`,ephemeral:true});
                         }
                     }
                 }
             });
         break;
         case 'cancelHatPull':
-            cmd.deferUpdate();
+            await cmd.deferUpdate();
             Object.keys(storage).forEach(key=>{
                 if(storage[key].hasOwnProperty("hat_pull")){
-                    if(storage[key].hat_pull.location===`${cmd.message.channel.id}/${cmd.message.id}`){
+                    if(storage[key].hat_pull.location===`${cmd.guild.id}/${cmd.channel.id}/${cmd.message.id}`){
                         if(key===cmd.user.id||cmd.memberPermissions?.has(PermissionFlagsBits.ManageMessages)){
-                            cmd.message.update({components:[]});
+                            cmd.message.edit({components:[]});
                             delete storage[key].hat_pull;
                         }
                         else{
-                            cmd.reply({content:`This isn't yours to cancel`,ephemeral:true});
+                            cmd.followUp({content:`This isn't yours to cancel`,ephemeral:true});
                         }
                     }
                 }
