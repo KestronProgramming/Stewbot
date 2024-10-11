@@ -89,7 +89,10 @@ function launchCommands(){
 			)
 			.addBooleanOption(option=>
 				option.setName("update_commands").setDescription("Run launchCommands.js before restarting").setRequired(false)
-			)
+			),
+		new SlashCommandBuilder()
+			.setName('launch_commands')
+			.setDescription('Relaunch commands')
 	]
 	rest.put(
 		Routes.applicationGuildCommands(process.env.clientId, "983074750165299250"),
