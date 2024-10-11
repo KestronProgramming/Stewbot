@@ -35,7 +35,7 @@ module.exports = {
 			cmd.followUp("That emoji is not valid.");
 			return;
 		}
-		if(!(emoji in storage[cmd.guildId].emojiboards)) {
+		if(!(emoji in storage[cmd.guildId].emojiboards)||storage[cmd.guildId].emojiboards[emoji].isMute){
 			cmd.followUp("That emoji is not in use for an emojiboard.");
 			return;
 		}

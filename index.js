@@ -934,27 +934,44 @@ async function doEmojiboardReaction(react) {
 
     if(!emojiboard.active) return;
 
-    // exit if this message has already been posted
-    if(react.message.id in emojiboard.posted) return;
+    if(!emojiboard.isMute){
+        // exit if this message has already been posted
+        if(react.message.id in emojiboard.posted) return;
 
-    // Exit if the message is already an emojiboard post
-    if(react.message.channel.id===emojiboard.channel) return;
+        // Exit if the message is already an emojiboard post
+        if(react.message.channel.id===emojiboard.channel) return;
+    }
 
     const messageData    = await react.message.channel.messages.fetch(react.message.id);
     const foundReactions = messageData.reactions.cache.get(react.emoji.id || react.emoji.name);
-    const selfReactions  = react.message.reactions.cache.filter(r => r.users.cache.has(react.message.author.id) && r.emoji.name === react.emoji.name)
 
     // exit if we haven't reached the threshold
-    if((emojiboard.threshold + selfReactions.size) > foundReactions?.count) {
+    if(emojiboard.threshold>foundReactions?.count){
         return;
     }
 
-    var replyBlip = "";
-    if(messageData.type === 19){
-            try {
-                    var refMessage = await messageData.fetchReference();
-                    replyBlip      = `_[Reply to **${refMessage.author.username}**: ${refMessage.content.slice(0,22).replace(/(https?\:\/\/|\n)/ig,"")}${refMessage.content.length>22?"...":""}](<https://discord.com/channels/${refMessage.guild.id}/${refMessage.channel.id}/${refMessage.id}>)_`;
-            } catch(e){}
+    if(emojiboard.isMute){
+        var member=messageData.guild.members.cache.get(messageData.author.id);
+        if(member===null||member===undefined){
+            member=await messageData.guild.members.fetch(messageData.author.id);
+        }
+        if(member===null||member===undefined){
+            return;
+        }
+        if(!member.bannable||!messageData.guild.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ModerateMembers)||member.bot){
+            console.log(`${member.bannable} ${member.bot}`);
+            return;
+        }
+        member.timeout(emojiboard.length,`I was configured with /groupmute_config to do so.`);
+        return;//If it's a groupmute, don't bother with emojiboard stuff.
+    }
+
+    var replyBlip="";
+    if(messageData.type===19){
+        try {
+            var refMessage=await messageData.fetchReference();
+            replyBlip=`_[Reply to **${refMessage.author.username}**: ${refMessage.content.slice(0,22).replace(/(https?\:\/\/|\n)/ig,"")}${refMessage.content.length>22?"...":""}](<https://discord.com/channels/${refMessage.guild.id}/${refMessage.channel.id}/${refMessage.id}>)_`;
+        }catch(e){}
     }
 
     const resp = { files:[] };
@@ -3086,6 +3103,8 @@ client.on("messageReactionAdd",async (react,user)=>{
     else if(storage[react.message.guild?.id]?.filter.active){
         storage[react.message.guild.id].filter.active=false;
     }
+
+    //TODO: Check if any servers didn't get converted to emojiboard in the storage.json, and if there are any stragglers convert the format and remove the following if statement and its contents
     if(react.message.channel.id!==storage[react.message.guildId].starboard.channel&&(storage[react.message.guildId].starboard.emoji===react._emoji.name||storage[react.message.guildId].starboard.emoji===react._emoji.id)&&storage[react.message.guildId].starboard.active&&storage[react.message.guildId].starboard.channel&&!storage[react.message.guildId].starboard.posted.hasOwnProperty(react.message.id)){
         var msg=await react.message.channel.messages.fetch(react.message.id);
         const userReactions = react.message.reactions.cache.filter(reaction => reaction.users.cache.has(react.message.author.id)&&(storage[react.message.guildId].starboard.emoji===reaction._emoji.name||storage[react.message.guildId].starboard.emoji===reaction._emoji.id));
@@ -3178,6 +3197,7 @@ client.on("messageDelete",async msg=>{
     if(Object.keys(storage[msg.guild.id].emojiboards).length>0){
         Object.keys(storage[msg.guild.id].emojiboards).forEach(async emoji=>{
             emoji=storage[msg.guild.id].emojiboards[emoji];
+            if(emoji.isMute) return;
             if(emoji.posted.hasOwnProperty(msg.id)){
                 if(emoji.posted[msg.id].startsWith("webhook")&&emoji.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.ManageMessages)){
                     var c=await client.channels.cache.get(emoji.channel).messages.fetch(emoji.posted[msg.id].split("webhook")[1]);
@@ -3254,6 +3274,7 @@ client.on("messageUpdate",async (msgO,msg)=>{
     if(Object.keys(storage[msg.guild.id].emojiboards).length>0){
         Object.keys(storage[msg.guild.id].emojiboards).forEach(async emote=>{
             var emoji=storage[msg.guild.id].emojiboards[emote];
+            if(emoji.isMute) return;
             if(emoji.posted.hasOwnProperty(msg.id)&&!emoji.posted[msg.id]?.startsWith("webhook")){
                 var resp={files:[]};
                 var replyBlip="";
