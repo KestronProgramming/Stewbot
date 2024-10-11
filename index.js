@@ -387,6 +387,10 @@ async function finTimer(who){
     if(!storage[who].hasOwnProperty("timer")){
         return;
     }
+    if(storage[who].timer.time-Date.now()>10000){
+        setTimeout(()=>{finTimer(who)},storage[who].timer.time-Date.now());
+        return;
+    }
     if(storage[who].timer.respLocation==="DM"){
         try{
             client.users.cache.get(who).send(`Your timer is done!${storage[who].timer.reminder.length>0?`\n\`${storage[who].timer.reminder}\``:``}`).catch(e=>{console.log(e)});
@@ -424,6 +428,10 @@ async function finTempSlow(guild,channel){
     if(!storage[guild]?.hasOwnProperty("tempSlow")||!storage[guild]?.tempSlow?.hasOwnProperty(channel)){
         return;
     }
+    if(storage[guild].tempSlow[channel].ends-Date.now()>10000){
+        setTimeout(()=>{finTempSlow(guild,channel)},storage[guild].tempSlow[channel].ends-Date.now());
+        return;
+    }
     if(chan===null||chan===undefined){
         client.users.cache.get(storage[guild].tempSlow[channel].invoker).send(`I was unable to remove the temporary slowmode setting in <#${channel}>.`).catch(e=>{});
         delete storage[guild].tempSlow[channel];
@@ -438,6 +446,35 @@ async function finTempSlow(guild,channel){
     if(!storage[guild].tempSlow[channel].private){
         chan.send(`Temporary slowmode setting reverted.`);
         delete storage[guild].tempSlow[channel];
+    }
+}
+async function finHatPull(who){
+    if(!storage[who].hasOwnProperty("hat_pull")){
+        return;
+    }
+    if(storage[who].hat_pull.closes-Date.now()>10000){
+        if(storage[who].hat_pull.registered){
+            setTimeout(()=>{finHatPull(who)},storage[who].hat_pull.closes-Date.now());
+        }
+        return;
+    }
+    var winners=[];
+    for(var i=0;i<storage[who].hat_pull.winners;i++){
+        winners.push(storage[who].hat_pull.entered[Math.floor(Math.random()*storage[who].hat_pull.entered.length)]);
+    }
+    var chan=client.channels.cache.get(storage[who].hat_pull.location.split("/")[0]);
+    if(!chan){
+        client.users.cache.get(who).send(`I could not end the hat pull.\nhttps://discord.com/channels/${storage[who].hat_pull.location}${winners.map(a=>`\n- <@${a}>`).join("")}`).catch(e=>{});
+        return;
+    }
+    var cont=`This has ended! Here ${winners.length>1?`are our winners!${winners.map(a=>`\n- <@${a}>`).join("")}`:`is our winner: ${winners[0]}!`}`;
+    var msg=chan.messages.fetch(storage[who].hat_pull.location.split("/")[1]);
+    if(msg){
+        msg.edit({components:[]});
+        msg.reply(cont);
+    }
+    else{
+        chan.send(cont);
     }
 }
 
@@ -1086,8 +1123,19 @@ function daily(dontLoop=false){
                 storage[s].daily.memes.active=false;
             }
         }
+        
+        if(storage[s].hasOwnProperty("hat_pull")){
+            if(storage[s].hat_pull.ends-Date.now()<=60000*60*24){
+                storage[s].hat_pull.registered=true;
+                if(storage[s].hat_pull.ends-Date.now()>0){
+                    setTimeout(()=>{finHatPull(s)},storage[s].hat_pull.ends-Date.now());
+                }
+                else{
+                    finHatPull(s);
+                }
+            }
+        }
     });
-
 }
 
 let rac = { // TODO: move this into fun.js subfile
@@ -1323,6 +1371,17 @@ client.once("ready",async ()=>{
                 finTimer(key);
             }
         }
+        if(storage[key].hasOwnProperty("hat_pull")){
+            if(storage[key].hat_pull.ends-Date.now()<=60000*60*24){
+                storage[key].hat_pull.registered=true;
+                if(storage[key].hat_pull.ends-Date.now()>0){
+                    setTimeout(()=>{finHatPull(key)},storage[key].hat_pull.ends-Date.now());
+                }
+                else{
+                    finHatPull(key);
+                }
+            }
+        }
         if(storage[key].hasOwnProperty("tempSlow")){
             Object.keys(storage[key].tempSlow).forEach(slow=>{
                 if(storage[key].tempSlow[slow].ends-Date.now()>0){
@@ -1371,7 +1430,6 @@ async function sendHook(what, msg){
 }
 
 client.on("messageCreate",async msg=>{
-    // WARNING: DO NOT MOVE the below line - could allow exploits using AI.
     if(msg.author.id===client.user.id) return;
     if(msg.content.startsWith("~sudo")){
         if(client.channels.cache.get("986097382267715604")?.permissionsFor(msg.author.id)?.has(PermissionFlagsBits.SendMessages)){
@@ -2848,6 +2906,7 @@ client.on("interactionCreate",async cmd=>{
                 storage[cmd.user.id].captcha=false;
                 storage[cmd.user.id].lastHash="";
                 storage[cmd.user.id].hashStreak=0;
+                if(!storage[cmd.user.id].hasOwnProperty("timedOutIn")) storage[cmd.user.id].timedOutIn=[];
                 for(var to=0;to<storage[cmd.user.id].timedOutIn.length;to++){
                     try{
                         client.guilds.cache.get(storage[cmd.user.id].timedOutIn[to]).members.fetch().then(members=>{
@@ -2872,7 +2931,7 @@ client.on("interactionCreate",async cmd=>{
             if(inp.length>0){
                 inp=inp.slice(0,inp.length-1);
             }
-            cmd.update(`${cmd.message.content.split("Entered: ")[0]}Entered: ${inp.length>0?"`":""}${inp}${inp.length>0?"`":""}`);
+            cmd.update(`${cmd.message.content.split("Entered: ")[0]}Entered: \`${inp}\``);
         }
         else{
             cmd.update(`${cmd.message.content.split("Entered: ")[0]}Entered: \`${cmd.message.content.split("Entered: ")[1].replaceAll("`","")}${action}\``);

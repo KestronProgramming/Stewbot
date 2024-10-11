@@ -129,12 +129,12 @@ module.exports = {
                 var leaderboard = "";
                 var emote = "Emoji";
                 if (cmd.options.getString("emoji") === null) {
-                    leaderboard = Object.keys(storage[cmd.guildId].users).map(a => Object.assign(storage[cmd.guildId].users[a], { "id": a })).sort((a, b) => b.stars - a.stars).slice(0, 10).map((a, i) => `\n${["🌠", "🌟", "⭐", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"][i]}. <@${a.id}> ${a.stars} emojiboards`).join("");
+                    leaderboard = Object.keys(storage[cmd.guildId].users).map(a => Object.assign(storage[cmd.guildId].users[a], { "id": a })).sort((a, b) => b.stars - a.stars).slice(0, 10).map((a, i) => `\n${["🥇", "🥈", "🥉", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"][i]}. <@${a.id}> ${a.stars} emojiboards`).join("");
                 }
                 else {
                     if (storage[cmd.guildId].emojiboards.hasOwnProperty(getEmojiFromMessage(cmd.options.getString("emoji")))) {
                         emote = getEmojiFromMessage(cmd.options.getString("emoji"));
-                        leaderboard = Object.keys(storage[cmd.guildId].emojiboards[emote].posters).map(a => Object.assign(storage[cmd.guildId].emojiboards[emote].posters[a], { "id": a })).sort((a, b) => b - a).slice(0, 10).map((a, i) => `\n${["🌠", "🌟", "⭐", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"][i]}. <@${a.id}> ${a} ${emote.includes(":") ? emote : cmd.options.getString("emoji") !== null ? cmd.options.getString("emoji") : "Emoji"}boards`).join("");
+                        leaderboard = Object.keys(storage[cmd.guildId].emojiboards[emote].posters).map(a => Object.assign(storage[cmd.guildId].emojiboards[emote].posters[a], { "id": a })).sort((a, b) => b - a).slice(0, 10).map((a, i) => `\n${["🥇", "🥈", "🥉", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"][i]}. <@${a.id}> ${a} ${emote.includes(":") ? emote : cmd.options.getString("emoji") !== null ? cmd.options.getString("emoji") : "Emoji"}boards`).join("");
                     }
                     else {
                         cmd.followUp(`This server doesn't have that emojiboard setup.`);
@@ -186,13 +186,75 @@ module.exports = {
                     }]
                 });
                 break;
-            case "cleanliness":
+            case "profanity":
                 if (!storage[cmd.guildId].filter.active) {
                     cmd.followUp(`This server doesn't use the filter at the moment. It can be configured using ${cmds.filter.config.mention}.`);
                     return;
                 }
                 if(!cmd.member?.permissions.has(PermissionFlagsBits.ManageMessages)){
                     cmd.followUp(`I'm sorry, to prevent being filtered being used as a game this leaderboard is only available to moderators.`);
+                    return;
+                }
+                if (cmd.options.getUser("who")?.id) {
+                    var usr = cmd.options.getUser("who")?.id || cmd.user.id;
+                    if (!storage[cmd.guildId].users.hasOwnProperty(usr)) {
+                        cmd.followUp(`I am unaware of this user presently`);
+                        return;
+                    }
+                    cmd.followUp({
+                        content: `Server profanity card for <@${usr}>`, embeds: [{
+                            "type": "rich",
+                            "title": `Profanity rank for ${cmd.guild.name}`,
+                            "description": "",
+                            "color": 0x006400,
+                            "fields": [
+                                {
+                                    "name": `Times Filtered`,
+                                    "value": storage[cmd.guildId].users[usr].infractions + "",
+                                    "inline": true
+                                },
+                                {
+                                    "name": `Profanity Rank`,
+                                    "value": `#${Object.keys(storage[cmd.guildId].users).map(a => Object.assign(storage[cmd.guildId].users[a], { "id": a })).sort((a, b) => b.infractions - a.infractions).map(a => a.id).indexOf(usr) + 1}`,
+                                    "inline": true
+                                }
+                            ],
+                            "thumbnail": {
+                                "url": cmd.guild.iconURL(),
+                                "height": 0,
+                                "width": 0
+                            },
+                            "author": {
+                                "name": client.users.cache.get(usr) ? client.users.cache.get(usr).username : "Unknown",
+                                "icon_url": client.users.cache.get(usr)?.displayAvatarURL()
+                            },
+                            "footer": {
+                                "text": `Profanity Leaderboard`
+                            }
+                        }], allowedMentions: { parse: [] }
+                    });
+                    break;
+                }
+                cmd.followUp({
+                    content: `**Profanity Leaderboard**`, embeds: [{
+                        "type": "rich",
+                        "title": `${cmd.guild.name} Profanity Leaderboard`,
+                        "description": Object.keys(storage[cmd.guildId].users).map(a => Object.assign(storage[cmd.guildId].users[a], { "id": a })).sort((a, b) => b.infractions - a.infractions).slice(0, 10).map((a, i) => `\n${["🥇", "🥈", "🥉", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"][i]}. <@${a.id}>, ${a.infractions} times filtered`).join(""),
+                        "color": 0x006400,
+                        "thumbnail": {
+                            "url": cmd.guild.iconURL(),
+                            "height": 0,
+                            "width": 0
+                        },
+                        "footer": {
+                            "text": `${cmd.guild.name} Profanity Leaderboard`
+                        }
+                    }]
+                });
+            break;
+            case "cleanliness":
+                if (!storage[cmd.guildId].filter.active) {
+                    cmd.followUp(`This server doesn't use the filter at the moment. It can be configured using ${cmds.filter.config.mention}.`);
                     return;
                 }
                 if (cmd.options.getUser("who")?.id) {
@@ -215,7 +277,7 @@ module.exports = {
                                 },
                                 {
                                     "name": `Cleanliness Rank`,
-                                    "value": `#${Object.keys(storage[cmd.guildId].users).map(a => Object.assign(storage[cmd.guildId].users[a], { "id": a })).sort((a, b) => b.infractions - a.infractions).map(a => a.id).indexOf(usr) + 1}`,
+                                    "value": `#${Object.keys(storage[cmd.guildId].users).map(a => Object.assign(storage[cmd.guildId].users[a], { "id": a })).sort((a,b)=>b.exp-a.exp).sort((a, b) => a.infractions - b.infractions).map(a => a.id).indexOf(usr) + 1}`,
                                     "inline": true
                                 }
                             ],
@@ -239,7 +301,7 @@ module.exports = {
                     content: `**Cleanliness Leaderboard**`, embeds: [{
                         "type": "rich",
                         "title": `${cmd.guild.name} Cleanliness Leaderboard`,
-                        "description": Object.keys(storage[cmd.guildId].users).map(a => Object.assign(storage[cmd.guildId].users[a], { "id": a })).sort((a, b) => b.infractions - a.infractions).slice(0, 10).map((a, i) => `\n${["🥇", "🥈", "🥉", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"][i]}. <@${a.id}>, ${a.infractions} times filtered`).join(""),
+                        "description": Object.keys(storage[cmd.guildId].users).map(a => Object.assign(storage[cmd.guildId].users[a], { "id": a })).sort((a,b)=>b.exp-a.exp).sort((a, b) => a.infractions - b.infractions).slice(0, 10).map((a, i) => `\n${["🥇", "🥈", "🥉", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"][i]}. <@${a.id}>, ${a.infractions} times filtered`).join(""),
                         "color": 0x006400,
                         "thumbnail": {
                             "url": cmd.guild.iconURL(),
@@ -251,7 +313,7 @@ module.exports = {
                         }
                     }]
                 });
-                break;
+            break;
         }
 
     }
