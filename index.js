@@ -465,7 +465,7 @@ async function finHatPull(who){
     var chan=client.channels.cache.get(storage[who].hat_pull.location.split("/")[0]);
     if(!chan){
         client.users.cache.get(who).send(`I could not end the hat pull.\nhttps://discord.com/channels/${storage[who].hat_pull.location}${winners.map(a=>`\n- <@${a}>`).join("")}`).catch(e=>{});
-        delete storage[key].hat_pull;
+        delete storage[who].hat_pull;
         return;
     }
     var cont=`This has ended! Here ${winners.length>1?`are our winners!${winners.map(a=>`\n- <@${a}>`).join("")}`:`is our winner: ${winners[0]}!`}`;
@@ -477,7 +477,7 @@ async function finHatPull(who){
     else{
         chan.send(cont);
     }
-    delete storage[key].hat_pull;
+    delete storage[who].hat_pull;
 }
 
 
