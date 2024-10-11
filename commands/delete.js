@@ -12,7 +12,7 @@ module.exports = {
 		// Slash command data
 		command: new SlashCommandBuilder().setName("delete").setDescription("Delete messages")
 			.addIntegerOption(option=>
-				option.setName("amount").setDescription("The amount of the most recent messages to delete").setMinValue(1).setMaxValue(100).setRequired(true)
+				option.setName("amount").setDescription("The amount of the most recent messages to delete").setMinValue(1).setMaxValue(99).setRequired(true)
 			).addBooleanOption(option=>
 				option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 			).setDefaultMemberPermissions(PermissionFlagsBits.BanMembers),
@@ -31,5 +31,6 @@ module.exports = {
 			return;
 		}
 		cmd.channel.bulkDelete(cmd.options.getInteger("amount")+1);
+		setTimeout(()=>{cmd.channel.send({content:`I have cleared ${cmd.options.getInteger("amount")} messages at <@${cmd.user.id}>'s direction.`,allowedMentions:{parse:[]}})},2000);
 	}
 };
