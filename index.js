@@ -465,6 +465,7 @@ async function finHatPull(who){
     var chan=client.channels.cache.get(storage[who].hat_pull.location.split("/")[0]);
     if(!chan){
         client.users.cache.get(who).send(`I could not end the hat pull.\nhttps://discord.com/channels/${storage[who].hat_pull.location}${winners.map(a=>`\n- <@${a}>`).join("")}`).catch(e=>{});
+        delete storage[key].hat_pull;
         return;
     }
     var cont=`This has ended! Here ${winners.length>1?`are our winners!${winners.map(a=>`\n- <@${a}>`).join("")}`:`is our winner: ${winners[0]}!`}`;
@@ -476,6 +477,7 @@ async function finHatPull(who){
     else{
         chan.send(cont);
     }
+    delete storage[key].hat_pull;
 }
 
 
@@ -2404,6 +2406,67 @@ client.on("interactionCreate",async cmd=>{
             finTempSlow(cmd.guild.id,cmd.channel.id);
             cmd.message.edit({components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setStyle(ButtonStyle.Danger).setLabel("Revert Now").setCustomId("revertTempSlow").setDisabled(true))]});
             cmd.reply({content:`Alright, reverted the setting early.`,ephemeral:true});
+        break;
+        case 'enterHatPull':
+            cmd.deferUpdate();
+            Object.keys(storage).forEach(key=>{
+                if(storage[key].hasOwnProperty("hat_pull")){
+                    if(storage[key].hat_pull.location===`${cmd.message.channel.id}/${cmd.message.id}`){
+                        if(!storage[key].hat_pull.entered.includes(cmd.user.id)){
+                            storage[key].hat_pull.entered.push(cmd.user.id);
+                        }
+                        else{
+                            cmd.reply({content:`You've already entered this`,ephemeral:true});
+                        }
+                    }
+                }
+            });
+        break;
+        case 'leaveHatPull':
+            cmd.deferUpdate();
+            Object.keys(storage).forEach(key=>{
+                if(storage[key].hasOwnProperty("hat_pull")){
+                    if(storage[key].hat_pull.location===`${cmd.message.channel.id}/${cmd.message.id}`){
+                        if(storage[key].hat_pull.entered.includes(cmd.user.id)){
+                            storage[key].hat_pull.entered.splice(storage[key].hat_pull.entered.indexOf(cmd.user.id),1);
+                        }
+                        else{
+                            cmd.reply({content:`You haven't entered this`,ephemeral:true});
+                        }
+                    }
+                }
+            });
+        break;
+        case 'closeHatPull':
+            cmd.deferUpdate();
+            Object.keys(storage).forEach(key=>{
+                if(storage[key].hasOwnProperty("hat_pull")){
+                    if(storage[key].hat_pull.location===`${cmd.message.channel.id}/${cmd.message.id}`){
+                        if(key===cmd.user.id||cmd.memberPermissions?.has(PermissionFlagsBits.ManageMessages)){
+                            finHatPull(key);
+                        }
+                        else{
+                            cmd.reply({content:`This isn't yours to close`,ephemeral:true});
+                        }
+                    }
+                }
+            });
+        break;
+        case 'cancelHatPull':
+            cmd.deferUpdate();
+            Object.keys(storage).forEach(key=>{
+                if(storage[key].hasOwnProperty("hat_pull")){
+                    if(storage[key].hat_pull.location===`${cmd.message.channel.id}/${cmd.message.id}`){
+                        if(key===cmd.user.id||cmd.memberPermissions?.has(PermissionFlagsBits.ManageMessages)){
+                            cmd.message.update({components:[]});
+                            delete storage[key].hat_pull;
+                        }
+                        else{
+                            cmd.reply({content:`This isn't yours to cancel`,ephemeral:true});
+                        }
+                    }
+                }
+            });
         break;
 
         //Modals

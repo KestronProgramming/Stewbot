@@ -16,6 +16,7 @@ module.exports = {
                     { name: "Counting", value: "counting" },
                     { name: "Emojiboard", value: "emojiboard" },
                     { name: "Cleanliness", value: "cleanliness" },
+                    { name: "Profanity", value: "profanity" },
                     { name: "Level-Ups", value: "levels" }
                 ).setRequired(true)
             ).addUserOption(option =>

@@ -60,7 +60,7 @@ module.exports = {
             cmd.followUp(`You need to specify an amount of time for people to enter`);
             return;
         }
-        var resp=await cmd.followUp({content:`${cmd.options.getString("message")!==null?cmd.options.getString("message").replaceAll("\\n","\n"):`**Hat Pull**\nEnter by pressing the button below!`}`,components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setStyle(ButtonStyle.Success).setLabel("Enter").setCustomId("enterHatPull"),new ButtonBuilder().setStyle(ButtonStyle.Danger).setLabel("Close").setCustomId("closeHatPull"),new ButtonBuilder().setStyle(ButtonStyle.Danger).setCustomId("cancelHatPull").setLabel("Cancel"))],allowedMentions:{parse:[]}});
+        var resp=await cmd.followUp({content:`${cmd.options.getString("message")!==null?cmd.options.getString("message").replaceAll("\\n","\n"):`**Hat Pull**\nEnter by pressing the button below!`}`,components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setStyle(ButtonStyle.Success).setLabel("Enter").setCustomId("enterHatPull"),new ButtonBuilder().setStyle(ButtonStyle.Secondary).setLabel("Leave").setCustomId("leaveHatPull"),new ButtonBuilder().setStyle(ButtonStyle.Danger).setLabel("Close").setCustomId("closeHatPull"),new ButtonBuilder().setStyle(ButtonStyle.Danger).setCustomId("cancelHatPull").setLabel("Cancel"))],allowedMentions:{parse:[]}});
         storage[cmd.user.id].hat_pull={
             "limit":cmd.options.getInteger("limit")!==null?cmd.options.getInteger("limit"):0,
             "winCount":cmd.options.getInteger("winners")!==null?cmd.options.getInteger("winnners"):1,
