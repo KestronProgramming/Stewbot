@@ -391,11 +391,11 @@ const defaultGuild=require("./data/defaultGuild.json");
 const defaultGuildUser=require("./data/defaultGuildUser.json");
 const defaultUser=require("./data/defaultUser.json");
 
-async function finTimer(who){
+async function finTimer(who,force){
     if(!storage[who].hasOwnProperty("timer")){
         return;
     }
-    if(storage[who].timer.time-Date.now()>10000){
+    if(storage[who].timer.time-Date.now()>10000&&!force){
         setTimeout(()=>{finTimer(who)},storage[who].timer.time-Date.now());
         return;
     }
@@ -448,12 +448,12 @@ async function finTempRole(guild,user,role){
     }
     delete storage[guild.id].users[user.id].tempRoles[role.id];
 }
-async function finTempSlow(guild,channel){
+async function finTempSlow(guild,channel,force){
     var chan=client.channels.cache.get(channel);
     if(!storage[guild]?.hasOwnProperty("tempSlow")||!storage[guild]?.tempSlow?.hasOwnProperty(channel)){
         return;
     }
-    if(storage[guild].tempSlow[channel].ends-Date.now()>10000){
+    if(storage[guild].tempSlow[channel].ends-Date.now()>10000&&!force){
         setTimeout(()=>{finTempSlow(guild,channel)},storage[guild].tempSlow[channel].ends-Date.now());
         return;
     }
@@ -473,11 +473,11 @@ async function finTempSlow(guild,channel){
         delete storage[guild].tempSlow[channel];
     }
 }
-async function finHatPull(who){
+async function finHatPull(who,force){
     if(!storage[who].hasOwnProperty("hat_pull")){
         return;
     }
-    if(storage[who].hat_pull.closes-Date.now()>10000){
+    if(storage[who].hat_pull.closes-Date.now()>10000&&!force){
         if(storage[who].hat_pull.registered){
             setTimeout(()=>{finHatPull(who)},storage[who].hat_pull.closes-Date.now());
         }
@@ -503,6 +503,45 @@ async function finHatPull(who){
         msg.reply(cont);
     }
     delete storage[who].hat_pull;
+}
+async function finTempBan(guild,who,force){
+    if(!storage[guild].tempBans.hasOwnProperty(who)){
+        return;
+    }
+    if(storage[guild].tempBans[who].ends>Date.now()+10000&&!force){
+        if(storage[guild].tempBans[who].ends-Date.now()<60000*60*24){
+            setTimeout(()=>{finTempBan(guild,who)},storage[guild].tempBans[who].ends-Date.now());
+        }
+        return;
+    }
+    var g=client.guilds.cache.get(guild);
+    if(g===null||g===undefined){
+        try{
+            client.users.cache.get(storage[guild].tempBans[who].invoker).send(`I was unable to unban <@${who}>.`).catch(e=>{});
+        }
+        catch(e){}
+        delete storage[guild].tempBans[who];
+        return;
+    }
+    if(!g.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.BanMembers)){
+        try{
+            client.users.cache.get(storage[guild].tempBans[who].invoker).send(`I no longer have permission to unban <@${who}>.`).catch(e=>{});
+        }
+        catch(e){}
+        delete storage[guild].tempBans[who];
+        return;
+    }
+    try{
+        g.members.unban(who).catch(e=>{});
+    }
+    catch(e){}
+    if(!storage[guild].tempBans[who].private){
+        try{
+            client.users.cache.get(who).send(`You have been unbanned in ${g.name}.`).catch(e=>{});
+        }
+        catch(e){}
+    }
+    delete storage[guild].tempBans[who];
 }
 
 
@@ -970,7 +1009,10 @@ async function doEmojiboardReaction(react) {
         if(!member.bannable||!messageData.guild.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ModerateMembers)||member.bot||member.permissions.has(PermissionFlagsBits.Administrator)){
             return;
         }
-        member.timeout(emojiboard.length,`I was configured with /groupmute_config to do so.`);
+        try{
+            member.timeout(emojiboard.length,`I was configured with /groupmute_config to do so.`).catch(e=>{});
+        }
+        catch(e){}
         return;//If it's a groupmute, don't bother with emojiboard stuff.
     }
 
@@ -1178,6 +1220,17 @@ function daily(dontLoop=false){
                     finHatPull(s);
                 }
             }
+        }
+        
+        if(storage[key].hasOwnProperty("tempBans")){
+            Object.keys(storage[key].tempBans).forEach(ban=>{
+                if(storage[key].tempBans[ban].ends-Date.now()>0&&!storage[key].tempBans[ban].registered){
+                    setTimeout(()=>{finTempBan(key,ban)},storage[key].tempBans[ban].ends-Date.now());
+                }
+                else if(!storage[key].tempBans[ban].registered){
+                    finTempBan(key,ban);
+                }
+            });
         }
     });
     storage.wotd=wotdList[Math.floor(Math.random()*wotdList.length)];
@@ -1434,6 +1487,17 @@ client.once("ready",async ()=>{
                 }
                 else{
                     finTempSlow(key,slow);
+                }
+            });
+        }
+        if(storage[key].hasOwnProperty("tempBans")){
+            Object.keys(storage[key].tempBans).forEach(ban=>{
+                if(storage[key].tempBans[ban].ends-Date.now()>0){
+                    setTimeout(()=>{finTempBan(key,ban)},storage[key].tempBans[ban].ends-Date.now());
+                    storage[key].tempBans[ban].registered=true;
+                }
+                else{
+                    finTempBan(key,ban);
                 }
             });
         }
@@ -2464,7 +2528,7 @@ client.on("interactionCreate",async cmd=>{
                 cmd.reply({content:`I don't have the \`ManageChannels\` permission and so I'm unable to revert the slowmode setting.`,ephemeral:true});
                 break;
             }
-            finTempSlow(cmd.guild.id,cmd.channel.id);
+            finTempSlow(cmd.guild.id,cmd.channel.id,true);
             cmd.message.edit({components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setStyle(ButtonStyle.Danger).setLabel("Revert Now").setCustomId("revertTempSlow").setDisabled(true))]});
             cmd.reply({content:`Alright, reverted the setting early.`,ephemeral:true});
         break;
@@ -2504,7 +2568,7 @@ client.on("interactionCreate",async cmd=>{
                 if(storage[key].hasOwnProperty("hat_pull")){
                     if(storage[key].hat_pull.location===`${cmd.guild.id}/${cmd.channel.id}/${cmd.message.id}`){
                         if(key===cmd.user.id||cmd.memberPermissions?.has(PermissionFlagsBits.ManageMessages)){
-                            finHatPull(key);
+                            finHatPull(key,true);
                         }
                         else{
                             cmd.followUp({content:`This isn't yours to close`,ephemeral:true});
@@ -3151,7 +3215,7 @@ client.on("interactionCreate",async cmd=>{
     if(cmd.customId?.startsWith("finishTempRole-")){
         if(cmd.member.permissions.has(PermissionFlagsBits.ManageRoles)){
             cmd.deferUpdate();
-            finTempRole(cmd.guild.id,cmd.customId.split("-")[1],cmd.customId.split("-")[2]);
+            finTempRole(cmd.guild.id,cmd.customId.split("-")[1],cmd.customId.split("-")[2],true);
             cmd.message.edit({components:[]});
         }
         else{
@@ -3164,6 +3228,15 @@ client.on("interactionCreate",async cmd=>{
         }
         else{
             cmd.showModal(presets.wotdModal);
+        }
+    }
+    if(cmd.customId?.startsWith("unban-")){
+        if(!cmd.memberPermissions.has(PermissionFlagsBits.BanMembers)){
+            cmd.reply({content:`You do not have permission to use this button.`,ephemeral:true});
+        }
+        else{
+            cmd.update({components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setStyle(ButtonStyle.Danger).setLabel("Unban Now").setCustomId(`unban`).setDisabled(true))]});
+            finTempBan(cmd.guild.id,cmd.customId.split("-")[1],true);
         }
     }
 });
