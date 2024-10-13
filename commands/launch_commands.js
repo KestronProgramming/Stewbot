@@ -37,7 +37,7 @@ module.exports = {
 		// Code
         if(cmd.guild?.id==="983074750165299250"&&cmd.channel.id==="986097382267715604"){
             await cmd.followUp(`Launching commands...\n${require(`../launchCommands.js`).launchCommands()}`);
-			var newCmds=JSON.parse(require("fs").readFileSync(`../data/commands.json`,"utf-8"));
+			var newCmds=JSON.parse(require("fs").readFileSync(`data/commands.json`,"utf-8"));
 			Object.keys(newCmds).forEach(key=>{
 				cmds[key]=newCmds[key];
 			});
