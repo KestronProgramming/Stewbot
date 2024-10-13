@@ -22,6 +22,10 @@ process.env.beta && console.log("Importing backup.js")
 const startBackupThread = require("./backup.js");
 const mathjs = require('mathjs');
 const nlp = require('compromise');
+var Turndown = require('turndown');
+var turndown = new Turndown();
+const wotdList=fs.readFileSync(`./data/wordlist.txt`,"utf-8").split("\n");
+
 
 // Preliminary setup (TODO: move to a setup.sh)
 if (!fs.existsSync("tempMove")) fs.mkdirSync('tempMove');
@@ -346,6 +350,8 @@ const inps={
     "tsYearModal":new TextInputBuilder().setCustomId("tsYearInp").setLabel("The year...").setStyle(TextInputStyle.Short).setMinLength(2).setMaxLength(4).setRequired(true),
     "tsAmPm":new TextInputBuilder().setCustomId("tsAmPm").setLabel("If you used 12 hour, AM/PM").setStyle(TextInputStyle.Short).setMinLength(1).setMaxLength(2).setRequired(false),
 
+    "wotdModal":new TextInputBuilder().setCustomId("wotdInput").setLabel("Guess").setStyle(TextInputStyle.Short).setMinLength(5).setMaxLength(5).setRequired(true),
+
     "captcha0":new ButtonBuilder().setCustomId("captcha-0").setLabel("0").setStyle(ButtonStyle.Primary),
     "captcha1":new ButtonBuilder().setCustomId("captcha-1").setLabel("1").setStyle(ButtonStyle.Primary),
     "captcha2":new ButtonBuilder().setCustomId("captcha-2").setLabel("2").setStyle(ButtonStyle.Primary),
@@ -376,6 +382,8 @@ const presets={
     "tsSecondsModal":new ModalBuilder().setCustomId("tsSecondsModal").setTitle("Set the Seconds for the Timestamp").addComponents(new ActionRowBuilder().addComponents(inps.tsSecondsModal)),
     "tsDayModal":new ModalBuilder().setCustomId("tsDayModal").setTitle("Set the Day for the Timestamp").addComponents(new ActionRowBuilder().addComponents(inps.tsDayModal)),
     "tsYearModal":new ModalBuilder().setCustomId("tsYearModal").setTitle("Set the Year for the Timestamp").addComponents(new ActionRowBuilder().addComponents(inps.tsYearModal)),
+
+    "wotdModal":new ModalBuilder().setCustomId("wotdModal").setTitle("WOTD - Make a Guess").addComponents(new ActionRowBuilder().addComponents(inps.wotdModal)),
 
     "captcha":[new ActionRowBuilder().addComponents(inps.captcha1,inps.captcha2,inps.captcha3),new ActionRowBuilder().addComponents(inps.captcha4,inps.captcha5,inps.captcha6),new ActionRowBuilder().addComponents(inps.captcha7,inps.captcha8,inps.captcha9),new ActionRowBuilder().addComponents(inps.captchaBack,inps.captcha0,inps.captchaDone)]
 };
@@ -791,7 +799,7 @@ async function checkRSS(){
                                 feed.channels.splice(feed.channels.indexOf(chan),1);
                             }
                             else{
-                                c.send(`New notification from a followed RSS feed\n${item.link}`);
+                                c.send(`New notification from [a followed RSS feed](${item.link})${item.description?`\n\n${turndown.turndown(item.description)}`:``}`);
                             }
                         });
                     }
@@ -944,9 +952,10 @@ async function doEmojiboardReaction(react) {
 
     const messageData    = await react.message.channel.messages.fetch(react.message.id);
     const foundReactions = messageData.reactions.cache.get(react.emoji.id || react.emoji.name);
+    const selfReactions  = react.message.reactions.cache.filter(r => r.users.cache.has(react.message.author.id) && r.emoji.name === react.emoji.name)
 
     // exit if we haven't reached the threshold
-    if(emojiboard.threshold>foundReactions?.count){
+    if((emojiboard.threshold+selfReactions.size)>foundReactions?.count){
         return;
     }
 
@@ -958,8 +967,7 @@ async function doEmojiboardReaction(react) {
         if(member===null||member===undefined){
             return;
         }
-        if(!member.bannable||!messageData.guild.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ModerateMembers)||member.bot){
-            console.log(`${member.bannable} ${member.bot}`);
+        if(!member.bannable||!messageData.guild.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ModerateMembers)||member.bot||member.permissions.has(PermissionFlagsBits.Administrator)){
             return;
         }
         member.timeout(emojiboard.length,`I was configured with /groupmute_config to do so.`);
@@ -1076,7 +1084,7 @@ function daily(dontLoop=false){
     checkHoliday();
     var dailyDevo=[];
     fetch("https://www.biblegateway.com/devotionals/niv-365-devotional/today").then(d=>d.text()).then(d=>{
-        var temp=d.split(`<div class="col-xs-12">`)[1].split("</div>")[0].trim().replace(/\<\/?h\d\>/ig,"**").replace(/\<\/?p\>/ig,"\n").replace(/\<\/?(u|o)l\>/ig,"").replace(/\<li\>/ig,"\n- ").replace(/\<\/(li|br)\>/g,"").replace(/\<a.*?\<\/a\>/ig,a=>`[${a.match(/(?<=\>).*(?=\<\/a\>)/)}](<${a.split(`href="`)[1].split(`"`)[0]}>)`).split("\n");
+        var temp=turndown.turndown(d.split(`<div class="col-xs-12">`)[1].split("</div>")[0].trim()).split("\\n");
         var cc=0;
         var cOn=0;
         var now=new Date();
@@ -1481,7 +1489,7 @@ async function sendHook(what, msg){
 
 client.on("messageCreate",async msg=>{
     if(msg.author.id===client.user.id) return;
-    if(msg.content.startsWith("~sudo")){
+    if(msg.content.startsWith("~sudo ")&&!process.env.beta||msg.content.startsWith("~betaSudo ")&&process.env.beta){
         if(client.channels.cache.get("986097382267715604")?.permissionsFor(msg.author.id)?.has(PermissionFlagsBits.SendMessages)){
             switch(msg.content.split(" ")[1]){
                 case "permStatus":
@@ -1619,6 +1627,10 @@ client.on("messageCreate",async msg=>{
                 break
                 case "echo":
                     msg.channel.send(msg.content.slice("~sudo echo ".length,msg.content.length));
+                break;
+                case "setWord":
+                    storage.wotd=msg.content.split(" ")[2].toLowerCase();
+                    msg.reply(storage.wotd);
                 break;
             }
         }
@@ -2639,6 +2651,83 @@ client.on("interactionCreate",async cmd=>{
             var t=new Date(+cmd.message.content.split(":")[1]*1000);
             cmd.update(`<t:${Math.round(t.setDate(inp)/1000)}:${cmd.message.content.split(":")[2].split(">")[0]}>`);
         break;
+        case "wotdModal":
+            var guess=cmd.fields.getTextInputValue("wotdInput").toLowerCase();
+            if(!/^[a-z]{5}$/.test(guess)){
+                cmd.reply({content:`Please enter a valid word.`,ephemeral:true});
+                break;
+            }
+            if(checkDirty(config.homeServer,guess)){
+                cmd.reply({content:`I am not willing to process this word.`,ephemeral:true});
+                break;
+            }
+            if(!wotdList.includes(guess)){
+                cmd.reply({content:`This is not a valid word.`,ephemeral:true});
+                break;
+            }
+            var priorGuesses=cmd.message.content.split("\n").slice(1,7);
+            var nextInp=-1;
+            var accuracies={};
+            var won=false;
+            if(guess===storage.wotd) won=true;
+            `ABCDEFGHIJKLMNOPQRSTUVWXYZ`.split("").forEach(letter=>{
+                accuracies[letter]="";
+            });
+            for(var i=0;i<priorGuesses.length;i++){
+                if(nextInp===-1){
+                    var t;
+                    if(priorGuesses[i].includes("*")){
+                        t=priorGuesses[i].match(/(?<=\*)[A-Z]/ig)
+                        if(t){
+                            t.forEach(match=>{
+                                accuracies[match]=`**`;
+                            });
+                        }
+                    }
+                    if(priorGuesses[i].includes("_")){
+                        t=priorGuesses[i].match(/(?<=\_)[A-Z]/ig);
+                        if(t){
+                            t.forEach(match=>{
+                                if(accuracies[match]!=="**") accuracies[match]=`__`;
+                            });
+                        }
+                    }
+                    if(priorGuesses[i].includes("`")){
+                        t=priorGuesses[i].match(/(?<=\`)[A-Z]/ig)
+                        if(t){
+                            t.forEach(match=>{
+                                accuracies[match]=`~~`;
+                            });
+                        }
+                    }
+                }
+                if(priorGuesses[i]==="` ` ` ` ` ` ` ` ` `"&&nextInp===-1){
+                    nextInp=i;
+                }
+            }
+            var guessAccuracy=[];
+            guess.split("").forEach((char,i)=>{
+                if(storage.wotd.split("")[i]===char){
+                    guessAccuracy.push(`**${char.toUpperCase()}** `);
+                    accuracies[char.toUpperCase()]=`**`;
+                }
+                else if(storage.wotd.includes(char)){
+                    guessAccuracy.push(`__${char.toUpperCase()}__ `);
+                    if(accuracies[char.toUpperCase()]!=="**") accuracies[char.toUpperCase()]=`__`;
+                }
+                else{
+                    guessAccuracy.push(`\`${char.toUpperCase()}\``);
+                    accuracies[char.toUpperCase()]=`~~`;
+                }
+            });
+            priorGuesses[nextInp]=guessAccuracy.join(" ");//guess.split("").map(a=>`${guessAccuracies[a]}${a.toUpperCase()}${guessAccuracies[a]}${guessAccuracies[a]==="`"?``:` `}`).join(" ");
+            if(nextInp===5||won){
+                cmd.update({content:`# WOTD Game\n${priorGuesses.join("\n")}\n\n${`QWERTYUIOP`.split("").map(lett=>`${accuracies[lett]}${lett}${accuracies[lett]}`).join(" ")}\n${`ASDFGHJKL`.split("").map(lett=>`${accuracies[lett]}${lett}${accuracies[lett]}`).join(" ")}\n${`ZXCVBNM`.split("").map(lett=>`${accuracies[lett]}${lett}${accuracies[lett]}`).join(" ")}\n## Word: ||${storage.wotd.toUpperCase()}||`,components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setLabel(`Make a Guess`).setCustomId(`wotd-${cmd.user.id}`).setStyle(ButtonStyle.Primary).setDisabled(true),new ButtonBuilder().setLabel(`Based on Wordle`).setURL(`https://www.nytimes.com/games/wordle/index.html`).setStyle(ButtonStyle.Link))]});
+            }
+            else{
+                cmd.update(`# WOTD Game\n${priorGuesses.join("\n")}\n\n${`QWERTYUIOP`.split("").map(lett=>`${accuracies[lett]}${lett}${accuracies[lett]}`).join(" ")}\n${`ASDFGHJKL`.split("").map(lett=>`${accuracies[lett]}${lett}${accuracies[lett]}`).join(" ")}\n${`ZXCVBNM`.split("").map(lett=>`${accuracies[lett]}${lett}${accuracies[lett]}`).join(" ")}`);
+            }
+        break;
 
         //Select Menus
         case 'role-addOption':
@@ -3066,6 +3155,14 @@ client.on("interactionCreate",async cmd=>{
         }
         else{
             cmd.reply({content:`You do not have sufficient permissions.`,ephemeral:true});
+        }
+    }
+    if(cmd.customId?.startsWith("wotd-")){
+        if(cmd.user.id!==cmd.customId.split("-")[1]){
+            cmd.reply({content:`This is not your game.`,ephemeral:true});
+        }
+        else{
+            cmd.showModal(presets.wotdModal);
         }
     }
 });
