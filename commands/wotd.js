@@ -10,11 +10,13 @@ function applyContext(context={}) {
 module.exports = {
 	data: {
 		// Slash command data
-		command: null,
+		command: new SlashCommandBuilder().setName('wotd').setDescription('Play a word of the day game reminiscent of Wordle').addBooleanOption(option=>
+                option.setName("private").setDescription("Make the response ephemeral?")
+            ),
 		
 		// Optional fields
 		
-		// extra: {"contexts": [0,1,2], "integration_types": [0,1]},
+		extra: {"contexts": [0,1,2], "integration_types": [0,1]},
 
 		requiredGlobals: [],
 
@@ -34,20 +36,6 @@ module.exports = {
 	async execute(cmd, context) {
 		applyContext(context);
 		
-		// Code
-        if(cmd.guild?.id==="983074750165299250"&&cmd.channel.id==="986097382267715604"){
-            await cmd.followUp(`Launching commands...\n${require(`../launchCommands.js`).launchCommands()}`);
-			var newCmds=JSON.parse(require("fs").readFileSync(`../data/commands.json`,"utf-8"));
-			Object.keys(newCmds).forEach(key=>{
-				cmds[key]=newCmds[key];
-			});
-        }
-        else if(cmd.guild?.id===`983074750165299250`){
-            cmd.followUp(`Not here.`);
-        }
-        else{
-            notify(1,`Launch commands was used outside of Kestron Central by <@${cmd.user.id}>.`);
-			cmd.followUp(`No.`);
-        }
+		cmd.followUp({content:`# WOTD Game${"\n` ` ` ` ` ` ` ` ` `".repeat(6)}\nQ W E R T Y U I O P\nA S D F G H J K L\nZ X C V B N M`,components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setLabel(`Make a Guess`).setCustomId(`wotd-${cmd.user.id}`).setStyle(ButtonStyle.Primary),new ButtonBuilder().setLabel(`Based on Wordle`).setURL(`https://www.nytimes.com/games/wordle/index.html`).setStyle(ButtonStyle.Link))]});
 	}
 };

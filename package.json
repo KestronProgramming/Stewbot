@@ -17,6 +17,7 @@
     "re2": "^1.21.4",
     "rss-parser": "^3.13.0",
     "safe-regex": "^2.1.1",
-    "sentiment": "^5.0.2"
+    "sentiment": "^5.0.2",
+    "turndown": "^7.2.0"
   }
 }
