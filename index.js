@@ -1180,6 +1180,7 @@ function daily(dontLoop=false){
             }
         }
     });
+    storage.wotd=wotdList[Math.floor(Math.random()*wotdList.length)];
 }
 
 let rac = { // TODO: move this into fun.js subfile
