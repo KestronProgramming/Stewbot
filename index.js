@@ -1222,13 +1222,13 @@ function daily(dontLoop=false){
             }
         }
         
-        if(storage[key].hasOwnProperty("tempBans")){
-            Object.keys(storage[key].tempBans).forEach(ban=>{
-                if(storage[key].tempBans[ban].ends-Date.now()>0&&!storage[key].tempBans[ban].registered){
-                    setTimeout(()=>{finTempBan(key,ban)},storage[key].tempBans[ban].ends-Date.now());
+        if(storage[s].hasOwnProperty("tempBans")){
+            Object.keys(storage[s].tempBans).forEach(ban=>{
+                if(storage[s].tempBans[ban].ends-Date.now()>0&&!storage[s].tempBans[ban].registered){
+                    setTimeout(()=>{finTempBan(s,ban)},storage[s].tempBans[ban].ends-Date.now());
                 }
-                else if(!storage[key].tempBans[ban].registered){
-                    finTempBan(key,ban);
+                else if(!storage[s].tempBans[ban].registered){
+                    finTempBan(s,ban);
                 }
             });
         }
