@@ -3429,7 +3429,7 @@ client.on("messageUpdate",async (msgO,msg)=>{
         if(filtered){
             storage[msg.guild.id].users[msg.author.id].infractions++;
             if(storage[msg.guildId].filter.censor){
-                await msg.reply(`This post by **${msg.author.globalName||msg.author.username}** sent <t:${Math.round(msg.createdTimestamp/1000)}:f> has been deleted due to retroactively editing a blocked word into the message.`);
+                msg.channel.send({content:`A post by <@${msg.author.id}> sent at <t:${Math.round(msg.createdTimestamp/1000)}:f> <t:${Math.round(msg.createdTimestamp/1000)}:R> has been deleted due to retroactively editing a blocked word into the message.`,allowedMentions:{parse:[]}});
             }
             setTimeout(()=>{msg.delete()},2000);
             if(storage[msg.author.id].config.dmOffenses&&!msg.author.bot){
