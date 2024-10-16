@@ -26,7 +26,7 @@ module.exports = {
                     {"name":"1h","value":3600},
                     {"name":"2h","value":7200},
                     {"name":"6h","value":21600}
-                ).setRequired(true)
+                )
             ).addIntegerOption(option=>
                 option.setName("hours").setDescription("How many hours in between posts?").setMinValue(1).setMaxValue(23)
             ).addIntegerOption(option=>
