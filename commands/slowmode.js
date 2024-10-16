@@ -32,8 +32,6 @@ module.exports = {
             ).addIntegerOption(option=>
                 option.setName("minutes").setDescription("How many minutes in between posts?").setMinValue(1).setMaxValue(59)
             ).addIntegerOption(option=>
-                option.setName("seconds").setDescription("How many seconds in between posts?").setMinValue(1).setMaxValue(59)
-            ).addIntegerOption(option=>
                 option.setName("hours_until_reverted").setDescription("Should I revert this setting? In how many hours?").setMinValue(1).setMaxValue(23)
             ).addIntegerOption(option=>
                 option.setName("minutes_until_reverted").setDescription("Should I revert this setting? In how many minutes?").setMinValue(1).setMaxValue(59)
