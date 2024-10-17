@@ -805,6 +805,7 @@ async function checkRSS(){
                 // Get the URL myself to prevent local IP redirects
                 const data = await (await fetchWithRedirectCheck(feed.url)).text();
                 parsed = await rssParser.parseString(data);
+                feed.fails = 0;
             } catch (error) {
                 cont = false;
 
@@ -1556,7 +1557,11 @@ async function sendHook(what, msg){
 client.on("messageCreate",async msg=>{
     if(msg.author.id===client.user.id) return;
     if(msg.content.startsWith("~sudo ")&&!process.env.beta||msg.content.startsWith("~betaSudo ")&&process.env.beta){
-        if(client.channels.cache.get("986097382267715604")?.permissionsFor(msg.author.id)?.has(PermissionFlagsBits.SendMessages)){
+        const devadminChannel = await client.channels.fetch("986097382267715604");
+        await devadminChannel.guild.members.fetch(msg.author.id);
+
+        // if(client.channels.cache.get("986097382267715604")?.permissionsFor(msg.author.id)?.has(PermissionFlagsBits.SendMessages)){
+        if(devadminChannel?.permissionsFor(msg.author.id)?.has(PermissionFlagsBits.SendMessages)){
             switch(msg.content.split(" ")[1]){
                 case "permStatus":
                     var missingPerms=[];
@@ -1697,6 +1702,9 @@ client.on("messageCreate",async msg=>{
                 case "setWord":
                     storage.wotd=msg.content.split(" ")[2].toLowerCase();
                     msg.reply(storage.wotd);
+                break;
+                case "checkRSS":
+                    checkRSS();
                 break;
             }
         }
