@@ -32,7 +32,7 @@ module.exports = {
 				command.setName("rac").setDescription("Play a game of Rows & Columns").addBooleanOption(option=>
 					option.setName("help").setDescription("View the rules instead of playing?")
 				).addIntegerOption(option=>
-					option.setName("size").setDescription("Set your amount of rows and start playing!").setMinValue(3).setMaxValue(25)
+					option.setName("size").setDescription("Set your amount of rows and start playing!").setMinValue(3).setMaxValue(26)
 				)
 			).addSubcommand(command=>
 				command.setName("rock_paper_scissors").setDescription("Play Rock Paper Scissors with the bot").addStringOption(option=>

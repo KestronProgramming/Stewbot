@@ -32,6 +32,8 @@ module.exports = {
             ).addIntegerOption(option=>
                 option.setName("minutes").setDescription("How many minutes in between posts?").setMinValue(1).setMaxValue(59)
             ).addIntegerOption(option=>
+                option.setName("seconds").setDescription("How many seconds in between posts?").setMinValue(1).setMaxValue(59)
+            ).addIntegerOption(option=>
                 option.setName("hours_until_reverted").setDescription("Should I revert this setting? In how many hours?").setMinValue(1).setMaxValue(23)
             ).addIntegerOption(option=>
                 option.setName("minutes_until_reverted").setDescription("Should I revert this setting? In how many minutes?").setMinValue(1).setMaxValue(59)
@@ -73,10 +75,14 @@ module.exports = {
         }
         var time=0;
         if(cmd.options.getInteger("preset_mode")!==null) time=cmd.options.getInteger("preset_mode");
-        if(cmd.options.getInteger("hours")!==null) time+=cmd.options.getInteger("hours")*60000*60;
-        if(cmd.options.getInteger("minutes")!==null) time+=cmd.options.getInteger("minutes")*60000;
-        if(time<1){
-            time=30000;
+        if(cmd.options.getInteger("hours")!==null) time+=cmd.options.getInteger("hours")*60*60;
+        if(cmd.options.getInteger("minutes")!==null) time+=cmd.options.getInteger("minutes")*60;
+        if(cmd.options.getInteger("seconds")!==null) time+=cmd.options.getInteger("seconds");
+        if(time<5){
+            time=30;
+        }
+        if(time>21600){
+            time=21600;
         }
 
         if(!storage[cmd.guild.id].hasOwnProperty("tempslow")&&temp){
