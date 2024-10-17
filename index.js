@@ -1284,6 +1284,7 @@ function readRACBoard(toRead) {
 function scoreRows(game,char) {
     var score = 0;
     game.forEach((row)=>{
+        row = row.join(""); // row is an array of chars, this function expects a string
         var search=char.repeat(row.length);
         while (search.length>2&&row) {
             if (row.includes(search)) {
@@ -1300,9 +1301,9 @@ function scoreRows(game,char) {
 function rotateGame(game) {
     var newGame=[];
     for (var i=0;i<game.length;i++) {
-        var newCol = "";
+        var newCol = [];
         for (var j=0;j<game.length;j++) {
-            newCol+=game[j][i];
+            newCol.push(game[j][i]);
         }
         newGame.push(newCol);
     }
