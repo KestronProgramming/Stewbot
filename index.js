@@ -5,7 +5,6 @@ const {Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, Gatew
 process.env.beta && console.log("Discord imported")
 const translate=require("@vitalets/google-translate-api").translate;
 const RSSParser=require("rss-parser");
-const rssParser=new RSSParser();
 const crypto = require('crypto');
 const { createCanvas } = require('canvas');
 const { getEmojiFromMessage, parseEmoji } = require('./util');
@@ -23,7 +22,6 @@ const startBackupThread = require("./backup.js");
 const mathjs = require('mathjs');
 const nlp = require('compromise');
 var Turndown = require('turndown');
-var turndown = new Turndown();
 const wotdList=fs.readFileSync(`./data/wordlist.txt`,"utf-8").split("\n");
 
 
@@ -43,6 +41,19 @@ for (file of fs.readdirSync("./commands")) {
 }
 
 // Variables
+const rssParser=new RSSParser({
+    customFields: {
+    //   feed: ['description'],
+      item: ['description'],
+    }
+});
+var turndown = new Turndown();
+turndown.addRule('ignoreAll', {
+    filter: ['img'], // Ignore image tags in description
+    replacement: function () {
+      return '';
+    }
+  });
 const sentiment = new Sentiment();
 var client;
 function checkDirty(where, what, filter=false) {
@@ -725,8 +736,9 @@ function backupThreadErrorCallback(error) {
 setInterval(()=>{fs.writeFileSync("./storage.json",process.env.beta?JSON.stringify(storage,null,4):JSON.stringify(storage));}, 10 * 1000);
 // Cloud backups start inside the bot's on-ready listener
 
-function limitLength(s){
-    return s.length>1999?s.slice(0,1996)+"...":s;
+function limitLength(s, size=1999){
+    s = String(s);
+    return s.length>size?s.slice(0,size-3)+"...":s;
 }
 function parsePoll(c,published){
     try{
@@ -825,7 +837,8 @@ async function checkRSS(){
             if(cont){
                 let lastSentDate = new Date(feed.lastSent);
                 let mostRecentArticle = lastSentDate;
-                parsed.items.forEach(item=>{
+
+                for (item of parsed.items) {
                     let thisArticleDate = new Date(item.isoDate);
                     if(lastSentDate < thisArticleDate){
                         // Keep track of most recent
@@ -833,17 +846,57 @@ async function checkRSS(){
                             mostRecentArticle = thisArticleDate;
                         }
 
-                        feed.channels.forEach(chan=>{
+                        for (chan of feed.channels) {
                             let c=client.channels.cache.get(chan);
                             if(c===undefined||c===null||!c?.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
                                 feed.channels.splice(feed.channels.indexOf(chan),1);
                             }
                             else{
-                                c.send(`New notification from [a followed RSS feed](${item.link})${item.description?`\n\n${turndown.turndown(item.description)}`:``}`);
+                                // Old method:
+                                // c.send(`New notification from [a followed RSS feed](${item.link})${item.description?`\n\n${turndown.turndown(item.description)}`:``}`);
+
+                                try {
+                                    // Extract theoretically required fields per https://www.rssboard.org/rss-specification
+                                    const link = item.link || parsed.link; // default to channel URL
+                                    let baseUrl = '';
+                                    if (link) { // Attempt to get baseURL for turndown parsing
+                                        try {
+                                            baseUrl = new URL(link).origin;
+                                        } catch (e) {
+                                            baseUrl = ''; // fallback if URL is invalid
+                                        }
+                                    }
+
+                                    let parsedDescription = turndown.turndown(item.description.replace(/href="\/(.*?)"/g, `href="${(baseUrl)}/$1"`));
+                                    let content =  parsedDescription || item.contentSnippet || item.content || 'No Summary Available';
+                                    content = content.replace(/&quot;/g, '"')
+                                        .replace(/&amp;/g, '&')
+                                        .replace(/&lt;/g, '<')
+                                        .replace(/&gt;/g, '>');
+
+                                    const embed = new EmbedBuilder()
+                                        .setColor(0x1D82B6)
+                                        .setTitle(limitLength(item.title || parsed.description || 'No Title', 256)) // If no title, grab the feed description
+                                        .setDescription(limitLength(content, 1000));
+                                    if (link) embed.setURL(link)
+                                    
+                                    // Optional fields
+                                    const creator = item.creator || item["dc:creator"] || parsed.title || "Unknown Creator"; // 
+                                    const imageUrl = item?.image?.url || parsed?.image?.url;
+                                    if (creator) embed.setAuthor({ name: creator })
+                                    if (imageUrl) embed.setThumbnail(imageUrl);
+
+                                    c.send({ 
+                                        content: `-# New notification from [a followed RSS feed](${item.link})`,
+                                        embeds: [ embed ]
+                                    })
+                                } catch (e) {
+                                    notify(1, "RSS error: " + e)
+                                }
                             }
-                        });
+                        };
                     }
-                });
+                };
                 // Update feed most recent now after sending all new ones since last time
                 feed.lastSent = mostRecentArticle.toISOString();
             }
@@ -2214,7 +2267,7 @@ client.on("messageCreate",async msg=>{
         ];
         try{client.users.cache.get(msg.channel.name.split("Ticket with ")[1].split(" in ")[0]).send(resp).catch(e=>{});}catch(e){}
     }
-    if(msg.reference&&msg.channel instanceof DMChannel&&!msg.bot){
+    if(msg.reference&&msg.channel instanceof DMChannel&&!msg.author.bot){
         var rmsg=await msg.channel.messages.fetch(msg.reference.messageId);
         if(rmsg.author.id===client.user.id&&rmsg.content.includes("Ticket ID: ")){
             var resp={
@@ -2255,7 +2308,7 @@ client.on("messageCreate",async msg=>{
     }
 
     // Anti-hack message
-    if(msg.guild){
+    if(msg.guild && !msg.author.bot){
         var hash = crypto.createHash('md5').update(msg.content.slice(0,148)).digest('hex');
         if(!storage[msg.author.id].hasOwnProperty("hashStreak")) storage[msg.author.id].hashStreak=0;
         if(!storage[msg.guild.id].users[msg.author.id].hasOwnProperty("lastMessages")){
