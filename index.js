@@ -412,15 +412,15 @@ async function finTimer(who,force){
                 if(chan&&chan?.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
                     var msg=await chan.messages.fetch(storage[who].timer.respLocation.split("/")[1]);
                     if(msg){
-                        msg.reply(`<@${who}>, your timer is done!${storage[who].timer.reminder.length>0?`\n\`${storage[who].timer.reminder}\``:``}`);
-                        msg.edit({components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setLabel("Clear Timer").setStyle(ButtonStyle.Danger).setDisabled(true))]});
+                        msg.reply(`<@${who}>, your timer is done!${storage[who].timer.reminder.length>0?`\n\`${escapeBackticks(storage[who].timer.reminder)}\``:``}`);
+                        msg.edit({components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setLabel("Clear Timer").setCustomId("jerry").setStyle(ButtonStyle.Danger).setDisabled(true))]});
                     }
                     else{
-                        chan.send(`<@${who}>, your timer is done!${storage[who].timer.reminder.length>0?`\n\`${storage[who].timer.reminder}\``:``}`);
+                        chan.send(`<@${who}>, your timer is done!${storage[who].timer.reminder.length>0?`\n\`${escapeBackticks(storage[who].timer.reminder)}\``:``}`);
                     }
                 }
                 else{
-                    client.users.cache.get(who).send(`Your timer is done!${storage[who].timer.reminder.length>0?`\n\`${storage[who].timer.reminder}\``:``}`).catch(e=>{console.log(e)});
+                    client.users.cache.get(who).send(`Your timer is done!${storage[who].timer.reminder.length>0?`\n\`${escapeBackticks(storage[who].timer.reminder)}\``:``}`).catch(e=>{console.log(e)});
                 }
             }
             catch(e){
@@ -1890,7 +1890,7 @@ client.on("messageCreate",async msg=>{
                             }
                             if(storage[msg.guild.id].counting.failRoleActive&&msg.guild.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageRoles)){
                                 var fr=msg.guild.roles.cache.get(storage[msg.guild.id].counting.failRole);
-                                if(!fr){
+                                if(fr===null||fr===undefined){
                                     storage[msg.guild.id].counting.failRoleActive=false;
                                 }
                                 else{
@@ -1910,7 +1910,7 @@ client.on("messageCreate",async msg=>{
                         storage[msg.guild.id].users[msg.author.id].beenCountWarned=true;
                         if(storage[msg.guild.id].counting.warnRoleActive&&msg.guild.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageRoles)){
                             var wr=msg.guild.roles.cache.get(storage[msg.guild.id].counting.warnRole);
-                            if(!wr){
+                            if(wr===null||wr===undefined){
                                 storage[msg.guild.id].counting.warnRoleActive=false;
                             }
                             else{
@@ -1956,7 +1956,7 @@ client.on("messageCreate",async msg=>{
                     storage[msg.guild.id].users[msg.author.id].beenCountWarned=true;
                     if(storage[msg.guild.id].counting.warnRoleActive&&msg.guild.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageRoles)){
                         var wr=msg.guild.roles.cache.get(storage[msg.guild.id].counting.warnRole);
-                        if(!wr){
+                        if(wr===null||wr===undefined){
                             storage[msg.guild.id].counting.warnRoleActive=false;
                         }
                         else{
@@ -3422,7 +3422,16 @@ client.on("messageDelete",async msg=>{
     }
 });
 client.on("messageUpdate",async (msgO,msg)=>{
-    if(msg.guild?.id===undefined||client.user.id===msg.author?.id) return;
+    if(msg.guild?.id===undefined||client.user.id===msg.author?.id) return;//Currently there's no use for messageUpdate in DMs, only in servers. If this ever changes, remove the guildId check and add more further down
+    if(!storage.hasOwnProperty(msg.author.id)){
+        storage[msg.author.id]=structuredClone(defaultUser);   
+    }
+    if(!storage.hasOwnProperty(msg.guildId)){
+        storage[msg.guildId]=structuredClone(defaultGuild);
+    }
+    if(!storage[msg.guildId].users.hasOwnProperty(msg.author.id)){
+        storage[msg.guildId].users[msg.author.id]=structuredClone(defaultGuildUser);
+    }
     if(storage[msg.guild.id]?.filter.active){
         let [filtered, filteredContent, foundWords] = checkDirty(msg.guildId, msg.content, true)
 
@@ -3431,9 +3440,9 @@ client.on("messageUpdate",async (msgO,msg)=>{
             if(storage[msg.guildId].filter.censor){
                 msg.channel.send({content:`A post by <@${msg.author.id}> sent at <t:${Math.round(msg.createdTimestamp/1000)}:f> <t:${Math.round(msg.createdTimestamp/1000)}:R> has been deleted due to retroactively editing a blocked word into the message.`,allowedMentions:{parse:[]}});
             }
-            setTimeout(()=>{msg.delete()},2000);
+            msg.delete();
             if(storage[msg.author.id].config.dmOffenses&&!msg.author.bot){
-                msg.author.send(limitLength(`Your message in **${msg.guild.name}** was deleted due to editing in the following word${foundWords.length>1?"s":""} that are in the filter: ||${foundWords.join("||, ||")}||${storage[msg.author.id].config.returnFiltered?"```\n"+msg.content.replaceAll("`","\\`")+"```":""}`));
+                msg.author.send(limitLength(`Your message in **${msg.guild.name}** was deleted due to editing in the following word${foundWords.length>1?"s":""} that are in the filter: ||${foundWords.join("||, ||")}||${storage[msg.author.id].config.returnFiltered?"```\n"+msg.content.replaceAll("`","\\`")+"```":""}`)).catch(e=>{});
             }
             if(storage[msg.guildId].filter.log&&storage[msg.guildId].filter.channel){
                 client.channels.cache.get(storage[msg.guildId].filter.channel).send(limitLength(`I have deleted a message from **${msg.author.username}** in <#${msg.channel.id}> for editing in the following blocked word${foundWords.length>1?"s":""}: ||${foundWords.join("||, ||")}||\`\`\`\n${msg.content.replaceAll("`","\\`")}\`\`\``));
