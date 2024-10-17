@@ -3387,8 +3387,6 @@ client.on("messageDelete",async msg=>{
     if(storage[msg.guild.id]?.counting.active&&storage[msg.guild.id]?.counting.channel===msg.channel.id){
         // var num=msg.content?.match(/^(\d|,)+(?:\b)/i);
         var num = msg.content ? processForNumber(msg.content) : null;
-        console.log(msg.content);
-        console.log(num);
         if(num!==null&&num!==undefined){
             if(+num===storage[msg.guild.id].counting.nextNum-1){
                 msg.channel.send(String(num)).then(m=>m.react("✅"));
