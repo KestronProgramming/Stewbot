@@ -27,7 +27,7 @@ module.exports = {
 		
 		extra: {"contexts":[0],"integration_types":[0]},
 
-		requiredGlobals: ["cmds","finTempBan"],
+		requiredGlobals: ["finTempBan"],
 
 		help: {
 			"helpCategory":"Administration",

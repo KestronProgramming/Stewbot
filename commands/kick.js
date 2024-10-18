@@ -33,8 +33,26 @@ module.exports = {
 
 	async execute(cmd, context) {
 		applyContext(context);
+
+		const targetMember = cmd.guild.members.cache.get(cmd.options.getUser("target").id);
+		const issuerMember = cmd.guild.members.cache.get(cmd.user.id);
+		const reason = cmd.options.getString("reason");	
+
+		if (targetMember.id === cmd.guild.ownerId) {
+			return cmd.followUp({
+				content: "I cannot kick the owner of this server.",
+				ephemeral: true
+			});
+		}
+
+		if (issuerMember.roles.highest.comparePositionTo(targetMember.roles.highest) <= 0) {
+			return cmd.followUp({
+				content: "You cannot kick this user because they have a role equal to or higher than yours.",
+				ephemeral: true
+			});
+		}
 		
-		cmd.guild.members.cache.get(cmd.options.getUser("target").id).kick(`Instructed to kick by ${cmd.user.username}: ${cmd.options.getString("reason")}`);
-		cmd.followUp({content:`I have attempted to kick <@${cmd.user.username}>`,allowedMentions:{parse:[]}});
+		targetMember.kick(`Instructed to kick by ${cmd.user.username}${reason ? ": "+reason : "."}`);
+		cmd.followUp({content:`I have attempted to kick <@${targetMember.id}>`,allowedMentions:{parse:[]}});
 	}
 };
