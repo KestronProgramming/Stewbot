@@ -64,7 +64,7 @@ module.exports = {
 			if (!cmd.guild) {
 				return cmd.followUp(`I must be installed in this server to add emojis. If you need to add me, you can use [this link](${config.install})`);
 			}
-			if (!(await cmd.guild.members.fetch(cmd.user.id)).permissions.has(PermissionFlagsBits.CreateGuildExpressions)) {
+			if (!(await cmd.guild.members.fetch(cmd.user.id)).permissions?.has(PermissionFlagsBits.CreateGuildExpressions)) {
 				return cmd.followUp(`You must have permission to upload emojis to run this command.`);
 			}
 			if (!cmd.guild.members.me.permissions.has(PermissionFlagsBits.CreateGuildExpressions)) {
