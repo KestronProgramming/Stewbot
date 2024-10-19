@@ -74,10 +74,9 @@ module.exports = {
                     case "warnings":
                         return data2[1] - data1[1];
                     case "severity":
-                        return data1[1] - data2[1];
+                        return data2[2] - data1[2];
                 }
             })
-            console.log(warningData)
 
             // Parse data into warnings message
             const warningsMessage = warningData.map( data => {
