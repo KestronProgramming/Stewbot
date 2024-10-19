@@ -39,17 +39,19 @@ module.exports = {
 		const reason = cmd.options.getString("reason");	
 
 		if (targetMember.id === cmd.guild.ownerId) {
-			return cmd.followUp({
-				content: "I cannot kick the owner of this server.",
-				ephemeral: true
-			});
+			return cmd.followUp("I cannot kick the owner of this server.");
+		}
+
+		if(targetMember.id===client.user.id){
+			return cmd.followUp(`I cannot kick myself. I apologize for any inconveniences I may have caused. You can use ${cmds.report_problem.mention} if there's something that needs improvement.`);
+		}
+
+		if(cmd.user.id===targetMember.id){
+			return cmd.followUp(`I cannot ban you as the one invoking the command. If you feel the need to ban yourself, consider changing your actions and mindset instead.`);
 		}
 
 		if (issuerMember.roles.highest.comparePositionTo(targetMember.roles.highest) <= 0) {
-			return cmd.followUp({
-				content: "You cannot kick this user because they have a role equal to or higher than yours.",
-				ephemeral: true
-			});
+			return cmd.followUp("You cannot kick this user because they have a role equal to or higher than yours.");
 		}
 		
 		targetMember.kick(`Instructed to kick by ${cmd.user.username}${reason ? ": "+reason : "."}`);

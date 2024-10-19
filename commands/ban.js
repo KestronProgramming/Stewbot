@@ -37,22 +37,40 @@ module.exports = {
 
 	async execute(cmd, context) {
 		applyContext(context);
-		
+
+		// OPTIMIZE: the following .fetch is needed so that a cached user can't 
+		//   just use mod commands right after being demoted, as I understand it.
+		//  In theory we could possible watch for changes and invalidate cache? 
+		//  The same goes for /kick
+		cmd.guild.members.fetch(cmd.user.id);
+
+		const targetMember = cmd.guild.members.cache.get(cmd.options.getUser("target").id);
+		const issuerMember = cmd.guild.members.cache.get(cmd.user.id);
+		const reason = cmd.options.getString("reason");	
+
+		if (targetMember.id === cmd.guild.ownerId) {
+			return cmd.followUp("I cannot ban the owner of this server.");
+		}
+
+		if (issuerMember.roles.highest.comparePositionTo(targetMember.roles.highest) <= 0) {
+			return cmd.followUp("You cannot kick this user because they have a role equal to or higher than yours.");
+		}
+
 		if(!cmd.guild.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.BanMembers)){
 			cmd.followUp(`I do not have the permission to ban members.`);
 			return;
 		}
-		if(cmd.options.getUser("target").id===client.user.id){
+		if(targetMember.id===client.user.id){
 			cmd.followUp(`I cannot ban myself. I apologize for any inconveniences I may have caused. You can use ${cmds.report_problem.mention} if there's something that needs improvement.`);
 			return;
 		}
-		if(cmd.user.id===cmd.options.getUser("target").id){
+		if(cmd.user.id===targetMember.id){
 			cmd.followUp(`I cannot ban you as the one invoking the command. If you feel the need to ban yourself, consider changing your actions and mindset instead.`);
 			return;
 		}
-		var b=cmd.guild.members.cache.get(cmd.options.getUser("target").id);
+		var b=cmd.guild.members.cache.get(targetMember.id);
 		if(b===null||b===undefined){
-			cmd.followUp({content:`I couldn't find <@${cmd.options.getUser("target").id}>.`,allowedMentions:{parse:[]}});
+			cmd.followUp({content:`I couldn't find <@${targetMember.id}>.`,allowedMentions:{parse:[]}});
 			return;
 		}
 		var timer=0;
@@ -66,13 +84,13 @@ module.exports = {
 			cmd.followUp(`I cannot ban this person. Make sure that I have a role higher than their highest role in the server settings before running this command.`);
 			return;
 		}
-		b.ban({reason:`Instructed to ${temp?`temporarily `:``}ban by ${cmd.user.username}: ${cmd.options.getString("reason")}`});
+		b.ban({reason:`Instructed to ${temp?`temporarily `:``}ban by ${cmd.user.username}${reason ? ": "+reason: "."}`});
 		if(cmd.options.getBoolean("private")===null||!cmd.options.getBoolean("private")){
 			try{
 				cmd.options.getUser("target").send({content:`## ${temp?`Temporarily b`:`B`}anned in ${cmd.guild.name}.${temp?`\n\nThis ban will expire <t:${Math.round((Date.now()+timer)/1000)}:R>, at <t:${Math.round((Date.now()+timer)/1000)}:f>.`:``}`,embeds:[{
 					type: "rich",
 					title: checkDirty(config.homeServer,cmd.guild.name.slice(0, 80),true)[1],
-					description: cmd.options.getString("reason")?checkDirty(config.homeServer,cmd.options.getString("reason"),true)[1]:`They did not specify a reason`,
+					description: reason ? checkDirty(config.homeServer,reason,true)[1]:`They did not specify a reason`,
 					color: 0xff0000,
 					thumbnail: {
 						url: cmd.guild.iconURL(),
@@ -90,7 +108,7 @@ module.exports = {
 			if(!storage[cmd.guild.id].hasOwnProperty("tempBans")) storage[cmd.guild.id].tempBans={};
 			storage[cmd.guild.id].tempBans[b.id]={
 				ends:Date.now()+timer,
-				reason:cmd.options.getString("reason")?checkDirty(config.homeServer,cmd.options.getString("reason"),true)[1]:`Unspecified reason.`,
+				reason:reason?checkDirty(config.homeServer,reason,true)[1]:`Unspecified reason.`,
 				invoker:cmd.user.id,//If we can't unban the person at the end of the time, try to DM the one who banned them
 				private:cmd.options.getBoolean("private")!==null?cmd.options.getBoolean("private"):false
 			};
