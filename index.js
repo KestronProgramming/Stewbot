@@ -60,6 +60,8 @@ function checkDirty(where, what, filter=false) {
     // If filter is false, it returns: hasBadWords
     // If filter is true, it returns [hadBadWords, censoredMessage, wordsFound]
 
+    const originalContent = what; // Because we're unsnowflaking emojis, if the message was clean allow the original snowflakes 
+
     if (!where || !what) 
         if (!filter) return false
         else [false, '', []]
@@ -98,6 +100,8 @@ function checkDirty(where, what, filter=false) {
         // Additional sanitization content
         if (dirty) {
             what = defangURL(what)
+        } else {
+            what = originalContent; // Put snowflakes back how they were
         }
         
         return [dirty, what, foundWords];
