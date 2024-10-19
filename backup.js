@@ -5,6 +5,8 @@ const {google} = require('googleapis');
 const { OAuth2 } = google.auth;
 const envs = require("./env.json");
 
+const numberBackups = 5; // We will always maintain this many old backups of the storage file
+
 // TODO: these imports can be slow, import async
 
 const googleDriveScope = ['https://www.googleapis.com/auth/drive'];
@@ -191,7 +193,7 @@ async function deleteFileIfExists(drive, folderId, fileName) {
     });
     
     const files = res.data.files;
-    if (files.length > 0) {
+    if (files.length > numberBackups) {
       // If a file with the same name exists, delete it (or remove from folder if we don't own it)
       const fileId = files[0].id;
 
@@ -203,7 +205,6 @@ async function deleteFileIfExists(drive, folderId, fileName) {
         removeFileFromFolder(drive, folderId, fileId)
         // It will err if owned by someone else, so try removing from folder
       }
-      
     } else {
       // console.log(`No file named "${fileName}" found.`);
     }
