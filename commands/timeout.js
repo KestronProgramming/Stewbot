@@ -48,17 +48,27 @@ module.exports = {
 
 	async execute(cmd, context) {
 		applyContext(context);
+
+		const targetMember = cmd.guild.members.cache.get(cmd.options.getUser("target").id);
+		const issuerMember = cmd.guild.members.cache.get(cmd.user.id);
+
+		if (targetMember.id === cmd.guild.ownerId) {
+			return cmd.followUp("I cannot timeout the owner of this server.");
+		}
 		if(!cmd.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.ModerateMembers)){
 			cmd.followUp(`I cannot timeout right now as I'm missing the ModerateMembers permission.`);
 			return;
 		}
-		if(cmd.options.getUser("target").bot){
-			cmd.followUp(`I cannot timeout bots. ${cmd.options.getUser("target").id===client.user.id?`I apologize for any inconveniences I may have caused. You can use ${cmds.report_problem.mention} if there's something that needs improvement. You can try reconfiguring me as well.`:`Try reconfiguring the bot, or removing it if necessary.`}`);
+		if(targetMember.bot){
+			cmd.followUp(`I cannot timeout bots. ${targetMember.id===client.user.id?`I apologize for any inconveniences I may have caused. You can use ${cmds.report_problem.mention} if there's something that needs improvement. You can try reconfiguring me as well.`:`Try reconfiguring the bot, or removing it if necessary.`}`);
 			return;
 		}
-		if(cmd.user.id===cmd.options.getUser("target").id){
+		if(cmd.user.id===targetMember.id){
 			cmd.followUp(`I cannot timeout you as the one invoking the command. If you feel the need to timeout yourself, consider changing your actions and mindset instead.`);
 			return;
+		}
+		if (issuerMember.roles.highest.comparePositionTo(targetMember.roles.highest) <= 0) {
+			return cmd.followUp("You cannot timeout this user because they have a role equal to or higher than yours.");
 		}
 		var timer=0;
 		if(cmd.options.getInteger("preset_length")!==null) timer=cmd.options.getInteger("preset_length");
@@ -66,7 +76,7 @@ module.exports = {
 		if(cmd.options.getInteger("hours")!==null) timer+=cmd.options.getInteger("hours")*60000*60;
 		if(cmd.options.getInteger("minutes")!==null) timer+=cmd.options.getInteger("minutes")*60000;
 		if(timer<1) timer=60000*15;
-		cmd.guild.members.cache.get(cmd.options.getUser("target").id).timeout(timer,`Instructed to timeout by ${cmd.user.username}: ${cmd.options.getString("reason")}`);
-		cmd.followUp({content:`I have attempted to timeout <@${cmd.options.getUser("target").id}>.`,allowedMentions:{parse:[]}});
+		cmd.guild.members.cache.get(targetMember.id).timeout(timer,`Instructed to timeout by ${cmd.user.username}: ${cmd.options.getString("reason")}`);
+		cmd.followUp({content:`I have attempted to timeout <@${targetMember.id}>.`,allowedMentions:{parse:[]}});
 	}
 };
