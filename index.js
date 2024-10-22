@@ -1932,8 +1932,15 @@ client.on("messageCreate",async msg=>{
         var num = processForNumber(msg.content);
         if(num){
             if(num===storage[msg.guild.id].counting.nextNum){
-                if(storage[msg.guild.id].users[msg.author.id].countTurns<=0){
-                    msg.react("✅");
+                if(storage[msg.guild.id].users[msg.author.id].countTurns<=0) {
+
+                    // Discord glitches if the reaction is added too quickly
+                    setTimeout(_ => {
+                        try {
+                            msg.react("✅");
+                        } catch(e) {} // user could have blocked, a bot could have deleted it faster, etc...
+                    }, 150);
+                    
                     storage[msg.guild.id].counting.nextNum++;
                     if(storage[msg.guild.id].counting.legit&&num>storage[msg.guild.id].counting.highestNum){
                         msg.react("🎉");
