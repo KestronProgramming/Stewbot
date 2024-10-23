@@ -842,7 +842,7 @@ async function checkRSS(){
                 let lastSentDate = new Date(feed.lastSent);
                 let mostRecentArticle = lastSentDate;
 
-                for (item of parsed.items) {
+                for (item of parsed.items.reverse()) {
                     let thisArticleDate = new Date(item.isoDate);
                     if(lastSentDate < thisArticleDate){
                         // Keep track of most recent
