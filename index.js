@@ -23,6 +23,7 @@ const mathjs = require('mathjs');
 const nlp = require('compromise');
 var Turndown = require('turndown');
 const wotdList=fs.readFileSync(`./data/wordlist.txt`,"utf-8").split("\n");
+const cheerio = require('cheerio');
 
 
 // Preliminary setup (TODO: move to a setup.sh)
@@ -872,7 +873,7 @@ async function checkRSS(){
                                     }
 
                                     let parsedDescription = turndown.turndown(item.description.replace(/href="\/(.*?)"/g, `href="${(baseUrl)}/$1"`));
-                                    let content =  parsedDescription || item.contentSnippet || item.content || 'No Summary Available';
+                                    let content =  parsedDescription || item.contentSnippet || turndown.turndown(item.content) || 'No Summary Available';
                                     content = content.replace(/&quot;/g, '"')
                                         .replace(/&amp;/g, '&')
                                         .replace(/&lt;/g, '<')
@@ -889,6 +890,11 @@ async function checkRSS(){
                                     const imageUrl = item?.image?.url || parsed?.image?.url;
                                     if (creator) embed.setAuthor({ name: creator })
                                     if (imageUrl) embed.setThumbnail(imageUrl);
+
+                                    // If the description has an image, attempt to load it as a large image (image *fields* are usually thumbnails / logos)
+                                    const $ = cheerio.load(item.description || "");
+                                    const contentImage = $('img').attr('src');
+                                    if (contentImage) embed.setImage(contentImage);
 
                                     c.send({ 
                                         content: `-# New notification from [a followed RSS feed](${item.link})`,
