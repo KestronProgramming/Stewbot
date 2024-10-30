@@ -873,7 +873,7 @@ async function checkRSS(){
                                     }
 
                                     let parsedDescription = turndown.turndown(item.description?.replace?.(/href="\/(.*?)"/g, `href="${(baseUrl)}/$1"`) || "");
-                                    let content =  parsedDescription || item.contentSnippet || turndown.turndown(item.content) || 'No Summary Available';
+                                    let content =  parsedDescription || item.contentSnippet || turndown.turndown(item.content || "") || 'No Summary Available';
                                     content = content.replace(/&quot;/g, '"')
                                         .replace(/&amp;/g, '&')
                                         .replace(/&lt;/g, '<')
