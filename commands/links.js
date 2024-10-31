@@ -31,12 +31,12 @@ module.exports = {
 		applyContext(context);
 		
 		cmd.followUp(
-			`Here is a list of links in relation with this bot you may find useful.\n`+
-			`- [Stewbot's Website](<https://stewbot.kestron.software/>)\n`
-			`- [Stewbot's Invite Link](<https://discord.com/oauth2/authorize?client_id=966167746243076136>)\n`
-			`- [Support Server](<https://discord.gg/k3yVkrrvez>)\n`
-			`- [Stewbot's Source Code on Github](<https://github.com/KestronProgramming/Stewbot>)\n`
-			`- [The Developer](<https://discord.com/users/949401296404905995>)\n`
+			`Here is a list of links in relation with this bot you may find useful.\n` +
+			`- [Stewbot's Website](<https://stewbot.kestron.software/>)\n` +
+			`- [Stewbot's Invite Link](<https://discord.com/oauth2/authorize?client_id=966167746243076136>)\n` +
+			`- [Support Server](<https://discord.gg/k3yVkrrvez>)\n` +
+			`- [Stewbot's Source Code on Github](<https://github.com/KestronProgramming/Stewbot>)\n` +
+			`- [The Developer](<https://discord.com/users/949401296404905995>)\n` +
 			`- [The Developer's Website](<https://kestron.software/>)`
 		);
 	}
