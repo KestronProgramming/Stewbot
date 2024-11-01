@@ -81,7 +81,7 @@ function checkDirty(where, what, filter=false) {
             blockedWordRegex = new RegExp(`(\\b|^)${escapeRegex(blockedWord)}(ing|s|ed|er|ism|ist|es|ual)?(\\b|$)`, "igu")
         } catch (e) {
             // This should only ever be hit on old servers that have invalid regex before the escapeRegex was implemented
-            notify(1, "Caught filter error:\n" + e.message + "\n" + e.stack);
+            if (!e?.message?.includes?.("http")) notify(1, "Caught filter error:\n" + e.message + "\n" + e.stack);
             // We can ignore this filter word
             continue
         }
