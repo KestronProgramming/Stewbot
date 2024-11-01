@@ -76,8 +76,9 @@ function checkDirty(where, what, filter=false) {
         // Unsnowflake blocked word to match unsnowflaked message
         blockedWord = blockedWord.replace(/<:(\w+):[0-9]+>/g, ":$1:");
         
+        let blockedWordRegex;
         try {
-            const blockedWordRegex = new RegExp(`(\\b|^)${escapeRegex(blockedWord)}(ing|s|ed|er|ism|ist|es|ual)?(\\b|$)`, "igu")
+            blockedWordRegex = new RegExp(`(\\b|^)${escapeRegex(blockedWord)}(ing|s|ed|er|ism|ist|es|ual)?(\\b|$)`, "igu")
         } catch (e) {
             // This should only ever be hit on old servers that have invalid regex before the escapeRegex was implemented
             notify(1, "Caught filter error:\n" + e.message + "\n" + e.stack);
