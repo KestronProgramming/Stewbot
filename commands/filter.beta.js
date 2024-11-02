@@ -13,93 +13,107 @@ const fuseOptions = {
     keys: ['title']
 };
 
-`Noun
- Singular
-        Person
-            FirstName
-                MaleName
-                FemaleName
-        LastName
-    Place
-        Country
-        City
-        Region
-        Address
-    Organization
-        SportsTeam
-        Company
-        School
-    ProperNoun
-    Honorific
-    Plural
-    Uncountable
-    Pronoun
-    Actor
-    Activity
-    Unit
-    Demonym
-    Possessive
 
-Verb
-    PresentTense
-        Infinitive
-        Gerund
-    PastTense
-    PerfectTense
-    FuturePerfect
-    Pluperfect
-    Copula
-    Modal
-    Participle
-    Particle
-    PhrasalVerb
+const compromise = require("compromise");
+let doc = compromise("Dr. John Doe quickly ran to the nearest store.");
+doc.terms().forEach(term => {
+    console.log(`Word: ${term.text}, Tags: ${term?.tags?.join(', ')}`);
+});
 
-Value
-    Ordinal
-    Cardinal
-        RomanNumeral
-    Multiple
-    Fraction
-    TextValue
-    NumericValue
-    Percent
-    Money
 
-Date
-    Month
-    WeekDay
-    RelativeDay
-    Year
-    Duration
-    Time
-    Holiday
+// Available tags per   `console.log(Object.keys(require('compromise').model().one.tagSet))`
+// Start line with // remove as options (this way you can ctrl+/ it)
 
-Adjective
-    Comparable
-    Comparative
-    Superlative
-
-Contraction
-Adverb
-Currency
-Determiner
-Conjunction
-Preposition
-QuestionWord
-Pronoun
-Expression
-Abbreviation
-Url
-HashTag
-PhoneNumber
-AtMention
-Emoji
-Emoticon
-Email
-Auxiliary
-Negative
-Acronym`
-
+const filterTypes = [
+    // "Hyphenated",
+    // "Prefix",
+    // "There",
+    // "Condition",
+    // "Negative",
+    "Acronym",
+    // "Email",
+    // "SlashedTerm",
+    "Emoticon",
+    "Emoji",
+    // "HashTag",
+    // "PhoneNumber",
+    "Url",
+    "Abbreviation",
+    "Expression",
+    // "QuestionWord",
+    "Preposition",
+    "Conjunction",
+    // "Determiner",
+    "Adverb",
+    // "NumberRange",
+    "Adjective",
+    // "Superlative",
+    // "Comparative",
+    // "Comparable",
+    // "Date",
+    // "Duration",
+    // "Time",
+    // "Timezone",
+    // "Season",
+    // "Holiday",
+    // "FinancialQuarter",
+    // "Year",
+    // "WeekDay",
+    // "Month",
+    // "Value",
+    // "Percent",
+    // "NumericValue",
+    // "TextValue",
+    // "Multiple",
+    // "Fraction",
+    // "Cardinal",
+    // "Money",
+    // "RomanNumeral",
+    // "Ordinal",
+    "Verb",
+    // "Passive",
+    // "PhrasalVerb",
+    // "Particle",
+    // "Auxiliary",
+    // "Modal",
+    // "Copula",
+    // "FutureTense",
+    // "PastTense",
+    // "Participle",
+    // "Imperative",
+    // "PresentTense",
+    // "Gerund",
+    // "Infinitive",
+    // "Address",
+    "Noun",
+    // "AtMention", // <-- Interesting 
+    // "Currency",
+    // "Possessive",
+    "Demonym",
+    // "Unit",
+    "Activity",
+    "Actor",
+    "Pronoun",
+    // "Reflexive",
+    // "Uncountable",
+    // "Plural",
+    "ProperNoun",
+    "Organization",
+    // "Company",
+    // "School",
+    // "SportsTeam",
+    // "Singular",
+    // "Place",
+    // "Region",
+    "City",
+    "Country",
+    "Person",
+    // "Honorific",
+    // "LastName",
+    // "FirstName",
+    // "FemaleName",
+    // "MaleName",
+];
 
 module.exports = {
 	data: {
