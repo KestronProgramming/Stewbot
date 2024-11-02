@@ -24,6 +24,7 @@ const nlp = require('compromise');
 var Turndown = require('turndown');
 const wotdList=fs.readFileSync(`./data/wordlist.txt`,"utf-8").split("\n");
 const cheerio = require('cheerio');
+const { getCommands } = require("./launchCommands.js")
 
 
 // Preliminary setup (TODO: move to a setup.sh)
@@ -32,14 +33,7 @@ if (!fs.existsSync("tempMemes")) fs.mkdirSync('tempMemes');
 
 // Commands
 process.env.beta && console.log("Loading commands")
-const commands = {}
-for (file of fs.readdirSync("./commands")) {
-    if (path.extname(file) === ".js") {
-        const commandName = path.parse(file).name;
-        const command = require("./commands/"+commandName)
-        commands[commandName] = command;
-    }
-}
+let commands = getCommands();
 
 // Variables
 const rssParser=new RSSParser({

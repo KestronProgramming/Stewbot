@@ -19,17 +19,39 @@ Integration Types
 */
 
 
+// Function to build commands, handling beta/production versions
+function getCommands() {
+    const returnCommands = {}
+    const files = fs.readdirSync("./commands")
+    for (let file of files) {
+        if (path.extname(file) === ".js") {
+            let commandName = path.parse(file).name;
+            const command = require("./commands/"+commandName)
+            // Load .beta.js versions of files on beta, normal version on production
+            if (commandName.includes(".beta")) {
+                if (process.env.beta) {
+                    commandName = commandName.replaceAll(".beta", "")
+                } else {
+                    // If production, ignore beta commands
+                    continue
+                }
+            } else if (process.env.beta) {
+                // If no beta, and this is a beta instance, check if there is a beta version (if so, don't load this version)
+                if (files.includes(`${commandName}.beta.js`)) {
+                    continue
+                }
+            }
+            returnCommands[commandName] = command;
+        }
+    }
+    return returnCommands;
+}
+
+
 // Build command info from slash commands
 const extraInfo = {};
-let commands = []
-const migratedCommands = {}
-for (file of fs.readdirSync("./commands")) {
-    if (path.extname(file) === ".js") {
-        const commandName = path.parse(file).name;
-        const command = require("./commands/"+commandName)
-        migratedCommands[commandName] = command;
-    }
-}
+const migratedCommands = getCommands();   // commands
+let commands = [];                        // list we're gonna build into data needed for discord API
 for (let commandName in migratedCommands) {
 	const command = migratedCommands[commandName];
 	if (command?.data?.command) {
@@ -104,5 +126,5 @@ if (require.main == module) {
 	console.log(launchCommands());
 }
 else {
-	module.exports.launchCommands = launchCommands;
+	module.exports = {launchCommands, getCommands};
 }
