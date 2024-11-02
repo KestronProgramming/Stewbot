@@ -255,7 +255,6 @@ besom
 bevel
 bible
 bight
-bigot
 biker
 bilge
 bills

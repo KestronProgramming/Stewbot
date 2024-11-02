@@ -10,15 +10,9 @@ const Fuse = require('fuse.js');
 const compromise = require("compromise")
 const fuseOptions = {
     includeScore: true,
-    keys: ['title']
+    keys: ['item']
 };
-
-
-const compromise = require("compromise");
-let doc = compromise("Dr. John Doe quickly ran to the nearest store.");
-doc.terms().forEach(term => {
-    console.log(`Word: ${term.text}, Tags: ${term?.tags?.join(', ')}`);
-});
+const maxShownItems = 25
 
 
 // Available tags per   `console.log(Object.keys(require('compromise').model().one.tagSet))`
@@ -91,7 +85,7 @@ const filterTypes = [
     // "Possessive",
     "Demonym",
     // "Unit",
-    "Activity",
+    // "Activity",
     "Actor",
     "Pronoun",
     // "Reflexive",
@@ -133,6 +127,10 @@ module.exports = {
             ).addSubcommand(command=>
                 command.setName("add").setDescription('Add a word to the filter').addStringOption(option=>
                     option.setName("word").setDescription("The word to blacklist").setRequired(true)
+                ).addStringOption(option=>
+                    option.setName("blacklist_categories").setDescription("Only filter the word when used in this context (comma-separated list)").setAutocomplete(true).setRequired(false)
+                ).addStringOption(option=>
+                    option.setName("whitelist_categories").setDescription("Filter the word except when it is used in this context (comma-separated list)").setAutocomplete(true).setRequired(false)
                 ).addBooleanOption(option=>
                     option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
                 )
@@ -230,20 +228,43 @@ module.exports = {
     },
 
     async autocomplete(cmd) {
-        const typedSoFar = cmd.options.getFocused() || ""
+        const inputSoFar = cmd.options.getFocused() || ""
+
+        // Extract tag info for filtering
+        const nextTagIndex = inputSoFar.match(/(?<=(,|^))(\w|\s)*$/)?.index || 0;
+        const otherTags = inputSoFar.substring(0,nextTagIndex).split(",");
+        const lastTag = otherTags?.slice(-1)?.[0] || "";
+        const thisTagTyped = inputSoFar.substring(nextTagIndex).trim();
+
+        let options = [...filterTypes]; // clone
 
         // Code from another bot of mine using autocomplete I am working on porting:
 
-        // if (typedSoFar) { // only refine if they've started typing
-        //     const fuse = new Fuse(helpMessagesTitles.map(title => ({ title })), fuseOptions);            
-        //     const scoredResults = fuse.search(typedSoFar).sort((a, b) => a.score - b.score);
-        //     helpMessagesTitles = scoredResults.map(entry => entry.item.title);
-        // }
+        // Filter if they've started typing on this tag (after ",")
+        if (thisTagTyped) {
+            // Fuzzy match
+            const fuse = new Fuse(options.map(item => ({ item })), fuseOptions);            
+            const scoredResults = fuse.search(thisTagTyped).sort((a, b) => a.score - b.score);
+            options = scoredResults.map(entry => entry.item.item);
+            // Remove currently select tags from options
+            options = options.filter(cat => !otherTags.includes(cat))
+        }
 
+        // Format for discord
         autocompletes = []
-        autocompletes.push({
-            name: title, // What is shown to the user
-            value: title // What is actually entered
-        })
+        for (const [index, category] of options.entries()) {
+            const data = otherTags.join(", ") + category + ", ";
+            autocompletes.push({
+                name: data,
+                value: data
+            })
+            if (index == maxShownItems && options.length > maxShownItems) {
+                autocompletes.push({ name: `... (${options.length-(maxShownItems-1)} more not shown)`, value: ""})
+                break
+            }
+        }
+
+        // console.log(autocompletes);
+        cmd.respond(autocompletes);
     }
 };
