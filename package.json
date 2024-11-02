@@ -11,6 +11,7 @@
     "crypto": "^1.0.1",
     "discord.js": "^14.13.0",
     "fs": "^0.0.1-security",
+    "fuse.js": "^7.0.0",
     "get-mp3-duration": "^1.0.0",
     "googleapis": "^105.0.0",
     "libsodium-wrappers": "^0.7.13",

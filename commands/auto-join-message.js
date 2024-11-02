@@ -30,7 +30,7 @@ module.exports = {
 		
 		extra: {"contexts":[0],"integration_types":[0]},
 
-		requiredGlobals: [],
+		requiredGlobals: ["defaultGuild"],
 
 		help: {
 			helpCategory: "Administration",

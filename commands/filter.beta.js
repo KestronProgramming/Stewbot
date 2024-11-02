@@ -6,6 +6,100 @@ function applyContext(context={}) {
 	}
 }
 // #endregion Boilerplate
+const Fuse = require('fuse.js');
+const compromise = require("compromise")
+const fuseOptions = {
+    includeScore: true,
+    keys: ['title']
+};
+
+`Noun
+ Singular
+        Person
+            FirstName
+                MaleName
+                FemaleName
+        LastName
+    Place
+        Country
+        City
+        Region
+        Address
+    Organization
+        SportsTeam
+        Company
+        School
+    ProperNoun
+    Honorific
+    Plural
+    Uncountable
+    Pronoun
+    Actor
+    Activity
+    Unit
+    Demonym
+    Possessive
+
+Verb
+    PresentTense
+        Infinitive
+        Gerund
+    PastTense
+    PerfectTense
+    FuturePerfect
+    Pluperfect
+    Copula
+    Modal
+    Participle
+    Particle
+    PhrasalVerb
+
+Value
+    Ordinal
+    Cardinal
+        RomanNumeral
+    Multiple
+    Fraction
+    TextValue
+    NumericValue
+    Percent
+    Money
+
+Date
+    Month
+    WeekDay
+    RelativeDay
+    Year
+    Duration
+    Time
+    Holiday
+
+Adjective
+    Comparable
+    Comparative
+    Superlative
+
+Contraction
+Adverb
+Currency
+Determiner
+Conjunction
+Preposition
+QuestionWord
+Pronoun
+Expression
+Abbreviation
+Url
+HashTag
+PhoneNumber
+AtMention
+Emoji
+Emoticon
+Email
+Auxiliary
+Negative
+Acronym`
+
 
 module.exports = {
 	data: {
@@ -55,10 +149,7 @@ module.exports = {
 	},
 
 	async execute(cmd, context) {
-		applyContext(context);
-
-        return cmd.followUp("Beta command loaded 👍");
-        
+		applyContext(context);        
 		
         if(!cmd.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageMessages)){
             storage[cmd.guildId].filter.active=false;
@@ -123,4 +214,22 @@ module.exports = {
             break;
         }
     },
+
+    async autocomplete(cmd) {
+        const typedSoFar = cmd.options.getFocused() || ""
+
+        // Code from another bot of mine using autocomplete I am working on porting:
+
+        // if (typedSoFar) { // only refine if they've started typing
+        //     const fuse = new Fuse(helpMessagesTitles.map(title => ({ title })), fuseOptions);            
+        //     const scoredResults = fuse.search(typedSoFar).sort((a, b) => a.score - b.score);
+        //     helpMessagesTitles = scoredResults.map(entry => entry.item.title);
+        // }
+
+        autocompletes = []
+        autocompletes.push({
+            name: title, // What is shown to the user
+            value: title // What is actually entered
+        })
+    }
 };

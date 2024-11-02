@@ -2403,6 +2403,13 @@ client.on("interactionCreate",async cmd=>{
         storage[cmd.user.id]=structuredClone(defaultUser);
     }
 
+    // Autocomplete
+    if (cmd.isAutocomplete()) {
+        // Disbatch to relevent command if registered
+        commands?.[cmd.commandName]?.autocomplete?.(cmd);
+        return; // Just return right here since idk if kestron's code will glitch out with another type of interaction
+    }
+
     // Slash commands
     if (commands.hasOwnProperty(cmd.commandName)) {
         const commandScript = commands[cmd.commandName];
