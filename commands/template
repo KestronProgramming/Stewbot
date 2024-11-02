@@ -36,6 +36,11 @@ module.exports = {
 	async execute(cmd, context) {
 		applyContext(context);
 		
-		// Code
+		// This code is called oh the slash command
+	},
+
+	async autocomplete(cmd) {
+		// This function handles autocomplete for any input fields for the command. \
+		// Currently has no context passthrough, can add if needed.
 	}
 };

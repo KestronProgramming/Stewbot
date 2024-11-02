@@ -6,6 +6,15 @@ function applyContext(context={}) {
 	}
 }
 // #endregion Boilerplate
+
+// Dev into:
+/* 
+Filter is stored as an array at "storage[cmd.guildId].filter.blacklist"
+Filter accepts string objects for straight words to filter,
+ or json objects in the format of {word:"...", whitelist_categories:[...], blacklist_categories:[...]}
+Whitelist and blacklist should not be defined together, only one works at a time
+*/
+
 const Fuse = require('fuse.js');
 const compromise = require("compromise")
 const fuseOptions = {
@@ -14,6 +23,36 @@ const fuseOptions = {
 };
 const maxShownItems = 25
 
+function normalizeSplit(stringList) {
+    // Split categories into arrays
+    if (!stringList) return null;
+    try {
+        let categories = stringList.split(",");
+        categories.map(cat => {
+            cat = cat
+                .toLowerCase()
+                .match(/\w/g)
+                ?.join("");
+            cat = (cat?.[0]?.toUpperCase() || "") + (cat?.slice(1) || "");
+        })
+        categories = categories.filter(c => c && filterTypes.includes(c))
+        return categories;
+    } catch (e) {
+        return null;
+    }
+}
+function filterSettingsContains(settings, word) {
+    // Check if the filter object contains a word - either as json or directly
+    for (item of settings) {
+        if (typeof(item) == 'object') {
+            if (item.word == word) return item
+        }
+        else {
+            if (item == word) return item
+        }
+    }
+    return false
+}
 
 // Available tags per   `console.log(Object.keys(require('compromise').model().one.tagSet))`
 // Start line with // remove as options (this way you can ctrl+/ it)
@@ -170,14 +209,42 @@ module.exports = {
         }
         switch(cmd.options.getSubcommand()){
             case "add":
-                if(storage[cmd.guildId].filter.blacklist.includes(cmd.options.getString("word"))){
-                    cmd.followUp({"ephemeral":true,"content":`The word ||${cmd.options.getString("word")}|| is already in the blacklist.${storage[cmd.guildId].filter.active?"":`To begin filtering in this server, use ${cmds.filter.config.mention}.`}`});
+                const blacklist_categories = normalizeSplit(cmd.options.getString("blacklist_categories"));
+                const whitelist_categories = normalizeSplit(cmd.options.getString("whitelist_categories"));
+                const filterWord = cmd.options.getString("word");
+                let addResponse = "";
+
+                if (blacklist_categories && whitelist_categories) {
+                    return cmd.followUp(`You cannot specify a blacklist and a whitelist at the same time.\nA blacklist allows *all* but specified categories, a whitelist allows *none* but specified categories`);
                 }
-                else{
-                    storage[cmd.guildId].filter.blacklist.push(cmd.options.getString("word"));
-                    cmd.followUp(`Added ||${cmd.options.getString("word")}|| to the filter for this server.${storage[cmd.guildId].filter.active?"":`\n\nThe filter for this server is currently disabled. To enable it, use ${cmds.filter.config.mention}.`}`);
+
+                // if(storage[cmd.guildId].filter.blacklist.includes(filterWord)){
+                //     ephemeral = true
+                //     addResponse = `The word ||${filterWord.replaceAll("|", "\\|")}|| is already in the blacklist.`
+                // }
+                
+                // Add new word to filter.
+                const currentFilterItem = filterSettingsContains(storage[cmd.guildId].filter.blacklist, filterWord);
+                if (currentFilterItem) {
+                    // Check if we are overriding a former whitelist with a blacklist or vice versa
+                    if (currentFilterItem?.whitelist_categories && blacklist_categories) {
+                        addResponse += `Previously this command had this whitelist: \`${currentFilterItem?.whitelist_categories.join(",")}\` which is now being overwritten with a blacklist.\n\n`
+                    }
+                    else if (currentFilterItem?.blacklist_categories && whitelist_categories) {
+                        addResponse += `Previously this command had this blacklist: \`${currentFilterItem?.blacklist_categories.join(",")}\` which is now being overwritten with a whitelist.\n\n`
+                    }
+                }
+                else {
+                    storage[cmd.guildId].filter.blacklist.push(filterWord);
+                    addResponse = `Added ||${filterWord.replaceAll("|", "\\|")}|| to the filter for this server.`    
+                }
                     
+                // Add inactive filter warning
+                if (!storage[cmd.guildId].filter.active) {
+                    addResponse += `\n\nThe filter for this server is currently **disabled**. To enable it, use ${cmds.filter.config.mention}.`
                 }
+                cmd.followUp({content: addResponse})
+
             break;
             case "remove":
                 if(storage[cmd.guildId].filter.blacklist.includes(cmd.options.getString("word"))){
@@ -233,7 +300,7 @@ module.exports = {
         // Extract tag info for filtering
         const nextTagIndex = inputSoFar.match(/(?<=(,|^))(\w|\s)*$/)?.index || 0;
         const otherTags = inputSoFar.substring(0,nextTagIndex).split(",");
-        const lastTag = otherTags?.slice(-1)?.[0] || "";
+        // const lastTag = otherTags?.slice(-1)?.[0] || "";
         const thisTagTyped = inputSoFar.substring(nextTagIndex).trim();
 
         let options = [...filterTypes]; // clone
