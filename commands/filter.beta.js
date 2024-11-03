@@ -41,14 +41,15 @@ function normalizeSplit(stringList) {
         return null;
     }
 }
+
 function filterSettingsContains(settings, word) {
     // Check if the filter object contains a word - either as json or directly
-    for (item of settings) {
+    for (const [index, item] of settings.entries()) {
         if (typeof(item) == 'object') {
-            if (item.word == word) return item
+            if (item.word == word) return [item, index]
         }
         else {
-            if (item == word) return item
+            if (item == word) return [item, index]
         }
     }
     return false
@@ -218,27 +219,46 @@ module.exports = {
                     return cmd.followUp(`You cannot specify a blacklist and a whitelist at the same time.\nA blacklist allows *all* but specified categories, a whitelist allows *none* but specified categories`);
                 }
 
-                // if(storage[cmd.guildId].filter.blacklist.includes(filterWord)){
-                //     ephemeral = true
-                //     addResponse = `The word ||${filterWord.replaceAll("|", "\\|")}|| is already in the blacklist.`
-                // }
-                
-                // Add new word to filter.
-                const currentFilterItem = filterSettingsContains(storage[cmd.guildId].filter.blacklist, filterWord);
+                // Check if it exists + grab reference for later
+                let [currentFilterItem, currentFilterItemIndex] = filterSettingsContains(storage[cmd.guildId].filter.blacklist, filterWord);
+
+                // TODO: I feel like this code is extremely repetitive but I'm doing too much else to bother fixing rn
                 if (currentFilterItem) {
-                    // Check if we are overriding a former whitelist with a blacklist or vice versa
+                    // If this is a string turn it into the new json object form
+                    if (typeof(currentFilterItem) == 'string') {
+                        storage[cmd.guildId].filter.blacklist.splice(currentFilterItemIndex, 1);
+                        currentFilterItem = {word: currentFilterItem} // replace with json reference
+                        storage[cmd.guildId].filter.blacklist.push(currentFilterItem);
+                    }
+
+                    // Check if we are overriding a former whitelist with a blacklist or vice versa, or just updating the categories
                     if (currentFilterItem?.whitelist_categories && blacklist_categories) {
-                        addResponse += `Previously this command had this whitelist: \`${currentFilterItem?.whitelist_categories.join(",")}\` which is now being overwritten with a blacklist.\n\n`
+                        addResponse += `Previously this word had this whitelist: \`${currentFilterItem?.whitelist_categories.join(", ")}\`, which is now being overwritten with a blacklist.`
                     }
                     else if (currentFilterItem?.blacklist_categories && whitelist_categories) {
-                        addResponse += `Previously this command had this blacklist: \`${currentFilterItem?.blacklist_categories.join(",")}\` which is now being overwritten with a whitelist.\n\n`
+                        addResponse += `Previously this word had this blacklist: \`${currentFilterItem?.blacklist_categories.join(", ")}\`, which is now being overwritten with a whitelist.`
+                    } else if (currentFilterItem?.blacklist_categories || currentFilterItem?.whitelist_categories) {
+                        addResponse += `Updated this word's categories filter from ${(currentFilterItem?.blacklist_categories || currentFilterItem?.whitelist_categories).join(", ")}to ${(blacklist_categories || whitelist_categories).join(", ")} `
                     }
+
+                    // Modify existing command
+                    delete currentFilterItem[!whitelist_categories?"whitelist_categories":"blacklist_categories"]
+                    currentFilterItem[whitelist_categories?"whitelist_categories":"blacklist_categories"] = (whitelist_categories || blacklist_categories);
                 }
                 else {
-                    storage[cmd.guildId].filter.blacklist.push(filterWord);
-                    addResponse = `Added ||${filterWord.replaceAll("|", "\\|")}|| to the filter for this server.`    
+                    // If it's new we can just straight add it
+                    const newData = {word:filterWord}
+                    storage[cmd.guildId].filter.blacklist.push(newData)
+
+                    addResponse += `Added ||${filterWord.replaceAll("|", "\\|")}|| to the filter for this server`
+
+                    if (whitelist_categories || blacklist_categories) {
+                        newData[whitelist_categories?"whitelist_categories":"blacklist_categories"] = (whitelist_categories || blacklist_categories);
+                        addResponse += ` with those category limitations`
+                    }
+                    addResponse += `.`
                 }
-                    
+                
                 // Add inactive filter warning
                 if (!storage[cmd.guildId].filter.active) {
                     addResponse += `\n\nThe filter for this server is currently **disabled**. To enable it, use ${cmds.filter.config.mention}.`
@@ -295,6 +315,8 @@ module.exports = {
     },
 
     async autocomplete(cmd) {
+        // TODO: this should auto-fetch categories belonging to a word if the word has been entered into the word field yet and is known in this server
+
         const inputSoFar = cmd.options.getFocused() || ""
 
         // Extract tag info for filtering

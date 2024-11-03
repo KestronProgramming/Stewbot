@@ -67,6 +67,11 @@ function checkDirty(where, what, filter=false) {
     let dirty = false;
     let foundWords = []; // keep track of all filtered words to later tell the user what was filtered
     for (blockedWord of storage[where].filter.blacklist) {
+        // Ignore the new beta json format for now
+        if (typeof(blockedWord) !== 'string') {
+            continue
+        }
+
         // Unsnowflake blocked word to match unsnowflaked message
         blockedWord = blockedWord.replace(/<:(\w+):[0-9]+>/g, ":$1:");
         
