@@ -51,70 +51,6 @@ turndown.addRule('ignoreAll', {
   });
 const sentiment = new Sentiment();
 var client;
-function checkDirty(where, what, filter=false) {
-    // If filter is false, it returns: hasBadWords
-    // If filter is true, it returns [hadBadWords, censoredMessage, wordsFound]
-
-    const originalContent = what; // Because we're unsnowflaking emojis, if the message was clean allow the original snowflakes 
-
-    if (!where || !what) 
-        if (!filter) return false
-        else [false, '', []]
-
-    // Unsnowflake all custom emojis
-    what = String(what).replace(/<:(\w+):[0-9]+>/g, ":$1:")
-
-    let dirty = false;
-    let foundWords = []; // keep track of all filtered words to later tell the user what was filtered
-    for (blockedWord of storage[where].filter.blacklist) {
-        // Ignore the new beta json format for now
-        if (typeof(blockedWord) !== 'string') {
-            continue
-        }
-
-        // Unsnowflake blocked word to match unsnowflaked message
-        blockedWord = blockedWord.replace(/<:(\w+):[0-9]+>/g, ":$1:");
-        
-        let blockedWordRegex;
-        try {
-            blockedWordRegex = new RegExp(`(\\b|^)${escapeRegex(blockedWord)}(ing|s|ed|er|ism|ist|es|ual)?(\\b|$)`, "igu")
-        } catch (e) {
-            // This should only ever be hit on old servers that have invalid regex before the escapeRegex was implemented
-            if (!e?.message?.includes?.("http")) notify(1, "Caught filter error:\n" + e.message + "\n" + e.stack);
-            // We can ignore this filter word
-            continue
-        }
-
-        // Check for the word 
-        if (blockedWordRegex.test(what) || what === blockedWord) {
-            dirty = true;
-            if (!filter) {
-                return true;
-            }
-            else {
-                foundWords.push(blockedWord)
-                what = what.replace(blockedWordRegex, "[\\_]");
-            }
-        }
-    }
-
-    if (!filter) {
-        // If we passed the check without exiting, it's clean
-        return false;
-    } 
-    else {
-        // If we're filtering, it needs a more structured output
-
-        // Additional sanitization content
-        if (dirty) {
-            what = defangURL(what)
-        } else {
-            what = originalContent; // Put snowflakes back how they were
-        }
-        
-        return [dirty, what, foundWords];
-    }
-}
 var Bible={};
 var properNames={};
 Object.keys(bible).forEach(book=>{
@@ -126,7 +62,40 @@ const threshold = 3;
 var kaProgramRegex =/\b(?!<)https?:\/\/(?:www\.)?khanacademy\.org\/(cs|computer-programming|hour-of-code|python-program)\/[a-z,\d,-]+\/\d+(?!>)\b/gi;
 var discordMessageRegex =/\b(?!<)https?:\/\/(ptb\.|canary\.)?discord(app)?.com\/channels\/(\@me|\d+)\/\d+\/\d+(?!>)\b/gi;
 
+// Utility functions needed for processing some data blocks 
+function escapeRegex(input) {
+    return input.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+}
+
 // Data
+const leetMap = {
+    "a": "(a|4|@)",
+    "b": "(b|8|ß)",
+    "c": "(c|<|\\[|\\{)",
+    "d": "(d|cl)",
+    "e": "(e|3|€)",
+    "f": "(f|ƒ)",
+    "g": "(g|9|6|&)",
+    "h": "(h|#)",
+    "i": "(i|1|!)",
+    "j": "(j)",
+    "k": "(k|\\{|<)",
+    "l": "(l|1|!)",
+    "m": "(m)",
+    "n": "(n)",
+    "o": "(o|0|ø)",
+    "p": "(p|9|^)",
+    "q": "(q|9|0,)",
+    "r": "(r|2)",
+    "s": "(s|5|\\$)",
+    "t": "(t|7)",
+    "u": "(u)",
+    "v": "(v)",
+    "w": "(w|vv)",
+    "x": "(x|%|><)",
+    "y": "(y)",
+    "z": "(z|2)"
+};
 const m8ballResponses = ["So it would seem", "Yes", "No", "Perhaps", "Absolutely", "Positively", "Unfortunately", "I am unsure", "I do not know", "Absolutely not", "Possibly", "More likely than not", "Unlikely", "Probably not", "Probably", "Maybe", "Random answers is not the answer"];
 const pieCols=require("./data/pieCols.json");
 const setDates=require("./data/setDates.json");
@@ -567,6 +536,158 @@ async function finTempBan(guild,who,force){
     delete storage[guild].tempBans[who];
 }
 
+function checkDirty(where, what, filter=false) {
+    // If filter is false, it returns: hasBadWords
+    // If filter is true, it returns [hadBadWords, censoredMessage, wordsFound]
+
+    if (process.env.beta) return checkDirty2(where, what, filter);
+
+    const originalContent = what; // Because we're unsnowflaking emojis, if the message was clean allow the original snowflakes 
+
+    if (!where || !what) 
+        if (!filter) return false
+        else [false, '', []]
+
+    // Unsnowflake all custom emojis
+    what = String(what).replace(/<:(\w+):[0-9]+>/g, ":$1:")
+
+    let dirty = false;
+    let foundWords = []; // keep track of all filtered words to later tell the user what was filtered
+    for (blockedWord of storage[where].filter.blacklist) {
+        // Ignore the new beta json format for now
+        if (typeof(blockedWord) !== 'string') {
+            continue
+        }
+
+        // Unsnowflake blocked word to match unsnowflaked message
+        blockedWord = blockedWord.replace(/<:(\w+):[0-9]+>/g, ":$1:");
+        
+        let blockedWordRegex;
+        try {
+            blockedWordRegex = new RegExp(`(\\b|^)${escapeRegex(blockedWord)}(ing|s|ed|er|ism|ist|es|ual)?(\\b|$)`, "igu")
+        } catch (e) {
+            // This should only ever be hit on old servers that have invalid regex before the escapeRegex was implemented
+            if (!e?.message?.includes?.("http")) notify(1, "Caught filter error:\n" + e.message + "\n" + e.stack);
+            // We can ignore this filter word
+            continue
+        }
+
+        // Check for the word 
+        if (blockedWordRegex.test(what) || what === blockedWord) {
+            dirty = true;
+            if (!filter) {
+                return true;
+            }
+            else {
+                foundWords.push(blockedWord)
+                what = what.replace(blockedWordRegex, "[\\_]");
+            }
+        }
+    }
+
+    if (!filter) {
+        // If we passed the check without exiting, it's clean
+        return false;
+    } 
+    else {
+        // If we're filtering, it needs a more structured output
+
+        // Additional sanitization content
+        if (dirty) {
+            what = defangURL(what)
+        } else {
+            what = originalContent; // Put snowflakes back how they were
+        }
+        
+        return [dirty, what, foundWords];
+    }
+}
+function checkDirty2(where, what, filter=false) {
+    // If filter is false, it returns: hasBadWords
+    // If filter is true, it returns [hadBadWords, censoredMessage, wordsFound]
+
+    const originalContent = what; // Because we're preprocessing content, if the message was clean allow the original content without preprocessing 
+
+    if (!where || !what) 
+        if (!filter) return false
+        else [false, '', []]
+
+    // Preprocessing - anything here is destructive and will be processed this way if filtered
+    what = String(what).replace(/<:(\w+):[0-9]+>/g, ":$1:") // unsnowflake emojis
+    what = what.replace(/[\u200B-\u200D\u00AD]/g, ""); // strip 0-widths
+    what = what.normalize("NFKD"); // unicode variants
+    what = what.replace(/(\s)\s+/g, "$1"); // collapse spacing
+
+    let dirty = false;
+    let foundWords = []; // keep track of all filtered words to later tell the user what was filtered
+    for (blockedWord of storage[where].filter.blacklist) {
+        // Ignore the new beta json format for now
+        if (typeof(blockedWord) !== 'string') {
+            continue
+        }
+
+        // Unsnowflake blocked word to match unsnowflaked message
+        blockedWord = blockedWord.replace(/<:(\w+):[0-9]+>/g, ":$1:");
+        
+        let blockedWordRegex;
+        try {
+            let word = escapeRegex(blockedWord)
+
+            // More flexible matching
+            if (word.length > 3) {
+                for (let key in leetMap) { // Leet processing
+                    if (leetMap.hasOwnProperty(key)) {
+                        const replacement = leetMap[key];
+                        word = word.replaceAll(key, replacement)
+                    }
+                }
+                
+                // Allow a single char in between each
+                // - (?:\\{2})* ensures any escape sequences are handled (allows \\ or \\( as valid groups).
+                // - \( captures groups like (f|ƒ)
+                // - | [^\(\)] captures single characters outside parentheses
+                word = word.replace(/((?:\\{2})*\([^()]+\)|(?:\\{2})*[^\(\)])(?!\{)/g, '$1.{0,1}');
+
+                word = word+"(ing|s|ed|er|ism|ist|es|ual)?" // match variations
+            }
+            blockedWordRegex = new RegExp(`(\\b|^)${word}(\\b|$)`, "igu")
+        } catch (e) {
+            // This should only ever be hit on old servers that have invalid regex before the escapeRegex was implemented
+            if (!e?.message?.includes?.("http")) notify(1, "Caught filter error:\n" + e.message + "\n" + e.stack);
+            // We can ignore this filter word
+            continue
+        }
+
+        // Check for the word 
+        if (blockedWordRegex.test(what) || what === blockedWord) {
+            dirty = true;
+            if (!filter) {
+                return true;
+            }
+            else {
+                foundWords.push(blockedWord)
+                what = what.replace(blockedWordRegex, "[\\_]");
+            }
+        }
+    }
+
+    if (!filter) {
+        // If we passed the check without exiting, it's clean
+        return false;
+    } 
+    else {
+        // If we're filtering, it needs a more structured output
+
+        // Additional sanitization content
+        if (dirty) {
+            what = defangURL(what)
+        } else {
+            what = originalContent; // Put snowflakes back how they were
+        }
+        
+        return [dirty, what, foundWords];
+    }
+}
 
 function escapeBackticks(text){
     return text.replace(/(?<!\\)(?:\\\\)*`/g, "\\`");
@@ -631,9 +752,6 @@ function verifyRegex(regexStr) {
     // const regex = new RE2(userProvidedRegex, 'ui'); // TODO: figure out some system for flags - i should default on but some uses cases may need it off
     // const result = regex.exec(msg.content);
     // console.log(result);
-}
-function escapeRegex(input) {
-    return input.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
 }
 function levenshtein(s, t) {
     if (s === t) {
