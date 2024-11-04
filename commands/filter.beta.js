@@ -28,12 +28,13 @@ function normalizeSplit(stringList) {
     if (!stringList) return null;
     try {
         let categories = stringList.split(",");
-        categories.map(cat => {
+        categories = categories.map(cat => {
             cat = cat
                 .toLowerCase()
                 .match(/\w/g)
                 ?.join("");
             cat = (cat?.[0]?.toUpperCase() || "") + (cat?.slice(1) || "");
+            return cat
         })
         categories = categories.filter(c => c && filterTypes.includes(c))
         return categories;
@@ -52,7 +53,7 @@ function filterSettingsContains(settings, word) {
             if (item == word) return [item, index]
         }
     }
-    return false
+    return [null, null]
 }
 
 // Available tags per   `console.log(Object.keys(require('compromise').model().one.tagSet))`
@@ -172,6 +173,8 @@ module.exports = {
                 ).addStringOption(option=>
                     option.setName("whitelist_categories").setDescription("Filter the word except when it is used in this context (comma-separated list)").setAutocomplete(true).setRequired(false)
                 ).addBooleanOption(option=>
+                    option.setName("remove_category_filter").setDescription("Remove a previously set whitelist/blacklist from this command?").setRequired(false)
+                ).addBooleanOption(option=>
                     option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
                 )
             ).addSubcommand(command=>
@@ -213,6 +216,7 @@ module.exports = {
                 const blacklist_categories = normalizeSplit(cmd.options.getString("blacklist_categories"));
                 const whitelist_categories = normalizeSplit(cmd.options.getString("whitelist_categories"));
                 const filterWord = cmd.options.getString("word");
+                const removingCategoryFilter = cmd.options.getBoolean("remove_category_filter") || false;
                 let addResponse = "";
 
                 if (blacklist_categories && whitelist_categories) {
@@ -231,22 +235,43 @@ module.exports = {
                         storage[cmd.guildId].filter.blacklist.push(currentFilterItem);
                     }
 
-                    // Check if we are overriding a former whitelist with a blacklist or vice versa, or just updating the categories
-                    if (currentFilterItem?.whitelist_categories && blacklist_categories) {
-                        addResponse += `Previously this word had this whitelist: \`${currentFilterItem?.whitelist_categories.join(", ")}\`, which is now being overwritten with a blacklist.`
+                    // If we're updating the category filter 
+                    if ((blacklist_categories || whitelist_categories) && (blacklist_categories || whitelist_categories).length > 0) {
+                        // Check if we are overriding a former whitelist with a blacklist or vice versa, or just updating the categories
+                        if (currentFilterItem?.whitelist_categories && blacklist_categories) {
+                            addResponse += `Previously this word had this whitelist: \`${currentFilterItem?.whitelist_categories.join(", ")}\`, which is now being overwritten with a blacklist.`
+                        }
+                        else if (currentFilterItem?.blacklist_categories && whitelist_categories) {
+                        } else if (currentFilterItem?.blacklist_categories || currentFilterItem?.whitelist_categories) {
+                            addResponse += `Updated this word's categories filter from \`${(currentFilterItem?.blacklist_categories || currentFilterItem?.whitelist_categories).join(", ")}\` to \`${(blacklist_categories || whitelist_categories).join(", ")}\` `
+                        } else {
+                            addResponse += `Added the category filter of \`${(blacklist_categories || whitelist_categories).join(", ")}\` this this word.`
+                        }
+                        delete currentFilterItem["whitelist_categories"];
+                        delete currentFilterItem["blacklist_categories"];
+                        currentFilterItem[whitelist_categories?"whitelist_categories":"blacklist_categories"] = (whitelist_categories || blacklist_categories);    
                     }
-                    else if (currentFilterItem?.blacklist_categories && whitelist_categories) {
-                        addResponse += `Previously this word had this blacklist: \`${currentFilterItem?.blacklist_categories.join(", ")}\`, which is now being overwritten with a whitelist.`
-                    } else if (currentFilterItem?.blacklist_categories || currentFilterItem?.whitelist_categories) {
-                        addResponse += `Updated this word's categories filter from ${(currentFilterItem?.blacklist_categories || currentFilterItem?.whitelist_categories).join(", ")}to ${(blacklist_categories || whitelist_categories).join(", ")} `
+                    // If we're taking off the category filter
+                    else if (removingCategoryFilter) {
+                        previousFilterType = currentFilterItem["whitelist_categories"] 
+                            ? "whitelist"
+                            : currentFilterItem["blacklist_categories"]
+                                ? "blacklist"
+                                : null
+                        if (!previousFilterType) {
+                            addResponse += `No category filters were set on this word.`
+                        } else {
+                            addResponse += `Removing the category ${previousFilterType} for this word, which was previously set to: \`${currentFilterItem[previousFilterType+"_categories"].join(", ")}\``
+                            delete currentFilterItem[previousFilterType+"_categories"];
+                        }
                     }
-
-                    // Modify existing command
-                    delete currentFilterItem[!whitelist_categories?"whitelist_categories":"blacklist_categories"]
-                    currentFilterItem[whitelist_categories?"whitelist_categories":"blacklist_categories"] = (whitelist_categories || blacklist_categories);
+                    // No action preformed...
+                    else {
+                        addResponse += `This word is already in the filter.`
+                    }
                 }
+                // Adding new word to filter
                 else {
-                    // If it's new we can just straight add it
                     const newData = {word:filterWord}
                     storage[cmd.guildId].filter.blacklist.push(newData)
 
