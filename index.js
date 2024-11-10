@@ -541,11 +541,13 @@ function checkDirty(where, what, filter=false) {
     // If filter is true, it returns [hadBadWords, censoredMessage, wordsFound]
 
     // Differ to new filter unless it has an error
-    try {
-        return checkDirty2(where, what, filter);
-    }
-    catch (e) {
-        notify(1, "Caught error in new filter (defaulting to old filter):\n" + e.message + "\n" + e.stack);
+    if (process.env.beta) {
+        try {
+            return checkDirty2(where, what, filter);
+        }
+        catch (e) {
+            notify(1, "Caught error in new filter (defaulting to old filter):\n" + e.message + "\n" + e.stack);
+        }
     }
 
     const originalContent = what; // Because we're unsnowflaking emojis, if the message was clean allow the original snowflakes 
