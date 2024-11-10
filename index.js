@@ -540,7 +540,13 @@ function checkDirty(where, what, filter=false) {
     // If filter is false, it returns: hasBadWords
     // If filter is true, it returns [hadBadWords, censoredMessage, wordsFound]
 
-    if (process.env.beta) return checkDirty2(where, what, filter);
+    // Differ to new filter unless it has an error
+    try {
+        return checkDirty2(where, what, filter);
+    }
+    catch (e) {
+        notify(1, "Caught error in new filter (defaulting to old filter):\n" + e.message + "\n" + e.stack);
+    }
 
     const originalContent = what; // Because we're unsnowflaking emojis, if the message was clean allow the original snowflakes 
 
@@ -642,11 +648,8 @@ function checkDirty2(where, what, filter=false) {
                     }
                 }
                 
-                // Allow a single char in between each
-                // - (?:\\{2})* ensures any escape sequences are handled (allows \\ or \\( as valid groups).
-                // - \( captures groups like (f|ƒ)
-                // - | [^\(\)] captures single characters outside parentheses
-                word = word.replace(/((?:\\{2})*\([^()]+\)|(?:\\{2})*[^\(\)])(?!\{)/g, '$1.{0,1}');
+                // This rule needs a ton more work, things like '(A|4|@|\\()\\(B\\|C\\+\\)\\+D' break it
+                // word = word.replace(/(?:\\\S)|(?:\([^()]+\))|./g, '$1.{0,1}');
 
                 word = word+"(ing|s|ed|er|ism|ist|es|ual)?" // match variations
             }
