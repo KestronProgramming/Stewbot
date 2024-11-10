@@ -541,7 +541,7 @@ function checkDirty(where, what, filter=false) {
     // If filter is true, it returns [hadBadWords, censoredMessage, wordsFound]
 
     // Differ to new filter unless it has an error
-    if (process.env.beta) {
+    if (true || process.env.beta) {
         try {
             return checkDirty2(where, what, filter);
         }
@@ -655,10 +655,10 @@ function checkDirty2(where, what, filter=false) {
 
                 word = word+"(ing|s|ed|er|ism|ist|es|ual)?" // match variations
             }
-            blockedWordRegex = new RegExp(`(\\b|^)${word}(\\b|$)`, "igu")
+            blockedWordRegex = new RegExp(`(\\b|^)${word}(\\b|$)`, "ig")
         } catch (e) {
             // This should only ever be hit on old servers that have invalid regex before the escapeRegex was implemented
-            if (!e?.message?.includes?.("http")) notify(1, "Caught filter error:\n" + e.message + "\n" + e.stack);
+            if (!e?.message?.includes?.("http")) notify(1, "Caught filter error:\n" + JSON.stringify(e.message) + "\n" + e.stack);
             // We can ignore this filter word
             continue
         }
