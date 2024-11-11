@@ -729,12 +729,14 @@ function processForNumber(text) {
     text = text.match(/^([0-9+\-*/^()\s\.]|sqrt)+/, '')?.[0]?.trim() || '';
     
     try {
-        let result = mathjs.evaluate(text);
-        result = +result.toFixed(1)
-        return result;
+        let result = +mathjs.evaluate(text);
+        if (result) {
+            return result.toFixed(1)
+        }
     } catch (error) {
         return null;
     }
+    return null;
 }
 
 function verifyRegex(regexStr) {
@@ -1734,6 +1736,13 @@ function notify(urgencyLevel,what){
             client.channels.cache.get(process.env.noticeChannel).send(limitLength(what));//Notify the staff of the Kestron Support server
         break;
     }}catch(e){}
+}
+function betaLog(error) {
+    if (!process.env.beta) return;
+    if (error instanceof Error) {
+        error = e.stack;
+    }
+    notify(1, error)
 }
 var uptime=0;
 
@@ -3589,13 +3598,18 @@ client.on("messageDelete",async msg=>{
             emoji=storage[msg.guild.id].emojiboards[emoji];
             if(emoji.isMute) return;
             if(emoji.posted.hasOwnProperty(msg.id)){
-                if(emoji.posted[msg.id].startsWith("webhook")&&emoji.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.ManageMessages)){
-                    var c=await client.channels.cache.get(emoji.channel).messages.fetch(emoji.posted[msg.id].split("webhook")[1]);
-                    c.delete();
-                }
-                else if(!emoji.posted[msg.id].startsWith("webhook")){
-                    var c=await client.channels.cache.get(emoji.channel).messages.fetch(emoji.posted[msg.id]);
-                    c.edit({content:`I'm sorry, but it looks like this post by **${msg.author?.globalName||msg.author?.username}** was deleted.`,embeds:[],files:[]});
+                try {
+                    if(emoji.posted[msg.id].startsWith("webhook")&&emoji.channel?.permissionsFor(client.user.id).has(PermissionFlagsBits.ManageMessages)){
+                        var c=await client.channels.cache.get(emoji.channel).messages.fetch(emoji.posted[msg.id].split("webhook")[1]);
+                        c.delete();
+                    }
+                    else if(!emoji.posted[msg.id].startsWith("webhook")){
+                        var c=await client.channels.cache.get(emoji.channel).messages.fetch(emoji.posted[msg.id]);
+                        c.edit({content:`I'm sorry, but it looks like this post by **${msg.author?.globalName||msg.author?.username}** was deleted.`,embeds:[],files:[]});
+                    }
+                } catch(e) {
+                    // Cache issues, nothing we can do
+                    betaLog(e);
                 }
             }
         });
@@ -3786,7 +3800,7 @@ client.on("guildMemberAdd",async member=>{
                 try{
                     let myRole=member.guild.members.cache.get(client.user.id).roles.highest.position;
                     var role=member.guild.roles.cache.find(r=>r.id===role);
-                    if(role!==undefined&&role!==null){
+                    if (role && role.id !== member.guild.id) {
                         if(myRole>role.rawPosition){
                             member.roles.add(role);
                             addedStickyRoles++;
