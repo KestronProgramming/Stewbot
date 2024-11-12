@@ -731,7 +731,7 @@ function processForNumber(text) {
     try {
         let result = +mathjs.evaluate(text);
         if (result) {
-            return result.toFixed(1)
+            return +result.toFixed(1)
         }
     } catch (error) {
         return null;
