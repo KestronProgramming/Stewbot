@@ -30,7 +30,12 @@ module.exports = {
 			cmd.followUp(`I do not have the necessary permissions to execute this command.`);
 			return;
 		}
-		cmd.channel.bulkDelete(cmd.options.getInteger("amount")+1);
-		setTimeout(()=>{cmd.channel.send({content:`I have cleared ${cmd.options.getInteger("amount")} messages at <@${cmd.user.id}>'s direction.`,allowedMentions:{parse:[]}})},2000);
+		var errorHappened=false;
+		cmd.channel.bulkDelete((cmd.options.getInteger("amount")+(cmd.options.getBoolean("private")?0:1))).catch(e=>{
+			cmd.followUp(`I was asked to clear ${cmd.options.getInteger("amount")} messages at <@${cmd.user.id}>'s direction. However, I am only able to clear messages from within the past two weeks, so I was unable to fulfill the request.`);
+			errorHappened=true;
+		}).finally(()=>{
+			if(!cmd.options.getBoolean("private")&&!errorHappened) setTimeout(()=>{cmd.channel.send({content:`I have cleared ${cmd.options.getInteger("amount")} messages at <@${cmd.user.id}>'s direction.`,allowedMentions:{parse:[]}})},2000);
+		});
 	}
 };
