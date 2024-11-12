@@ -30,12 +30,41 @@ module.exports = {
 			cmd.followUp(`I do not have the necessary permissions to execute this command.`);
 			return;
 		}
-		var errorHappened=false;
-		cmd.channel.bulkDelete((cmd.options.getInteger("amount")+(cmd.options.getBoolean("private")?0:1))).catch(e=>{
-			cmd.followUp(`I was asked to clear ${cmd.options.getInteger("amount")} messages at <@${cmd.user.id}>'s direction. However, I am only able to clear messages from within the past two weeks, so I was unable to fulfill the request.`);
-			errorHappened=true;
-		}).finally(()=>{
-			if(!cmd.options.getBoolean("private")&&!errorHappened) setTimeout(()=>{cmd.channel.send({content:`I have cleared ${cmd.options.getInteger("amount")} messages at <@${cmd.user.id}>'s direction.`,allowedMentions:{parse:[]}})},2000);
-		});
+
+		const privateBuffer = cmd.options.getBoolean("private") ? 0 : 1;
+		const requestedNum = cmd.options.getInteger("amount");
+		let numToDelete = requestedNum + privateBuffer;
+		let dateLimited = false; // JANKY: Store truthy original number of messages if more than we can do was requested 
+		
+		// Try flat out doing it (instead of fetching first, that could eat a ton of ram if there are a lot of messages)
+		try {
+			await cmd.channel.bulkDelete(numToDelete);
+		} catch {
+			// Fetch how many messages there were (verify under the given limit) there were in the past 14 days
+			dateLimited = true;
+			const messages = await cmd.channel.messages.fetch({ limit: numToDelete });
+			const twoWeeksAgo = Date.now() - 12096e5; // 14 days in ms
+			numToDelete = messages.filter(msg => msg.createdTimestamp >= twoWeeksAgo).size;
+			try {
+				await cmd.channel.bulkDelete(numToDelete);
+			} catch(e) {
+				notify(1, `Error bulk deleting: ${e.stack}`)
+				dateLimited = -1 // idk, this is a good open place to note we had an error
+			}
+		}
+
+		let response = `I have cleared ${numToDelete} messages at <@${cmd.user.id}>'s direction.`
+		if (dateLimited) {
+			response += `\nPlease note, I couldn't delete the full requested ${requestedNum} because some are older than two weeks.`
+		}
+		if (dateLimited === -1) {
+			response = `My apologies, an unknown error was encountered. This error has been reported, feel free to use ${cmds.report_problem.mention} to report additional details.`
+		}
+
+		if (!cmd.options.getBoolean("private")) {
+            setTimeout(() => {
+                cmd.channel.send({content: response, allowedMentions: { parse: [] }});
+            }, 2000);
+		}
 	}
 };
