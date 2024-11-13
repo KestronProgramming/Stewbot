@@ -12,7 +12,6 @@ const config=require("./data/config.json");
 const bible=require("./data/kjv.json");
 const fs=require("fs");
 const path = require("path")
-const storage=require("./storage.json");
 const cmds=require("./data/commands.json");
 const Sentiment = require('sentiment');
 const dns = require('dns');
@@ -25,7 +24,6 @@ var Turndown = require('turndown');
 const wotdList=fs.readFileSync(`./data/wordlist.txt`,"utf-8").split("\n");
 const cheerio = require('cheerio');
 const { getCommands } = require("./launchCommands.js")
-
 
 // Preliminary setup (TODO: move to a setup.sh)
 if (!fs.existsSync("tempMove")) fs.mkdirSync('tempMove');
@@ -48,7 +46,7 @@ turndown.addRule('ignoreAll', {
     replacement: function () {
       return '';
     }
-  });
+});
 const sentiment = new Sentiment();
 var client;
 var Bible={};
@@ -66,8 +64,65 @@ var discordMessageRegex =/\b(?!<)https?:\/\/(ptb\.|canary\.)?discord(app)?.com\/
 function escapeRegex(input) {
     return input.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
 }
+function hash(obj) {
+    const input = typeof obj === 'string' ? obj : JSON.stringify(obj);
+    return crypto.createHash('md5').update(input).digest('hex');
+}
 
-// Data
+// Database stuff
+const storageLocations = ["./storage.json", "./storage2.json"];
+let storageCycleIndex = 0;
+function readLatestDatabase() {
+    // TODO, multinode: this function will probably handle determining if the drive version or the local version is later, and copy those locally.
+    // It should ideally also sort each drive location by write time, and pull them in the same way sortedLocations does here.
+    //  although, it would be better to actually add a timestamp to the storage.json and read that... since upload time for the drive files is not hte same as the time the file was created, necessarily.
+    //  or maybe it's close enough since under normal cases, it would only be 30 seconds off.
+
+    // Get a list, in order of which ones we should read first
+    const sortedLocations = storageLocations
+        .filter(file => fs.existsSync(file)) // For file that exists,
+        .map(file => ({
+            file,
+            mtime: fs.statSync(file).mtime   // get the last modified time
+        }))
+        .sort((a, b) => b.mtime - a.mtime)  // sort this array by the most frequent
+        .map(({ file }) => file);
+    
+    for (let location of sortedLocations) {
+        try {
+            const data = require(location);
+            if(process.env.beta) console.log(`Read database from ${location}`)
+            return data;
+        } catch (e) {
+            notify(1, `Storage location ${location} could not be loaded (*${e.message}*), trying the next one.`)
+        }
+    }
+
+    // This case should never be hit - in theory we could try to load from the latest google drive. 
+    notify(1, `No storage locations could be loaded. Tried: ${sortedLocations.join(", ")}.`)
+    process.exit();
+}
+const storage = readLatestDatabase();
+let lastStorage = JSON.stringify(storage); // This will increase ram but use less db writes.
+setInterval(() => {
+    writeLocation = storageLocations[storageCycleIndex % storageLocations.length];
+    const storageString = process.env.beta ? JSON.stringify(storage, null, 4) : JSON.stringify(storage);
+    const lastWriteHash = hash(lastStorage);
+    const thisWriteHash = hash(storageString);
+    if (lastWriteHash !== thisWriteHash) {
+        fs.writeFileSync(writeLocation, storageString);
+        lastStorage = storageString;
+        storageCycleIndex++; 
+        if (process.env.beta) console.log(`Just write DB to ${writeLocation}`)
+        console.log()
+    }
+    // else if (process.env.beta) {
+    //     console.log("DB not changed, not writing again")
+    // }
+}, 10 * 1000);
+
+
+// Other data
 const leetMap = {
     "a": "(a|4|@)",
     "b": "(b|8|ß)",
@@ -865,13 +920,9 @@ function getClosest(input) {
     else return null;
 }
 
-// Backup handlers
 function backupThreadErrorCallback(error) {
     notify(1, String(error));
 }
-
-setInterval(()=>{fs.writeFileSync("./storage.json",process.env.beta?JSON.stringify(storage,null,4):JSON.stringify(storage));}, 10 * 1000);
-// Cloud backups start inside the bot's on-ready listener
 
 function limitLength(s, size=1999){
     s = String(s);

@@ -3,6 +3,7 @@ node_modules
 tempDne.jpg
 tempPoll.png
 storage.json
+storage*.json
 memes/*
 tempMemes/*
 commands.json
