@@ -78,6 +78,10 @@ function readLatestDatabase() {
     //  although, it would be better to actually add a timestamp to the storage.json and read that... since upload time for the drive files is not hte same as the time the file was created, necessarily.
     //  or maybe it's close enough since under normal cases, it would only be 30 seconds off.
 
+
+    // We'll overwrite these right away once we read the correct one
+    const corruptedFiles = []
+
     // Get a list, in order of which ones we should read first
     const sortedLocations = storageLocations
         .filter(file => fs.existsSync(file)) // For file that exists,
@@ -92,9 +96,16 @@ function readLatestDatabase() {
         try {
             const data = require(location);
             if(process.env.beta) console.log(`Read database from ${location}`)
+
+            // This shouldn't be needed, unless it was a boot-loop error that kept corrupting it's own files. Plan for the worst.
+            corruptedFiles.forEach(file => {
+                fs.writeFileSync(file, JSON.stringify(data));
+            })
+            
             return data;
         } catch (e) {
-            notify(1, `Storage location ${location} could not be loaded (*${e.message}*), trying the next one.`)
+            corruptedFiles.push(location)
+            notify(1, `Storage location ${location} could not be loaded (*${e.message}*), trying the next one.`, true)
         }
     }
 
@@ -114,9 +125,9 @@ setInterval(() => {
         storageCycleIndex++; 
         if (process.env.beta) console.log(`Just wrote DB to ${writeLocation}`)
     }
-    else if (process.env.beta) {
-        console.log("DB not changed, not writing again")
-    }
+    // else if (process.env.beta) {
+    //     console.log("DB not changed, not writing again")
+    // }
 }, 10 * 1000);
 
 
@@ -1775,16 +1786,30 @@ client=new Client({
     intents:ints,
     partials:Object.keys(Partials).map(a=>Partials[a])
 });
-function notify(urgencyLevel,what){
+function notify(urgencyLevel,what,useWebhook=false){
     try{switch(urgencyLevel){
         default:
         case 0:
             client.users.cache.get(process.env.ownerId).send(what);//Notify Kestron06 directly
         break;
         case 1:
-            client.channels.cache.get(process.env.noticeChannel).send(limitLength(what));//Notify the staff of the Kestron Support server
+            if (useWebhook) {
+                fetch(process.env.logWebhook, {
+                    'method': 'POST',
+                    'headers': {
+                        "Content-Type": "application/json"
+                    },
+                    'body': JSON.stringify({
+                        'username': "Stewbot Notify Webhook", 
+                        "content": limitLength(what)
+                    })
+                })
+            }
+            else client.channels.cache.get(process.env.noticeChannel).send(limitLength(what));//Notify the staff of the Kestron Support server
         break;
-    }}catch(e){}
+    }}catch(e){
+        if (process.env.beta) console.log("Couldn't send notify()")
+    }
 }
 function betaLog(error) {
     if (!process.env.beta) return;

@@ -60,7 +60,7 @@ process.stdin.on("end", () => {
             "content": webhookData
         })
     }).then(re => re.text()).then(re => {
-        // There are only responeses on errors
+        // There are only responses on errors
         if (re.trim()) {
             console.log("Response from stderr webhook:\n" + re)
         }
