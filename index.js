@@ -103,22 +103,20 @@ function readLatestDatabase() {
     process.exit();
 }
 const storage = readLatestDatabase();
-let lastStorage = JSON.stringify(storage); // This will increase ram but use less db writes.
+let lastStorageHash = hash(storage); // This will increase ram but use less db writes.
 setInterval(() => {
     writeLocation = storageLocations[storageCycleIndex % storageLocations.length];
     const storageString = process.env.beta ? JSON.stringify(storage, null, 4) : JSON.stringify(storage);
-    const lastWriteHash = hash(lastStorage);
     const thisWriteHash = hash(storageString);
-    if (lastWriteHash !== thisWriteHash) {
+    if (lastStorageHash !== thisWriteHash) {
         fs.writeFileSync(writeLocation, storageString);
-        lastStorage = storageString;
+        lastStorageHash = thisWriteHash;
         storageCycleIndex++; 
-        if (process.env.beta) console.log(`Just write DB to ${writeLocation}`)
-        console.log()
+        if (process.env.beta) console.log(`Just wrote DB to ${writeLocation}`)
     }
-    // else if (process.env.beta) {
-    //     console.log("DB not changed, not writing again")
-    // }
+    else if (process.env.beta) {
+        console.log("DB not changed, not writing again")
+    }
 }, 10 * 1000);
 
 
