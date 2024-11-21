@@ -973,30 +973,34 @@ function checkHoliday(){
         var D = L + 28 - 31*Math.floor(M/4);
         return M+'/'+D;
     }
-    var ret="";
-    var n=new Date();
+    var ret = null;
+    var today=new Date();
 
     setDates.forEach(holiday=>{
-        if(holiday.days.includes(`${n.getMonth()+1}/${n.getDate()-1}`)){
+        if(holiday.days.includes(`${today.getMonth()+1}/${today.getDate()-1}`)){
             ret="main.jpg";
         }
-        if(holiday.days.includes(`${n.getMonth()+1}/${n.getDate()}`)){
+        if(holiday.days.includes(`${today.getMonth()+1}/${today.getDate()}`)){
             ret=holiday.pfp;
         }
     });
-    if(n.getMonth()===10&&n.getDay()===4&&Math.floor(n.getDate()/7)===3){
+    if(today.getMonth()===10&&today.getDay()===4&&Math.floor(today.getDate()/7)===4){
         ret="turkey.jpg";
     }
-    if(n.getMonth()===4&&n.getDay()===1&&n.getDate()+7>31){
+    if(today.getMonth()===4&&today.getDay()===1&&today.getDate()+7>31){
         ret="patriot.jpg";
     }
-    if(n.getMonth()+1===Easter(n.getFullYear()).split("/")[0]&&n.getDate()===Easter(n.getFullYear()).split("/")[1]){
+    if(today.getMonth()+1===Easter(today.getFullYear()).split("/")[0]&&today.getDate()===Easter(today.getFullYear()).split("/")[1]){
         ret="easter.jpg";
     }
-    if((n.getMonth()===10&&n.getDay()===5&&Math.floor((n.getDate()-1)/7)===3)||n.getMonth()===4&&n.getDay()===2&&(n.getDate()-1)+7>31||n.getMonth()+1===Easter(n.getFullYear()).split("/")[0]&&n.getDate()-1===Easter(n.getFullYear()).split("/")[1]){
+    // is it the day after each of these
+    if(
+        (today.getMonth()===10&&today.getDay()===5&&Math.floor((today.getDate()-1)/7)===3)||
+        today.getMonth()===4&&today.getDay()===2&&(today.getDate()-1)+7>31||
+        today.getMonth()+1===Easter(today.getFullYear()).split("/")[0]&&today.getDate()-1===Easter(today.getFullYear()).split("/")[1]){
         ret="main.jpg";
     }
-    if(ret!==""){
+    if(ret) {
         client.user.setAvatar(`./pfps/${ret}`);
     }
 }
