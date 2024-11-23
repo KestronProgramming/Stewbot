@@ -31,13 +31,14 @@ module.exports = {
 							{ name: "Prime emoji", value: "prime_emoji" },
 							{ name: "Clone from primed emoji", value: "clone_primed" },
 							{ name: "Clone from primed_embed", value: "clone_embed" },
+							{ name: "Clone from emoji ID", value: "clone_id" },
 							{ name: "Clone from direct emoji (nitro)", value: "direct_clone" },
 						).setRequired(true)
 					)
 					.addStringOption(option=>
                         option
                             .setName("emoji")
-                            .setDescription("The emoji if priming / direct cloning")
+                            .setDescription("Emoji if priming / direct cloning, or emoji id")
                             .setRequired(false)
                     ),
 		
@@ -55,11 +56,12 @@ module.exports = {
 		const action = cmd.options.getString("action");
 		const emoji = cmd.options.getString("emoji");
 		
-		// Error checking all at once
+		// Error checking if this is an option that takes perms
 		if ([
 			"direct_clone", 
 			"clone_primed", 
 			"clone_embed",
+			"clone_id",
 		].includes(action)) {
 			if (!cmd.guild) {
 				return cmd.followUp(`I must be installed in this server to add emojis. If you need to add me, you can use [this link](${config.install})`);
@@ -117,6 +119,42 @@ module.exports = {
 						name: emojiName || "unnamed"
 					});
 					return cmd.followUp(`Emoji cloned: ${newEmoji2}`)
+
+				case "clone_id":
+					// This one's a bit more complicated
+					// We have to find out if the emoji is animated first
+					// First, we'll check our cache. 
+					// Then if we don't know from that, we'll attempt to fetch teh .gif version
+					//  if it returns an error (415, unsupported media), then we know it's not animated
+
+					if (!String(emoji).match(/^\d+$/)) {
+						return cmd.followUp("This option requires the emoji ID, which will be a long number.");
+					}
+
+					async function isEmojiAnimated(id) {
+						const emojiData = client.emojis.cache.get(id);
+						if (emojiData) {
+							return emojiData.animated;
+						}
+
+						// Determine based on server response to gif request
+						try {
+							const response = await fetch(`https://cdn.discordapp.com/emojis/${id}.gif?size=16`)
+							if (response.status !== 200) return false;
+							return true;
+						} catch {
+							return false;
+						}
+					}
+					
+					const animated = await isEmojiAnimated(emoji);
+
+					const newEmoji4 = await cmd.guild.emojis.create({
+						attachment: `https://cdn.discordapp.com/emojis/${emoji}.${animated ? "gif" : "png"}`,
+						name: emojiName || "cloned_emoji"
+					});
+					return cmd.followUp(`Emoji cloned: ${newEmoji4}`)
+
 
 				case "direct_clone":
 					var {url, emojiName} = getEmojiData(emoji);
