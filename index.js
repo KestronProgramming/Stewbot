@@ -1382,8 +1382,12 @@ function daily(dontLoop=false){
         setInterval(daily,60000*60*24);
         started24=true;
     }
+
     checkRSS();
+
     checkHoliday();
+    
+    // Daily devo
     var dailyDevo=[];
     fetch("https://www.biblegateway.com/devotionals/niv-365-devotional/today").then(d=>d.text()).then(d=>{
         var temp=turndown.turndown(d.split(`<div class="col-xs-12">`)[1].split("</div>")[0].trim()).split("\\n");
@@ -1430,20 +1434,31 @@ function daily(dontLoop=false){
                 }
             }
         });
+    }).catch(e => {
+        notify(1, "Devo daily: " + e.stack);
     });
+
+    // Verse of the day
     fetch("https://www.bible.com/verse-of-the-day").then(d=>d.text()).then(d=>{
-        var verseContainer=d.split(`mbs-3 border border-l-large rounded-1 border-black dark:border-white pli-1 plb-1 pis-2`)[1].split("</div>")[0].split("</a>");
         var now=new Date();
+        const nextData = JSON.parse(d.match(/<script id="__NEXT_DATA__" type="application\/json">(.+?)<\/script>/)[1])
+        const verse = nextData.props.pageProps.verses[0];
+        const versionData = nextData.props.pageProps.versionData; 
+
+        // var verseContainer=d.split(`mbs-3 border border-l-large rounded-1 border-black dark:border-white pli-1 plb-1 pis-2`)[1].split("</div>")[0].split("</a>");
         var votd={
             "type":"rich",
             "title":`Verse of the Day`,
-            "description":`${verseContainer[0].split(">")[verseContainer[0].split(">").length-1]}\n\\- ${verseContainer[1].split("</p>")[0].split(">")[verseContainer[1].split("</p>")[0].split(">").length-1]}`,
+            // "description":`${verseContainer[0].split(">")[verseContainer[0].split(">").length-1]}\n\\- ${verseContainer[1].split("</p>")[0].split(">")[verseContainer[1].split("</p>")[0].split(">").length-1]}`,
+            "description":`${verse.content}\n\n\\- **${verse.reference.human}** (${versionData.abbreviation})`,
             "color":0x773e09,
             "url":"https://www.bible.com/verse-of-the-day",
             "footer":{
                 "text":`${now.getMonth()+1}/${now.getDate()}/${now.getFullYear()}`
             }
         };
+
+
         Object.keys(storage).forEach(s=>{
             if(storage[s]?.daily?.verses?.active){
                 var c=client.channels.cache.get(storage[s].daily.verses.channel);
@@ -1455,11 +1470,18 @@ function daily(dontLoop=false){
                 }
             }
         });
+    }).catch(e => {
+        notify(1, "Verse Of The Day error: " + e.stack);
     });
+
+    // Daily meme process
     if(storage.dailyMeme===undefined||storage.dailyMeme===null) storage.dailyMeme=-1;
     storage.dailyMeme++;
-    if(storage.dailyMeme>=fs.readdirSync("./memes").length) storage.dailyMeme=0;
-    Object.keys(storage).forEach(s=>{
+    if(storage.dailyMeme >= fs.readdirSync("./memes").length) storage.dailyMeme=0;
+
+    // Per-server daily checks
+    Object.keys(storage).forEach(s => {
+        // Daily meme posting
         if(storage[s]?.daily?.memes?.active){
             var c=client.channels.cache.get(storage[s].daily.memes.channel);
             if(c.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
@@ -1470,27 +1492,37 @@ function daily(dontLoop=false){
             }
         }
         
-        if(storage[s].hasOwnProperty("hat_pull")){
-            if(storage[s].hat_pull.ends-Date.now()<=60000*60*24){
-                storage[s].hat_pull.registered=true;
-                if(storage[s].hat_pull.ends-Date.now()>0){
-                    setTimeout(()=>{finHatPull(s)},storage[s].hat_pull.ends-Date.now());
-                }
-                else{
-                    finHatPull(s);
+        // Hat pull, i.e. giveaways
+        try {
+            if(storage[s].hasOwnProperty("hat_pull")){
+                if(storage[s].hat_pull.ends-Date.now()<=60000*60*24){
+                    storage[s].hat_pull.registered=true;
+                    if(storage[s].hat_pull.ends-Date.now()>0){
+                        setTimeout(()=>{finHatPull(s)},storage[s].hat_pull.ends-Date.now());
+                    }
+                    else{
+                        finHatPull(s);
+                    }
                 }
             }
+        } catch (e) {
+            notify(1, "hat_pull timer creating error: " + e.stack);
         }
         
-        if(storage[s].hasOwnProperty("tempBans")){
-            Object.keys(storage[s].tempBans).forEach(ban=>{
-                if(storage[s].tempBans[ban].ends-Date.now()>0&&!storage[s].tempBans[ban].registered){
-                    setTimeout(()=>{finTempBan(s,ban)},storage[s].tempBans[ban].ends-Date.now());
-                }
-                else if(!storage[s].tempBans[ban].registered){
-                    finTempBan(s,ban);
-                }
-            });
+        // Temoving temp bans / setting timeouts to remove temp bans when it's within 24 hours of them
+        try {
+            if(storage[s].hasOwnProperty("tempBans")){
+                Object.keys(storage[s].tempBans).forEach(ban=>{
+                    if(storage[s].tempBans[ban].ends-Date.now()>0&&!storage[s].tempBans[ban].registered){
+                        setTimeout(()=>{finTempBan(s,ban)},storage[s].tempBans[ban].ends-Date.now());
+                    }
+                    else if(!storage[s].tempBans[ban].registered){
+                        finTempBan(s,ban);
+                    }
+                });
+            }
+        } catch (e) {
+            notify(1, "Error creating tempBan removing timer: " + e.stack);
         }
     });
 
