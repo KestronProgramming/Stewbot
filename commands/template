@@ -40,7 +40,7 @@ module.exports = {
 	},
 
 	async autocomplete(cmd) {
-		// This function handles autocomplete for any input fields for the command. \
+		// This function handles autocomplete for any input fields for the command.
 		// Currently has no context passthrough, can add if needed.
 	}
 };

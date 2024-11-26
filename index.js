@@ -60,6 +60,9 @@ const threshold = 3;
 var kaProgramRegex =/\b(?!<)https?:\/\/(?:www\.)?khanacademy\.org\/(cs|computer-programming|hour-of-code|python-program)\/[a-z,\d,-]+\/\d+(?!>)\b/gi;
 var discordMessageRegex =/\b(?!<)https?:\/\/(ptb\.|canary\.)?discord(app)?.com\/channels\/(\@me|\d+)\/\d+\/\d+(?!>)\b/gi;
 
+// Register a few globals for easier access in commands
+global.cmds = cmds;
+
 // Utility functions needed for processing some data blocks 
 function escapeRegex(input) {
     return input.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
@@ -2659,21 +2662,36 @@ client.on("interactionCreate",async cmd=>{
 
     // Slash commands
     if (commands.hasOwnProperty(cmd.commandName)) {
-        const commandScript = commands[cmd.commandName];
-        // List of general globals it should have access to
-        const providedGlobals = {
-            client,
-            storage,
-            notify, // TODO: schema for some commands like /filter to preload and provide these functions
-            checkDirty,
-            cmds,
-            config
-        };
-        requestedGlobals = commandScript.data?.requiredGlobals || commandScript.requestGlobals?.() || [];
-        for (var name of requestedGlobals) {
-            providedGlobals[name] = eval(name.match(/[\w-]+/)[0]);
+        // Check if this command has been blocked for thsi guild (either with the subcommand or without)
+        const guildBlocklist = storage[cmd.guild.id].blockedCommands || []
+        const commandPathWithSubcommand = `/${cmd.commandName} ${cmd.options._subcommand ? cmd.options.getSubcommand() : "<none>"}`; //meh but it works
+        const commandPath = `/${cmd.commandName}`;
+        if (guildBlocklist.includes(commandPath) || guildBlocklist.includes(commandPathWithSubcommand)) {
+            let response = "This command has been blocked by this server.";
+            if (cmd.member.permissions.has('Administrator')) {
+                response += ` You can use ${cmds.block_command.mention} to unblock it.`
+            }
+            return cmd.followUp(response);
+        } 
+        
+        // Checks passed, run command
+        else {
+            const commandScript = commands[cmd.commandName];
+            // List of general globals it should have access to
+            const providedGlobals = {
+                client,
+                storage,
+                notify, // TODO: schema for some commands like /filter to preload and provide these functions
+                checkDirty,
+                cmds,
+                config
+            };
+            requestedGlobals = commandScript.data?.requiredGlobals || commandScript.requestGlobals?.() || [];
+            for (var name of requestedGlobals) {
+                providedGlobals[name] = eval(name.match(/[\w-]+/)[0]);
+            }
+            await commands[cmd.commandName].execute(cmd, providedGlobals);
         }
-        await commands[cmd.commandName].execute(cmd, providedGlobals);
     }
 
     //Buttons, Modals, and Select Menus
