@@ -2962,7 +2962,7 @@ client.on("interactionCreate",async cmd=>{
             readRACBoard(cmd.message.content);
             let foundOne=-1;
             for(var i=0;i<rac.players.length;i++){
-                if(rac.players[i]===cmd.member.id){
+                if(rac.players[i]===cmd.user.id){
                     foundOne=i;
                 }
             }
@@ -2982,7 +2982,7 @@ client.on("interactionCreate",async cmd=>{
                 cmd.reply({content: "That location is occupied.",ephemeral:true});
                 break;
             }
-            rac.lastPlayer=cmd.member.id;
+            rac.lastPlayer=cmd.user.id;
             rac.timePlayed=Date.now();
             rac.board[rac.rowsActive.indexOf(cont[0])][rac.rowsActive.indexOf(cont[1])]=rac.icons[foundOne];
             await cmd.update(getRACBoard());
