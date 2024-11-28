@@ -7,6 +7,34 @@ function applyContext(context={}) {
 }
 // #endregion Boilerplate
 
+const bible=require("../data/kjv.json");
+var Bible={};
+var properNames={};
+Object.keys(bible).forEach(book=>{
+    properNames[book.toLowerCase()]=book;
+    Bible[book.toLowerCase()]=bible[book];//Make everything lowercase for compatibility with sanitizing user input
+});
+
+const Fuse = require('fuse.js');
+const bookNames = Object.keys(Bible);
+const fuseOptions = {
+    includeScore: true,
+    keys: ['item']
+};
+function sortByMatch(items, text) {
+    const fuse = new Fuse(items.map(item => ({ item })), fuseOptions);            
+    const scoredResults = fuse.search(text)
+        .filter(result => result.score <= 2) // Roughly similar-ish
+        .sort((a, b) => a.score - b.score);
+    return scoredResults.map(entry => entry.item.item);
+}
+
+function capitalize(name) {
+    // return (name[0]?.toUpperCase() || "") + name.substring(1)
+    return name.replace(/\b(\w)/g, (match) => match.toUpperCase())
+}
+
+
 module.exports = {
 	data: {
 		// Slash command data
@@ -14,6 +42,7 @@ module.exports = {
             .addStringOption(option=>
                 option.setName("book").setDescription("What book of the Bible do you wish to look up?").setRequired(true)
                 .setMaxLength(20)
+                .setAutocomplete(true)
             ).addIntegerOption(option=>
                 option.setName("chapter").setDescription("Which chapter do you want to look up?").setRequired(true)
             ).addStringOption(option=>
@@ -26,7 +55,7 @@ module.exports = {
 		
 		extra: {"contexts":[0,1,2],"integration_types":[0,1]},
 
-		requiredGlobals: ["getClosest", "Bible", "properNames"],
+		requiredGlobals: [],
 
 		help: {
             "helpCategory":"Informational",
@@ -36,21 +65,29 @@ module.exports = {
 
 	async execute(cmd, context) {
 		applyContext(context);
-		
-        let book=getClosest(cmd.options.getString("book").toLowerCase());
-        if(cmd.options.getString("verse").includes("-")&&+cmd.options.getString("verse").split("-")[1]>+cmd.options.getString("verse")[0]){
+
+        const verse = cmd.options.getString("verse");
+        const chapter = cmd.options.getInteger("chapter");
+        const providedBookname = cmd.options.getString("book");
+        const book = sortByMatch(bookNames, providedBookname.toLowerCase())?.[0];
+
+        if (!book) {
+            return cmd.followUp(`I'm sorry, I couldn't find \`${providedBookname}\`. Are you sure it exists?`);
+        }
+
+        if(verse.includes("-")&&+verse.split("-")[1]>+verse[0]){
             try{
                 let verses=[];
-                for(var v=+cmd.options.getString("verse").split("-")[0];v<+cmd.options.getString("verse").split("-")[0]+5&&v<+cmd.options.getString("verse").split("-")[1];v++){
-                    verses.push(Bible[book][cmd.options.getInteger("chapter")][v]);
+                for(var v=+verse.split("-")[0];v<+verse.split("-")[0]+5&&v<+verse.split("-")[1];v++){
+                    verses.push(Bible[book][chapter][v]);
                 }
                 if(verses.join(" ")===undefined){ 
                     cmd.followUp(`I'm sorry, I don't think that passage exists - at least, I couldn't find it. Perhaps something is typoed?`);
                 }
                 else{
-                    cmd.followUp({content:`${properNames[book]} ${cmd.options.getInteger("chapter")}:${cmd.options.getString("verse")}`,embeds:[{
+                    cmd.followUp({content:`${properNames[book]} ${chapter}:${verse}`,embeds:[{
                         "type": "rich",
-                        "title": `${properNames[book]} ${cmd.options.getInteger("chapter")}:${cmd.options.getString("verse")}`,
+                        "title": `${properNames[book]} ${chapter}:${verse}`,
                         "description": verses.join(" "),
                         "color": 0x773e09,
                         "footer": {
@@ -65,11 +102,11 @@ module.exports = {
         }
         else{
             try{
-                if(Bible[book][cmd.options.getInteger("chapter")][+cmd.options.getString("verse")]!==undefined){
-                    cmd.followUp({content:`${properNames[book]} ${cmd.options.getInteger("chapter")}:${cmd.options.getString("verse")}`,embeds:[{
+                if(Bible[book][chapter][+verse]!==undefined){
+                    cmd.followUp({content:`${properNames[book]} ${chapter}:${verse}`,embeds:[{
                         "type": "rich",
-                        "title": `${properNames[book]} ${cmd.options.getInteger("chapter")}:${cmd.options.getString("verse")}`,
-                        "description": Bible[book][cmd.options.getInteger("chapter")][+cmd.options.getString("verse")],
+                        "title": `${properNames[book]} ${chapter}:${verse}`,
+                        "description": Bible[book][chapter][+verse],
                         "color": 0x773e09,
                         "footer": {
                             "text": `King James Version`
@@ -77,12 +114,37 @@ module.exports = {
                     }]});
                 }
                 else{
-                    cmd.followUp(`I'm sorry, I couldn't find \`${book} ${cmd.options.getInteger("chapter")}:${cmd.options.getString("verse")}\`. Are you sure it exists? Perhaps something is typoed.`);
+                    cmd.followUp(`I'm sorry, I couldn't find \`${book} ${chapter}:${verse}\`. Are you sure it exists? Perhaps something is typoed.`);
                 }
             }
             catch(e){
-                cmd.followUp(`I'm sorry, I couldn't find \`${book} ${cmd.options.getInteger("chapter")}:${cmd.options.getString("verse")}\`. Are you sure it exists? Perhaps something is typoed.`);
+                cmd.followUp(`I'm sorry, I couldn't find \`${book} ${chapter}:${verse}\`. Are you sure it exists? Perhaps something is typoed.`);
             }
         }   
+	},
+
+    async autocomplete(cmd) {
+		let allBooks = bookNames;
+        const userInput = cmd.options.getFocused() || "";
+
+        // Get the top matching results
+        if (userInput) {
+            allBooks = sortByMatch(allBooks, userInput);
+        }
+
+        // Limit to discord max
+        allBooks = allBooks.slice(0, 25)
+
+        // Format for discord
+        autocompletes = []
+        for (let bookname of allBooks) {
+            const sugguest = capitalize(bookname)
+            autocompletes.push({
+                name: sugguest,
+                value: sugguest
+            })
+        }
+
+        cmd.respond(autocompletes);
 	}
 };

@@ -9,9 +9,9 @@ const crypto = require('crypto');
 const { createCanvas } = require('canvas');
 const { getEmojiFromMessage, parseEmoji } = require('./util');
 const config=require("./data/config.json");
-const bible=require("./data/kjv.json");
+// const bible=require("./data/kjv.json");
 const fs=require("fs");
-const path = require("path")
+// const path = require("path")
 const cmds=require("./data/commands.json");
 const Sentiment = require('sentiment');
 const dns = require('dns');
@@ -49,14 +49,8 @@ turndown.addRule('ignoreAll', {
 });
 const sentiment = new Sentiment();
 var client;
-var Bible={};
-var properNames={};
-Object.keys(bible).forEach(book=>{
-    properNames[book.toLowerCase()]=book;
-    Bible[book.toLowerCase()]=bible[book];//Make everything lowercase for compatibility with sanitizing user input
-});
-const ignoreSize = 10 + Object.keys(Bible).reduce((a, b) => a.length > b.length ? a : b).length;
-const threshold = 3;
+
+
 var kaProgramRegex =/\b(?!<)https?:\/\/(?:www\.)?khanacademy\.org\/(cs|computer-programming|hour-of-code|python-program)\/[a-z,\d,-]+\/\d+(?!>)\b/gi;
 var discordMessageRegex =/\b(?!<)https?:\/\/(ptb\.|canary\.)?discord(app)?.com\/channels\/(\@me|\d+)\/\d+\/\d+(?!>)\b/gi;
 
@@ -915,21 +909,6 @@ function levenshtein(s, t) {
         h = d;
     }
     return h;
-}
-function getClosest(input) {
-    if (Object.keys(Bible).includes(input)) return input;
-    if (input.length > ignoreSize) return null;
-
-    var best = [null, Infinity]; // [bestOption, bestThreshold]
-    for (option of Object.keys(Bible)) {
-        const editsNeeded = levenshtein(option, input)
-        if (editsNeeded < best[1]) {
-            best = [option, editsNeeded]
-        }
-    }
-
-    if (best[1] < threshold) return best[0];
-    else return null;
 }
 
 function backupThreadErrorCallback(error) {
