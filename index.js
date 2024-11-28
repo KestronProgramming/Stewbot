@@ -998,7 +998,7 @@ function checkHoliday(){
     }
     // is it the day after each of these
     if(
-        (today.getMonth()===10&&today.getDay()===5&&Math.floor((today.getDate()-1)/7)===3)||
+        (today.getMonth()===10&&today.getDay()===5&&Math.floor((today.getDate()-1)/7)===4)||
         today.getMonth()===4&&today.getDay()===2&&(today.getDate()-1)+7>31||
         today.getMonth()+1===Easter(today.getFullYear()).split("/")[0]&&today.getDate()-1===Easter(today.getFullYear()).split("/")[1]){
         ret="main.jpg";
