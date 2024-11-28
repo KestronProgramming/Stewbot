@@ -13,6 +13,7 @@ module.exports = {
 		command: new SlashCommandBuilder().setName("embed_message").setDescription("Embed a message link from another channel or server")
             .addStringOption(option=>
                 option.setName("link").setDescription("The message link, or PRIMED if you used the /prime_embed context menu command").setRequired(true)
+                .setAutocomplete(true) // Autocomplete suggests a static `PRIMED` which is nice for mobile users
             ),
 		
 		// Optional fields
@@ -86,5 +87,13 @@ module.exports = {
             }
         }
         
-	}
+	},
+
+    // Suggust PRIMED so mobile users don't have to type it out
+    async autocomplete(cmd) {
+        cmd.respond([{
+            name: "PRIMED",
+            value: "PRIMED"
+        }]);
+    }
 };
