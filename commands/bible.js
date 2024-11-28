@@ -13,6 +13,7 @@ module.exports = {
 		command: new SlashCommandBuilder().setName("bible").setDescription("Look up a verse or verses in the King James version of the Bible")
             .addStringOption(option=>
                 option.setName("book").setDescription("What book of the Bible do you wish to look up?").setRequired(true)
+                .setMaxLength(20)
             ).addIntegerOption(option=>
                 option.setName("chapter").setDescription("Which chapter do you want to look up?").setRequired(true)
             ).addStringOption(option=>

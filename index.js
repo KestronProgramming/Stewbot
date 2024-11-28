@@ -2677,23 +2677,21 @@ client.on("interactionCreate",async cmd=>{
         }
         
         // Checks passed, run command
-        else {
-            const commandScript = commands[cmd.commandName];
-            // List of general globals it should have access to
-            const providedGlobals = {
-                client,
-                storage,
-                notify, // TODO: schema for some commands like /filter to preload and provide these functions
-                checkDirty,
-                cmds,
-                config
-            };
-            requestedGlobals = commandScript.data?.requiredGlobals || commandScript.requestGlobals?.() || [];
-            for (var name of requestedGlobals) {
-                providedGlobals[name] = eval(name.match(/[\w-]+/)[0]);
-            }
-            await commands[cmd.commandName].execute(cmd, providedGlobals);
+        const commandScript = commands[cmd.commandName];
+        // List of general globals it should have access to
+        const providedGlobals = {
+            client,
+            storage,
+            notify, // TODO: schema for some commands like /filter to preload and provide these functions
+            checkDirty,
+            cmds,
+            config
+        };
+        requestedGlobals = commandScript.data?.requiredGlobals || commandScript.requestGlobals?.() || [];
+        for (var name of requestedGlobals) {
+            providedGlobals[name] = eval(name.match(/[\w-]+/)[0]);
         }
+        await commands[cmd.commandName].execute(cmd, providedGlobals);
     }
 
     //Buttons, Modals, and Select Menus
