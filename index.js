@@ -2662,17 +2662,19 @@ client.on("interactionCreate",async cmd=>{
 
     // Slash commands
     if (commands.hasOwnProperty(cmd.commandName)) {
-        // Check if this command has been blocked for thsi guild (either with the subcommand or without)
-        const guildBlocklist = storage[cmd.guild.id].blockedCommands || []
-        const commandPathWithSubcommand = `/${cmd.commandName} ${cmd.options._subcommand ? cmd.options.getSubcommand() : "<none>"}`; //meh but it works
-        const commandPath = `/${cmd.commandName}`;
-        if (guildBlocklist.includes(commandPath) || guildBlocklist.includes(commandPathWithSubcommand)) {
-            let response = "This command has been blocked by this server.";
-            if (cmd.member.permissions.has('Administrator')) {
-                response += ` You can use ${cmds.block_command.mention} to unblock it.`
-            }
-            return cmd.followUp(response);
-        } 
+        // If this is a guild, check for blocklist
+        if (cmd.guild?.id) {
+            const guildBlocklist = storage[cmd.guild.id].blockedCommands || []
+            const commandPathWithSubcommand = `/${cmd.commandName} ${cmd.options._subcommand ? cmd.options.getSubcommand() : "<none>"}`; //meh but it works
+            const commandPath = `/${cmd.commandName}`;
+            if (guildBlocklist.includes(commandPath) || guildBlocklist.includes(commandPathWithSubcommand)) {
+                let response = "This command has been blocked by this server.";
+                if (cmd.member.permissions.has('Administrator')) {
+                    response += ` You can use ${cmds.block_command.mention} to unblock it.`
+                }
+                return cmd.followUp(response);
+            } 
+        }
         
         // Checks passed, run command
         else {
