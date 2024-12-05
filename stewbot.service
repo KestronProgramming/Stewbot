@@ -1,0 +1,23 @@
+
+## To load into systemd, copy this file to /etc/systemd/system/stewbot.service
+## Then run:
+# sudo systemctl daemon-reload
+
+## Then manage like a normal systemd task
+# sudo systemctl enable stewbot.service
+
+[Unit]
+Description=Stewbot Startup Script
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/bin/sh /home/guest/StewbotGit/run.sh
+WorkingDirectory=/home/guest/StewbotGit
+Environment="PATH=/usr/bin:/bin:/usr/sbin:/sbin"
+User=guest
+Group=guest
+Restart=always
+
+[Install]
+WantedBy=default.target

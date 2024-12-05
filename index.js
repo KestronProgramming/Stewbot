@@ -1464,14 +1464,18 @@ function daily(dontLoop=false){
     // Per-server daily checks
     Object.keys(storage).forEach(s => {
         // Daily meme posting
-        if(storage[s]?.daily?.memes?.active){
-            var c=client.channels.cache.get(storage[s].daily.memes.channel);
-            if(c.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
-                c.send({content:`## Daily Meme`,files:[`./memes/${storage.dailyMeme}.${fs.readdirSync("./memes").filter(a=>a.split(".")[0]===`${storage.dailyMeme}`)[0].split(".")[1]}`]});
+        try {
+            if(storage[s]?.daily?.memes?.active){
+                var c=client.channels.cache.get(storage[s].daily.memes.channel);
+                if(c.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
+                    c.send({content:`## Daily Meme`,files:[`./memes/${storage.dailyMeme}.${fs.readdirSync("./memes").filter(a=>a.split(".")[0]===`${storage.dailyMeme}`)[0].split(".")[1]}`]});
+                }
+                else{
+                    storage[s].daily.memes.active=false;
+                }
             }
-            else{
-                storage[s].daily.memes.active=false;
-            }
+        } catch (e) {
+            notify(1, "Daily meme error: " + e.stack);
         }
         
         // Hat pull, i.e. giveaways
