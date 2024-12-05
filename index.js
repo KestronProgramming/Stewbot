@@ -1029,60 +1029,64 @@ async function checkRSS(){
                             mostRecentArticle = thisArticleDate;
                         }
 
-                        for (chan of feed.channels) {
-                            let c=client.channels.cache.get(chan);
-                            if(c===undefined||c===null||!c?.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
-                                feed.channels.splice(feed.channels.indexOf(chan),1);
-                            }
-                            else{
-                                // Old method:
-                                // c.send(`New notification from [a followed RSS feed](${item.link})${item.description?`\n\n${turndown.turndown(item.description)}`:``}`);
-
+                        // Parse before sending to each channel
+                        try {
+                            // Extract theoretically required fields per https://www.rssboard.org/rss-specification
+                            const link = item.link || parsed.link; // default to channel URL
+                            let baseUrl = '';
+                            if (link) { // Attempt to get baseURL for turndown parsing
                                 try {
-                                    // Extract theoretically required fields per https://www.rssboard.org/rss-specification
-                                    const link = item.link || parsed.link; // default to channel URL
-                                    let baseUrl = '';
-                                    if (link) { // Attempt to get baseURL for turndown parsing
-                                        try {
-                                            baseUrl = new URL(link).origin;
-                                        } catch (e) {
-                                            baseUrl = ''; // fallback if URL is invalid
-                                        }
-                                    }
-
-                                    let parsedDescription = turndown.turndown(item.description?.replace?.(/href="\/(.*?)"/g, `href="${(baseUrl)}/$1"`) || "");
-                                    let content =  parsedDescription || item.contentSnippet || turndown.turndown(item.content || "") || 'No Summary Available';
-                                    content = content.replace(/&quot;/g, '"')
-                                        .replace(/&amp;/g, '&')
-                                        .replace(/&lt;/g, '<')
-                                        .replace(/&gt;/g, '>');
-
-                                    const embed = new EmbedBuilder()
-                                        .setColor(0x5faa66)
-                                        .setTitle(limitLength(item.title || parsed.description || 'No Title', 256)) // If no title, grab the feed description
-                                        .setDescription(limitLength(content, 1000));
-                                    if (link) embed.setURL(link)
-                                    
-                                    // Optional fields
-                                    const creator = item.creator || item["dc:creator"] || parsed.title || "Unknown Creator"; // 
-                                    const imageUrl = item?.image?.url || parsed?.image?.url;
-                                    if (creator) embed.setAuthor({ name: creator })
-                                    if (imageUrl) embed.setThumbnail(imageUrl);
-
-                                    // If the description has an image, attempt to load it as a large image (image *fields* are usually thumbnails / logos)
-                                    const $ = cheerio.load(item.description || "");
-                                    const contentImage = $('img').attr('src');
-                                    if (contentImage) embed.setImage(contentImage);
-
-                                    c.send({ 
-                                        content: `-# New notification from [a followed RSS feed](${item.link})`,
-                                        embeds: [ embed ]
-                                    })
+                                    baseUrl = new URL(link).origin;
                                 } catch (e) {
-                                    notify(1, "RSS error: " + e.message + "\n" + e.stack);
+                                    baseUrl = ''; // fallback if URL is invalid
                                 }
                             }
-                        };
+
+                            let parsedDescription = turndown.turndown(item.description?.replace?.(/href="\/(.*?)"/g, `href="${(baseUrl)}/$1"`) || "");
+                            let content =  parsedDescription || item.contentSnippet || turndown.turndown(item.content || "") || 'No Summary Available';
+                            content = content.replace(/&quot;/g, '"')
+                                .replace(/&amp;/g, '&')
+                                .replace(/&lt;/g, '<')
+                                .replace(/&gt;/g, '>');
+
+                            const embed = new EmbedBuilder()
+                                .setColor(0x5faa66)
+                                .setTitle(limitLength(item.title || parsed.description || 'No Title', 256)) // If no title, grab the feed description
+                                .setDescription(limitLength(content, 1000));
+                            if (link) embed.setURL(link)
+                            
+                            // Optional fields
+                            const creator = item.creator || item["dc:creator"] || parsed.title || "Unknown Creator"; // 
+                            const imageUrl = item?.image?.url || parsed?.image?.url;
+                            if (creator) embed.setAuthor({ name: creator })
+                            if (imageUrl) embed.setThumbnail(imageUrl);
+
+                            // If the description has an image, attempt to load it as a large image (image *fields* are usually thumbnails / logos)
+                            const $ = cheerio.load(item.description || "");
+                            const contentImage = $('img').attr('src');
+                            if (contentImage) embed.setImage(contentImage);
+
+                            // Send this feed to everyone following it
+                            for (chan of feed.channels) {
+                                let c=client.channels.cache.get(chan);
+                                if(c===undefined||c===null||!c?.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
+                                    feed.channels.splice(feed.channels.indexOf(chan),1);
+                                }
+                                else{
+                                    try {
+                                        c.send({ 
+                                            content: `-# New notification from [a followed RSS feed](${item.link})`,
+                                            embeds: [ embed ]
+                                        })
+                                    } catch (e) {
+                                        notify(1, "RSS channel error: " + e.message + "\n" + e.stack);
+                                    }
+                                }
+                            }
+
+                        } catch (e) {
+                            notify(1, "RSS feed error: " + e.message + "\n" + e.stack);
+                        }
                     }
                 };
                 // Update feed most recent now after sending all new ones since last time
