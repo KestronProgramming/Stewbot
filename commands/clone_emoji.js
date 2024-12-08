@@ -55,7 +55,14 @@ module.exports = {
 		
 		const action = cmd.options.getString("action");
 		const emoji = cmd.options.getString("emoji");
-		
+
+		// Get emoji upload limit
+		const serverTier = cmd.guild.premiumTier;
+		let emojiLimit = 50;
+		if (serverTier == 0) emojiLimit = 100
+		else if (serverTier == 1) emojiLimit = 150
+		else if (serverTier == 2) emojiLimit = 250
+
 		// Error checking if this is an option that takes perms
 		if ([
 			"direct_clone", 
@@ -71,6 +78,9 @@ module.exports = {
 			}
 			if (!cmd.guild.members.me.permissions.has(PermissionFlagsBits.CreateGuildExpressions)) {
 				return cmd.followUp(`I must have permission to upload emojis to use this feature.`);
+			}
+			if (await cmd.guild.emojis.fetch()?.size > emojiLimit) {
+				return cmd.followUp(`All of this server's ${emojiLimit} available emoji slots are full.`);
 			}
 		}
 	
