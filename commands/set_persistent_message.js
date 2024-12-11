@@ -49,6 +49,10 @@ module.exports = {
                 "avatarURL":cmd.guild.iconURL(),
                 "username":cmd.guild.name
             };
+            // Discord server name edge case
+            if (resp?.username?.toLowerCase().includes("discord")) {
+                resp.username = "[SERVER]"
+            }
             var hook=await cmd.channel.fetchWebhooks();
             hook=hook.find(h=>h.token);
             if(hook){
