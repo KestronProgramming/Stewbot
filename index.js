@@ -955,34 +955,39 @@ function checkHoliday(){
         var D = L + 28 - 31*Math.floor(M/4);
         return M+'/'+D;
     }
-    var ret = null;
+    var newPfp = null;
     var today=new Date();
 
     setDates.forEach(holiday=>{
-        if(holiday.days.includes(`${today.getMonth()+1}/${today.getDate()-1}`)){
-            ret="main.jpg";
-        }
+        // if(holiday.days.includes(`${today.getMonth()+1}/${today.getDate()-1}`)){
+        //     ret="main.jpg";
+        // }
         if(holiday.days.includes(`${today.getMonth()+1}/${today.getDate()}`)){
-            ret=holiday.pfp;
+            newPfp=holiday.pfp;
         }
     });
     if(today.getMonth()===10&&today.getDay()===4&&Math.floor(today.getDate()/7)===4){
-        ret="turkey.jpg";
+        newPfp="turkey.jpg";
     }
     if(today.getMonth()===4&&today.getDay()===1&&today.getDate()+7>31){
-        ret="patriot.jpg";
+        newPfp="patriot.jpg";
     }
     if(today.getMonth()+1===Easter(today.getFullYear()).split("/")[0]&&today.getDate()===Easter(today.getFullYear()).split("/")[1]){
-        ret="easter.jpg";
+        newPfp="easter.jpg";
     }
     // is it the day after each of these
-    if(
-        (today.getMonth()===10&&today.getDay()===5&&Math.floor((today.getDate()-1)/7)===4)||
-        today.getMonth()===4&&today.getDay()===2&&(today.getDate()-1)+7>31||
-        today.getMonth()+1===Easter(today.getFullYear()).split("/")[0]&&today.getDate()-1===Easter(today.getFullYear()).split("/")[1]){
-        ret="main.jpg";
-    }
-    if(ret) {
+    // if(
+    //     (today.getMonth()===10&&today.getDay()===5&&Math.floor((today.getDate()-1)/7)===4)||
+    //     today.getMonth()===4&&today.getDay()===2&&(today.getDate()-1)+7>31||
+    //     today.getMonth()+1===Easter(today.getFullYear()).split("/")[0]&&today.getDate()-1===Easter(today.getFullYear()).split("/")[1]){
+    //     ret="main.jpg";
+    // }
+    // if(ret) {
+    //     client.user.setAvatar(`./pfps/${ret}`);
+    // }
+
+    if (newPfp !== storage.pfp) {
+        storage.pfp = ret;
         client.user.setAvatar(`./pfps/${ret}`);
     }
 }
