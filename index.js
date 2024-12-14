@@ -2630,11 +2630,30 @@ client.on("interactionCreate",async cmd=>{
             !cmd.isChannelSelectMenu() &&
             !cmd.isRoleSelectMenu() &&
             !cmd.isStringSelectMenu()
-        ) await cmd.deferReply({
-            ephemeral:
-                ["poll","auto_roles","submit_meme","delete_message","move_message","auto-join-roles","join-roleOption","admin_message","personal_config","timestamp","unavailable","remove_embeds","prime_embed"]
-                    .includes(cmd.commandName) ||
-                cmd.options.getBoolean("private")});
+        ) {
+            const isPrivate = cmd.options.getBoolean("private");
+            const isPrivateDefined = isPrivate !== null;
+            const ephemeral = isPrivateDefined ? cmd.options.getBoolean("private") : [
+                "clone_emoji", 
+                "poll", 
+                "auto_roles", 
+                "submit_meme", 
+                "delete_message", 
+                "move_message", 
+                "auto-join-roles", 
+                "join-roleOption", 
+                "admin_message", 
+                "personal_config", 
+                "timestamp", 
+                "unavailable", 
+                "remove_embeds", 
+                "prime_embed"
+            ].includes(cmd.commandName);
+            
+            await cmd.deferReply({
+                ephemeral
+            });
+        }
     }catch(e){}
     try{
         if(cmd.guildId!==0){

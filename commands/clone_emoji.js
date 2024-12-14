@@ -40,7 +40,9 @@ module.exports = {
                             .setName("emoji")
                             .setDescription("Emoji if priming / direct cloning, or emoji id")
                             .setRequired(false)
-                    ),
+                    ).addBooleanOption(option=>
+						option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
+					),
 		
 		requiredGlobals: [],
 
@@ -57,7 +59,7 @@ module.exports = {
 		const emoji = cmd.options.getString("emoji");
 
 		// Get emoji upload limit
-		const serverTier = cmd.guild.premiumTier;
+		const serverTier = cmd.guild?.premiumTier;
 		let emojiLimit = 50;
 		if (serverTier == 0) emojiLimit = 100
 		else if (serverTier == 1) emojiLimit = 150
@@ -93,14 +95,14 @@ module.exports = {
 					var {url, emojiName} = getEmojiData(emoji);
 
 					if (!emoji) {
-						return cmd.followUp("Please provide a server emoji with these options.");
+						return cmd.followUp({ content:`Please provide a server emoji with these options.` });
 					}
 					else if (!url) {
-						return cmd.followUp("This does not appear to be valid server emoji.");
+						return cmd.followUp({ content:`This does not appear to be valid server emoji.` });
 					}
 					storage[cmd.user.id].primedEmojiURL = url;
 					storage[cmd.user.id].primedName = emojiName || "unnamed";
-					return cmd.followUp(`Emoji primed. Use it in a server with ${cmds.clone_emoji.mention}`);
+					return cmd.followUp({ content:`Emoji primed. Use it in a server with ${cmds.clone_emoji.mention}` });
 
 				case "clone_primed":
 					const primedURL = storage[cmd.user.id].primedEmojiURL;
