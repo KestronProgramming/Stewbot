@@ -987,8 +987,8 @@ function checkHoliday(){
     // }
 
     if (newPfp !== storage.pfp) {
-        storage.pfp = ret;
-        client.user.setAvatar(`./pfps/${ret}`);
+        storage.pfp = newPfp;
+        client.user.setAvatar(`./pfps/${newPfp}`);
     }
 }
 async function checkRSS(){
