@@ -68,9 +68,9 @@ module.exports = {
         }
         var timer=0;
         var temp=false;
-        if(cmd.options.getInteger("hours_until_reverted")!==null) timer+=cmd.options.getInteger("hours")*60000*60;
-        if(cmd.options.getInteger("minutes_until_reverted")!==null) timer+=cmd.options.getInteger("minutes")*60000;
-        if(timer>0){
+        if(cmd.options.getInteger("hours_until_reverted")!==null) timer+=cmd.options.getInteger("hours_until_reverted")*60000*60;
+        if(cmd.options.getInteger("minutes_until_reverted")!==null) timer+=cmd.options.getInteger("minutes_until_reverted")*60000;
+        if(timer > 0){
             temp=true;
         }
         var time=0;
@@ -103,6 +103,6 @@ module.exports = {
             setTimeout(()=>{finTempSlow(cmd.guild.id,cmd.channel.id)},timer);
         }
         cmd.channel.setRateLimitPerUser(time);
-        cmd.followUp({content:`Alright, I have set a${temp?` temporary`:``} slowmode setting for this channel ${temp?`until <t:${Math.round(storage[cmd.guild.id].tempSlow[cmd.channel.id].ends/1000)}:f> <t:${Math.round(storage[cmd.guild.id].tempSlow[cmd.channel.id].ends/1000)}:R>`:``}.`,components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setStyle(ButtonStyle.Danger).setLabel("Revert Now").setCustomId(`revertTempSlow`))]});
+        cmd.followUp({content:`Alright, I have set a${temp?` temporary`:``} slowmode setting for this channel${temp?` until <t:${Math.round(storage[cmd.guild.id].tempSlow[cmd.channel.id].ends/1000)}:f> <t:${Math.round(storage[cmd.guild.id].tempSlow[cmd.channel.id].ends/1000)}:R>`:``}.`,components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setStyle(ButtonStyle.Danger).setLabel("Revert Now").setCustomId(`revertTempSlow`))]});
 	}
 };
