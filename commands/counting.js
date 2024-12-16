@@ -103,11 +103,11 @@ module.exports = {
 					disclaimers.push(`No channel was set for counting to be active in, so counting is disabled currently.`);
 				}
 				var c=client.channels.cache.get(storage[cmd.guild.id].counting.channel);
-				if(!c.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
+				if(!c?.permissionsFor(client.user.id)?.has(PermissionFlagsBits.SendMessages)){
 					storage[cmd.guild.id].counting.active=false;
 					disclaimers.push(`I can't send messages in the specified channel, so counting is disabled currently.`);
 				}
-				if(!c.permissionsFor(client.user.id).has(PermissionFlagsBits.AddReactions)){
+				if(!c?.permissionsFor(client.user.id)?.has(PermissionFlagsBits.AddReactions)){
 					storage[cmd.guild.id].counting.active=false;
 					disclaimers.push(`I can't add reactions in the specified channel, so counting is disabled currently.`);
 				}

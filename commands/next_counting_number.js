@@ -18,7 +18,7 @@ module.exports = {
 		
 		extra: {"contexts":[0],"integration_types":[0]},
 
-		requiredGlobals: [],
+		requiredGlobals: ["limitLength"],
 
 		help: {
 			helpCategory: "Informational",
@@ -30,6 +30,6 @@ module.exports = {
 	async execute(cmd, context) {
 		applyContext(context);
 		
-		cmd.followUp(storage[cmd.guildId].counting.active?`The next number to enter ${cmd.channel.id!==storage[cmd.guildId].counting.channel?`in <#${storage[cmd.guildId].counting.channel}> `:""}is \`${storage[cmd.guildId].counting.nextNum}\`.`:`Counting isn't active in this server! Use ${cmds.filter.config.mention} to set it up.`);
+		cmd.followUp({content:limitLength(storage[cmd.guildId].counting.active?`The next number to enter ${cmd.channel.id!==storage[cmd.guildId].counting.channel?`in <#${storage[cmd.guildId].counting.channel}> `:""}is \`${storage[cmd.guildId].counting.nextNum}\`.${storage[cmd.guildId].counting.takeTurns>0&&Object.keys(storage[cmd.guildId].users).filter(a=>storage[cmd.guildId].users[a].countTurns>0).length>0?`\nYou need to wait for ${storage[cmd.guildId].counting.takeTurns} other ${storage[cmd.guildId].counting.takeTurns===1?`person`:`people`} to post before taking another turn in this server. The following users have posted within this danger zone:\n${Object.keys(storage[cmd.guildId].users).filter(a=>storage[cmd.guildId].users[a].countTurns>0).map(b=>`- <@${b}>`).join("\n")}`:``}`:`Counting isn't active in this server! Use ${cmds.counting.config.mention} to set it up.`),allowedMentions:{parse:[]}});
 	}
 };

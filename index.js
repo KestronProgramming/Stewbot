@@ -94,7 +94,7 @@ function readLatestDatabase() {
             const data = require(location);
             if(process.env.beta) console.log(`Read database from ${location}`)
 
-            // This shouldn't be needed, unless it was a boot-loop error that kept corrupting it's own files. Plan for the worst.
+            // This shouldn't be needed, unless it was a boot-loop error that kept corrupting its own files. Plan for the worst.
             corruptedFiles.forEach(file => {
                 fs.writeFileSync(file, JSON.stringify(data));
             })
@@ -107,7 +107,7 @@ function readLatestDatabase() {
     }
 
     // This case should never be hit - in theory we could try to load from the latest google drive. 
-    notify(1, `No storage locations could be loaded. Tried: ${sortedLocations.join(", ")}.`)
+    notify(1, `No storage locations could be loaded. Tried: ${sortedLocations.join(", ")}.`);
     process.exit();
 }
 const storage = readLatestDatabase();

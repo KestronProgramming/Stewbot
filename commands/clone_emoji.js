@@ -15,7 +15,7 @@ function getEmojiData(emoji) {
 	const emojiId = matches?.[3];
 	let url = null;
 	if (emojiId) {
-		url = `https://cdn.discordapp.com/emojis/${emojiId}.${animated?"gif":"png"}`; //ɡɪf/
+		url = `https://cdn.discordapp.com/emojis/${emojiId}.${animated?"gif":"png"}`;
 	}
 	return {url, emojiName};
 }
@@ -27,12 +27,12 @@ module.exports = {
 					.setName('clone_emoji')
 					.setDescription('Upload an emoji from another server to this one')
 					.addStringOption(option =>
-						option.setName("action").setDescription("The action to preform").setChoices(
+						option.setName("action").setDescription("The action to perform").setChoices(
 							{ name: "Prime emoji", value: "prime_emoji" },
 							{ name: "Clone from primed emoji", value: "clone_primed" },
-							{ name: "Clone from primed_embed", value: "clone_embed" },
+							{ name: "Clone from prime_embed", value: "clone_embed" },
 							{ name: "Clone from emoji ID", value: "clone_id" },
-							{ name: "Clone from direct emoji (nitro)", value: "direct_clone" },
+							{ name: "Clone from a Nitro emoji", value: "direct_clone" },
 						).setRequired(true)
 					)
 					.addStringOption(option=>
@@ -82,7 +82,7 @@ module.exports = {
 				return cmd.followUp(`I must have permission to upload emojis to use this feature.`);
 			}
 			if (await cmd.guild.emojis.fetch()?.size > emojiLimit) {
-				return cmd.followUp(`All of this server's ${emojiLimit} available emoji slots are full.`);
+				return cmd.followUp(`This server already has ${emojiLimit} emojis, you must delete some or boost the server to add more.`);
 			}
 		}
 	
