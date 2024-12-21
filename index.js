@@ -485,7 +485,7 @@ async function finTimer(who,force){
     delete storage[who].timer;
 }
 async function finTempRole(guild,user,role){
-    if(!storage[guild].users[user].tempRoles.hasOwnProperty(role)){
+    if(!storage[guild].users[user].tempRoles?.hasOwnProperty(role)){
         return;
     }
     guild=client.guilds.cache.get(guild);
