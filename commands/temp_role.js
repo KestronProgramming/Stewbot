@@ -19,7 +19,7 @@ module.exports = {
                 option.setName("minutes").setDescription("How many minutes?").setMinValue(1).setMaxValue(59)
             ).addBooleanOption(option=>
                 option.setName("private").setDescription("Make the response ephemeral?")
-            ),
+            ).setDefaultMemberPermissions(PermissionFlagsBits.ManageRoles),
 		
 		extra: {"contexts": [0], "integration_types": [0]},
 
@@ -40,6 +40,22 @@ module.exports = {
 
 	async execute(cmd, context) {
 		applyContext(context);
+
+        const role = cmd.options.getRole("role");
+        const user = cmd.options.getUser("who");
+        const targetMember = cmd.guild.members.cache.get(user.id);
+		const issuerMember = cmd.guild.members.cache.get(cmd.user.id);
+
+        if(targetMember===null||targetMember===undefined){
+            cmd.followUp({content:`I couldn't find <@${user.id}>, so I can't help unfortunately.`,allowedMentions:{parse:[]}});
+            return;
+        }
+
+        // Maybe we should check to see if this user has power over the target, and that they have power over the role?
+        if (role.comparePositionTo(issuerMember.roles.highest) >= 0) {
+            return cmd.followUp(`You cannot add this role because it is equal to or higher than your highest role.`);
+        }
+
         if(!cmd.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.ManageRoles)){
             cmd.followUp(`I do not have the ManageRoles permission, so I cannot run temporary roles.`);
             return;
@@ -51,34 +67,29 @@ module.exports = {
             cmd.followUp(`Please set a valid time to undo the role action.`);
             return;
         }
-        if(cmd.guild.members.cache.get(client.user.id).roles.highest.position<=cmd.options.getRole("role").rawPosition){
-            cmd.followUp(`I cannot help with that role. If you would like me to, grant me a role that is ordered to be higher in the roles list than ${cmd.options.getRole("role").name}. You can reorder roles from Server Settings -> Roles.`);
+        if(cmd.guild.members.cache.get(client.user.id).roles.highest.position<=role.rawPosition){
+            cmd.followUp(`I cannot help with that role. If you would like me to, grant me a role that is ordered to be higher in the roles list than ${role.name}. You can reorder roles from Server Settings -> Roles.`);
             return;
         }
         if(!storage[cmd.guild.id].users[cmd.user.id].hasOwnProperty("tempRoles")){
             storage[cmd.guild.id].users[cmd.user.id].tempRoles={};
         }
-        if(storage[cmd.guild.id].users[cmd.user.id].tempRoles.hasOwnProperty(cmd.options.getRole("role").id)){
-            cmd.followUp({content:`This is already a temporarily assigned role for this user. You can cancel it, or wait it out.`,components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setLabel("Finish Early").setCustomId(`finishTempRole-${cmd.options.getUser("who").id}-${cmd.options.getRole("role").id}`).setStyle(ButtonStyle.Secondary))]});
-            return;
-        }
-        var member=cmd.guild.members.cache.get(cmd.options.getUser("who").id);
-        if(member===null||member===undefined){
-            cmd.followUp({content:`I couldn't find <@${cmd.options.getUser("who").id}>, so I can't help unfortunately.`,allowedMentions:{parse:[]}});
+        if(storage[cmd.guild.id].users[cmd.user.id].tempRoles.hasOwnProperty(role.id)){
+            cmd.followUp({content:`This is already a temporarily assigned role for this user. You can cancel it, or wait it out.`,components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setLabel("Finish Early").setCustomId(`finishTempRole-${user.id}-${role.id}`).setStyle(ButtonStyle.Secondary))]});
             return;
         }
         var added;
-        if(member.roles.cache.has(cmd.options.getRole("role").id)){
+        if(targetMember.roles.cache.has(role.id)){
             added=false;
-            member.roles.remove(cmd.options.getRole("role").id).catch(e=>{});
+            targetMember.roles.remove(role.id).catch(e=>{});
         }
         else{
             added=true;
-            member.roles.add(cmd.options.getRole("role").id).catch(e=>{});
+            targetMember.roles.add(role.id).catch(e=>{});
         }
-        storage[cmd.guild.id].users[cmd.user.id].tempRoles[cmd.options.getRole("role").id]=Date.now()+timer;
-        cmd.followUp({content:`Alright, I have ${added?`added`:`removed`} <@&${cmd.options.getRole("role").id}> ${added?`to`:`from`} <@${member.id}> until <t:${Math.round((Date.now()+timer)/1000)}:f> <t:${Math.round((Date.now()+timer)/1000)}:R>`,components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setLabel("Finish Early").setCustomId(`finishTempRole-${cmd.options.getUser("who").id}-${cmd.options.getRole("role").id}`).setStyle(ButtonStyle.Secondary))]});
+        storage[cmd.guild.id].users[cmd.user.id].tempRoles[role.id]=Date.now()+timer;
+        cmd.followUp({content:`Alright, I have ${added?`added`:`removed`} <@&${role.id}> ${added?`to`:`from`} <@${targetMember.id}> until <t:${Math.round((Date.now()+timer)/1000)}:f> <t:${Math.round((Date.now()+timer)/1000)}:R>`,components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setLabel("Finish Early").setCustomId(`finishTempRole-${user.id}-${role.id}`).setStyle(ButtonStyle.Secondary))]});
         
-        setTimeout(()=>{finTempRole(cmd.guild.id,cmd.user.id,cmd.options.getRole("role").id)},timer);
+        setTimeout(()=>{finTempRole(cmd.guild.id,cmd.user.id,role.id)},timer);
     }
 };
