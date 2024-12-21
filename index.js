@@ -2687,11 +2687,11 @@ client.on("interactionCreate",async cmd=>{
 
     // Slash commands
     if (commands.hasOwnProperty(cmd.commandName)) {
+        const commandPathWithSubcommand = `/${cmd.commandName} ${cmd.options._subcommand ? cmd.options.getSubcommand() : "<none>"}`; //meh but it works
+        const commandPath = `/${cmd.commandName}`;
         // If this is a guild, check for blocklist
         if (cmd.guild?.id) {
             const guildBlocklist = storage[cmd.guild.id].blockedCommands || []
-            const commandPathWithSubcommand = `/${cmd.commandName} ${cmd.options._subcommand ? cmd.options.getSubcommand() : "<none>"}`; //meh but it works
-            const commandPath = `/${cmd.commandName}`;
             if (guildBlocklist.includes(commandPath) || guildBlocklist.includes(commandPathWithSubcommand)) {
                 let response = "This command has been blocked by this server.";
                 if (cmd.member.permissions.has('Administrator')) {
@@ -2699,6 +2699,11 @@ client.on("interactionCreate",async cmd=>{
                 }
                 return cmd.followUp(response);
             } 
+        }
+        // Check global blacklist from home server
+        const globalBlocklist = storage[config.homeServer]?.blockedCommands || []
+        if (globalBlocklist.includes(commandPath) || globalBlocklist.includes(commandPathWithSubcommand)) {
+            return cmd.followUp("This command has temporarily been blocked globally.");
         }
         
         // Checks passed, run command
