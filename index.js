@@ -1868,59 +1868,63 @@ client.once("ready",async ()=>{
     setTimeout(daily,((now.getHours()>11?11+24-now.getHours():11-now.getHours())*(60000*60))+((60-now.getMinutes())*60000));
 
     Object.keys(storage).forEach(key=>{
-        if(storage[key].hasOwnProperty("timer")){
-            if(storage[key].timer.time-Date.now()>0){
-                setTimeout(()=>{finTimer(key)},storage[key].timer.time-Date.now());
-            }
-            else{
-                finTimer(key);
-            }
-        }
-        if(storage[key].hasOwnProperty("hat_pull")){
-            if(storage[key].hat_pull.ends-Date.now()<=60000*60*24){
-                storage[key].hat_pull.registered=true;
-                if(storage[key].hat_pull.ends-Date.now()>0){
-                    setTimeout(()=>{finHatPull(key)},storage[key].hat_pull.ends-Date.now());
+        try {
+            if(storage[key].hasOwnProperty("timer")){
+                if(storage[key].timer.time-Date.now()>0){
+                    setTimeout(()=>{finTimer(key)},storage[key].timer.time-Date.now());
                 }
                 else{
-                    finHatPull(key);
+                    finTimer(key);
                 }
             }
-        }
-        if(storage[key].hasOwnProperty("tempSlow")){
-            Object.keys(storage[key].tempSlow).forEach(slow=>{
-                if(storage[key].tempSlow[slow].ends-Date.now()>0){
-                    setTimeout(()=>{finTempSlow(key,slow)},storage[key].tempSlow[slow].ends-Date.now());
+            if(storage[key].hasOwnProperty("hat_pull")){
+                if(storage[key].hat_pull.ends-Date.now()<=60000*60*24){
+                    storage[key].hat_pull.registered=true;
+                    if(storage[key].hat_pull.ends-Date.now()>0){
+                        setTimeout(()=>{finHatPull(key)},storage[key].hat_pull.ends-Date.now());
+                    }
+                    else{
+                        finHatPull(key);
+                    }
                 }
-                else{
-                    finTempSlow(key,slow);
-                }
-            });
-        }
-        if(storage[key].hasOwnProperty("tempBans")){
-            Object.keys(storage[key].tempBans).forEach(ban=>{
-                if(storage[key].tempBans[ban].ends-Date.now()>0){
-                    setTimeout(()=>{finTempBan(key,ban)},storage[key].tempBans[ban].ends-Date.now());
-                    storage[key].tempBans[ban].registered=true;
-                }
-                else{
-                    finTempBan(key,ban);
-                }
-            });
-        }
-        if(storage[key].hasOwnProperty("users")){
-            Object.keys(storage[key].users).forEach(user=>{
-                if(storage[key].users[user].hasOwnProperty("tempRoles")){
-                    Object.keys(storage[key].users[user].tempRoles).forEach(role=>{
-                        if(storage[key].users[user].tempRoles[role]-Date.now()>0){
-                            setTimeout(()=>{finTempRole(key,user,role)},storage[key].users[user].tempRoles[role]-Date.now());
-                        }
-                        else{
-                            finTempRole(key,user,role);
-                        }
-                    });
-                }
-            });
+            }
+            if(storage[key].hasOwnProperty("tempSlow")){
+                Object.keys(storage[key].tempSlow).forEach(slow=>{
+                    if(storage[key].tempSlow[slow].ends-Date.now()>0){
+                        setTimeout(()=>{finTempSlow(key,slow)},storage[key].tempSlow[slow].ends-Date.now());
+                    }
+                    else{
+                        finTempSlow(key,slow);
+                    }
+                });
+            }
+            if(storage[key].hasOwnProperty("tempBans")){
+                Object.keys(storage[key].tempBans).forEach(ban=>{
+                    if(storage[key].tempBans[ban].ends-Date.now()>0){
+                        setTimeout(()=>{finTempBan(key,ban)},storage[key].tempBans[ban].ends-Date.now());
+                        storage[key].tempBans[ban].registered=true;
+                    }
+                    else{
+                        finTempBan(key,ban);
+                    }
+                });
+            }
+            if(storage[key].hasOwnProperty("users")){
+                Object.keys(storage[key].users).forEach(user=>{
+                    if(storage[key].users[user].hasOwnProperty("tempRoles")){
+                        Object.keys(storage[key].users[user].tempRoles).forEach(role=>{
+                            if(storage[key].users[user].tempRoles[role]-Date.now()>0){
+                                setTimeout(()=>{finTempRole(key,user,role)},storage[key].users[user].tempRoles[role]-Date.now());
+                            }
+                            else{
+                                finTempRole(key,user,role);
+                            }
+                        });
+                    }
+                });
+            }
+        } catch (e) {
+            notify(1, "Error in dailies:\n" + e.stack);
         }
     });
 });
