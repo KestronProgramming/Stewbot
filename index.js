@@ -1477,7 +1477,7 @@ function daily(dontLoop=false){
             if(storage[s]?.daily?.memes?.active){
                 var c=client.channels.cache.get(storage[s].daily.memes.channel);
                 if(c.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
-                    c.send({content:`## Daily Meme`,files:[`./memes/${storage.dailyMeme}.${fs.readdirSync("./memes").filter(a=>a.split(".")[0]===`${storage.dailyMeme}`)[0].split(".")[1]}`]});
+                    c.send({content:`## Daily Meme\n-# Meme \\#${storage.dailyMeme}`,files:[`./memes/${storage.dailyMeme}.${fs.readdirSync("./memes").filter(a=>a.split(".")[0]===`${storage.dailyMeme}`)[0].split(".")[1]}`]});
                 }
                 else{
                     storage[s].daily.memes.active=false;
