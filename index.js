@@ -3596,7 +3596,7 @@ client.on("interactionCreate",async cmd=>{
         }
     }
     if(cmd.customId?.startsWith("clearTimer-")){
-        if((cmd.member?.permissions.has(PermissionFlagsBits.ManageMessages)&&cmd.message.id===storage[cmd.user.id].timer?.respLocation.split("/")[1])||cmd.user.id===cmd.customId.split("-")[1]){
+        if((cmd.member?.permissions?.has(PermissionFlagsBits.ManageMessages)&&cmd.message.id===storage[cmd.user.id].timer?.respLocation.split("/")[1])||cmd.user.id===cmd.customId.split("-")[1]){
             delete storage[cmd.user.id].timer;
             cmd.message.edit({components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setLabel("Clear Timer").setStyle(ButtonStyle.Danger).setDisabled(true).setCustomId("disabled"))]});
             cmd.reply({content:`I have cleared the timer.`,ephemeral:true});
