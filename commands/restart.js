@@ -29,7 +29,7 @@ module.exports = {
             if (updateCommands) infoData += " | Running launchCommands.js"
 
             // Notify about restart
-            notify(1, { content: `Bot restarted by <@${cmd.user.id}>` + infoData, allowedMentions: { parse: [] } });
+            notify(1, `Bot restarted by <@${cmd.user.id}>` + infoData);
             cmd.followUp("Restarting..." + infoData);
 
             try {
