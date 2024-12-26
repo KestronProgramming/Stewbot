@@ -987,7 +987,7 @@ function checkHoliday(){
     // }
 
     if (newPfp !== storage.pfp) {
-        storage.pfp = newPfp;
+        storage.pfp = newPfp || "main.jpg";
         client.user.setAvatar(`./pfps/${newPfp}`);
     }
 }
