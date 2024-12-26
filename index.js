@@ -1489,7 +1489,7 @@ function daily(dontLoop=false){
         
         // Hat pull, i.e. giveaways
         try {
-            if(storage[s].hasOwnProperty("hat_pull")){
+            if(storage[s]?.hasOwnProperty("hat_pull")){
                 if(storage[s].hat_pull.ends-Date.now()<=60000*60*24){
                     storage[s].hat_pull.registered=true;
                     if(storage[s].hat_pull.ends-Date.now()>0){
@@ -1506,7 +1506,7 @@ function daily(dontLoop=false){
         
         // Temoving temp bans / setting timeouts to remove temp bans when it's within 24 hours of them
         try {
-            if(storage[s].hasOwnProperty("tempBans")){
+            if(storage[s]?.hasOwnProperty("tempBans")){
                 Object.keys(storage[s].tempBans).forEach(ban=>{
                     if(storage[s].tempBans[ban].ends-Date.now()>0&&!storage[s].tempBans[ban].registered){
                         setTimeout(()=>{finTempBan(s,ban)},storage[s].tempBans[ban].ends-Date.now());
