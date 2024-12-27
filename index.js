@@ -975,19 +975,10 @@ function checkHoliday(){
     if(today.getMonth()+1===Easter(today.getFullYear()).split("/")[0]&&today.getDate()===Easter(today.getFullYear()).split("/")[1]){
         newPfp="easter.jpg";
     }
-    // is it the day after each of these
-    // if(
-    //     (today.getMonth()===10&&today.getDay()===5&&Math.floor((today.getDate()-1)/7)===4)||
-    //     today.getMonth()===4&&today.getDay()===2&&(today.getDate()-1)+7>31||
-    //     today.getMonth()+1===Easter(today.getFullYear()).split("/")[0]&&today.getDate()-1===Easter(today.getFullYear()).split("/")[1]){
-    //     ret="main.jpg";
-    // }
-    // if(ret) {
-    //     client.user.setAvatar(`./pfps/${ret}`);
-    // }
-
+    
+    newpfp = newPfp || "main.jpg"; // avoid null storage issues
     if (newPfp !== storage.pfp) {
-        storage.pfp = newPfp || "main.jpg";
+        storage.pfp = newPfp;
         client.user.setAvatar(`./pfps/${newPfp}`);
     }
 }
@@ -1869,7 +1860,7 @@ client.once("ready",async ()=>{
 
     Object.keys(storage).forEach(key=>{
         try {
-            if(storage[key].hasOwnProperty("timer")){
+            if(storage[key]?.hasOwnProperty("timer")){
                 if(storage[key].timer.time-Date.now()>0){
                     setTimeout(()=>{finTimer(key)},storage[key].timer.time-Date.now());
                 }
@@ -1877,7 +1868,7 @@ client.once("ready",async ()=>{
                     finTimer(key);
                 }
             }
-            if(storage[key].hasOwnProperty("hat_pull")){
+            if(storage[key]?.hasOwnProperty("hat_pull")){
                 if(storage[key].hat_pull.ends-Date.now()<=60000*60*24){
                     storage[key].hat_pull.registered=true;
                     if(storage[key].hat_pull.ends-Date.now()>0){
@@ -1888,7 +1879,7 @@ client.once("ready",async ()=>{
                     }
                 }
             }
-            if(storage[key].hasOwnProperty("tempSlow")){
+            if(storage[key]?.hasOwnProperty("tempSlow")){
                 Object.keys(storage[key].tempSlow).forEach(slow=>{
                     if(storage[key].tempSlow[slow].ends-Date.now()>0){
                         setTimeout(()=>{finTempSlow(key,slow)},storage[key].tempSlow[slow].ends-Date.now());
@@ -1898,7 +1889,7 @@ client.once("ready",async ()=>{
                     }
                 });
             }
-            if(storage[key].hasOwnProperty("tempBans")){
+            if(storage[key]?.hasOwnProperty("tempBans")){
                 Object.keys(storage[key].tempBans).forEach(ban=>{
                     if(storage[key].tempBans[ban].ends-Date.now()>0){
                         setTimeout(()=>{finTempBan(key,ban)},storage[key].tempBans[ban].ends-Date.now());
@@ -1909,7 +1900,7 @@ client.once("ready",async ()=>{
                     }
                 });
             }
-            if(storage[key].hasOwnProperty("users")){
+            if(storage[key]?.hasOwnProperty("users")){
                 Object.keys(storage[key].users).forEach(user=>{
                     if(storage[key].users[user].hasOwnProperty("tempRoles")){
                         Object.keys(storage[key].users[user].tempRoles).forEach(role=>{
