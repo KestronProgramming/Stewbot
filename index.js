@@ -976,7 +976,7 @@ function checkHoliday(){
         newPfp="easter.jpg";
     }
     
-    newpfp = newPfp || "main.jpg"; // avoid null storage issues
+    newPfp = newPfp || "main.jpg"; // avoid null storage issues
     if (newPfp !== storage.pfp) {
         storage.pfp = newPfp;
         client.user.setAvatar(`./pfps/${newPfp}`);
