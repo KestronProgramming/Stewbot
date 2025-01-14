@@ -1,3 +1,9 @@
+
+// This was meant as a way to filter words based on context and other NLP stuff but seemed like there wasn't much use to it
+// besides not filtering abbreviations, which I already kinda fixed in the filter now
+
+
+
 // #region Boilerplate
 const { SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
 function applyContext(context={}) {

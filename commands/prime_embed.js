@@ -36,7 +36,7 @@ module.exports = {
 			*/
 			shortDesc: "Get a message ready to be embedded with /embed_message",//Should be the same as the command setDescription field
 			detailedDesc: //Detailed on exactly what the command does and how to use it
-				`After using this command on a message, you can type PRIMED into /embed_message to have the bot embed it. This can be used for DMs, or servers the bot doesn't share with you if you install it to use anywhere. (Press the bot's PFP, then select "Add App", and then "Use it Everywhere"). This is a context menu command, which can be accessed by holding down on a message on mobile, or right clicking on desktop, and then selecting "Apps".`
+				`After using this command on a message, you can type PRIMED into ${cmds.embed_message.mention} to have the bot embed it. This can be used for DMs, or servers the bot doesn't share with you if you install it to use anywhere. (Press the bot's PFP, then select "Add App", and then "Use it Everywhere"). This is a context menu command, which can be accessed by holding down on a message on mobile, or right clicking on desktop, and then selecting "Apps".`
 		}
 	},
 

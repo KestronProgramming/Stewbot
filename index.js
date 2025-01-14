@@ -12,7 +12,7 @@ const config=require("./data/config.json");
 // const bible=require("./data/kjv.json");
 const fs=require("fs");
 // const path = require("path")
-const cmds=require("./data/commands.json");
+const cmds=require("./data/commands.json"); global.cmds = cmds;
 const Sentiment = require('sentiment');
 const dns = require('dns');
 const { URL } = require('url');

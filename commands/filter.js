@@ -118,7 +118,7 @@ module.exports = {
                 */
                 shortDesc: "Import a CSV wordlist",
                 detailedDesc: 
-                    `Import a .csv file containing a list of words seperated by commas to block. You can generate one from another server's filter using the /view_filter command.`
+                    `Import a .csv file containing a list of words seperated by commas to block. You can generate one from another server's filter using the ${cmds.view_filter.mention} command.`
             }
 		},
 	},

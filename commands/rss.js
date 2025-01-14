@@ -79,7 +79,7 @@ module.exports = {
 				*/
 				shortDesc: "Unfollow an RSS feed",//Should be the same as the command setDescription field
 				detailedDesc: //Detailed on exactly what the command does and how to use it
-					`Specify the channel the feed is followed in, and the URL of the feed to unfollow, and Stewbot will no longer post RSS updates for that feed there. You can use \`/rss check\` to get the URL needed for this command.`
+					`Specify the channel the feed is followed in, and the URL of the feed to unfollow, and Stewbot will no longer post RSS updates for that feed there. You can use ${cmds.rss.check.mention} to get the URL needed for this command.`
 			},
 			check:{
 				helpCategories: ["Information","Administration","Server Only"],
