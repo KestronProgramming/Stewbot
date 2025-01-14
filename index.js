@@ -2648,9 +2648,21 @@ client.on("messageCreate",async msg=>{
                                 sendRow.push(new ButtonBuilder().setCustomId("kick-"+msg.author.id).setLabel(`Kick`).setStyle(ButtonStyle.Danger));
                             }
                             if(botInServer.permissions.has(PermissionFlagsBits.ManageMessages)){
-                                sendRow.push(new ButtonBuilder().setCustomId("del-"+msg.author.id).setLabel(`Delete the Messages in Question`).setStyle(ButtonStyle.Primary));
+                                // sendRow.push(new ButtonBuilder().setCustomId("del-"+msg.author.id).setLabel(`Delete the Messages in Question`).setStyle(ButtonStyle.Primary));
+
+                                // Instead just delete dirrectly
+                                for(var i=0;i<storage[msg.guild.id].users[msg.author.id].lastMessages.length;i++){
+                                    try{
+                                        var badMess=await client.channels.cache.get(storage[msg.guild.id].users[msg.author.id].lastMessages[i].split("/")[0]).messages.fetch(storage[msg.guild.id].users[msg.author.id].lastMessages[i].split("/")[1]);
+                                        badMess.delete().catch(e=>{console.log(e)});
+                                        storage[msg.guild.id].users[msg.author.id].lastMessages.splice(i,1);
+                                        i--;
+                                    }
+                                    catch(e){console.log(e)}
+                                }
                             }
-                            msg.reply({content:`I have detected unusual activity from this account. I have temporarily applied a timeout. To remove this timeout, please use ${cmds.captcha.mention} in a DM with me, or a moderator can remove this timeout manually.\n\nIf a mod wishes to disable this behaviour, designed to protect servers from mass spam, ping, and NSFW hacked or spam accounts, run ${cmds.general_config.mention} and specify to disable Anti Hack Protection.`,components:[new ActionRowBuilder().addComponents(...sendRow)]});
+                            await msg.reply({content:`I have detected unusual activity from <@${msg.author.id}>. I have temporarily applied a timeout. To remove this timeout, please use ${cmds.captcha.mention} in a DM with me, or a moderator can remove this timeout manually.\n\nIf a mod wishes to disable this behaviour, designed to protect servers from mass spam, ping, and NSFW hacked or spam accounts, run ${cmds.general_config.mention} and specify to disable Anti Hack Protection.`,components:[new ActionRowBuilder().addComponents(...sendRow)]});
+                            setTimeout(_ => { msg.delete() }, 50)
                         }
                     }
                     catch(e){}
@@ -3564,7 +3576,8 @@ client.on("interactionCreate",async cmd=>{
             var target=cmd.guild.members.cache.get(cmd.customId.split("-")[1]);
             if(target){
                 target.kick({reason:`Detected high spam activity with high profile pings and/or a URL, was instructed to kick by ${cmd.user.username}.`});
-                await cmd.reply({content:`Done. Do you wish to delete the messages in question as well?`,components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId("del-"+target.id).setLabel("Yes").setStyle(ButtonStyle.Success))],ephemeral:true});
+                // await cmd.reply({content:`Done. Do you wish to delete the messages in question as well?`,components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId("del-"+target.id).setLabel("Yes").setStyle(ButtonStyle.Success))],ephemeral:true});
+                await cmd.reply({content:`Attempted to kick.`, ephemeral:true});
                 cmd.message.delete();
             }
             else{
