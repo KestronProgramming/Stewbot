@@ -43,7 +43,7 @@ module.exports = {
 			*/
 			shortDesc: "Warn a user for bad behaviour",//Should be the same as the command setDescription field
 			detailedDesc: //Detailed on exactly what the command does and how to use it
-				`Moderators can use this command to send a user a warning for doing something wrong anonymously in the server's name, with a severity scale from 1 to 10. You can then use /warnings to check a list of all warnings dealt.`
+				`Moderators can use this command to send a user a warning for doing something wrong anonymously in the server's name, with a severity scale from 1 to 10. You can then use ${cmds.warnings.mention} to check a list of all warnings dealt.`
         },
     },
 
