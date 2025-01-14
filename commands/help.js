@@ -19,7 +19,7 @@ module.exports = {
 		
 		extra: {"contexts":[0,1,2],"integration_types":[0,1]},
 
-		requiredGlobals: ["helpPages", "config", "limitLength"],
+		requiredGlobals: ["helpPages", "config", "limitLength", "chunkArray"],
 
 		help: {
 			helpCategories: ["General","Bot","Information"],
@@ -43,6 +43,17 @@ module.exports = {
 
 	async execute(cmd, context) {
 		applyContext(context);
+
+		const buttonRows = chunkArray(helpPages, 5).map(chunk => 
+			new ActionRowBuilder().addComponents(
+				chunk.map(a => 
+					new ButtonBuilder()
+						.setCustomId(`switch-${a.name}`)
+						.setLabel(a.name)
+						.setStyle(ButtonStyle.Primary)
+				)
+			)
+		);		
 		
 		cmd.followUp({
 			content: `**General**`, embeds: [{
@@ -66,9 +77,7 @@ module.exports = {
 					"text": `Help Menu for Stewbot`
 				}
 			}],
-			components: [new ActionRowBuilder().addComponents(...helpPages.map(a =>
-					new ButtonBuilder().setCustomId(`switch-${a.name}`).setLabel(a.name).setStyle(ButtonStyle.Primary)
-				))]
+			components: buttonRows
 		});
 	}
 };

@@ -260,7 +260,7 @@ const defaultUser=require("./data/defaultUser.json");
 const help = require("./commands/help.js");
 
 // Dynamically build help page from metadata
-const helpPageCategories = ["General", "Administration", "Entertainment", "Informational"]; // Categories to show
+const helpPageCategories = ["Context Menu", "Information", "Configuration", "General", "Administration", "Entertainment", "Bot"]; // Categories to show
 var helpPages = [];
 Object.keys(commands).forEach(key => {
     const cmd = commands[key];
@@ -494,6 +494,13 @@ if (!process.env.beta) helpPages = [
     }
 ];
 
+function chunkArray(array, size) {
+    const result = [];
+    for (let i = 0; i < array.length; i += size) {
+        result.push(array.slice(i, i + size));
+    }
+    return result;
+}
 async function finTimer(who,force){
     if(!storage[who].hasOwnProperty("timer")){
         return;
