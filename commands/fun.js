@@ -54,24 +54,101 @@ module.exports = {
 
 		help: {
 			"dne": {
-				helpCategory: "Entertainment",
-				helpDesc: "Posts a picture of a person who never existed using AI",
+				helpCategories: ["Entertainment"],
+				/*
+					- General
+					- Information
+					- Bot
+					- Administration
+					- Configuration
+					- Entertainment
+					- Context Menu
+					- Other/Misc
+					- Server Only
+					- User Install Only
+				*/
+				shortDesc: "Posts a picture of a person who never existed using AI",
+				detailedDesc: 
+					`Uses https://thispersondoesnotexist.com/ to display a picture of a completely fake human face.`
 			},
 			"rac": {
-				helpCategory: "Entertainment",
-				helpDesc: "Play a game of Rows & Columns (use command for further help)",
+				helpCategories: ["Entertainment"],
+				/*
+					- General
+					- Information
+					- Bot
+					- Administration
+					- Configuration
+					- Entertainment
+					- Context Menu
+					- Other/Misc
+					- Server Only
+					- User Install Only
+				*/
+				shortDesc: "Play a game of Rows & Columns",
+				detailedDesc: 
+					`**Rows & Columns**\n
+					\n
+					In this game your goal is to make as many of the longest rows as possible. Diagonal rows do not count. 3 in a row is 1 point, 4 in a row is 2 points, 5 in a row is 3 points, and so on. The game ends when all spots are filled.\n
+					\n
+					To join the game, press the Join Game button.\n
+					To make a move, press the Make a Move button and input the grid location of the spot you want to move (So if you wanted to move in the third spot from the left on the top row, you would type \`AC\`).\n
+					\n
+					This is not a turn-based game - you may move once every 15 minutes, or once _anybody else_ has moved. This is a game of skill, strategy, and speed.`
 			},
 			"wyr": {
-				helpCategory: "Entertainment",
-				helpDesc: "Posts a Would-You-Rather Question",
+				helpCategories: ["Entertainment"],
+				/*
+					- General -> Generic commands almost every bot has
+					- Information -> A command designed purely to provide information of some kind
+					- Bot -> A command designed specifically for managing the bot itself
+					- Administration -> A command that needs moderator priviledges
+					- Configuration -> A command that changes settings of some kind
+					- Entertainment -> A command that is related to a fun feature of some kind
+					- Context Menu -> A command accessed via the context menu
+					- Other/Misc -> Commands without another good category
+					- Server Only -> Commands that can only be run in servers
+					- User Install Only -> Commands that can only be run if Stewbot is installed to your user
+				*/
+				shortDesc: "Posts a Would-You-Rather question",//Should be the same as the command setDescription field
+				detailedDesc: //Detailed on exactly what the command does and how to use it
+					`Posts a would you rather question. Disclaimer: This command uses a third party API, and has no quality guarantee.`
 			},
 			"joke": {
-				helpCategory: "Entertainment",
-				helpDesc: "Posts a joke",
+				helpCategories: ["Entertainment"],
+				/*
+					- General -> Generic commands almost every bot has
+					- Information -> A command designed purely to provide information of some kind
+					- Bot -> A command designed specifically for managing the bot itself
+					- Administration -> A command that needs moderator priviledges
+					- Configuration -> A command that changes settings of some kind
+					- Entertainment -> A command that is related to a fun feature of some kind
+					- Context Menu -> A command accessed via the context menu
+					- Other/Misc -> Commands without another good category
+					- Server Only -> Commands that can only be run in servers
+					- User Install Only -> Commands that can only be run if Stewbot is installed to your user
+				*/
+				shortDesc: "Posts a joke",//Should be the same as the command setDescription field
+				detailedDesc: //Detailed on exactly what the command does and how to use it
+					`Posts a joke. Disclaimer: This command uses a third party API, and has no quality guarantee.`
 			},
 			"meme": {
-				helpCategory: "Entertainment",
-				helpDesc: "Posts an approved meme",
+				helpCategories: ["Entertainment"],
+				/*
+					- General -> Generic commands almost every bot has
+					- Information -> A command designed purely to provide information of some kind
+					- Bot -> A command designed specifically for managing the bot itself
+					- Administration -> A command that needs moderator priviledges
+					- Configuration -> A command that changes settings of some kind
+					- Entertainment -> A command that is related to a fun feature of some kind
+					- Context Menu -> A command accessed via the context menu
+					- Other/Misc -> Commands without another good category
+					- Server Only -> Commands that can only be run in servers
+					- User Install Only -> Commands that can only be run if Stewbot is installed to your user
+				*/
+				shortDesc: "Posts a meme",//Should be the same as the command setDescription field
+				detailedDesc: //Detailed on exactly what the command does and how to use it
+					`Posts one of the memes Stewbot's staff have approved for the bot to display. You can use the /submit_meme context menu command (holding down the message on mobile, right clicking on desktop, and then pressing Apps) to submit a meme for the Stewbot staff to review.`
 			},
 			// helpSortPriority: 1
 		},

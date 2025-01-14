@@ -19,9 +19,22 @@ module.exports = {
 		requiredGlobals: [],
 
 		help: {
-			helpCategory: "Informational",
-			helpDesc: "Defines a word",
-			helpSortPriority: 1
+			helpCategories: ["Information","Server Only"],
+			/*
+				- General -> Generic commands almost every bot has
+				- Information -> A command designed purely to provide information of some kind
+				- Bot -> A command designed specifically for managing the bot itself
+				- Administration -> A command that needs moderator priviledges
+				- Configuration -> A command that changes settings of some kind
+				- Entertainment -> A command that is related to a fun feature of some kind
+				- Context Menu -> A command accessed via the context menu
+				- Other/Misc -> Commands without another good category
+				- Server Only -> Commands that can only be run in servers
+				- User Install Only -> Commands that can only be run if Stewbot is installed to your user
+			*/
+			shortDesc: "View the list of blacklisted words for this server",//Should be the same as the command setDescription field
+			detailedDesc: //Detailed on exactly what the command does and how to use it
+				`Using this command will add a button that allows those who press it to view a spoilered list of all words this server has configured to block. This command, due to the nature of it, can have some very colorful language contained within the DM after pressing the button.`
 		},
 	},
 

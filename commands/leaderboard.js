@@ -34,8 +34,22 @@ module.exports = {
         requiredGlobals: ["getLvl", "getEmojiFromMessage"],
 
         help: {
-            "helpCategory": "Entertainment", 
-            "helpDesc": "View one of the leaderboards or rank cards"
+            helpCategories: ["Information","Entertainment"],
+			/*
+				- General -> Generic commands almost every bot has
+				- Information -> A command designed purely to provide information of some kind
+				- Bot -> A command designed specifically for managing the bot itself
+				- Administration -> A command that needs moderator priviledges
+				- Configuration -> A command that changes settings of some kind
+				- Entertainment -> A command that is related to a fun feature of some kind
+				- Context Menu -> A command accessed via the context menu
+				- Other/Misc -> Commands without another good category
+				- Server Only -> Commands that can only be run in servers
+				- User Install Only -> Commands that can only be run if Stewbot is installed to your user
+			*/
+			shortDesc: "View a leaderboard",//Should be the same as the command setDescription field
+			detailedDesc: //Detailed on exactly what the command does and how to use it
+				`View one of the leaderboards. See what server has globally counted the highest, how many people in this server have been on the emojiboard the most times, who has broken the filter rules the least, who has broken them the most (if you're an admin), or who's gotten the highest amount of server XP`
         },
 
     },

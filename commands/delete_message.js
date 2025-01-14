@@ -17,6 +17,25 @@ module.exports = {
 		extra: { "contexts": [0, 1], "integration_types": [0], "desc": "Delete a message using Stewbot; can be used to delete Stewbot DMs" },
 
 		requiredGlobals: [],
+
+		help: {
+			helpCategories: [""],
+			/*
+				- General
+				- Information
+				- Bot
+				- Administration
+				- Configuration
+				- Entertainment
+				- Context Menu
+				- Other/Misc
+				- Server Only
+				- User Install Only
+			*/
+			shortDesc: "Delete the message, useful for Stewbot DMs",
+			detailedDesc: 
+				`Deletes the specified message from the context menu. This command exists primarily to remove DMs with Stewbot.`
+		},
 	},
 
 	async execute(cmd, context) {

@@ -48,9 +48,42 @@ module.exports = {
 		requiredGlobals: [],
 
 		help: {
-			helpCategory: "Administration",
-			helpDesc: "Configure counting, so that the bot manages a collaborative count starting at 1",
-			// helpSortPriority: 1
+			config:{
+				helpCategories: ["General","Entertainment","Administration","Server Only"],
+				/*
+					- General
+					- Information
+					- Bot
+					- Administration
+					- Configuration
+					- Entertainment
+					- Context Menu
+					- Other/Misc
+					- Server Only
+					- User Install Only
+				*/
+				shortDesc: "Configure counting for this server",
+				detailedDesc: 
+					`Configure the counting game here. To play, simply enter the next number in the sequence without messing up. You can configure that users need to wait a specific number of turns. The goal is to become the highest on the leaderboard.`
+			},
+			set_number:{
+				helpCategories: ["General","Entertainment","Administration","Server Only"],
+				/*
+					- General
+					- Information
+					- Bot
+					- Administration
+					- Configuration
+					- Entertainment
+					- Context Menu
+					- Other/Misc
+					- Server Only
+					- User Install Only
+				*/
+				shortDesc: "Set the next number to count at",
+				detailedDesc: 
+					`Sets the next number for you to count at. If the number you choose is greater than one, this will disqualify the server from the leaderboard until a reset.`
+			}
 		},
 	},
 

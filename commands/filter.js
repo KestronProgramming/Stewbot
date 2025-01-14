@@ -48,9 +48,78 @@ module.exports = {
 		requiredGlobals: ["finTimer"],
 
 		help: {
-			helpCategory: "Administration",
-			helpDesc: "Configure different options for the filter, which will remove configurably blacklisted words",
-			helpSortPriority: 1
+            config:{
+                helpCategories: ["General","Administration","Configuration","Server Only"],
+                /*
+                    - General
+                    - Information
+                    - Bot
+                    - Administration
+                    - Configuration
+                    - Entertainment
+                    - Context Menu
+                    - Other/Misc
+                    - Server Only
+                    - User Install Only
+                */
+                shortDesc: "Manage the filter for this server",
+                detailedDesc: 
+                    `Configure an automatic filter for this server, Stewbot allows you to censor messages without deleting them all the way.`
+            },
+            add:{
+                helpCategories: ["Administration","Configuration","Server Only"],
+                /*
+                    - General
+                    - Information
+                    - Bot
+                    - Administration
+                    - Configuration
+                    - Entertainment
+                    - Context Menu
+                    - Other/Misc
+                    - Server Only
+                    - User Install Only
+                */
+                shortDesc: "Add a word to the filter",
+                detailedDesc: 
+                        `Add the specified word to the filter for Stewbot to delete or censor on sight`
+            },
+            remove:{
+                helpCategories: ["Administration","Configuration","Server Only"],
+                /*
+                    - General
+                    - Information
+                    - Bot
+                    - Administration
+                    - Configuration
+                    - Entertainment
+                    - Context Menu
+                    - Other/Misc
+                    - Server Only
+                    - User Install Only
+                */
+                shortDesc: "Remove a word from the filter",
+                detailedDesc: 
+                    `Remove the specified from the filter and allow posts to contain that word once more`
+            },
+            import:{
+                helpCategories: ["Administration","Configuration","Server Only"],
+                /*
+                    - General
+                    - Information
+                    - Bot
+                    - Administration
+                    - Configuration
+                    - Entertainment
+                    - Context Menu
+                    - Other/Misc
+                    - Server Only
+                    - User Install Only
+                */
+                shortDesc: "Import a CSV wordlist",
+                detailedDesc: 
+                    `Import a .csv file containing a list of words seperated by commas to block. You can generate one from another server's filter using the ${cmds.view_filter.mention} command.`
+            }
 		},
 	},
 

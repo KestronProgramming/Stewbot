@@ -32,5 +32,12 @@
         },
         "timestamp":"",
         "id":""
+    },
+    "birthday":{
+        "serversPublic":[],
+        "serversYearPublic":[],
+        "month":0,
+        "day":0,
+        "year":null
     }
 }

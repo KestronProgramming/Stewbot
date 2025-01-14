@@ -32,7 +32,24 @@ module.exports = {
 		extra: {"contexts":[0],"integration_types":[0]},
 		requiredGlobals: ["parseEmoji", "getEmojiFromMessage"],
 
-		help: null
+		help: {
+			helpCategories: ["Administration","Configuration","Server Only"],
+			/*
+				- General -> Generic commands almost every bot has
+				- Information -> A command designed purely to provide information of some kind
+				- Bot -> A command designed specifically for managing the bot itself
+				- Administration -> A command that needs moderator priviledges
+				- Configuration -> A command that changes settings of some kind
+				- Entertainment -> A command that is related to a fun feature of some kind
+				- Context Menu -> A command accessed via the context menu
+				- Other/Misc -> Commands without another good category
+				- Server Only -> Commands that can only be run in servers
+				- User Install Only -> Commands that can only be run if Stewbot is installed to your user
+			*/
+			shortDesc: "Configure the ability for server members to vote to mute someone",//Should be the same as the command setDescription field
+			detailedDesc: //Detailed on exactly what the command does and how to use it
+				`Configure an emoji that users can react to a message, and once it reaches a configured threshold the user will be timeouted for the configured amount of time.`
+		}
 	},
 
 	async execute(cmd, context) {

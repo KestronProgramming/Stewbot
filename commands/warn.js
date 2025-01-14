@@ -10,7 +10,7 @@ function applyContext(context = {}) {
 module.exports = {
     data: {
         // Slash command data
-        command: new SlashCommandBuilder().setName("warn").setDescription("Warn a user for bad behavior")
+        command: new SlashCommandBuilder().setName("warn").setDescription("Warn a user for bad behaviour")
             .addUserOption(option =>
                 option.setName("who").setDescription("Who are you warning?").setRequired(true)
             ).addStringOption(option =>
@@ -27,11 +27,24 @@ module.exports = {
 
         requiredGlobals: ["defaultGuildUser"],
 
-        // help: {
-        // 	helpCategory: "General",
-        // 	helpDesc: "View uptime stats",
-        // 	// helpSortPriority: 1
-        // },
+        help: {
+        	helpCategories: ["General","Administration","Server Only"],
+			/*
+				- General -> Generic commands almost every bot has
+				- Information -> A command designed purely to provide information of some kind
+				- Bot -> A command designed specifically for managing the bot itself
+				- Administration -> A command that needs moderator priviledges
+				- Configuration -> A command that changes settings of some kind
+				- Entertainment -> A command that is related to a fun feature of some kind
+				- Context Menu -> A command accessed via the context menu
+				- Other/Misc -> Commands without another good category
+				- Server Only -> Commands that can only be run in servers
+				- User Install Only -> Commands that can only be run if Stewbot is installed to your user
+			*/
+			shortDesc: "Warn a user for bad behaviour",//Should be the same as the command setDescription field
+			detailedDesc: //Detailed on exactly what the command does and how to use it
+				`Moderators can use this command to send a user a warning for doing something wrong anonymously in the server's name, with a severity scale from 1 to 10. You can then use ${cmds.warnings.mention} to check a list of all warnings dealt.`
+        },
     },
 
     async execute(cmd, context) {

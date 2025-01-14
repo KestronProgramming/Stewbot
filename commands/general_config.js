@@ -10,7 +10,7 @@ function applyContext(context={}) {
 module.exports = {
 	data: {
 		// Slash command data
-		command: new SlashCommandBuilder().setName("general_config").setDescription("Configure general behaviors")
+		command: new SlashCommandBuilder().setName("general_config").setDescription("Configure general behaviours")
 			.addBooleanOption(option=>
 				option.setName("embeds").setDescription("If a message link is posted, should I post a preview?")
 			).addBooleanOption(option=>
@@ -25,9 +25,22 @@ module.exports = {
 
 		requiredGlobals: [],
 
-		help: {
-			"helpCategory": "General",
-			"helpDesc": "Configure options for the whole server such as AI pings or embedding links"
+		help: {helpCategories: ["General","Bot","Administration","Configuration","Server Only"],
+			/*
+				- General -> Generic commands almost every bot has
+				- Information -> A command designed purely to provide information of some kind
+				- Bot -> A command designed specifically for managing the bot itself
+				- Administration -> A command that needs moderator priviledges
+				- Configuration -> A command that changes settings of some kind
+				- Entertainment -> A command that is related to a fun feature of some kind
+				- Context Menu -> A command accessed via the context menu
+				- Other/Misc -> Commands without another good category
+				- Server Only -> Commands that can only be run in servers
+				- User Install Only -> Commands that can only be run if Stewbot is installed to your user
+			*/
+			shortDesc: "Configure general behaviours for the bot",//Should be the same as the command setDescription field
+			detailedDesc: //Detailed on exactly what the command does and how to use it
+				`Configure automatic actions the bot will take server wide, including whether Stewbot will automatically post embeds when it sees a message link, or if you want to disable Stewbot's automatic hacked/spam account protection.`
 		},
 	},
 

@@ -20,9 +20,22 @@ module.exports = {
 		requiredGlobals: ["presets"],
 
 		help: {
-			helpCategory: "Administration",
-			helpDesc: "Add one or more roles to every user that joins",
-			// helpSortPriority: 1
+			helpCategories: ["Administration","Configuration","Server Only"],
+			/*
+				- General
+				- Information
+				- Bot
+				- Administration
+				- Configuration
+				- Entertainment
+				- Context Menu
+				- Other/Misc
+				- Server Only
+				- User Install Only
+			*/
+			shortDesc: "Automatically add roles to a user when they join the server",
+			detailedDesc: 
+				`Configures a set of roles added to every user whenever they join the server. If you have sticky roles enabled, and the user has been in the server before, sticky roles will override any auto join roles.`
 		},
 	},
 

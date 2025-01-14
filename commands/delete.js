@@ -10,7 +10,7 @@ function applyContext(context={}) {
 module.exports = {
 	data: {
 		// Slash command data
-		command: new SlashCommandBuilder().setName("delete").setDescription("Delete messages")
+		command: new SlashCommandBuilder().setName("delete").setDescription("Delete any number of messages")
 			.addIntegerOption(option=>
 				option.setName("amount").setDescription("The amount of the most recent messages to delete").setMinValue(1).setMaxValue(99).setRequired(true)
 			).addBooleanOption(option=>
@@ -22,6 +22,25 @@ module.exports = {
 		extra: {"contexts":[0],"integration_types":[0]},
 
 		requiredGlobals: [],
+
+		help: {
+			helpCategories: ["General","Administration","Server Only"],
+			/*
+				- General
+				- Information
+				- Bot
+				- Administration
+				- Configuration
+				- Entertainment
+				- Context Menu
+				- Other/Misc
+				- Server Only
+				- User Install Only
+			*/
+			shortDesc: "Delete any number of messages",
+			detailedDesc: 
+				`Delete the specified number of messages in bulk. Must be less than a hundred for each time this command is used.`
+		},
 	},
 
 	async execute(cmd, context) {

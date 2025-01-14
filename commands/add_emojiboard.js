@@ -30,7 +30,25 @@ module.exports = {
 		// Optional fields
 		requiredGlobals: ["parseEmoji", "getEmojiFromMessage"],
 
-		help: null
+		help: {
+			helpCategories: ["General","Configuration","Entertainment","Server Only"],
+			/*
+				- General
+				- Information
+				- Bot
+				- Administration
+				- Configuration
+				- Entertainment
+				- Context Menu
+				- Other/Misc
+				- Server Only
+				- User Install Only
+			*/
+			shortDesc: "Create a new emojiboard",
+			detailedDesc: 
+				`Adds an emojiboard for Stewbot to run. If the emoji you choose is reacted enough times on a message (configurable threshold), then it will be posted to a highlights reel channel of your choosing.\n
+				You can choose if Stewbot should display a random message and an embed with the message, just an embed with the message, or use webhooks to appear as if the user who originally made the post in question posted it there themselves.`
+		},
 	},
 
 	async execute(cmd, context) {

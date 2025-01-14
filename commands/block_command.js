@@ -61,11 +61,24 @@ module.exports = {
 
 		requiredGlobals: [],
 
-		// help: {
-		// 	helpCategory: "General",
-		// 	helpDesc: "View uptime stats",
-		// 	// helpSortPriority: 1
-		// },		
+		help: {
+			helpCategories: ["Bot","Administration","Configuration","Server Only"],
+			/*
+				- General
+				- Information
+				- Bot
+				- Administration
+				- Configuration
+				- Entertainment
+				- Context Menu
+				- Other/Misc
+				- Server Only
+				- User Install Only
+			*/
+			shortDesc: "Block bot commands and features from being used in this server",
+			detailedDesc: 
+				`Enter a command that you want to disable users from ever using in this server. If you set unblock to true, this command will unblock a command so that users may use it again.`
+		},		
 	},
 
 	async execute(cmd, context) {
@@ -79,7 +92,7 @@ module.exports = {
         }
 
         if (commandToBlock == "/block_command") {
-            return cmd.followUp("To avoid ripping a wormhole through the fabric of time and reality, I cannot comply with that request.")
+            return cmd.followUp("I will be unable to unblock this command if you block it, therefore I cannot block this command.")
         }
 
         // Create block list if it doesn't exist

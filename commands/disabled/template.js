@@ -1,27 +1,34 @@
-// #region Boilerplate
 const { ContextMenuCommandBuilder, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
 function applyContext(context={}) {
 	for (key in context) {
 		this[key] = context[key];
 	}
 }
-// #endregion Boilerplate
 
 module.exports = {
 	data: {
-		// Slash command data
-		command: new SlashCommandBuilder().setName('wotd').setDescription('Play a word of the day game reminiscent of Wordle').addBooleanOption(option=>
-                option.setName("private").setDescription("Make the response ephemeral?")
+		command: new SlashCommandBuilder().setName('jerry').setDescription('Jerry Jerry Jerry Jerry Yeah!!!').addBooleanOption(option=>
+                option.setName("private").setDescription("Make the response ephemeral?")//Do not remove private option unless the command is REQUIRED to be ephemeral or non-ephemeral.
             ),
 		
 		// Optional fields
-		
-		extra: {"contexts": [0,1,2], "integration_types": [0,1]},
+		extra: {"contexts": [0,1,2], "integration_types": [0,1]},//Where the command can be used and what kind of installs it supports
+        /*
+            Contexts
+             - 0: Server command
+             - 1: Bot's DMs
+             - 2: User command
 
+            Integration Types:
+             - 0: Installed to servers
+             - 1: Installed to users
+        */
+
+		// Allow variables from the global index file to be accessed here - requiredGlobals["helpPages"]
 		requiredGlobals: [],
 
 		help: {
-			helpCategories: ["Entertainment"],
+			helpCategories: ["Jerry"],
 			/*
 				- General -> Generic commands almost every bot has
 				- Information -> A command designed purely to provide information of some kind
@@ -34,15 +41,19 @@ module.exports = {
 				- Server Only -> Commands that can only be run in servers
 				- User Install Only -> Commands that can only be run if Stewbot is installed to your user
 			*/
-			shortDesc: "Play a word of the game reminiscent of Wordle",//Should be the same as the command setDescription field
+			shortDesc: "Jerry Jerry Jerry Jerry Yeah!!!",//Should be the same as the command setDescription field
 			detailedDesc: //Detailed on exactly what the command does and how to use it
-				`Play a game reminiscent of Wordle but with our own word of the day and from within Discord. A new word is chosen every day at 12 UTC.`
+				`Jerry the Rope!\n
+				Jerry brings hope.\n
+				Jerry's never tied up\n
+				Jerry helps you in your 'trub\n
+				Yeah! Jerry!`
 		},
 	},
 
 	async execute(cmd, context) {
 		applyContext(context);
 		
-		cmd.followUp({content:`# WOTD Game${"\n` ` ` ` ` ` ` ` ` `".repeat(6)}\nQ W E R T Y U I O P\nA S D F G H J K L\nZ X C V B N M`,components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setLabel(`Make a Guess`).setCustomId(`wotd-${cmd.user.id}`).setStyle(ButtonStyle.Primary),new ButtonBuilder().setLabel(`Based on Wordle`).setURL(`https://www.nytimes.com/games/wordle/index.html`).setStyle(ButtonStyle.Link))]});
+		cmd.followUp(`Jerry the rope!`);
 	}
 };

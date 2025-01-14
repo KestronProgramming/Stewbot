@@ -31,7 +31,24 @@ module.exports = {
 		// Optional fields
 		requiredGlobals: ["parseEmoji", "getEmojiFromMessage"],
 
-		help: null
+		help: {
+			helpCategories: ["Configuration","Entertainment","Server Only"],
+			/*
+				- General
+				- Information
+				- Bot
+				- Administration
+				- Configuration
+				- Entertainment
+				- Context Menu
+				- Other/Misc
+				- Server Only
+				- User Install Only
+			*/
+			shortDesc: "Configure an emojiboard for this server",
+			detailedDesc: 
+				`Change settings for a previously added emojiboard in this server`
+		},
 	},
 
 	async execute(cmd, context) {

@@ -46,8 +46,78 @@ module.exports = {
 		requiredGlobals: ["m8ballResponses"],
 
 		help: {
-			"helpCategory":"Entertainment",
-			"helpDesc":"Generate a random number"
+			rng:{
+				helpCategories: ["Entertainment"],
+				/*
+					- General -> Generic commands almost every bot has
+					- Information -> A command designed purely to provide information of some kind
+					- Bot -> A command designed specifically for managing the bot itself
+					- Administration -> A command that needs moderator priviledges
+					- Configuration -> A command that changes settings of some kind
+					- Entertainment -> A command that is related to a fun feature of some kind
+					- Context Menu -> A command accessed via the context menu
+					- Other/Misc -> Commands without another good category
+					- Server Only -> Commands that can only be run in servers
+					- User Install Only -> Commands that can only be run if Stewbot is installed to your user
+				*/
+				shortDesc: "Generate a random number",//Should be the same as the command setDescription field
+				detailedDesc: //Detailed on exactly what the command does and how to use it
+					`Generate a random number between boundaries you can choose.`
+			},
+			"coin-flip":{
+				helpCategories: ["Entertainment"],
+				/*
+					- General -> Generic commands almost every bot has
+					- Information -> A command designed purely to provide information of some kind
+					- Bot -> A command designed specifically for managing the bot itself
+					- Administration -> A command that needs moderator priviledges
+					- Configuration -> A command that changes settings of some kind
+					- Entertainment -> A command that is related to a fun feature of some kind
+					- Context Menu -> A command accessed via the context menu
+					- Other/Misc -> Commands without another good category
+					- Server Only -> Commands that can only be run in servers
+					- User Install Only -> Commands that can only be run if Stewbot is installed to your user
+				*/
+				shortDesc: "Flip a number of coins",//Should be the same as the command setDescription field
+				detailedDesc: //Detailed on exactly what the command does and how to use it
+					`Flip up to ten coins and view the results`
+			},
+			"8-ball":{
+				helpCategories: ["Entertainment"],
+				/*
+					- General -> Generic commands almost every bot has
+					- Information -> A command designed purely to provide information of some kind
+					- Bot -> A command designed specifically for managing the bot itself
+					- Administration -> A command that needs moderator priviledges
+					- Configuration -> A command that changes settings of some kind
+					- Entertainment -> A command that is related to a fun feature of some kind
+					- Context Menu -> A command accessed via the context menu
+					- Other/Misc -> Commands without another good category
+					- Server Only -> Commands that can only be run in servers
+					- User Install Only -> Commands that can only be run if Stewbot is installed to your user
+				*/
+				shortDesc: "Ask a question and receive an entirely random response",//Should be the same as the command setDescription field
+				detailedDesc: //Detailed on exactly what the command does and how to use it
+					`Enter a question and let the "magic" of preprogrammed responses selected by a random number generator give you a completely random answer`
+			},
+			"dice-roll":{
+				helpCategories: ["Entertainment"],
+				/*
+					- General -> Generic commands almost every bot has
+					- Information -> A command designed purely to provide information of some kind
+					- Bot -> A command designed specifically for managing the bot itself
+					- Administration -> A command that needs moderator priviledges
+					- Configuration -> A command that changes settings of some kind
+					- Entertainment -> A command that is related to a fun feature of some kind
+					- Context Menu -> A command accessed via the context menu
+					- Other/Misc -> Commands without another good category
+					- Server Only -> Commands that can only be run in servers
+					- User Install Only -> Commands that can only be run if Stewbot is installed to your user
+				*/
+				shortDesc: "Roll a number of dice",//Should be the same as the command setDescription field
+				detailedDesc: //Detailed on exactly what the command does and how to use it
+					`Roll up to ten dice and view the results`
+			}
 		},
 	},
 

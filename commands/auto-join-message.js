@@ -33,9 +33,22 @@ module.exports = {
 		requiredGlobals: ["defaultGuild"],
 
 		help: {
-			helpCategory: "Administration",
-			helpDesc: "Configure a message to be sent either in a channel or the user's DMs whenever a user joins",
-			// helpSortPriority: 1
+			helpCategories: ["Administration","Configuration","Server Only"],
+			/*
+				- General
+				- Information
+				- Bot
+				- Administration
+				- Configuration
+				- Entertainment
+				- Context Menu
+				- Other/Misc
+				- Server Only
+				- User Install Only
+			*/
+			shortDesc: "Set up a message to be sent automatically when a user joins",
+			detailedDesc: 
+				`Configures a template message Stewbot will post to a designated channel or the user's DMs in the server's name every time a user joins`
 		},
 	},
 

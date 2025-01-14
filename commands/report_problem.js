@@ -10,7 +10,7 @@ function applyContext(context={}) {
 module.exports = {
 	data: {
 		// Slash command data
-		command: new SlashCommandBuilder().setName("report_problem").setDescription("Report an error to be looked at")
+		command: new SlashCommandBuilder().setName("report_problem").setDescription("Report an error with the bot to be reviewed")
 			.addStringOption(option=>
 				option.setName("type").setDescription("What kind of problem are you reporting?").addChoices(
 					{"name":"Profanity","value":"profanity"},
@@ -33,9 +33,22 @@ module.exports = {
 		requiredGlobals: ["escapeBackticks"],
 
 		help: {
-			helpCategory: "General",
-			helpDesc: "If anything goes wrong with the bot, an error, profanity, exploit, or even just a suggestion, use this command",
-			// helpSortPriority: 1
+			helpCategories: ["Bot"],
+			/*
+				- General -> Generic commands almost every bot has
+				- Information -> A command designed purely to provide information of some kind
+				- Bot -> A command designed specifically for managing the bot itself
+				- Administration -> A command that needs moderator priviledges
+				- Configuration -> A command that changes settings of some kind
+				- Entertainment -> A command that is related to a fun feature of some kind
+				- Context Menu -> A command accessed via the context menu
+				- Other/Misc -> Commands without another good category
+				- Server Only -> Commands that can only be run in servers
+				- User Install Only -> Commands that can only be run if Stewbot is installed to your user
+			*/
+			shortDesc: "Report an error with the bot to be reviewed",//Should be the same as the command setDescription field
+			detailedDesc: //Detailed on exactly what the command does and how to use it
+				`If some kind of issue appears with the bot of any kind and in any form, plesase run this command to report it to developers.`
 		},
 	},
 

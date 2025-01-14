@@ -25,17 +25,24 @@ module.exports = {
 
 		requiredGlobals: ["finTempRole"],
 
-		// help: {
-		// 	helpCategory: "General",
-		// 	helpDesc: "View uptime stats",
-		// 	// helpSortPriority: 1
-		// },
-		
-		// detailedHelp:
-		// 	"## Ping" + 
-		// 	"The `ping` command is used to test how fast Stewbot's connection is responding to events." +
-		// 	"This command is also used to provide detailed information about the bot." +
-		// 	"-# This is a detailed help message, and is primarily meant as a code example."
+		help: {
+			helpCategories: ["Administration","Server Only"],
+			/*
+				- General -> Generic commands almost every bot has
+				- Information -> A command designed purely to provide information of some kind
+				- Bot -> A command designed specifically for managing the bot itself
+				- Administration -> A command that needs moderator priviledges
+				- Configuration -> A command that changes settings of some kind
+				- Entertainment -> A command that is related to a fun feature of some kind
+				- Context Menu -> A command accessed via the context menu
+				- Other/Misc -> Commands without another good category
+				- Server Only -> Commands that can only be run in servers
+				- User Install Only -> Commands that can only be run if Stewbot is installed to your user
+			*/
+			shortDesc: "Temporarily add or remove a role from someone",//Should be the same as the command setDescription field
+			detailedDesc: //Detailed on exactly what the command does and how to use it
+				`Specify a role to add or remove temporarily from a specified user, and how long you want it to be added or removed for. At the end of the timer, the role changes will be automatically reverted.`
+		},
 	},
 
 	async execute(cmd, context) {

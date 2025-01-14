@@ -10,7 +10,7 @@ function applyContext(context={}) {
 module.exports = {
 	data: {
 		// Slash command data
-		command: new SlashCommandBuilder().setName('hat_pull').setDescription('Draw names from a hat, like a raffle or giveaway').addStringOption(option=>
+		command: new SlashCommandBuilder().setName('hat_pull').setDescription('Draw (a) name(s) from a hat, like a raffle or giveaway').addStringOption(option=>
                 option.setName("message").setDescription("Message to display? (Use \\n for a newline)").setMinLength(1)
             ).addIntegerOption(option=>
                 option.setName("limit").setDescription("Is there a limit to how many people can enter?").setMinValue(2)
@@ -30,17 +30,24 @@ module.exports = {
 
 		requiredGlobals: ["finHatPull"],
 
-		// help: {
-		// 	helpCategory: "General",
-		// 	helpDesc: "View uptime stats",
-		// 	// helpSortPriority: 1
-		// },
-		
-		// detailedHelp:
-		// 	"## Ping" + 
-		// 	"The `ping` command is used to test how fast Stewbot's connection is responding to events." +
-		// 	"This command is also used to provide detailed information about the bot." +
-		// 	"-# This is a detailed help message, and is primarily meant as a code example."
+		help: {
+			helpCategories: ["Entertainment","Server Only"],
+			/*
+				- General -> Generic commands almost every bot has
+				- Information -> A command designed purely to provide information of some kind
+				- Bot -> A command designed specifically for managing the bot itself
+				- Administration -> A command that needs moderator priviledges
+				- Configuration -> A command that changes settings of some kind
+				- Entertainment -> A command that is related to a fun feature of some kind
+				- Context Menu -> A command accessed via the context menu
+				- Other/Misc -> Commands without another good category
+				- Server Only -> Commands that can only be run in servers
+				- User Install Only -> Commands that can only be run if Stewbot is installed to your user
+			*/
+			shortDesc: "Draw (a) name(s) from a hat, like a raffle or giveaway",//Should be the same as the command setDescription field
+			detailedDesc: //Detailed on exactly what the command does and how to use it
+				`Have Stewbot help manage a raffle or giveaway like event, including automatic handling of entering and picking the winner(s) after a set amount of time.`
+		},
 	},
 
 	async execute(cmd, context) {
