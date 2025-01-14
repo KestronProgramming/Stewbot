@@ -304,14 +304,14 @@ Object.keys(commands).forEach(key => {
 })
 // Reformat helpPages to old array format - TODO keep in json format?
 Object.keys(helpPages).forEach(key => {
-    helpPages.push({
+    if (helpPages[key]?.commands?.length > 0) helpPages.push({
         name: helpPages[key].name,
         commands: helpPages[key].commands
     })
     delete helpPages[key];
 })
 
-var helpPages = [
+if (!process.env.beta) helpPages = [
     {
         name:"General",
         commands:[
@@ -3493,7 +3493,7 @@ client.on("interactionCreate",async cmd=>{
             "title": newPage.name,
             "description": `Help Menu ${newPage.name} Category`,
             "color": 0x006400,
-            "fields": newPage.commands.map(a=>{
+            "fields": newPage.commands.slice(0, 25).map(a=>{
                 return {
                     "name":a.name,
                     "value":a.desc,

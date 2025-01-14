@@ -19,7 +19,7 @@ module.exports = {
 		
 		extra: {"contexts":[0,1,2],"integration_types":[0,1]},
 
-		requiredGlobals: ["helpPages", "config"],
+		requiredGlobals: ["helpPages", "config", "limitLength"],
 
 		help: {
 			helpCategories: ["General","Bot","Information"],
@@ -50,10 +50,10 @@ module.exports = {
 				"title": `General`,
 				"description": `Help Menu General Category`,
 				"color": 0x006400,
-				"fields": helpPages[0].commands.map(a => {
+				"fields": helpPages[0].commands.slice(0, 25).map(a => {
 					return {
-						"name": String(a.name).substring(0, 256),
-						"value": a.desc,
+						"name": limitLength(a.name, 256),
+						"value": limitLength(a.desc, 1024),
 						"inline": true
 					};
 				}),
@@ -65,7 +65,7 @@ module.exports = {
 				"footer": {
 					"text": `Help Menu for Stewbot`
 				}
-			}], 
+			}],
 			components: [new ActionRowBuilder().addComponents(...helpPages.map(a =>
 					new ButtonBuilder().setCustomId(`switch-${a.name}`).setLabel(a.name).setStyle(ButtonStyle.Primary)
 				))]
