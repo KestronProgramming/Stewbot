@@ -13,6 +13,7 @@ const config=require("./data/config.json");
 const fs=require("fs");
 // const path = require("path")
 const cmds=require("./data/commands.json"); global.cmds = cmds;
+const usage=require("./data/usage.json");
 const Sentiment = require('sentiment');
 const dns = require('dns');
 const { URL } = require('url');
@@ -23,7 +24,7 @@ const nlp = require('compromise');
 var Turndown = require('turndown');
 const wotdList=fs.readFileSync(`./data/wordlist.txt`,"utf-8").split("\n");
 const cheerio = require('cheerio');
-const { getCommands } = require("./launchCommands.js")
+const { getCommands } = require("./launchCommands.js");
 
 // Preliminary setup (TODO: move to a setup.sh)
 if (!fs.existsSync("tempMove")) fs.mkdirSync('tempMove');
@@ -2782,6 +2783,9 @@ client.on("interactionCreate",async cmd=>{
             providedGlobals[name] = eval(name.match(/[\w-]+/)[0]);
         }
         await commands[cmd.commandName].execute(cmd, providedGlobals);
+        if(!usage.hasOwnProperty(cmd.commandName)) usage[cmd.commandName]=0;
+        usage[cmd.commandName]++;
+        fs.writeFileSync("./data/usage.json",JSON.stringify(usage));
     }
 
     //Buttons, Modals, and Select Menus
