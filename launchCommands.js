@@ -40,7 +40,7 @@ function getCommands() {
             if (commandName.includes(".beta")) {
                 if (process.env.beta) {
                     commandName = commandName.replaceAll(".beta", "")
-					console.log(`Registering beta command "${commandName}"`)
+					console.log(`Loading beta command "${commandName}"`)
                 } else {
                     // If production, ignore beta commands
                     continue

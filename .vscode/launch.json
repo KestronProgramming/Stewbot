@@ -8,7 +8,7 @@
             "skipFiles": [
                 "<node_internals>/**"
             ],
-            "program": "${workspaceFolder}\\index.js"
+            "program": "${workspaceFolder}/index.js"
         },
         {
             "type": "node",
@@ -17,7 +17,7 @@
             "skipFiles": [
                 "<node_internals>/**"
             ],
-            "program": "${workspaceFolder}\\launchCommands.js"
+            "program": "${workspaceFolder}/launchCommands.js"
         }
     ]
 }

@@ -9,10 +9,14 @@ const dgram = require('dgram');
 const os = require('os');
 const { Ollama } = require('ollama');
 const fs = require("fs");
+console.beta = (...args) => process.env.beta && console.log(...args);
 
 const config = require("../data/config")
 const INTERFACES = config.aiNodeInterfaces;
 const BROADCAST_PORT = config.aiNodePort;
+
+let activeAIRequests = {};
+let convoCache = {}; // Stored here instead of storage, since it does not need persistance
 
 // Function to get IP and broadcast address for specified interfaces
 function getInterfaceDetails(interfaceName) {
@@ -42,14 +46,14 @@ async function multicastRequest(message, waitTimeMs) {
         new Promise((resolve, reject) => {
             try {
                 const { localIP, broadcastIP } = getInterfaceDetails(iface);
-                console.log(`Using ${iface}: IP=${localIP}, Broadcast=${broadcastIP}`);
+                console.beta(`Using ${iface}: IP=${localIP}, Broadcast=${broadcastIP}`);
 
                 const server = dgram.createSocket('udp4');
                 const discovered = [];
 
                 server.bind(BROADCAST_PORT, localIP, () => {
                     server.setBroadcast(true);
-                    console.log(`Bound to ${iface} (${localIP})`);
+                    console.beta(`Bound to ${iface} (${localIP})`);
 
                     const bufferMessage = Buffer.from(message);
                     server.send(bufferMessage, 0, bufferMessage.length, BROADCAST_PORT, broadcastIP, (err) => {
@@ -57,21 +61,21 @@ async function multicastRequest(message, waitTimeMs) {
                             console.error(`Broadcast error on ${iface}:`, err);
                             reject(err);
                         } else {
-                            console.log(`Broadcast message sent on ${iface}`);
+                            console.beta(`Broadcast message sent on ${iface}`);
                         }
                     });
                 });
 
                 // Collect responses
                 server.on('message', (msg, rinfo) => {
-                    console.log(`Response from ${rinfo.address}:${rinfo.port} -> ${msg.toString()}`);
+                    console.beta(`Response from ${rinfo.address}:${rinfo.port} -> ${msg.toString()}`);
                     discovered.push({ ip: rinfo.address, port: rinfo.port, data: msg.toString() });
                 });
 
                 // Close the server after the wait time
                 setTimeout(() => {
                     server.close(() => {
-                        console.log(`Stopped listening on ${iface}`);
+                        console.error(`Stopped listening on ${iface}`);
                         resolve(discovered);
                     });
                 }, waitTimeMs);
@@ -88,9 +92,89 @@ async function multicastRequest(message, waitTimeMs) {
     return results;
 }
 
+async function getAvailableOllamaServers() {
+    let ollamaInstances = [];
+    const waitTimeMs = 500;
+    const responses = await multicastRequest('ollama_discovery_request', waitTimeMs);
+    responses.forEach(server => {
+        ollamaInstances.push(new Ollama({ host: `http://${server.ip}:${server.data}` }))
+    })
+    console.beta(`${ollamaInstances.length} available servers`);
+
+    // Remove servers with active requests
+    ollamaInstances = ollamaInstances.filter((instance) => !activeAIRequests[instance.config.host]);
+
+    return ollamaInstances;
+}
+
+async function getAiResponse(threadID, message, notify) {
+    // First, find all currently available servers
+    const ollamaInstances = await getAvailableOllamaServers();
+
+    if (ollamaInstances.length === 0) {
+        return  `Sorry, there are no available AI servers. Try again later.` + 
+                `We host our own AI servers. If you would like to support this project, feel free to join the [discord server](https://discord.gg/jFCVtHJFTY) and see how you can help!`;
+    }
+
+    // Choose a random server
+    const randomIndex = Math.floor(Math.random() * ollamaInstances.length);
+    const chosenInstance = ollamaInstances[randomIndex];
+
+    // Mark the server as busy
+    activeAIRequests[chosenInstance.config.host] = true;
+
+    let response = null;
+
+    try {
+
+        // Build context
+        const oneHour = 1000 * 60 * 60;
+        if (!convoCache[threadID] || Date.now() - convoCache[threadID].lastMessage > oneHour) {
+            const context = [];
+            context.push({"role": "system", "content": fs.readFileSync("./data/system.prompt").toString()})
+    
+            convoCache[threadID] = {
+                context,
+                lastMessage: Date.now()
+            };
+        }
+        convoCache[threadID].context.push({"role": "user", "content": message})
+
+        const AIResult = await ollamaInstances[0].chat({
+            model: config.aiModel,
+            messages: convoCache[threadID].context,
+        })
+
+        convoCache[threadID].context.push(AIResult.message);
+
+        response = AIResult.message.content;
+    }
+    catch (e) {
+        notify && notify(1, `Error with AI response: \n${e.stack}`)
+        console.beta(e);
+        response = `Sorry, there was an error with the AI response. It has already been reported. Try again later.`;
+    }
+    finally {
+        // Mark the server as available
+        delete activeAIRequests[chosenInstance.config.host];
+    }
+
+    return response;
+}
+
 module.exports = {
 	data: {
-		command: new SlashCommandBuilder().setName('chat').setDescription('Chat with Stewbot').addBooleanOption(option=>
+		command: new SlashCommandBuilder().setName('chat').setDescription('Chat with Stewbot')
+            .addStringOption(option=>
+                option
+                    .setName("message")
+                    .setDescription("Message to stewbot")
+                    .setRequired(true)
+            )
+            .addBooleanOption(option=>
+                option.setName("clear").setDescription("Clear history?")
+            )
+            .addBooleanOption(option=>
                 option.setName("private").setDescription("Make the response ephemeral?")//Do not remove private option unless the command is REQUIRED to be ephemeral or non-ephemeral.
             ),
 		
@@ -108,7 +192,7 @@ module.exports = {
         */
 
 		// Allow variables from the global index file to be accessed here - requiredGlobals["helpPages"]
-		requiredGlobals: [],
+		requiredGlobals: ["notify"],
 
 		help: {
 			helpCategories: ["Entertainment"],
@@ -132,30 +216,16 @@ module.exports = {
 	async execute(cmd, globalsContext) {
 		applyContext(globalsContext);
 
-		// First, find all currently available servers
-		let ollamaInstances = [];
-		const message = 'ollama_discovery_request';
-		const waitTimeMs = 500;
-		const responses = await multicastRequest(message, waitTimeMs);
-		responses.forEach(server => {
-			ollamaInstances.push(new Ollama({ host: `http://${server.ip}:${server.data}` }))
-		})
-		console.log(`${ollamaInstances.length} available servers`);
-	
-		const context = [];
-		context.push({"role": "system", "content": fs.readFileSync("../data/system.prompt").toString()})
-		context.push({"role": "user", "content": "Hello!"})
-	
-		console.log(await ollamaInstances[0].ps());
-	
-		const rresponse = ollamaInstances[0].chat({
-			model: config.aiModel,
-			messages: context,
-		})
-		const response = await rresponse;
+        const message = cmd.options.getString("message");
+        const clearHistory = cmd.options.getBoolean("clear");
+        const threadID = cmd.user.id;
 
-		console.log(response)
+        if (clearHistory) {
+            delete convoCache[threadID];
+        }
 
-		cmd.followUp(response.message.content);
+        const response = await getAiResponse(threadID, message, notify)
+
+		cmd.followUp(response);
 	}
 };

@@ -19,6 +19,7 @@ const dns = require('dns');
 const { URL } = require('url');
 console.beta("Importing backup.js")
 const startBackupThread = require("./backup.js");
+console.beta("Loading everything else")
 const mathjs = require('mathjs');
 const nlp = require('compromise');
 var Turndown = require('turndown');
