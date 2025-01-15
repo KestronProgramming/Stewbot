@@ -260,57 +260,136 @@ const defaultGuildUser=require("./data/defaultGuildUser.json");
 const defaultUser=require("./data/defaultUser.json");
 const help = require("./commands/help.js");
 
-// Dynamically build help page from metadata
-const helpPageCategories = ["Context Menu", "Information", "Configuration", "General", "Administration", "Entertainment", "Bot"]; // Categories to show
-var helpPages = [];
-Object.keys(commands).forEach(key => {
-    const cmd = commands[key];
-    const helpPage = cmd.data?.help;
-    // Note that helpPage here can have either subcommand metadata, or it's own command metadata.
-
-    // Starting with this command itself
-    if (helpPage?.shortDesc) {
-        const helpItem = {
-            name: cmds[cmd.data?.command?.name]?.mention,
-            desc: helpPage.shortDesc,
-        }
-        if (helpItem.name) {
-            helpPage?.helpCategories?.forEach(category => {
-                helpPages[category] = helpPages[category] || {
-                    name: category,
-                    commands: []
-                };
-                if (helpPageCategories.includes(category)) helpPages[category].commands.push(helpItem);
-            })
-        }
+var helpCommands=[];
+Object.keys(commands).forEach(command=>{
+    var cmd=commands[command];
+    if(cmd.data?.help?.shortDesc!==undefined&&cmd.data?.help?.shortDesc!==`Stewbot's Admins Only`&&cmd.data?.help?.helpCategories.length>0){
+        helpCommands.push(Object.assign({name:cmd.data?.command?.name,mention:cmds[cmd.data?.command?.name]?.mention},cmd.data?.help));
     }
-
-    // And then do the same for each subcommand
-    Object.keys(helpPage)?.forEach(subcmdKey => {
-        const subcmd = helpPage[subcmdKey];
-        if (subcmd?.shortDesc) {
-            const helpItem = {
-                name: cmds[cmd.data.command.name][subcmdKey].mention,
-                desc: subcmd.shortDesc,
+    else if(cmd.data?.help?.shortDesc!==`Stewbot's Admins Only`){
+        Object.keys(cmd.data?.help).forEach(subcommand=>{
+            var subcommandHelp=cmd.data?.help[subcommand];
+            if(subcommandHelp.helpCategories?.length>0){
+                helpCommands.push(Object.assign({name:`${command} ${subcommand}`,mention:cmds[cmd.data?.command?.name]?.[subcommand]?.mention},subcommandHelp));
             }
-            subcmd?.helpCategories?.forEach(category => {
-                helpPages[category] = helpPages[category] || {
-                    name: category,
-                    commands: []
+        });
+    }
+});
+
+const helpCategories = ["General", "Bot", "Information", "Configuration", "Administration", "Entertainment","Context Menu","Server Only"];
+function makeHelp(page,categories,filterMode,forWho){
+    page=+page;
+    if(categories.includes("All")){
+        categories=structuredClone(helpCategories);
+    }
+    if(categories.includes("None")){
+        categories=[];
+    }
+    const buttonRows=[];
+    buttonRows.push(...chunkArray(chunkArray(helpCommands.filter(command=>{
+        switch(filterMode){
+            case 'And':
+                var ret=true;
+                categories.forEach(category=>{
+                    if(!command.helpCategories.includes(category)){
+                        ret=false;
+                    }
+                });
+                return ret;
+            break;
+            case 'Or':
+                var ret=false;
+                categories.forEach(category=>{
+                    if(command.helpCategories.includes(category)){
+                        ret=true;
+                    }
+                });
+                return ret;
+            break;
+            case 'Not':
+                var ret=true;
+                categories.forEach(category=>{
+                    if(command.helpCategories.includes(category)){
+                        ret=false;
+                    }
+                });
+                return ret;
+            break;
+        }
+    }), 9).map((chunk,i)=>
+        new ButtonBuilder().setCustomId(`help-page-${i}-${forWho}`).setLabel(`Page ${i+1}`).setStyle(ButtonStyle.Primary).setDisabled(i===page)
+    ),5).map(chunk=>
+        new ActionRowBuilder().addComponents(
+            ...chunk
+        )
+    ));
+    buttonRows.push(...chunkArray(helpCategories, 5).map(chunk => 
+        new ActionRowBuilder().addComponents(
+            chunk.map(a => 
+                new ButtonBuilder()
+                    .setCustomId(`help-category-${a}-${forWho}`)
+                    .setLabel(a)
+                    .setStyle(categories.includes(a)?ButtonStyle.Success:ButtonStyle.Secondary)
+            )
+        )
+    ));	
+    buttonRows.push(new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId(`help-mode-And-${forWho}`).setLabel("AND Mode").setStyle(ButtonStyle.Danger).setDisabled(filterMode==="And"),new ButtonBuilder().setCustomId(`help-mode-Or-${forWho}`).setLabel("OR Mode").setStyle(ButtonStyle.Danger).setDisabled(filterMode==="Or"),new ButtonBuilder().setCustomId(`help-mode-Not-${forWho}`).setLabel("NOT Mode").setStyle(ButtonStyle.Danger).setDisabled(filterMode==="Not")));	
+    
+    return {
+        content: `## Help Menu\nPage: ${page+1} | Mode: ${filterMode} | Categories: ${categories.length===0?`None`:categories.length===helpCategories.length?`All`:categories.join(", ")}`, embeds: [{
+            "type": "rich",
+            "title": `Help Menu`,
+            "description": ``,
+            "color": 0x006400,
+            "fields": helpCommands.filter(command=>{
+                switch(filterMode){
+                    case 'And':
+                        var ret=true;
+                        categories.forEach(category=>{
+                            if(!command.helpCategories.includes(category)){
+                                ret=false;
+                            }
+                        });
+                        return ret;
+                    break;
+                    case 'Or':
+                        var ret=false;
+                        categories.forEach(category=>{
+                            if(command.helpCategories.includes(category)){
+                                ret=true;
+                            }
+                        });
+                        return ret;
+                    break;
+                    case 'Not':
+                        var ret=true;
+                        categories.forEach(category=>{
+                            if(command.helpCategories.includes(category)){
+                                ret=false;
+                            }
+                        });
+                        return ret;
+                    break;
+                }
+            }).slice(page*9,(page+1)*9).map(a => {
+                return {
+                    "name": limitLength(a.mention, 256),
+                    "value": limitLength(a.shortDesc, 1024),
+                    "inline": true
                 };
-                if (helpPageCategories.includes(category)) helpPages[category].commands.push(helpItem);
-            })
-        }    
-    })
-})
-// Reformat helpPages to old array format - TODO keep in json format?
-Object.keys(helpPages).forEach(key => {
-    if (helpPages[key]?.commands?.length > 0) helpPages.push({
-        name: helpPages[key].name,
-        commands: helpPages[key].commands
-    })
-    delete helpPages[key];
-})
+            }),
+            "thumbnail": {
+                "url": config.pfp,
+                "height": 0,
+                "width": 0
+            },
+            "footer": {
+                "text": `Help Menu for Stewbot. To view a detailed description of a command, run /help and tell it which command you are looking for.`
+            }
+        }],
+        components: buttonRows
+    };
+}
 
 if (!process.env.beta) helpPages = [
     {
@@ -2741,9 +2820,23 @@ client.on("interactionCreate",async cmd=>{
 
     // Autocomplete
     if (cmd.isAutocomplete()) {
-        // Disbatch to relevent command if registered
-        commands?.[cmd.commandName]?.autocomplete?.(cmd);
-        return; // Just return right here since idk if kestron's code will glitch out with another type of interaction
+        // Dispatch to relevent command if registered
+        // // List of general globals it should have access to
+        const commandScript = commands[cmd.commandName];
+        const providedGlobals = {
+            client,
+            storage,
+            notify, // TODO: schema for some commands like /filter to preload and provide these functions
+            checkDirty,
+            cmds,
+            config
+        };
+        requestedGlobals = commandScript.data?.requiredGlobals || commandScript.requestGlobals?.() || [];
+        for (var name of requestedGlobals) {
+            providedGlobals[name] = eval(name.match(/[\w-]+/)[0]);
+        }
+        commands?.[cmd.commandName]?.autocomplete?.(cmd, providedGlobals);
+        return;
     }
 
     // Slash commands
@@ -2764,7 +2857,7 @@ client.on("interactionCreate",async cmd=>{
         // Check global blacklist from home server
         const globalBlocklist = storage[config.homeServer]?.blockedCommands || []
         if (globalBlocklist.includes(commandPath) || globalBlocklist.includes(commandPathWithSubcommand)) {
-            return cmd.followUp("This command has temporarily been blocked globally.");
+            return cmd.followUp("This command has temporarily been blocked by Stewbot admins.");
         }
         
         // Checks passed, run command
@@ -3532,6 +3625,37 @@ client.on("interactionCreate",async cmd=>{
                 "text": `Help Menu for Stewbot`
             }
         }]});
+    }
+    if(cmd.customId?.startsWith("help-")){
+        var opts=cmd.customId.split("-");
+        if(opts[3]!==cmd.user.id){
+            cmd.reply({content:`This isn't your help command! Use ${cmds.help.mention} to start your own help command.`,ephemeral:true});
+        }
+        else{
+            switch(opts[1]){
+                case 'page':
+                    cmd.update(makeHelp(+opts[2],cmd.message.content.split("Categories: ")[1].split(", "),cmd.message.content.split("Mode: ")[1].split(" |")[0],cmd.user.id));
+                break;
+                case 'category':
+                    var cats=cmd.message.content.split("Categories: ")[1]?.split(", ");
+                    if(cats.length===0) cats=["None"];
+                    if(cats.includes("All")){
+                        cats=[opts[2]];
+                    }
+                    else if(cats.includes(opts[2])){
+                        cats.splice(cats.indexOf(opts[2]),1);
+                    }
+                    else{
+                        if(cats.includes("None")) cats=[];
+                        cats.push(opts[2]);
+                    }
+                    cmd.update(makeHelp(0,cats,cmd.message.content.split("Mode: ")[1].split(" |")[0],cmd.user.id));
+                break;
+                case 'mode':
+                    cmd.update(makeHelp(0,cmd.message.content.split("Categories: ")[1].split(", "),opts[2],cmd.user.id));
+                break;
+            }
+        }
     }
     if(cmd.customId?.startsWith("ban-")){
         if(cmd.member.permissions.has(PermissionFlagsBits.BanMembers)){

@@ -153,10 +153,10 @@ module.exports = {
         // Format for discord
         autocompletes = []
         for (let bookname of allBooks) {
-            const sugguest = capitalize(bookname)
+            const suggest = capitalize(bookname)
             autocompletes.push({
-                name: sugguest,
-                value: sugguest
+                name: suggest,
+                value: suggest
             })
         }
 

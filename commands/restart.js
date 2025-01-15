@@ -28,9 +28,9 @@ module.exports = {
 				- Server Only -> Commands that can only be run in servers
 				- User Install Only -> Commands that can only be run if Stewbot is installed to your user
 			*/
-			shortDesc: "Stewbot's Admins only",//Should be the same as the command setDescription field
+			shortDesc: "Stewbot's Admins Only",//Should be the same as the command setDescription field
 			detailedDesc: //Detailed on exactly what the command does and how to use it
-				`Stewbot's Admins only`
+				`Stewbot's Admins Only`
         }
     },
 

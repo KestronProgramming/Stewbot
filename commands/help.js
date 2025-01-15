@@ -7,11 +7,25 @@ function applyContext(context={}) {
 }
 // #endregion Boilerplate
 
+const Fuse = require('fuse.js');
+const fuseOptions = {
+	includeScore: true,
+	keys: ['item']
+};
+function sortByMatch(items, text) {
+	const fuse = new Fuse(items.map(item => ({ item })), fuseOptions);            
+	const scoredResults = fuse.search(text)
+		.filter(result => result.score <= 2) // Roughly similar-ish
+		.sort((a, b) => a.score - b.score);
+	return scoredResults.map(entry => entry.item.item);
+}
+
 module.exports = {
 	data: {
 		// Slash command data
-		command: new SlashCommandBuilder().setName("help").setDescription("View the help menu")
-			.addBooleanOption(option=>
+		command: new SlashCommandBuilder().setName("help").setDescription("View the help menu").addStringOption(option=>
+				option.setName("command").setDescription("Enter a command here to get a more detailed description of it").setAutocomplete(true)
+			).addBooleanOption(option=>
 				option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 			),
 		
@@ -19,7 +33,7 @@ module.exports = {
 		
 		extra: {"contexts":[0,1,2],"integration_types":[0,1]},
 
-		requiredGlobals: ["helpPages", "config", "limitLength", "chunkArray"],
+		requiredGlobals: ["makeHelp","helpCommands","config", "limitLength", "chunkArray","commands"],
 
 		help: {
 			helpCategories: ["General","Bot","Information"],
@@ -43,41 +57,66 @@ module.exports = {
 
 	async execute(cmd, context) {
 		applyContext(context);
-
-		const buttonRows = chunkArray(helpPages, 5).map(chunk => 
-			new ActionRowBuilder().addComponents(
-				chunk.map(a => 
-					new ButtonBuilder()
-						.setCustomId(`switch-${a.name}`)
-						.setLabel(a.name)
-						.setStyle(ButtonStyle.Primary)
-				)
-			)
-		);		
-		
-		cmd.followUp({
-			content: `**General**`, embeds: [{
+		if(cmd.options.getString("command")===null){
+			cmd.followUp(makeHelp(0,"All","Or",cmd.user.id));
+		}
+		else{
+			var inp=cmd.options.getString("command").toLowerCase();
+			var expandedHelp=helpCommands.filter(a=>a.name===inp);
+			if(expandedHelp.length===0){
+				cmd.followUp(`I'm sorry, I didn't find that command. Perhaps you spelled it wrong?`);
+				return;
+			}
+			cmd.followUp({content:`## Help Menu for ${expandedHelp[0].mention}`,embeds:[{
 				"type": "rich",
-				"title": `General`,
-				"description": `Help Menu General Category`,
+				"title": `${expandedHelp[0].mention}`,
+				"description": `${expandedHelp[0].detailedDesc}`,
 				"color": 0x006400,
-				"fields": helpPages[0].commands.slice(0, 25).map(a => {
-					return {
-						"name": limitLength(a.name, 256),
-						"value": limitLength(a.desc, 1024),
-						"inline": true
-					};
-				}),
+				"fields":[
+					{
+						"name":"Short Description",
+						"value":expandedHelp[0].shortDesc,
+						"inline":true
+					},
+					{
+						"name":"Tags",
+						"value":expandedHelp[0].helpCategories.join(", "),
+						"inline":true
+					}
+				],
 				"thumbnail": {
 					"url": config.pfp,
 					"height": 0,
 					"width": 0
 				},
 				"footer": {
-					"text": `Help Menu for Stewbot`
+					"text": `Expanded Help Menu for ${inp}.`
 				}
-			}],
-			components: buttonRows
-		});
+			}]});
+		}
+	},
+
+	async autocomplete(cmd, context) {
+		applyContext(context);
+        const userInput = cmd.options.getFocused() || "";
+		var possibleCommands=helpCommands.map(a=>a.name);
+        // Get the top matching results
+        if (userInput) {
+            possibleCommands = sortByMatch(possibleCommands, userInput);
+        }
+
+        // Limit to discord max
+        possibleCommands = possibleCommands.slice(0, 25);
+
+        // Format for discord
+        autocompletes = []
+        for (let cmdName of possibleCommands) {
+            autocompletes.push({
+                name: cmdName,
+                value: cmdName
+            })
+        }
+
+        cmd.respond(autocompletes);
 	}
 };
