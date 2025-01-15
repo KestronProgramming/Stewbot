@@ -9,6 +9,15 @@
                 "<node_internals>/**"
             ],
             "program": "${workspaceFolder}\\index.js"
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "Launch Commands",
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "program": "${workspaceFolder}\\launchCommands.js"
         }
     ]
 }

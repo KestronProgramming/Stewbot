@@ -18,6 +18,15 @@ Integration Types
 1: Only as a user command
 */
 
+// Dummy proxy object to allow importing commands that reference unregistered commands without crashing
+global.cmds = new Proxy({}, {
+	get: function(target, prop) {
+		if (prop === 'mention') {
+			return '';
+		}
+		return global.cmds;
+	}
+});
 
 // Function to build commands, handling beta/production versions
 function getCommands() {
@@ -31,6 +40,7 @@ function getCommands() {
             if (commandName.includes(".beta")) {
                 if (process.env.beta) {
                     commandName = commandName.replaceAll(".beta", "")
+					console.log(`Registering beta command "${commandName}"`)
                 } else {
                     // If production, ignore beta commands
                     continue
@@ -44,6 +54,7 @@ function getCommands() {
             returnCommands[commandName] = command;
         }
     }
+	console.log(returnCommands)
     return returnCommands;
 }
 
