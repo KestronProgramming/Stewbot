@@ -4,7 +4,7 @@ console.beta = (...args) => process.env.beta && console.log(...args);
 console.beta("Importing discord")
 const {Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
 console.beta("Discord imported")
-const translate=require("@vitalets/google-translate-api").translate;
+// const translate=require("@vitalets/google-translate-api").translate;
 const RSSParser=require("rss-parser");
 const crypto = require('crypto');
 const { createCanvas } = require('canvas');
@@ -14,7 +14,6 @@ const config=require("./data/config.json");
 const fs=require("fs");
 // const path = require("path")
 const cmds=require("./data/commands.json"); global.cmds = cmds;
-const usage=require("./data/usage.json");
 const Sentiment = require('sentiment');
 const dns = require('dns');
 const { URL } = require('url');
@@ -30,6 +29,8 @@ const { getCommands } = require("./launchCommands.js");
 // Preliminary setup (TODO: move to a setup.sh)
 if (!fs.existsSync("tempMove")) fs.mkdirSync('tempMove');
 if (!fs.existsSync("tempMemes")) fs.mkdirSync('tempMemes');
+if (!fs.existsSync("./data/usage.json")) fs.writeFileSync('./data/usage.json', '{}');
+const usage=require("./data/usage.json");
 
 // Commands
 console.beta("Loading commands")
