@@ -7,7 +7,7 @@ function applyContext(context={}) {
 
 module.exports = {
 	data: {
-		command: new SlashCommandBuilder().setName('jerry').setDescription('Jerry Jerry Jerry Jerry Yeah!!!').addBooleanOption(option=>
+		command: new SlashCommandBuilder().setName('chat').setDescription('Chat with Stewbot').addBooleanOption(option=>
                 option.setName("private").setDescription("Make the response ephemeral?")//Do not remove private option unless the command is REQUIRED to be ephemeral or non-ephemeral.
             ),
 		
@@ -28,7 +28,7 @@ module.exports = {
 		requiredGlobals: [],
 
 		help: {
-			helpCategories: ["Jerry"],
+			helpCategories: ["Entertainment"],
 			/*
 				- General -> Generic commands almost every bot has
 				- Information -> A command designed purely to provide information of some kind
@@ -42,7 +42,7 @@ module.exports = {
 				- User Install Only -> Commands that can only be run if Stewbot is installed to your user
 			*/
 			shortDesc: "Ask Stewbot's AI something",
-			detailedDesc: "Test"
+			detailedDesc: null
 		},
 	},
 

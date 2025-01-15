@@ -67,23 +67,36 @@ module.exports = {
 				cmd.followUp(`I'm sorry, I didn't find that command. Perhaps you spelled it wrong?`);
 				return;
 			}
+
+			// Only add fields with content
+			let description = expandedHelp[0].detailedDesc;
+			let fields = []
+			if (expandedHelp[0].shortDesc) {
+				fields.push({
+					"name": "Short Description",
+					"value": expandedHelp[0].shortDesc,
+					"inline": true
+				})
+			}
+			if (expandedHelp[0].helpCategories?.length > 0) {
+				fields.push({
+					"name":"Tags",
+					"value":expandedHelp[0].helpCategories.join(", "),
+					"inline":true
+				})
+			}
+
+			// Add something if no data is specified
+			if (fields.length === 0 && !description) {
+				description = "No additional information is available for this command."
+			}
+
 			cmd.followUp({content:`## Help Menu for ${expandedHelp[0].mention}`,embeds:[{
 				"type": "rich",
 				"title": `${expandedHelp[0].mention}`,
-				"description": `${expandedHelp[0].detailedDesc}`,
+				description,
 				"color": 0x006400,
-				"fields":[
-					{
-						"name":"Short Description",
-						"value":expandedHelp[0].shortDesc,
-						"inline":true
-					},
-					{
-						"name":"Tags",
-						"value":expandedHelp[0].helpCategories.join(", "),
-						"inline":true
-					}
-				],
+				fields,
 				"thumbnail": {
 					"url": config.pfp,
 					"height": 0,
