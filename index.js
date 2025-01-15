@@ -1,8 +1,9 @@
 // Imports 
 process.env=require("./env.json");
-process.env.beta && console.log("Importing discord")
+console.beta = (...args) => process.env.beta && console.log(...args);
+console.beta("Importing discord")
 const {Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
-process.env.beta && console.log("Discord imported")
+console.beta("Discord imported")
 const translate=require("@vitalets/google-translate-api").translate;
 const RSSParser=require("rss-parser");
 const crypto = require('crypto');
@@ -17,7 +18,7 @@ const usage=require("./data/usage.json");
 const Sentiment = require('sentiment');
 const dns = require('dns');
 const { URL } = require('url');
-process.env.beta && console.log("Importing backup.js")
+console.beta("Importing backup.js")
 const startBackupThread = require("./backup.js");
 const mathjs = require('mathjs');
 const nlp = require('compromise');
@@ -31,13 +32,12 @@ if (!fs.existsSync("tempMove")) fs.mkdirSync('tempMove');
 if (!fs.existsSync("tempMemes")) fs.mkdirSync('tempMemes');
 
 // Commands
-process.env.beta && console.log("Loading commands")
+console.beta("Loading commands")
 let commands = getCommands();
 
 // Variables
 const rssParser=new RSSParser({
     customFields: {
-    //   feed: ['description'],
       item: ['description'],
     }
 });
@@ -51,8 +51,8 @@ turndown.addRule('ignoreAll', {
 const sentiment = new Sentiment();
 var client;
 
-var kaProgramRegex =/\b(?!<)https?:\/\/(?:www\.)?khanacademy\.org\/(cs|computer-programming|hour-of-code|python-program)\/[a-z,\d,-]+\/\d+(?!>)\b/gi;
-var discordMessageRegex =/\b(?!<)https?:\/\/(ptb\.|canary\.)?discord(app)?.com\/channels\/(\@me|\d+)\/\d+\/\d+(?!>)\b/gi;
+const kaProgramRegex =/\b(?!<)https?:\/\/(?:www\.)?khanacademy\.org\/(cs|computer-programming|hour-of-code|python-program)\/[a-z,\d,-]+\/\d+(?!>)\b/gi;
+const discordMessageRegex =/\b(?!<)https?:\/\/(ptb\.|canary\.)?discord(app)?.com\/channels\/(\@me|\d+)\/\d+\/\d+(?!>)\b/gi;
 
 // Utility functions needed for processing some data blocks 
 function escapeRegex(input) {
@@ -108,7 +108,7 @@ function readLatestDatabase() {
     process.exit();
 }
 const storage = readLatestDatabase();
-let lastStorageHash = hash(storage); // This will increase ram but use less db writes.
+let lastStorageHash = hash(storage);
 setInterval(() => {
     writeLocation = storageLocations[storageCycleIndex % storageLocations.length];
     const storageString = process.env.beta ? JSON.stringify(storage, null, 4) : JSON.stringify(storage);
@@ -119,9 +119,6 @@ setInterval(() => {
         storageCycleIndex++; 
         if (process.env.beta) console.log(`Just wrote DB to ${writeLocation}`)
     }
-    // else if (process.env.beta) {
-    //     console.log("DB not changed, not writing again")
-    // }
 }, 10 * 1000);
 
 
@@ -258,7 +255,6 @@ const presets={
 const defaultGuild=require("./data/defaultGuild.json");
 const defaultGuildUser=require("./data/defaultGuildUser.json");
 const defaultUser=require("./data/defaultUser.json");
-const help = require("./commands/help.js");
 
 var helpCommands=[];
 Object.keys(commands).forEach(command=>{

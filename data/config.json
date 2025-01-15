@@ -3,5 +3,8 @@
     "install":"https://discord.com/oauth2/authorize?client_id=966167746243076136",
     "themeColor":"0x006400",
     "name":"Stewbot",
-    "homeServer":"983074750165299250"
+    "homeServer":"983074750165299250",
+    "aiNodeInterfaces": ["eth0"],
+    "aiNodePort": 12345,
+    "aiModel": "qwen2.5:7b"
 }

@@ -11,3 +11,4 @@ errorLogs/*
 test.js
 tempMove
 usage.json
+system.prompt

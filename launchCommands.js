@@ -54,7 +54,6 @@ function getCommands() {
             returnCommands[commandName] = command;
         }
     }
-	console.log(returnCommands)
     return returnCommands;
 }
 
