@@ -1,4 +1,4 @@
-// Imports 
+// Imports
 process.env=require("./env.json");
 console.beta = (...args) => process.env.beta && console.log(...args);
 console.beta("Importing discord")
