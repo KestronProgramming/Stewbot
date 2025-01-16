@@ -76,7 +76,7 @@ module.exports = {
                     notify(1, launchCommands());
                 }
             } catch (err) {
-                notify(1, String("Caught error while restarting: " + err))
+                notify(1, String("Caught error while restarting: " + err.stack))
             }
 
             fs.writeFileSync("./storage.json", process.env.beta ? JSON.stringify(storage, null, 4) : JSON.stringify(storage));

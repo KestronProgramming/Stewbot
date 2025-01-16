@@ -117,7 +117,10 @@ function launchCommands(){
 			.setName('restart')
 			.setDescription('Restart the bot')
 			.addBooleanOption(option=>
-				option.setName("update").setDescription("Update git and npm before restarting").setRequired(false)
+				option.setName("update").setDescription("Update git and npm before restarting").setRequired(true)
+			)
+			.addBooleanOption(option=>
+				option.setName("update_commands").setDescription("Update registered commands on discord").setRequired(false)
 			),
 		new SlashCommandBuilder()
 			.setName('launch_commands')
