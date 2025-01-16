@@ -140,6 +140,7 @@ async function getAiResponse(threadID, message, contextualData={}, notify=null, 
             const context = [];
 
             let systemPrompt = fs.readFileSync("./data/system.prompt").toString();
+            if (process.env.beta) systemPrompt = systemPrompt.replace("Stewbot", "Stewbeta");
             Object.keys(contextualData).forEach((key) => {
                 systemPrompt = systemPrompt.replaceAll(`{${key}}`, contextualData[key]);
             })
@@ -302,13 +303,22 @@ module.exports = {
 
             let message = await postprocessUserMessage(msg.content, msg.guild);
             let threadID = msg.author.id;
-            const [ response, success ] = await getAiResponse(threadID, message, {
+            let [ response, success ] = await getAiResponse(threadID, message, {
                 name: msg.author.username,
                 server: msg.guild ? msg.guild.name : "Dirrect Messages",
             }, notify, 0, ollamaInstances);
 
             if (success) { // Only reply if it worked, don't send error codes in reply to replies
-                msg.reply(await postprocessAIMessage(response, msg.guild));
+                // Let's trim emojis as reactions
+                var emojiEnding = /[\p{Emoji}\uFE0F]$/u; 
+                var emoji = null;
+                if (emojiEnding.test(response)) {
+                    emoji = response.match(emojiEnding)[0]
+                    response = response.replace(emojiEnding, '')
+                }
+
+                if (emoji) msg.react(emoji);
+                if (response) msg.reply(await postprocessAIMessage(response, msg.guild));
             }
         }
     }
