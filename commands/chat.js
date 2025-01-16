@@ -75,7 +75,7 @@ async function multicastRequest(message, waitTimeMs) {
                 // Close the server after the wait time
                 setTimeout(() => {
                     server.close(() => {
-                        console.error(`Stopped listening on ${iface}`);
+                        console.beta(`Stopped listening on ${iface}`); 
                         resolve(discovered);
                     });
                 }, waitTimeMs);
