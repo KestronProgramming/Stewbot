@@ -38,7 +38,7 @@ function getInterfaceDetails(interfaceName) {
     };
 }
 
-// Generic discovery function
+// Function to send multicasts to interfaces with stewbot AI nodes
 async function multicastRequest(message, waitTimeMs) {
     const results = [];
 
@@ -186,6 +186,30 @@ async function getAiResponse(threadID, message, contextualData={}, notify=null, 
     return [response, true];
 }
 
+function postprocessUserMessage(msg) {
+    let message = msg.content;
+
+    // Convert user mentions to their raw format
+    message = message.replace(/<@!?(\d+)>/g, (match, userId) => {
+        const user = message.guild?.members.cache.get(userId)?.user;
+        return user ? `<@${userId}>` : match;
+    });
+
+    // Convert role mentions to their raw format
+    message = message.replace(/<@&(\d+)>/g, (match, roleId) => {
+        const role = message.guild?.roles.cache.get(roleId);
+        return role ? `<@&${roleId}>` : match;
+    });
+
+    // Convert channel mentions to their raw format
+    message = message.replace(/<#(\d+)>/g, (match, channelId) => {
+        const channel = message.guild?.channels.cache.get(channelId);
+        return channel ? `<#${channelId}>` : match;
+    });
+    
+    return message;
+}
+
 module.exports = {
 	data: {
 		command: new SlashCommandBuilder().setName('chat').setDescription('Chat with Stewbot')
@@ -260,13 +284,14 @@ module.exports = {
         applyContext(globals);
 
         // If the bot is pinged
-        if (msg.mentions.has(client.user)) {
+        if (msg.mentions.users.has(client.user.id)) {
 
             // Check for available servers before sending typing indicator
             const ollamaInstances = await getAvailableOllamaServers();
             if (ollamaInstances.length > 0) msg.channel.sendTyping();
             else return;
 
+            // let message = postprocessUserMessage(msg);
             let message = msg.content;
             let threadID = msg.author.id;
             const [ response, success ] = await getAiResponse(threadID, message, {
