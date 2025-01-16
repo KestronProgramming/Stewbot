@@ -107,13 +107,16 @@ async function getAvailableOllamaServers() {
     return ollamaInstances;
 }
 
-async function getAiResponse(threadID, message, notify) {
+async function getAiResponse(threadID, message, notify, retryAttempt=0) {
+    // returns: [response, success]
+
     // First, find all currently available servers
     const ollamaInstances = await getAvailableOllamaServers();
 
     if (ollamaInstances.length === 0) {
-        return  `Sorry, there are no available AI servers. Try again later.` + 
-                `We host our own AI servers. If you would like to support this project, feel free to join the [discord server](https://discord.gg/jFCVtHJFTY) and see how you can help!`;
+        return [`Sorry, there are no available AI servers. Try again later.` + 
+                `We host our own AI servers. If you would like to support this project, feel free to join the [discord server](https://discord.gg/jFCVtHJFTY) and see how you can help!`,
+                false ];
     }
 
     // Choose a random server
@@ -126,7 +129,6 @@ async function getAiResponse(threadID, message, notify) {
     let response = null;
 
     try {
-
         // Build context
         const oneHour = 1000 * 60 * 60;
         if (!convoCache[threadID] || Date.now() - convoCache[threadID].lastMessage > oneHour) {
@@ -145,12 +147,23 @@ async function getAiResponse(threadID, message, notify) {
             messages: convoCache[threadID].context,
         })
 
-        convoCache[threadID].context.push(AIResult.message);
+        // Check for an error
+        if (!AIResult?.message?.content) {
+            if (retryAttempt === 0) {
+                delete convoCache[threadID];
+                return getAiResponse(threadID, message, notify, retryAttempt+1);
+            } else {
+                notify && notify(1, `Error with AI API response: \n${JSON.stringify(AIResult)}`);
+                return [`Sorry, there was an error with the AI response. It has already been reported. Try again later.`, false];
+            }
+        }
 
+        convoCache[threadID].context.push(AIResult.message);
+        
         response = AIResult.message.content;
     }
     catch (e) {
-        notify && notify(1, `Error with AI response: \n${e.stack}`)
+        notify && notify(1, `AI API response has no content: \n${e.stack}`)
         console.beta(e);
         response = `Sorry, there was an error with the AI response. It has already been reported. Try again later.`;
     }
@@ -159,7 +172,7 @@ async function getAiResponse(threadID, message, notify) {
         delete activeAIRequests[chosenInstance.config.host];
     }
 
-    return response;
+    return [response, true];
 }
 
 module.exports = {
@@ -224,7 +237,7 @@ module.exports = {
             delete convoCache[threadID];
         }
 
-        const response = await getAiResponse(threadID, message, notify)
+        const [ response, success ] = await getAiResponse(threadID, message, notify)
 
 		cmd.followUp(response);
 	}
