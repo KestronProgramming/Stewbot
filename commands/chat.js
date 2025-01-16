@@ -186,28 +186,35 @@ async function getAiResponse(threadID, message, contextualData={}, notify=null, 
     return [response, true];
 }
 
-function postprocessUserMessage(msg) {
-    let message = msg.content;
-
-    // Convert user mentions to their raw format
+async function postprocessUserMessage(message, guild) {
     message = message.replace(/<@!?(\d+)>/g, (match, userId) => {
-        const user = message.guild?.members.cache.get(userId)?.user;
-        return user ? `<@${userId}>` : match;
+        const username = guild?.members.cache.get(userId)?.user?.username;
+        return username ? `@${username}` : match;
     });
 
     // Convert role mentions to their raw format
     message = message.replace(/<@&(\d+)>/g, (match, roleId) => {
-        const role = message.guild?.roles.cache.get(roleId);
-        return role ? `<@&${roleId}>` : match;
+        const rolename = guild?.roles.cache.get(roleId)?.name;
+        return rolename ? `<${rolename} (discord role mention)>` : match;
     });
 
     // Convert channel mentions to their raw format
     message = message.replace(/<#(\d+)>/g, (match, channelId) => {
-        const channel = message.guild?.channels.cache.get(channelId);
-        return channel ? `<#${channelId}>` : match;
+        const channelname = guild?.channels.cache.get(channelId)?.name;
+        return channelname ? `<#${channelname} (discord channel)>` : match;
     });
-    
+
     return message;
+}
+
+async function postprocessAIMessage(message, guild) {
+    // Replace @username with <@id-of-username>
+    message = message.replace(/@([\w_\.]+)/g, (match, username) => {
+        const user = guild?.members.cache.find((member) => member.user.username === username);
+        return user ? `<@${user.id}>` : match;
+    });
+
+    return message
 }
 
 module.exports = {
@@ -264,9 +271,11 @@ module.exports = {
 	async execute(cmd, globalsContext) {
 		applyContext(globalsContext);
 
-        const message = cmd.options.getString("message");
+        let message = cmd.options.getString("message");
         const clearHistory = cmd.options.getBoolean("clear");
         const threadID = cmd.user.id;
+
+        message = await postprocessUserMessage(message, cmd.guild);
 
         if (clearHistory) {
             delete convoCache[threadID];
@@ -277,7 +286,7 @@ module.exports = {
             server: cmd.guild ? cmd.guild.name : "Dirrect Messages",
         }, notify);
 
-		cmd.followUp(response);
+		cmd.followUp(await postprocessAIMessage(response, cmd.guild));
 	},
 
     async onmessage(msg, globals) {
@@ -291,8 +300,7 @@ module.exports = {
             if (ollamaInstances.length > 0) msg.channel.sendTyping();
             else return;
 
-            // let message = postprocessUserMessage(msg);
-            let message = msg.content;
+            let message = await postprocessUserMessage(msg.content, msg.guild);
             let threadID = msg.author.id;
             const [ response, success ] = await getAiResponse(threadID, message, {
                 name: msg.author.username,
@@ -300,7 +308,7 @@ module.exports = {
             }, notify, 0, ollamaInstances);
 
             if (success) { // Only reply if it worked, don't send error codes in reply to replies
-                msg.reply(response);
+                msg.reply(await postprocessAIMessage(response, msg.guild));
             }
         }
     }
