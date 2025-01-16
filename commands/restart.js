@@ -56,13 +56,17 @@ module.exports = {
                     await new Promise((resolve, reject) => {
                         exec('sh ./update.sh', (error, stdout, stderr) => {
                             if (error || stderr) {
-                                var errNotif = `Error: ${error?.message || ""}`
-                                errNotif += `\nStderr: ${stderr}`
-                                notify(1, errNotif);
-                                reject(0);
+                                var actuallyHasError = Boolean((errNotif + error + "").trim());
+                                if (actuallyHasError) {
+                                    var errNotif = `Error: ${error?.message || ""}`
+                                    errNotif += `\nStderr: ${stderr}`
+                                    errNotif += `\nactuallyHasError: ${actuallyHasError.slice(0, 20)}`
+                                    notify(1, errNotif);
+                                    reject(0);
+                                }
                             }
                             stdout && notify(1, stdout);
-                            resolve(1);
+                            resolve(0);
                         });
                     });
                 }
