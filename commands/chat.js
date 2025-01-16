@@ -163,7 +163,7 @@ async function getAiResponse(threadID, message, contextualData={}, notify=null, 
         if (!AIResult?.message?.content) {
             if (retryAttempt === 0) {
                 delete convoCache[threadID];
-                return getAiResponse(threadID, message, notify, retryAttempt+1, ollamaInstances);
+                return getAiResponse(threadID, message, contextualData, notify, retryAttempt+1, ollamaInstances);
             } else {
                 notify && notify(1, `Error with AI API response: \n${JSON.stringify(AIResult)}`);
                 return [`Sorry, there was an error with the AI response. It has already been reported. Try again later.`, false];
