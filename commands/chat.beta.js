@@ -107,11 +107,12 @@ async function getAvailableOllamaServers() {
     return ollamaInstances;
 }
 
-async function getAiResponse(threadID, message, notify, retryAttempt=0) {
+async function getAiResponse(threadID, message, contextualData={}, notify=null, retryAttempt=0, ollamaInstances=null) {
     // returns: [response, success]
 
-    // First, find all currently available servers
-    const ollamaInstances = await getAvailableOllamaServers();
+    // First, find all currently available servers if they have not already been provided in the command input
+    // (they are provided by the message handler so it can check avaialble servers and send typing indicator when there is an available server)
+    if (!ollamaInstances) ollamaInstances = await getAvailableOllamaServers();
 
     if (ollamaInstances.length === 0) {
         return [`Sorry, there are no available AI servers. Try again later.` + 
@@ -131,12 +132,22 @@ async function getAiResponse(threadID, message, notify, retryAttempt=0) {
     try {
         // Build context
         const oneHour = 1000 * 60 * 60;
-        if (!convoCache[threadID] || Date.now() - convoCache[threadID].lastMessage > oneHour) {
+        if (
+            !convoCache[threadID] || 
+            Date.now() - convoCache[threadID].lastMessage > oneHour || 
+            JSON.stringify(contextualData) !== JSON.stringify(convoCache[threadID].contextualData)
+        ) {
             const context = [];
-            context.push({"role": "system", "content": fs.readFileSync("./data/system.prompt").toString()})
-    
+
+            let systemPrompt = fs.readFileSync("./data/system.prompt").toString();
+            Object.keys(contextualData).forEach((key) => {
+                systemPrompt = systemPrompt.replaceAll(`{${key}}`, contextualData[key]);
+            })
+            context.push({"role": "system", "content": systemPrompt})
+
             convoCache[threadID] = {
                 context,
+                contextualData,
                 lastMessage: Date.now()
             };
         }
@@ -151,7 +162,7 @@ async function getAiResponse(threadID, message, notify, retryAttempt=0) {
         if (!AIResult?.message?.content) {
             if (retryAttempt === 0) {
                 delete convoCache[threadID];
-                return getAiResponse(threadID, message, notify, retryAttempt+1);
+                return getAiResponse(threadID, message, notify, retryAttempt+1, ollamaInstances);
             } else {
                 notify && notify(1, `Error with AI API response: \n${JSON.stringify(AIResult)}`);
                 return [`Sorry, there was an error with the AI response. It has already been reported. Try again later.`, false];
@@ -237,13 +248,35 @@ module.exports = {
             delete convoCache[threadID];
         }
 
-        const [ response, success ] = await getAiResponse(threadID, message, notify)
+        const [ response, success ] = await getAiResponse(threadID, message, {
+            name: cmd.user.username,
+            server: cmd.guild ? cmd.guild.name : "Dirrect Messages",
+        }, notify);
 
 		cmd.followUp(response);
 	},
 
-    async onmessage(msg) {
-        console.log(msg);
-        
+    async onmessage(msg, globals) {
+        applyContext(globals);
+
+        // If the bot is pinged
+        if (msg.mentions.has(client.user)) {
+
+            // Check for available servers before sending typing indicator
+            const ollamaInstances = await getAvailableOllamaServers();
+            if (ollamaInstances.length > 0) msg.channel.sendTyping();
+            else return;
+
+            let message = msg.content;
+            let threadID = msg.author.id;
+            const [ response, success ] = await getAiResponse(threadID, message, {
+                name: msg.author.username,
+                server: msg.guild ? msg.guild.name : "Dirrect Messages",
+            }, notify, 0, ollamaInstances);
+
+            if (success) { // Only reply if it worked, don't send error codes in reply to replies
+                msg.reply(response);
+            }
+        }
     }
 };

@@ -1944,7 +1944,8 @@ client=new Client({
     intents:ints,
     partials:Object.keys(Partials).map(a=>Partials[a])
 });
-function notify(urgencyLevel,what,useWebhook=false){
+function notify(urgencyLevel,what,useWebhook=false) {
+    console.beta(what);
     try{switch(urgencyLevel){
         default:
         case 0:
@@ -2094,8 +2095,16 @@ client.on("messageCreate",async msg => {
     if(msg.author.id===client.user.id) return;
 
     // Dispatch to listening modules
+    const psudoGlobals = {
+        client,
+        storage,
+        notify,
+        checkDirty,
+        cmds,
+        config
+    };
     messageListenerModules.forEach(module => {
-        module.onmessage(msg);
+        module.onmessage(msg, psudoGlobals);
     })
 
     if(msg.content.startsWith("~sudo ")&&!process.env.beta||msg.content.startsWith("~betaSudo ")&&process.env.beta){
@@ -2828,7 +2837,7 @@ client.on("interactionCreate",async cmd=>{
         // Dispatch to relevent command if registered
         // // List of general globals it should have access to
         const commandScript = commands[cmd.commandName];
-        const providedGlobals = {
+        const psudoGlobals = {
             client,
             storage,
             notify, // TODO: schema for some commands like /filter to preload and provide these functions
@@ -2836,11 +2845,12 @@ client.on("interactionCreate",async cmd=>{
             cmds,
             config
         };
+
         requestedGlobals = commandScript.data?.requiredGlobals || commandScript.requestGlobals?.() || [];
         for (var name of requestedGlobals) {
-            providedGlobals[name] = eval(name.match(/[\w-]+/)[0]);
+            psudoGlobals[name] = eval(name.match(/[\w-]+/)[0]);
         }
-        commands?.[cmd.commandName]?.autocomplete?.(cmd, providedGlobals);
+        commands?.[cmd.commandName]?.autocomplete?.(cmd, psudoGlobals);
         return;
     }
 
