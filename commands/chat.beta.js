@@ -240,5 +240,10 @@ module.exports = {
         const [ response, success ] = await getAiResponse(threadID, message, notify)
 
 		cmd.followUp(response);
-	}
+	},
+
+    async onmessage(msg) {
+        console.log(msg);
+        
+    }
 };

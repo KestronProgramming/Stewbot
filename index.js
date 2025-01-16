@@ -33,9 +33,10 @@ if (!fs.existsSync("tempMemes")) fs.mkdirSync('tempMemes');
 if (!fs.existsSync("./data/usage.json")) fs.writeFileSync('./data/usage.json', '{}');
 const usage=require("./data/usage.json");
 
-// Commands
+// Load commands modules
 console.beta("Loading commands")
 let commands = getCommands();
+let messageListenerModules = Object.values(commands).filter(command => command.onmessage);
 
 // Variables
 const rssParser=new RSSParser({
@@ -2089,8 +2090,14 @@ async function sendHook(what, msg){
     }
 }
 
-client.on("messageCreate",async msg=>{
+client.on("messageCreate",async msg => {
     if(msg.author.id===client.user.id) return;
+
+    // Dispatch to listening modules
+    messageListenerModules.forEach(module => {
+        module.onmessage(msg);
+    })
+
     if(msg.content.startsWith("~sudo ")&&!process.env.beta||msg.content.startsWith("~betaSudo ")&&process.env.beta){
         const devadminChannel = await client.channels.fetch("986097382267715604");
         await devadminChannel.guild.members.fetch(msg.author.id);
