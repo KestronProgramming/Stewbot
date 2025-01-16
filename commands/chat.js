@@ -287,8 +287,11 @@ module.exports = {
             server: cmd.guild ? cmd.guild.name : "Dirrect Messages",
         }, notify);
 
-		cmd.followUp(await postprocessAIMessage(response, cmd.guild));
-	},
+        cmd.followUp({
+            content: await postprocessAIMessage(response, cmd.guild),
+            allowedMentions: { parse: [] }
+        });
+    },
 
     async onmessage(msg, globals) {
         applyContext(globals);
@@ -322,7 +325,11 @@ module.exports = {
                 }
 
                 if (emoji) msg.react(emoji);
-                if (response) msg.reply(await postprocessAIMessage(response, msg.guild));
+                if (response) msg.reply({
+                    content: await postprocessAIMessage(response, msg.guild),
+                    allowedMentions: { parse: [] }
+                });
+            
             }
         }
     }
