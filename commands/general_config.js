@@ -12,6 +12,8 @@ module.exports = {
 		// Slash command data
 		command: new SlashCommandBuilder().setName("general_config").setDescription("Configure general behaviours")
 			.addBooleanOption(option=>
+				option.setName("ai_pings").setDescription("Have the bot post an AI message when pinging it?")
+			).addBooleanOption(option=>
 				option.setName("embeds").setDescription("If a message link is posted, should I post a preview?")
 			).addBooleanOption(option=>
 				option.setName("disable_anti_hack").setDescription("Do you want to disable the anti hack/spam account protection for this server?")
@@ -47,8 +49,10 @@ module.exports = {
 	async execute(cmd, context) {
 		applyContext(context);
 		
+		if(cmd.options.getBoolean("ai_pings")!==null) storage[cmd.guildId].config.ai=cmd.options.getBoolean("ai_pings");
 		if(cmd.options.getBoolean("embeds")!==null) storage[cmd.guildId].config.embedPreviews=cmd.options.getBoolean("embeds");
 		if(cmd.options.getBoolean("disable_anti_hack")!==null) storage[cmd.guildId].disableAntiHack=cmd.options.getBoolean("disable_anti_hack");
+		
 		cmd.followUp("Configured your server setup");
 	}
 };

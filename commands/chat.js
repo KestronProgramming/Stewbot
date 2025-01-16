@@ -294,7 +294,11 @@ module.exports = {
         applyContext(globals);
 
         // If the bot is pinged
-        if (msg.mentions.users.has(client.user.id)) {
+        if (
+            msg.mentions.users.has(client.user.id)
+            && storage[msg.author.id]?.config?.aiPings !== false // Check if the user has explicitly disabled AI pings
+            && !(msg?.channel.id && storage[msg.channel.id]?.config?.ai === false) // And as long as the guild has not explicitly disabled it
+        ) {
 
             // Check for available servers before sending typing indicator
             const ollamaInstances = await getAvailableOllamaServers();

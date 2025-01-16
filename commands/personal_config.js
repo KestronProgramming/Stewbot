@@ -12,7 +12,9 @@ module.exports = {
 	data: {
 		// Slash command data
 		command: new SlashCommandBuilder().setName("personal_config").setDescription("Configure the bot for you personally")
-			.addBooleanOption(option=>
+			.setDescription("Configure the bot for you personally").addBooleanOption(option=>
+				option.setName("ai_pings").setDescription("Respond with an AI message to pings or DMs")
+			).addBooleanOption(option=>
 				option.setName("dm_infractions").setDescription("If you get filtered, should I DM you?")
 			).addBooleanOption(option=>
 				option.setName("dm_infraction_content").setDescription("If dm_infractions is true, should I include the content of the filtered message?")
@@ -53,6 +55,7 @@ module.exports = {
 	async execute(cmd, context) {
 		applyContext(context);
 		
+		if(cmd.options.getBoolean("ai_pings")!==null) storage[cmd.user.id].config.aiPings=cmd.options.getBoolean("ai_pings");
 		if(cmd.options.getBoolean("dm_infractions")!==null) storage[cmd.user.id].config.dmOffenses=cmd.options.getBoolean("dm_infractions");
 		if(cmd.options.getBoolean("dm_infraction_content")!==null) storage[cmd.user.id].config.returnFiltered=cmd.options.getBoolean("dm_infraction_content");
 		if(cmd.options.getBoolean("embeds")!==null) storage[cmd.user.id].config.embedPreviews=cmd.options.getBoolean("embeds");
