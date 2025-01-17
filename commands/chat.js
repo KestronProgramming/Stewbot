@@ -251,7 +251,7 @@ module.exports = {
 		requiredGlobals: ["notify", "limitLength"],
 
 		help: {
-			helpCategories: ["Entertainment"],
+			helpCategories: ["General","Bot","Information","Entertainment"],
 			/*
 				- General -> Generic commands almost every bot has
 				- Information -> A command designed purely to provide information of some kind
@@ -265,7 +265,7 @@ module.exports = {
 				- User Install Only -> Commands that can only be run if Stewbot is installed to your user
 			*/
 			shortDesc: "Ask Stewbot's AI something",
-			detailedDesc: null
+			detailedDesc: "Have a fun chat with Stewbot's self-hosted AI"
 		},
 	},
 
@@ -312,7 +312,7 @@ module.exports = {
             let threadID = msg.author.id;
             let [ response, success ] = await getAiResponse(threadID, message, {
                 name: msg.author.username,
-                server: msg.guild ? msg.guild.name : "Dirrect Messages",
+                server: msg.guild ? msg.guild.name : "Direct Messages",
             }, notify, 0, ollamaInstances);
 
             if (success) { // Only reply if it worked, don't send error codes in reply to replies
