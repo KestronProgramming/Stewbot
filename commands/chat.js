@@ -282,10 +282,13 @@ module.exports = {
             delete convoCache[threadID];
         }
 
-        const [ response, success ] = await getAiResponse(threadID, message, {
+        let [ response, success ] = await getAiResponse(threadID, message, {
             name: cmd.user.username,
             server: cmd.guild ? cmd.guild.name : "Dirrect Messages",
         }, notify);
+
+        response = await postprocessAIMessage(limitLength(response))
+        response = checkDirty(cmd.guild?.id, response, true)[1];
 
         cmd.followUp({
             content: await postprocessAIMessage(limitLength(response), cmd.guild),
@@ -316,13 +319,23 @@ module.exports = {
             }, notify, 0, ollamaInstances);
 
             if (success) { // Only reply if it worked, don't send error codes in reply to replies
+                let stillExists = true; // Message could have been deleted/filtered since sending
+                try {
+                    stillExists = await msg.channel.messages.fetch(msg.id)
+                } catch {
+                    stillExists = false
+                }
+
                 // Let's trim emojis as reactions
                 var emojiEnding = /[\p{Emoji}\uFE0F]$/u; 
                 var emoji = null;
-                if (emojiEnding.test(response)) {
+                if (stillExists && emojiEnding.test(response)) {
                     emoji = response.match(emojiEnding)[0]
                     response = response.replace(emojiEnding, '')
                 }
+
+                response = await postprocessAIMessage(response, msg.guild);
+                response = checkDirty(msg.guild?.id, response, true)[1];
 
                 if (emoji) msg.react(emoji);
 
@@ -332,10 +345,22 @@ module.exports = {
                     response = response.slice(2000-3);
                     if (response.length > 0) chunk += "...";
                     
-                    await msg.reply({
-                        content: await postprocessAIMessage(chunk, msg.guild),
-                        allowedMentions: { parse: [] }
-                    });
+                    // await ((stillExists ? msg.reply : msg.channel.send)({
+                    //     content: chunk,
+                    //     allowedMentions: { parse: [] }
+                    // }));
+                    if (stillExists) {
+                        await msg.reply({
+                            content: chunk,
+                            allowedMentions: { parse: [] },
+                        });
+                    } else {
+                        await msg.channel.send({
+                            content: chunk,
+                            allowedMentions: { parse: [] },
+                        });
+                    }
+                
                 }
 
                 // if (response) msg.reply({

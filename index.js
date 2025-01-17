@@ -558,7 +558,7 @@ function checkDirty(guildID, what, filter=false) {
 
     if (!guildID || !what) 
         if (!filter) return false
-        else [false, '', []]
+        else [false, what, []]
 
     // Preprocessing - anything here is destructive and will be processed this way if filtered
     what = String(what).replace(/<:(\w+):[0-9]+>/g, ":$1:") // unsnowflake emojis
@@ -632,7 +632,7 @@ function checkDirty(guildID, what, filter=false) {
         
         return [dirty, what, foundWords];
     }
-}
+}; global.checkDirty = checkDirty; // This function is important enough we can make it global
 
 function escapeBackticks(text){
     return text.replace(/(?<!\\)(?:\\\\)*`/g, "\\`");
