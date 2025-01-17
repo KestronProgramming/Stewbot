@@ -215,6 +215,11 @@ async function postprocessAIMessage(message, guild) {
         return user ? `<@${user.id}>` : match;
     });
 
+    // qwen2.5 overuses the blush and star emojis (and trim the other one to prevent starboard abuse)
+    message = message.replaceAll(/🌟/g, "");
+    message = message.replaceAll(/⭐/g, "");
+    message = message.replaceAll(/😊/g, "");
+
     return message
 }
 
@@ -326,6 +331,9 @@ module.exports = {
                     stillExists = false
                 }
 
+                response = await postprocessAIMessage(response, msg.guild);
+                response = checkDirty(msg.guild?.id, response, true, true)[1];
+
                 // Let's trim emojis as reactions
                 var emojiEnding = /[\p{Emoji}\uFE0F]$/u; 
                 var emoji = null;
@@ -334,10 +342,13 @@ module.exports = {
                     response = response.replace(emojiEnding, '')
                 }
 
-                response = await postprocessAIMessage(response, msg.guild);
-                response = checkDirty(msg.guild?.id, response, true, true)[1];
-
-                if (emoji) msg.react(emoji);
+                // React
+                try {
+                    if (emoji) msg.react(emoji);
+                } catch {
+                    // Some emojis are not in discord
+                    response += emoji;
+                }
 
                 // If response is > 2000 chars, split it up.
                 while (response.length > 0) {
