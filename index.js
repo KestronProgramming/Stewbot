@@ -550,87 +550,13 @@ async function finTempBan(guild,who,force){
     delete storage[guild].tempBans[who];
 }
 
-function checkDirty(where, what, filter=false) {
-    // If filter is false, it returns: hasBadWords
-    // If filter is true, it returns [hadBadWords, censoredMessage, wordsFound]
-
-    // Differ to new filter unless it has an error
-    if (true || process.env.beta) {
-        try {
-            return checkDirty2(where, what, filter);
-        }
-        catch (e) {
-            notify(1, "Caught error in new filter (defaulting to old filter):\n" + e.message + "\n" + e.stack);
-        }
-    }
-
-    const originalContent = what; // Because we're unsnowflaking emojis, if the message was clean allow the original snowflakes 
-
-    if (!where || !what) 
-        if (!filter) return false
-        else [false, '', []]
-
-    // Unsnowflake all custom emojis
-    what = String(what).replace(/<:(\w+):[0-9]+>/g, ":$1:")
-
-    let dirty = false;
-    let foundWords = []; // keep track of all filtered words to later tell the user what was filtered
-    for (blockedWord of storage[where].filter.blacklist) {
-        // Ignore the new beta json format for now
-        if (typeof(blockedWord) !== 'string') {
-            continue
-        }
-
-        // Unsnowflake blocked word to match unsnowflaked message
-        blockedWord = blockedWord.replace(/<:(\w+):[0-9]+>/g, ":$1:");
-        
-        let blockedWordRegex;
-        try {
-            blockedWordRegex = new RegExp(`(\\b|^)${escapeRegex(blockedWord)}(ing|s|ed|er|ism|ist|es|ual)?(\\b|$)`, "igu")
-        } catch (e) {
-            // This should only ever be hit on old servers that have invalid regex before the escapeRegex was implemented
-            if (!e?.message?.includes?.("http")) notify(1, "Caught filter error:\n" + e.message + "\n" + e.stack);
-            // We can ignore this filter word
-            continue
-        }
-
-        // Check for the word 
-        if (blockedWordRegex.test(what) || what === blockedWord) {
-            dirty = true;
-            if (!filter) {
-                return true;
-            }
-            else {
-                foundWords.push(blockedWord)
-                what = what.replace(blockedWordRegex, "[\\_]");
-            }
-        }
-    }
-
-    if (!filter) {
-        // If we passed the check without exiting, it's clean
-        return false;
-    } 
-    else {
-        // If we're filtering, it needs a more structured output
-
-        // Additional sanitization content
-        if (dirty) {
-            what = defangURL(what)
-        } else {
-            what = originalContent; // Put snowflakes back how they were
-        }
-        
-        return [dirty, what, foundWords];
-    }
-}
-function checkDirty2(where, what, filter=false) {
+function checkDirty(guildID, what, filter=false) {
     // If filter is false, it returns: hasBadWords
     // If filter is true, it returns [hadBadWords, censoredMessage, wordsFound]
 
     const originalContent = what; // Because we're preprocessing content, if the message was clean allow the original content without preprocessing 
 
-    if (!where || !what) 
+    if (!guildID || !what) 
         if (!filter) return false
         else [false, '', []]
 
@@ -642,7 +568,7 @@ function checkDirty2(where, what, filter=false) {
 
     let dirty = false;
     let foundWords = []; // keep track of all filtered words to later tell the user what was filtered
-    for (blockedWord of storage[where].filter.blacklist) {
+    for (blockedWord of storage[guildID].filter.blacklist) {
         // Ignore the new beta json format for now
         if (typeof(blockedWord) !== 'string') {
             continue
