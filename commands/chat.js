@@ -248,7 +248,7 @@ module.exports = {
         */
 
 		// Allow variables from the global index file to be accessed here - requiredGlobals["helpPages"]
-		requiredGlobals: ["notify"],
+		requiredGlobals: ["notify", "limitLength"],
 
 		help: {
 			helpCategories: ["Entertainment"],
@@ -288,7 +288,7 @@ module.exports = {
         }, notify);
 
         cmd.followUp({
-            content: await postprocessAIMessage(response, cmd.guild),
+            content: await postprocessAIMessage(limitLength(response), cmd.guild),
             allowedMentions: { parse: [] }
         });
     },
@@ -325,10 +325,23 @@ module.exports = {
                 }
 
                 if (emoji) msg.react(emoji);
-                if (response) msg.reply({
-                    content: await postprocessAIMessage(response, msg.guild),
-                    allowedMentions: { parse: [] }
-                });
+
+                // If response is > 2000 chars, split it up.
+                while (response.length > 0) {
+                    let chunk = response.slice(0, 2000-3);
+                    response = response.slice(2000-3);
+                    if (response.length > 0) chunk += "...";
+                    
+                    await msg.reply({
+                        content: await postprocessAIMessage(chunk, msg.guild),
+                        allowedMentions: { parse: [] }
+                    });
+                }
+
+                // if (response) msg.reply({
+                //     content: await postprocessAIMessage(response, msg.guild),
+                //     allowedMentions: { parse: [] }
+                // });
             
             }
         }
