@@ -1920,7 +1920,23 @@ client.on("messageCreate",async msg => {
         cmds,
         config
     };
+
     messageListenerModules.forEach(module => {
+        // Check if this command is blocked with /block_command
+        const commandPath = `/${module.data?.command?.name}`;
+        // If this is a guild, check for blocklist
+        if (msg.guild?.id) {
+            const guildBlocklist = storage[msg.guild.id].blockedCommands || []
+            if (guildBlocklist.includes(commandPath)) {
+                return; // Ignore this module
+            }
+        }
+        // Check global blacklist from home server
+        const globalBlocklist = storage[config.homeServer]?.blockedCommands || []
+        if (globalBlocklist.includes(commandPath)) {
+            return;
+        }
+
         module.onmessage(msg, psudoGlobals);
     })
 
