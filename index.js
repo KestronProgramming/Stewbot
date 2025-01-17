@@ -568,7 +568,8 @@ function checkDirty(guildID, what, filter=false) {
 
     let dirty = false;
     let foundWords = []; // keep track of all filtered words to later tell the user what was filtered
-    for (blockedWord of storage[guildID].filter.blacklist) {
+    const blacklist = storage[guildID]?.filter?.blacklist;
+    if (blacklist) for (blockedWord of blacklist) {
         // Ignore the new beta json format for now
         if (typeof(blockedWord) !== 'string') {
             continue
@@ -1089,6 +1090,8 @@ const fetchWithRedirectCheck = async (inputUrl, maxRedirects = 5) => {
 * @returns {Promise<void>}
 */
 async function doEmojiboardReaction(react) {
+    if (react.message.guildId == '0') return; // DMs patch
+
     const emoji = getEmojiFromMessage(
         react.emoji.requiresColons ?
         `<:${react.emoji.name}:${react.emoji.id}>` :
