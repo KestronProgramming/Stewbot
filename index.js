@@ -4,7 +4,7 @@ console.beta = (...args) => process.env.beta && console.log(...args);
 console.beta("Importing discord")
 const {Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
 console.beta("Discord imported")
-// const translate=require("@vitalets/google-translate-api").translate;
+const translate = require("@vitalets/google-translate-api").translate; // Import requires, even though it's greyed out
 const RSSParser=require("rss-parser");
 const crypto = require('crypto');
 const { createCanvas } = require('canvas');
@@ -13,6 +13,7 @@ const config=require("./data/config.json");
 // const bible=require("./data/kjv.json");
 const fs=require("fs");
 // const path = require("path")
+const { getCommands } = require("./launchCommands.js"); // Note: current setup requires this to be before the commands.json import
 const cmds=require("./data/commands.json"); global.cmds = cmds;
 const Sentiment = require('sentiment');
 const dns = require('dns');
@@ -25,7 +26,6 @@ const nlp = require('compromise');
 var Turndown = require('turndown');
 const wotdList=fs.readFileSync(`./data/wordlist.txt`,"utf-8").split("\n");
 const cheerio = require('cheerio');
-const { getCommands } = require("./launchCommands.js");
 
 // Preliminary setup (TODO: move to a setup.sh)
 if (!fs.existsSync("tempMove")) fs.mkdirSync('tempMove');
