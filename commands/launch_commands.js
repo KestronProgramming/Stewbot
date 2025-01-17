@@ -7,6 +7,8 @@ function applyContext(context={}) {
 }
 // #endregion Boilerplate
 
+const config = require("../data/config.json");
+
 module.exports = {
 	data: {
 		// Slash command data
@@ -42,14 +44,14 @@ module.exports = {
 		applyContext(context);
 		
 		// Code
-        if(cmd.guild?.id==="983074750165299250"&&cmd.channel.id==="986097382267715604"){
+        if(cmd.guild?.id===config.homeServer &&cmd.channel.id==="986097382267715604"){
             await cmd.followUp(`Launching commands...\n${require(`../launchCommands.js`).launchCommands()}`);
 			var newCmds=JSON.parse(require("fs").readFileSync(`data/commands.json`,"utf-8"));
 			Object.keys(newCmds).forEach(key=>{
 				cmds[key]=newCmds[key];
 			});
         }
-        else if(cmd.guild?.id===`983074750165299250`){
+        else if(cmd.guild?.id===config.homeServer){
             cmd.followUp(`Not here.`);
         }
         else{

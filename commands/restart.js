@@ -8,6 +8,7 @@ function applyContext(context = {}) {
 // #endregion Boilerplate
 const fs = require("fs");
 const { exec } = require('child_process');
+const config = require("../data/config.json");
 
 module.exports = {
     data: {
@@ -37,8 +38,8 @@ module.exports = {
     async execute(cmd, context) {
         applyContext(context);
 
-        // TODO: move these IDs here and where the command is registered to be pulled from the env.json file
-        if (cmd.guild?.id === "983074750165299250" && cmd.channel.id === "986097382267715604") {
+        // TODO: move these IDs here and where the command is registered to be pulled from the config.json file
+        if (cmd.guild?.id === config.homeServer && cmd.channel.id === "986097382267715604") {
             const updateCode = cmd.options.getBoolean("update")
             const updateCommands = cmd.options.getBoolean("update_commands")
 
@@ -60,7 +61,6 @@ module.exports = {
                                 if (actuallyHasError) {
                                     var errNotif = `Error: ${error?.message || ""}`
                                     errNotif += `\nStderr: ${stderr}`
-                                    errNotif += `\nactuallyHasError: ${actuallyHasError.slice(0, 20)}`
                                     notify(1, errNotif);
                                     reject(0);
                                 }

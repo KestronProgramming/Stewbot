@@ -288,7 +288,7 @@ module.exports = {
         }, notify);
 
         response = await postprocessAIMessage(limitLength(response))
-        response = checkDirty(cmd.guild?.id, response, true)[1];
+        response = checkDirty(cmd.guild?.id, response, true, true)[1];
 
         cmd.followUp({
             content: await postprocessAIMessage(limitLength(response), cmd.guild),
@@ -335,7 +335,7 @@ module.exports = {
                 }
 
                 response = await postprocessAIMessage(response, msg.guild);
-                response = checkDirty(msg.guild?.id, response, true)[1];
+                response = checkDirty(msg.guild?.id, response, true, true)[1];
 
                 if (emoji) msg.react(emoji);
 

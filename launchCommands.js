@@ -2,6 +2,7 @@ process.env=require("./env.json");
 const { REST,Routes,PermissionFlagsBits,SlashCommandBuilder,ContextMenuCommandBuilder,ApplicationCommandType,ChannelType} = require('discord.js');
 const fs=require("fs");
 const path = require("path")
+const config = require("./data/config.json");
 
 //Command permissions should be set to the level you would need to do it manually (so if the bot is deleting messages, the permission to set it up would be the permission to delete messages)
 //Don't enable anything in DMs that is unusable in DMs (server configurations, multiplayer reliant commands, etc)
@@ -127,7 +128,7 @@ function launchCommands(){
 			.setDescription('Relaunch commands')
 	]
 	rest.put(
-		Routes.applicationGuildCommands(process.env.clientId, "983074750165299250"),
+		Routes.applicationGuildCommands(process.env.clientId, config.homeServer),
 		{ body: devadminCommands },
 	);
 

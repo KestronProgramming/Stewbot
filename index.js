@@ -550,7 +550,7 @@ async function finTempBan(guild,who,force){
     delete storage[guild].tempBans[who];
 }
 
-function checkDirty(guildID, what, filter=false) {
+function checkDirty(guildID, what, filter=false, applyGlobalFilter=false) {
     // If filter is false, it returns: hasBadWords
     // If filter is true, it returns [hadBadWords, censoredMessage, wordsFound]
 
@@ -568,7 +568,14 @@ function checkDirty(guildID, what, filter=false) {
 
     let dirty = false;
     let foundWords = []; // keep track of all filtered words to later tell the user what was filtered
-    const blacklist = storage[guildID]?.filter?.blacklist;
+
+    // Mostly for stewbot-created content (like AI), filter from both our and their server
+    let blacklist = storage[guildID]?.filter?.blacklist;
+    if (applyGlobalFilter) {
+        const globalBlacklist = storage[config.homeServer]?.filter?.blacklist || [];
+        blacklist = [...new Set([...(blacklist || []), ...globalBlacklist])];
+    }
+
     if (blacklist) for (blockedWord of blacklist) {
         // Ignore the new beta json format for now
         if (typeof(blockedWord) !== 'string') {
