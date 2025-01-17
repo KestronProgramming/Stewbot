@@ -6,6 +6,7 @@ function applyContext(context={}) {
 	}
 }
 // #endregion Boilerplate
+const fs = require("node:fs")
 const Fuse = require('fuse.js');
 const fuseOptions = {
     includeScore: true,
@@ -13,7 +14,7 @@ const fuseOptions = {
 };
 
 let cmdPathCache = null; // TODO: change when cmds change... a cleaner method of doing this would be nice probably...?
-function getCommandPaths(cmds) {
+function getCommandPaths(cmds, includeAllModules) {
     // This will be called a lot by autocomplete, so caching it for now. Might find a better way to do this later on.
     if (cmdPathCache) return cmdPathCache;
     const commandPaths = [];
@@ -29,6 +30,18 @@ function getCommandPaths(cmds) {
             }
         }
     }
+
+    // TODO: cleanup so that all of these load this way in the future, probably...
+    // Load any other modules we haven't loaded yet, for example modules without a command attached
+    if (includeAllModules) {
+        const allModules = fs.readdirSync("./commands").filter(file => file.endsWith(".js")).map(file => file.slice(0, -3));
+        for (const module of allModules) {
+            if (!commandPaths.includes("/" + module)) {
+                commandPaths.push("/" + module);
+            }
+        }
+    }
+
     cmdPathCache = commandPaths;
     return commandPaths;
 }
@@ -83,7 +96,7 @@ module.exports = {
 
 	async execute(cmd, context) {
 		applyContext(context);
-        const allCommands = getCommandPaths(cmds);
+        const allCommands = getCommandPaths(cmds, true);
         const commandToBlock = cmd.options.getString("command")
         const unblock = cmd.options.getBoolean("unblock")
 
@@ -100,21 +113,22 @@ module.exports = {
 
         const index = storage[cmd.guild.id].blockedCommands.indexOf(commandToBlock);
         const isBlocked = index !== -1;
+        const commandMention = getCommandFromPath(commandToBlock)?.mention || commandToBlock;
         if (!unblock) {
             if (isBlocked) {
-                return cmd.followUp(`${getCommandFromPath(commandToBlock).mention} is already blocked.`)
+                return cmd.followUp(`${commandMention} is already blocked.`)
             } else {
                 // Add to block list
                 storage[cmd.guild.id].blockedCommands.push(commandToBlock);
-                return cmd.followUp(`${getCommandFromPath(commandToBlock).mention} has been blocked in this server.`)
+                return cmd.followUp(`${commandMention} has been blocked in this server.`)
             }
         } else {
             // Remove from block list
             if (isBlocked) {
                 storage[cmd.guild.id].blockedCommands.splice(index, 1);
-                return cmd.followUp(`${getCommandFromPath(commandToBlock).mention} has been unblocked for this server.`)
+                return cmd.followUp(`${commandMention} has been unblocked for this server.`)
             } else {
-                return cmd.followUp(`${getCommandFromPath(commandToBlock).mention} does not seem to be blocked in this server.`)
+                return cmd.followUp(`${commandMention} does not seem to be blocked in this server.`)
             }
         }
 
@@ -123,7 +137,7 @@ module.exports = {
 	},
 
 	async autocomplete(cmd) {
-		let   allCommands = getCommandPaths(cmds);
+		let   allCommands = getCommandPaths(cmds, true);
         const userInput = cmd.options.getFocused() || "";
 
         // Get the top matching results

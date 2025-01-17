@@ -36,7 +36,9 @@ const usage=require("./data/usage.json");
 // Load commands modules
 console.beta("Loading commands")
 let commands = getCommands();
-let messageListenerModules = Object.values(commands).filter(command => command.onmessage);
+let messageListenerModules = Object.fromEntries(
+    Object.entries(commands).filter(([name, command]) => command.onmessage)
+);
 
 // Variables
 const rssParser=new RSSParser({
@@ -1857,9 +1859,9 @@ client.on("messageCreate",async msg => {
         config
     };
 
-    messageListenerModules.forEach(module => {
+    Object.entries(messageListenerModules).forEach(([name, module]) => {
         // Check if this command is blocked with /block_command
-        const commandPath = `/${module.data?.command?.name}`;
+        const commandPath = `/${module.data?.command?.name || name}`; // ||name handles non-command modules
         // If this is a guild, check for blocklist
         if (msg.guild?.id) {
             const guildBlocklist = storage[msg.guild.id].blockedCommands || []
