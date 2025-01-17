@@ -8,7 +8,7 @@ function applyContext(context={}) {
 const blocklistsLocation = `./data/filterCache/`
 const blocklists = [
 	{
-		title: "Ublock's Badware List",
+		title: "uBlock Origin's Badware List",
 		url: "https://raw.githubusercontent.com/uBlockOrigin/uAssets/master/filters/badware.txt",
 		filename: "badware.txt"
 	}
