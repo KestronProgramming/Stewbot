@@ -174,7 +174,7 @@ module.exports = {
 				for(var coinOn=0;coinOn<coinsToFlip;coinOn++){
 					coins.push(Math.floor(Math.random()*2));
 				}
-				cmd.followUp(`I have flipped the coin${coinsToFlip>1?"s":""}.\n${coins.map(a=>`\n- **${a===0?"Heads":"Tails"}**`).join("")}`);
+				cmd.followUp(`I have flipped the coin${coinsToFlip>1?"s":""} :coin:${coins.map(a=>`\n\\- **${a===0?"Heads":"Tails"}**`).join("")}`);
 			break;
 			case 'dice-roll':
 				var rolls=[];
