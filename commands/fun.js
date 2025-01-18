@@ -181,7 +181,7 @@ module.exports = {
 					let firstQuest=firstQues[0].toUpperCase()+firstQues.slice(1,firstQues.length).split(" or ")[0];
 					let nextQues=firstQues.split(" or ")[1];
 					let nextQuest=nextQues[0].toUpperCase()+nextQues.slice(1,nextQues.length).split("?")[0];
-					cmd.followUp(`**Would you Rather**\n🅰️: ${firstQuest}\n🅱️: ${nextQuest}\n\n*\\*Disclaimer: All WYRs are provided by a third party API*`);
+					cmd.followUp(`**Would you Rather**\n🅰️: ${firstQuest}\n🅱️: ${nextQuest}\n\n-# *\\*Disclaimer: All WYRs are provided by a third party API*`);
 					if(cmd.channel?.permissionsFor?.(client.user.id).has(PermissionFlagsBits.AddReactions)){
 						let msg = await cmd.fetchReply();
 						msg.react("🅰️").then(msg.react("🅱️"));
@@ -194,7 +194,7 @@ module.exports = {
 				});
 			break;
 			case 'meme':
-				var memes=fs.readdirSync("./memes"); // OPTIMIZE: load memes into ram at beginning and at accepting new memes
+				var memes=fs.readdirSync("./memes");
 				if(memes.length===0){
 					cmd.followUp("I'm sorry, but I don't appear to have any at the moment.");
 					break;
