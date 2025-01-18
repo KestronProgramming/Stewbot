@@ -2277,10 +2277,10 @@ client.on("messageCreate",async msg => {
     var embs=[];
     var fils=[];
     for(var i=0;i<links.length;i++){
-        let slashes=links[i].split("channels/")[1].split("/");
+        let linkIDs=links[i].split("channels/")[1].split("/");
         try{
-            var channelLinked=await client.channels.fetch(slashes[slashes.length-2]);
-            var mes=await channelLinked.messages.fetch(slashes[slashes.length-1]);
+            var channelLinked=await client.channels.fetch(linkIDs[linkIDs.length-2]);
+            var mes=await channelLinked.messages.fetch(linkIDs[linkIDs.length-1]);
             if(checkDirty(msg.guild?.id,mes.content)||checkDirty(msg.guild?.id,mes.author.nickname||mes.author.globalName||mes.author.username)||checkDirty(msg.guild?.id,mes.guild.name)||checkDirty(msg.guild?.id,mes.channel.name)){
                 embs.push(
                     new EmbedBuilder()
@@ -2319,11 +2319,14 @@ client.on("messageCreate",async msg => {
                     attachedImg=true;
                 }
             });
-            if(channelLinked.permissionsFor(msg.author.id).has(PermissionFlagsBits.ViewChannel)){
+            await channelLinked.guild.members.fetch(msg.author.id);
+            if(channelLinked.permissionsFor(msg.author.id)?.has(PermissionFlagsBits.ViewChannel)){
                 embs.push(messEmbed);
             }
         }
-        catch(e){}
+        catch(e){
+            notify(1, `Error embeding message:\n${e.stack}`)
+        }
     }
     var progsDeleted = false;
     if(embs.length>0){
