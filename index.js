@@ -2270,6 +2270,7 @@ client.on("messageCreate",async msg => {
     var links=msg.content.match(discordMessageRegex)||[];
     var progs=msg.content.match(kaProgramRegex)||[];
     if(!storage[msg.author.id].config.embedPreviews||!storage[msg.guildId]?.config.embedPreviews||!msg.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)||!msg.channel.permissionsFor(msg.author.id)?.has(PermissionFlagsBits.EmbedLinks)){
+        // If the embed shouldn't be posted, force set it to nothing
         links=[];
         progs=[];
     }
@@ -2278,7 +2279,7 @@ client.on("messageCreate",async msg => {
     for(var i=0;i<links.length;i++){
         let slashes=links[i].split("channels/")[1].split("/");
         try{
-            var channelLinked=await client.channels.cache.get(slashes[slashes.length-2]);
+            var channelLinked=await client.channels.fetch(slashes[slashes.length-2]);
             var mes=await channelLinked.messages.fetch(slashes[slashes.length-1]);
             if(checkDirty(msg.guild?.id,mes.content)||checkDirty(msg.guild?.id,mes.author.nickname||mes.author.globalName||mes.author.username)||checkDirty(msg.guild?.id,mes.guild.name)||checkDirty(msg.guild?.id,mes.channel.name)){
                 embs.push(
