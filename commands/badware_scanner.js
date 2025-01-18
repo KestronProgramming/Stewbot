@@ -17,6 +17,7 @@ const blocklists = [
 const { URL } = require('url');
 const fs = require("node:fs")
 
+// Functions for ublock list checker
 async function loadBlocklist(url) {
     const response = await fetch(url);
     const text = await response.text();
@@ -155,6 +156,43 @@ async function checkURL(inputUrl, overrideCache=false) {
 	return false;
 }
 
+// Functions for hidden URL alert
+function detectMismatchedDomains(markdown) {
+    // Extract markdown embeded links
+    // const markdownRegex = /\[([^\s]+)\]\(([^\)]+)\)/;
+    const markdownRegex = /\[([^\s\[\]]+)\]\(([^()\s]+)\)/;
+
+    const match = markdown.match(markdownRegex);
+    if (!match) return null; // No valid Markdown link found
+
+    const displayText = match[1];
+    const realUrl = match[2];
+
+    // Match anything designed to look like a domain
+    const fakeDomainRegex = /[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/
+
+    const fakeDomain = displayText.match(fakeDomainRegex)?.[0];
+    if (!fakeDomain) return;
+
+    let realDomain;
+    try {
+        const url = new URL(realUrl);
+        realDomain = url.hostname;
+        if (!realDomain) {
+            return null;
+        }
+    } catch {
+        return null;
+    }
+
+    // Finally, see if this link is hiding behind a fake link
+    if (fakeDomain.toLowerCase() !== realDomain.toLowerCase()) {
+        return { fake: fakeDomain, real: realDomain };
+    }
+
+    return null;
+}
+
 module.exports = {
 	data: {
 		command: null,
@@ -196,13 +234,13 @@ module.exports = {
 	},
 
 	async onmessage(msg, context) {
-		// Find URLs and check each one
+		// Check domain
 		const urlRegex = /https?:\/\/[^\s/$.?#].[^\s]*/g;
 		const links = msg.content.match(urlRegex) || [];
 		for (const link of links) {
 			const triggerdBlocklist = await checkURL(link);
 			if (triggerdBlocklist) {
-				await msg.reply(
+				return await msg.reply(
                     `## :warning: WARNING :warning:\n` +
                     `The link sent in this message was found in the blocklist [${triggerdBlocklist.title}](${triggerdBlocklist.url})\n` +
                     `\n` +
@@ -212,5 +250,18 @@ module.exports = {
 			}
 		}
 
+        // Check for link hiding behind fake link
+        const fakeLink = detectMismatchedDomains(msg.content);
+        if (fakeLink) {
+            return await msg.reply({
+                content:
+                    `## :warning: WARNING :warning:\n` +
+                    `The link in this message links to **${fakeLink.real}**, NOT **${fakeLink.fake}**, which it looks like.\n` +
+                    `\n` +
+                    `-# This module is part of a new Stewbot feature. Use ${cmds.report_problem.mention} to report any issues.\n` +
+                    `-# If you need to disable this module, run ${"`/block_command command:/badware_scanner`"}`,
+                allowedMentions:{parse:[]}
+            })
+        }
 	}
 };
