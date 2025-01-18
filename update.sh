@@ -19,7 +19,7 @@ ssh-add $HOME/.ssh/GithubKey > /dev/null 2>&1
 git stash
 
 # Now force-update to latest
-git fetch origin
+git fetch origin 2>&1 | grep -v "From github.com"
 git reset --hard origin/main
 
 # Install new deps
