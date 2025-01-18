@@ -20,6 +20,9 @@ module.exports = {
 		},
 
 		requiredGlobals: ["getPrimedEmbed"],
+
+		deferEphemeral: true,
+		
 		help:{
 			helpCategories: ["Information","General","Entertainment","Context Menu"],
 			/*

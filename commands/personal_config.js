@@ -32,6 +32,8 @@ module.exports = {
 
 		requiredGlobals: ["presets"],
 
+		deferEphemeral: true,
+
 		help: {
 			helpCategories: ["General","Bot","Configuration"],
 			/*

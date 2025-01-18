@@ -11,7 +11,8 @@ module.exports = {
                 option.setName("private").setDescription("Make the response ephemeral?")//Do not remove private option unless the command is REQUIRED to be ephemeral or non-ephemeral.
             ),
 		
-		// Optional fields
+		// Optional fields below this point
+
 		extra: {"contexts": [0,1,2], "integration_types": [0,1]},//Where the command can be used and what kind of installs it supports
         /*
             Contexts
@@ -23,6 +24,9 @@ module.exports = {
              - 0: Installed to servers
              - 1: Installed to users
         */
+
+		// When this command defers, should it be ephemeral? (if the private option is defined, it can override this)
+		deferEphemeral: true,
 
 		// Allow variables from the global index file to be accessed here - requiredGlobals["helpPages"]
 		requiredGlobals: [],

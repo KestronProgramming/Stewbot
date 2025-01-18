@@ -20,6 +20,8 @@ module.exports = {
 
 		requiredGlobals: ["presets"],
 
+		deferEphemeral: true,
+
 		help: {
 			helpCategories: ["General","Administration","Configuration","Server Only"],
 			/*

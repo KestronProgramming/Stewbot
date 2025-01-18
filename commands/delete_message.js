@@ -18,6 +18,8 @@ module.exports = {
 
 		requiredGlobals: [],
 
+		deferEphemeral: true,
+
 		help: {
 			helpCategories: ["Bot","Administration"],
 			/*

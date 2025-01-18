@@ -2581,6 +2581,8 @@ client.on("messageCreate",async msg => {
     }
 });
 client.on("interactionCreate",async cmd=>{
+    const commandScript = commands[cmd.commandName];
+
     try{
         if(
             !cmd.isButton() &&
@@ -2591,22 +2593,10 @@ client.on("interactionCreate",async cmd=>{
         ) {
             const isPrivate = cmd.options.getBoolean("private");
             const isPrivateDefined = isPrivate !== null;
-            const ephemeral = isPrivateDefined ? cmd.options.getBoolean("private") : [
-                "clone_emoji", 
-                "poll", 
-                "auto_roles", 
-                "submit_meme", 
-                "delete_message", 
-                "move_message", 
-                "auto-join-roles", 
-                "join-roleOption", 
-                "admin_message", 
-                "personal_config", 
-                "timestamp", 
-                "unavailable", 
-                "remove_embeds", 
-                "prime_embed"
-            ].includes(cmd.commandName);
+            const ephemeral = 
+                isPrivateDefined ? cmd.options.getBoolean("private") : 
+                commandScript?.data.deferEphemeral || // Slash commands base off this property.
+                [ "join-roleOption" ].includes(cmd.commandName); // Backup for buttons that need to be ephemeral. 
             
             await cmd.deferReply({
                 ephemeral
@@ -2636,7 +2626,6 @@ client.on("interactionCreate",async cmd=>{
     if (cmd.isAutocomplete()) {
         // Dispatch to relevent command if registered
         // // List of general globals it should have access to
-        const commandScript = commands[cmd.commandName];
         const psudoGlobals = {
             client,
             storage,

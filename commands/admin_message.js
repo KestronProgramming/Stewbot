@@ -23,6 +23,8 @@ module.exports = {
 
         requiredGlobals: ["config", "limitLength"],
 
+        deferEphemeral: true,
+
         help: {
 			helpCategories: ["Administration","Server Only"],
 			/*

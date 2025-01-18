@@ -22,6 +22,8 @@ module.exports = {
 
         requiredGlobals: ["presets", "limitLength"],
 
+        deferEphemeral: true,
+
         help: {
             helpCategories: ["Bot","Entertainment","Context Menu"],
 			/*

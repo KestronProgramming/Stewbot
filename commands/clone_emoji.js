@@ -74,6 +74,8 @@ module.exports = {
 						option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 					),
 		
+		deferEphemeral: true,
+
 		requiredGlobals: [],
 
 		help: {

@@ -18,6 +18,8 @@ module.exports = {
 		
 		extra: {"contexts":[0],"integration_types":[0]},
 
+		deferEphemeral: true,
+
 		requiredGlobals: ["presets"],
 
 		help: {

@@ -20,6 +20,8 @@ module.exports = {
 		// Optional fields
 		requiredGlobals: ["parseEmoji", "getEmojiFromMessage"],
 
+		deferEphemeral: true,
+
 		help: {
 			helpCategories: ["Entertainment","Configuration","Server Only"],
 			/*

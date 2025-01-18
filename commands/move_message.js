@@ -21,6 +21,8 @@ module.exports = {
 
 		requiredGlobals: ["presets"],
 
+		deferEphemeral: true,
+
 		help: {
 			helpCategories: ["Administration","Server Only","Context Menu"],
 			/*
