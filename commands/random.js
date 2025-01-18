@@ -7,6 +7,24 @@ function applyContext(context={}) {
 }
 // #endregion Boilerplate
 
+function getOrdinal(num) {
+    if (typeof num !== 'number' || !Number.isInteger(num)) {
+        throw new Error('Input must be an integer.');
+    }
+
+    const suffixes = ['th', 'st', 'nd', 'rd'];
+    const lastDigit = num % 10;
+    const lastTwoDigits = num % 100;
+
+    // Special case for numbers ending in 11, 12, or 13
+    if (lastTwoDigits >= 11 && lastTwoDigits <= 13) {
+        return `${num}th`;
+    }
+
+    const suffix = suffixes[lastDigit] || 'th';
+    return `${num}${suffix}`;
+}
+
 module.exports = {
 	data: {
 		// Slash command data
@@ -152,7 +170,12 @@ module.exports = {
 				for(var roll=0;roll<(cmd.options.getInteger("number")!==null?cmd.options.getInteger("number"):1);roll++){
 					rolls.push(Math.floor(Math.random()*6)+1);
 				}
-				cmd.followUp(`I have rolled the dice.${rolls.map(r=>`\n- ${r}`).join("")}${rolls.length>1?`\nTotal: ${rolls.reduce((a,b)=>a+b)}`:""}`);
+				cmd.followUp(
+					`I have rolled the dice :game_die:` +
+					`${rolls.map((r, index) => {
+						const dieNum = rolls.length == 1 ? "" : `${getOrdinal(index+1)} die: `;
+						return `\n \\- ${dieNum}**${r}**`
+					}).join("")}${rolls.length>1?`\n\nTotal: **${rolls.reduce((a,b)=>a+b)}**`:""}`);
 			break;
 		}
 	}
