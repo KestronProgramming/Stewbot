@@ -263,7 +263,7 @@ module.exports = {
 		applyContext(context);
 
 		// Check domain
-        if (!(storage[msg.guild.id].config.domain_scanning === false)) {
+        if (msg.guild && !(storage[msg.guild.id].config.domain_scanning === false)) {
             const urlRegex = /https?:\/\/[^\s/$.?#].[^\s]*/g;
             const links = msg.content.match(urlRegex) || [];
             for (const link of links) {
@@ -281,7 +281,7 @@ module.exports = {
         }
 
         // Check for link hiding behind fake link
-        if (!(storage[msg.guild.id].config.fake_link_check === false)) {
+        if (msg.guild && !(storage[msg.guild.id].config.fake_link_check === false)) {
             const fakeLink = detectMismatchedDomains(msg.content);
             if (fakeLink) {
                 return await msg.reply({
