@@ -2997,7 +2997,7 @@ client.on("interactionCreate",async cmd=>{
                 cmd.reply({content:"That location isn't on the board",ephemeral:true});
                 break;
             }
-            if((Date.now()-+rac.timePlayed)<900000&&cmd.member.id===rac.lastPlayer){
+            if((Date.now()-+rac.timePlayed)<900000&&cmd.user.id===rac.lastPlayer){
                 cmd.reply({content:`I'm sorry, you can make another move after somebody else does OR <t:${Math.round((rac.timePlayed+900000)/1000)}:R>`,ephemeral:true});
                 break;
             }
