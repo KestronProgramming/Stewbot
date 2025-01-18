@@ -49,7 +49,7 @@ module.exports = {
 
 		help: {
             config:{
-                helpCategories: ["General","Administration","Configuration","Server Only"],
+                helpCategories: ["General","Administration","Configuration","Server Only","Safety"],
                 /*
                     - General
                     - Information

@@ -223,7 +223,7 @@ module.exports = {
 		requiredGlobals: [],
 
 		help: {
-			helpCategories: ["Administration", "Server Only"],
+			helpCategories: ["Administration", "Server Only", "Safety"],
 			/*
 				- General -> Generic commands almost every bot has
 				- Information -> A command designed purely to provide information of some kind
@@ -235,10 +235,11 @@ module.exports = {
 				- Other/Misc -> Commands without another good category
 				- Server Only -> Commands that can only be run in servers
 				- User Install Only -> Commands that can only be run if Stewbot is installed to your user
+                - Safety -> Anti-hack, anti-spam, etc
 			*/
-			shortDesc: "A module that scans links for malicious content",
+			shortDesc: "A module that scans links for malicious content.",
 			detailedDesc:
-				`This is a developing command using public lists of malicious links domains to identify bad links.`
+				`This is a developing command using public lists and other methods to identify malicious links.`
 		},
 	},
 

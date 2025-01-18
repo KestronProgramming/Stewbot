@@ -40,6 +40,7 @@ module.exports = {
 				- Other/Misc -> Commands without another good category
 				- Server Only -> Commands that can only be run in servers
 				- User Install Only -> Commands that can only be run if Stewbot is installed to your user
+				- Safety -> Anti-hack, anti-spam, etc
 			*/
 			shortDesc: "Jerry Jerry Jerry Jerry Yeah!!!",//Should be the same as the command setDescription field
 			detailedDesc: //Detailed on exactly what the command does and how to use it
@@ -55,5 +56,13 @@ module.exports = {
 		applyContext(context);
 		
 		cmd.followUp(`Jerry the rope!`);
+	},
+
+	async onmessage(msg, context) {
+		// `context` currently does not respect requested globals
+	},
+
+	async autocomplete(cmd) {
+
 	}
 };

@@ -277,7 +277,7 @@ Object.keys(commands).forEach(command=>{
     }
 });
 
-const helpCategories = ["General", "Bot", "Information", "Configuration", "Administration", "Entertainment","Context Menu","Server Only"];
+const helpCategories = ["General", "Bot", "Information", "Entertainment", "Configuration", "Administration", "Safety", "Context Menu", "Server Only"];
 function makeHelp(page,categories,filterMode,forWho){
     page=+page;
     if(categories.includes("All")){
@@ -3391,30 +3391,6 @@ client.on("interactionCreate",async cmd=>{
             cmd.user.send(`Ticket opened in **${cmd.guild.name}**. You can reply to this message to converse in the ticket. Note that any messages not a reply will not be sent to the ticket.\n\nTicket ID: ${cmd.customId.split("-")[1]}/${msg.id}`);
         });
         cmd.deferUpdate();
-    }
-    if(cmd.customId?.startsWith("switch-")){
-        var newPage=helpPages.filter(a=>a.name===cmd.customId.split("switch-")[1])[0];
-        cmd.update({content:`**${newPage.name}**`,embeds:[{
-            "type": "rich",
-            "title": newPage.name,
-            "description": `Help Menu ${newPage.name} Category`,
-            "color": 0x006400,
-            "fields": newPage.commands.slice(0, 25).map(a=>{
-                return {
-                    "name":a.name,
-                    "value":a.desc,
-                    "inline":true
-                };
-            }),
-            "thumbnail": {
-                "url": config.pfp,
-                "height": 0,
-                "width": 0
-            },
-            "footer": {
-                "text": `Help Menu for Stewbot`
-            }
-        }]});
     }
     if(cmd.customId?.startsWith("help-")){
         var opts=cmd.customId.split("-");

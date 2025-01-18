@@ -19,7 +19,7 @@ module.exports = {
 		requiredGlobals: ["presets"],
 
 		help: {
-			helpCategories: [],//Do not show in any automatic help pages
+			helpCategories: ["Safety"],
 			/*
 				- General
 				- Information

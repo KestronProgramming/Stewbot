@@ -24,7 +24,7 @@ module.exports = {
 		requiredGlobals: [],
 
 		help: { 
-			helpCategories: ["General","Administration","Configuration","Server Only"],
+			helpCategories: ["General","Administration","Configuration","Server Only", "Safety"],
 			/*
 				- General -> Generic commands almost every bot has
 				- Information -> A command designed purely to provide information of some kind

@@ -33,7 +33,7 @@ module.exports = {
 		requiredGlobals: ["parseEmoji", "getEmojiFromMessage"],
 
 		help: {
-			helpCategories: ["Administration","Configuration","Server Only"],
+			helpCategories: ["Administration","Configuration","Server Only","Entertainment"],
 			/*
 				- General -> Generic commands almost every bot has
 				- Information -> A command designed purely to provide information of some kind
