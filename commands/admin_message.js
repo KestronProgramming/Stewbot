@@ -21,7 +21,7 @@ module.exports = {
         
         extra: { "contexts": [0], "integration_types": [0] },
 
-        requiredGlobals: ["config"],
+        requiredGlobals: ["config", "limitLength"],
 
         help: {
 			helpCategories: ["Administration","Server Only"],
@@ -46,13 +46,18 @@ module.exports = {
     async execute(cmd, context) {
         applyContext(context);
 
-        if (cmd.options.getUser("target")?.id) {
+        const target = cmd.options.getUser("target");
+        const message = cmd.options.getString("what");
+
+        // If we're supposed to DM a user something:
+        if (target?.id) {
+            let worked = true;
             try {
-                cmd.options.getUser("target").send({
+                await target.send({
                     embeds: [{
                         type: "rich",
-                        title: checkDirty(config.homeServer,cmd.guild.name.slice(0, 80),true)[1],
-                        description: checkDirty(config.homeServer,cmd.options.getString("what").replaceAll("\\n", "\n"),true)[1],
+                        title: checkDirty(config.homeServer,limitLength(cmd.guild.name, 80),true)[1],
+                        description: checkDirty(config.homeServer,message.replaceAll("\\n", "\n"),true)[1],
                         color: 0x006400,
                         thumbnail: {
                             url: cmd.guild.iconURL(),
@@ -63,13 +68,21 @@ module.exports = {
                             text: `This message was sent by a moderator of ${cmd.guild.name}`
                         }
                     }]
-                }).catch(e => { });
-                cmd.followUp("Messaged them");
-            } catch (e) { }
+                })
+            } catch (e) {
+                worked = false;
+            }
+            await cmd.followUp(
+                worked ? 
+                    "Messaged them" :
+                    "I couldn't message them, most likely they blocked me."
+            );
         }
+
+        // If we're supposed to post something:
         else if (cmd.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.ManageWebhooks)) {
             var resp = {
-                "content": checkDirty(config.homeServer,cmd.options.getString("what").replaceAll("\\n", "\n"),true)[1],
+                "content": checkDirty(config.homeServer,message.replaceAll("\\n", "\n"),true)[1],
                 "avatarURL": cmd.guild.iconURL(),
                 "username": checkDirty(config.homeServer,cmd.guild.name.slice(0, 80),true)[1]
             };
