@@ -17,6 +17,8 @@ ssh-add $HOME/.ssh/GithubKey > /dev/null 2>&1
 
 # Stash changes in worst-case scenario in case someone accidentally runs this while devving.
 git stash
+# To clean the stash on the main server, run:
+# git stash clear
 
 # Now force-update to latest
 git fetch origin 2>&1 | grep -v "From github.com"
