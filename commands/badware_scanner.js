@@ -156,6 +156,11 @@ async function checkURL(inputUrl, overrideCache=false) {
 	return false;
 }
 
+function updateBlocklists() {
+    // A quick an easy way
+    checkURL("https://google.com", true);
+}
+
 // Functions for hidden URL alert
 function detectMismatchedDomains(markdown) {
     // Extract markdown embeded links
@@ -196,6 +201,8 @@ function detectMismatchedDomains(markdown) {
 }
 
 module.exports = {
+    updateBlocklists, // This function will be called in the dailies
+
 	data: {
 		command: new SlashCommandBuilder().setName("badware_scanner").setDescription("Configure the Badware Scanner for this server")
         .addBooleanOption(option=>

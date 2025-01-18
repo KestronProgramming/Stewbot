@@ -26,6 +26,7 @@ const nlp = require('compromise');
 var Turndown = require('turndown');
 const wotdList=fs.readFileSync(`./data/wordlist.txt`,"utf-8").split("\n");
 const cheerio = require('cheerio');
+const { updateBlocklists } = require("./commands/badware_scanner.js")
 
 // Preliminary setup (TODO: move to a setup.sh)
 if (!fs.existsSync("tempMove")) fs.mkdirSync('tempMove');
@@ -1406,6 +1407,9 @@ function daily(dontLoop=false){
     // Set wotd
     storage.wotd=wotdList[Math.floor(Math.random()*wotdList.length)];
     notify(1, `WOTD is now ||${storage.wotd}||, use \`~sudo setWord jerry\` to change it.`)
+
+    // Update badware blocklists
+    updateBlocklists()
 }
 
 let rac = { // TODO: move this into fun.js subfile
@@ -1931,6 +1935,9 @@ client.on("messageCreate",async msg => {
                 break;
                 case "checkRSS":
                     checkRSS();
+                break;
+                case "updateBlocklists":
+                    updateBlocklists();
                 break;
             }
         }
