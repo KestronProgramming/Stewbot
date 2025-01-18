@@ -7,6 +7,8 @@ function applyContext(context={}) {
 }
 // #endregion Boilerplate
 
+const crypto = require('crypto');
+
 function getOrdinal(num) {
     if (typeof num !== 'number' || !Number.isInteger(num)) {
         throw new Error('Input must be an integer.');
@@ -144,11 +146,20 @@ module.exports = {
 		
 		switch(cmd.options.getSubcommand()) {
 			case 'rng':
+				// As this number can be made very large, it could in theory be predicted, so we'll keep this one cryptographically secure
+
 				let low = cmd.options.getInteger("low");
 				let high = cmd.options.getInteger("high");
 				low = low === null ? 1 : low;
 				high = high === null ? 10 : high;
-				cmd.followUp(`I have selected a random number between **${low}** and **${high}**: **${Math.round(Math.random()*(high-low)+low)}**`);
+	
+				if (Math.max(low, high) !== high) [low, high] = [high, low];
+
+				const range = high - low + 1;
+				const randomBytes = crypto.randomBytes(4).readUInt32BE(0);
+				const choice = low + (randomBytes % range);
+
+				cmd.followUp(`I have selected a random number between **${low}** and **${high}**: **${choice}**`);
 			break;
 			case '8-ball':
 				var ques=checkDirty(config.homeServer,cmd.options.getString("question"),true)[1];
