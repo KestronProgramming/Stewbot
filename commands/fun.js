@@ -32,7 +32,7 @@ module.exports = {
 				command.setName("rac").setDescription("Play a game of Rows & Columns").addBooleanOption(option=>
 					option.setName("help").setDescription("View the rules instead of playing?")
 				).addIntegerOption(option=>
-					option.setName("size").setDescription("Set your amount of rows and start playing!").setMinValue(3).setMaxValue(26)
+					option.setName("size").setDescription("Set your amount of rows and start playing!").setMinValue(process.env.beta ? 1 : 3).setMaxValue(26)
 				)
 			).addSubcommand(command=>
 				command.setName("rock_paper_scissors").setDescription("Play Rock Paper Scissors with the bot").addStringOption(option=>
@@ -230,7 +230,7 @@ module.exports = {
 					}
 				}
 				rac.players=[cmd.user.id];
-				cmd.followUp({content:getRACBoard(rac),components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId("racJoin").setLabel("Join Game").setStyle(ButtonStyle.Danger),new ButtonBuilder().setCustomId("racMove").setLabel("Make a Move").setStyle(ButtonStyle.Success))]});
+				await cmd.followUp({content:getRACBoard(rac),components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId("racJoin").setLabel("Join Game").setStyle(ButtonStyle.Danger),new ButtonBuilder().setCustomId("racMove").setLabel("Make a Move").setStyle(ButtonStyle.Success))]});
 			break;
 			case 'rock_paper_scissors':
 				var humanChoice=cmd.options.getString("choice");

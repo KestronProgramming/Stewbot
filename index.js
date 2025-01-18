@@ -1429,7 +1429,8 @@ function getRACBoard(localRac) {
         temp += ` ${racChars[i]}`;
     }
     mess.unshift(temp);
-    mess=`Last Moved: <@${rac.lastPlayer}> ${(rac.timePlayed!==0?`<t:${Math.round(rac.timePlayed/1000)}:R>`:"")}\`\`\`\n${mess.join("\n")}\`\`\`\nPlayers: `;
+    const lastMoveStr = rac.lastPlayer === "Nobody" ? "None" : `<@${rac.lastPlayer}>`
+    mess=`Last Moved: ${lastMoveStr} ${(rac.timePlayed!==0?`<t:${Math.round(rac.timePlayed/1000)}:R>`:"")}\`\`\`\n${mess.join("\n")}\`\`\`\nPlayers: `;
     for (var i=0;i<rac.players.length;i++) {
         mess+=`\n<@${rac.players[i]}>: \`${rac.icons[i]}\``;
     }
@@ -1492,32 +1493,49 @@ function score(game,char) {
 }
 function tallyRac() {
     let scores=[];
-    for (var i=0;i<rac.players.length;i++) {
-        scores[i]=score(rac.board,rac.icons[i]);
+    let playerObjects = []; // we're gonna manage this the right way
+    for (var i = 0; i < rac.players.length; i++) {
+        const playerScore = score(rac.board, rac.icons[i]);
+        playerObjects.push({
+            playerID: rac.players[i],
+            score: playerScore
+        })
     }
-    let mess=[];
+    // Build the board
+    let resultsMessage=[];
     let temp="  ";
     let racChars="ABCDEFGHIJKLMNOPQRSTUVWXYZ";
     for (var i=0;i<rac.board.length;i++) {
-        mess.push(`${racChars[i]} |${rac.board[i].join("|")}|`);
+        resultsMessage.push(`${racChars[i]} |${rac.board[i].join("|")}|`);
         temp+=` ${racChars[i]}`;
     }
-    mess.unshift(temp);
-    let tmpPlays=rac.players.slice(0);
-    for (var i=scores.length-1;i>-1;i--) {
-        for (var j=scores.length-1;j>-1;j--) {
-            if (scores[j]>scores[i]) {
-                scores.splice(i,1);
-                tmpPlays.splice(i,1);
-                j=-1;
-            }
+    resultsMessage.unshift(temp);
+    playerObjects.sort((a, b) => b.score - a.score);
+    const highestScore = playerObjects[0].score;
+    const winningPlayers = playerObjects.filter(player => player.score === highestScore);
+    
+    const winnersMention = `<@${winningPlayers.map(obj => obj.playerID).join(">, <@")}>`
+    resultsMessage=`Winner${winningPlayers.length>1?"s":''}: ${winnersMention} :trophy:\`\`\`\n${resultsMessage.join("\n")}\`\`\`\nPlayers: `;
+    
+    // Now add everybody else
+    const positionEmojis = [
+        ":first_place:",
+        ":second_place:",
+        ":third_place:",
+    ]
+
+    let currentRank = 0;
+    let previousScore = null;
+    playerObjects.forEach((player, index) => {
+        if (player.score !== previousScore) {
+            currentRank = index;
         }
-    }
-    mess=`Winner: <@${tmpPlays.join(">, <@")}>\`\`\`\n${mess.join("\n")}\`\`\`\nPlayers: `;
-    for (var i=0; i<rac.players.length;i++) {
-        mess+=`\n<@${rac.players[i]}>: \`${rac.icons[i]}\``;
-    }
-    return `**Rows & Columns**\n${mess}`;
+        const emoji = positionEmojis[currentRank] || "";
+        resultsMessage += `\n<@${player.playerID}>: \`${rac.icons[rac.players.indexOf(player.playerID)]}\` - score ${player.score} ${emoji}`;
+        previousScore = player.score;
+    });
+
+    return `**Rows & Columns**\n${resultsMessage}`;
 }
 
 function getStarMsg(msg){
