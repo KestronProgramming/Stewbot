@@ -14,6 +14,8 @@ const blocklists = [
 	}
 ]
 
+const scamEmoji = process.env.beta ? "<:This_Post_May_Contain_A_Scam:1330320295357055067>" : '<:This_Post_May_Contain_A_Scam:1330318400668565534>'
+
 const { URL } = require('url');
 const fs = require("node:fs")
 
@@ -269,13 +271,18 @@ module.exports = {
             for (const link of links) {
                 const triggerdBlocklist = await checkURL(link);
                 if (triggerdBlocklist) {
-                    return await msg.reply(
-                        `## :warning: WARNING :warning:\n` +
-                        `The link sent in this message was found in the blocklist [${triggerdBlocklist.title}](${triggerdBlocklist.url})\n` +
-                        `\n` +
-                        `-# This module is part of a new Stewbot feature. Use ${cmds.report_problem.mention} to report any issues.\n` +
-                        `-# If you need to disable this feature, run ${"`/badware_scanner domain_scanning:false`"}`
-                    )
+                    if (msg.channel.permissionsFor(client.user).has(PermissionFlagsBits.SendMessages)) {
+                        return await msg.reply(
+                            `## :warning: WARNING :warning:\n` +
+                            `The link sent in this message was found in the blocklist [${triggerdBlocklist.title}](${triggerdBlocklist.url})\n` +
+                            `\n` +
+                            `-# This module is part of a new Stewbot feature. Use ${cmds.report_problem.mention} to report any issues.\n` +
+                            `-# If you need to disable this feature, run ${"`/badware_scanner domain_scanning:false`"}`
+                        );
+                    } else if (msg.channel.permissionsFor(client.user).has(PermissionFlagsBits.AddReactions)) {
+                        await msg.react('⚠️');
+                        return await msg.react(scamEmoji);
+                    }
                 }
             }
         }
@@ -284,15 +291,21 @@ module.exports = {
         if (msg.guild && !(storage[msg.guild.id].config.fake_link_check === false)) {
             const fakeLink = detectMismatchedDomains(msg.content);
             if (fakeLink) {
-                return await msg.reply({
-                    content:
-                        `## :warning: WARNING :warning:\n` +
-                        `The link in this message links to **${fakeLink.real}**, NOT **${fakeLink.fake}**, which it looks like.\n` +
-                        `\n` +
-                        `-# This module is part of a new Stewbot feature. Use ${cmds.report_problem.mention} to report any issues.\n` +
-                        `-# If you need to disable this feature, run ${"`/badware_scanner fake_link_check:false`"}`,
-                    allowedMentions:{parse:[]}
-                })
+                if (msg.channel.permissionsFor(client.user).has(PermissionFlagsBits.SendMessages)) {
+                    return await msg.reply({
+                        content:
+                            `## :warning: WARNING :warning:\n` +
+                            `The link in this message links to **${fakeLink.real}**, NOT **${fakeLink.fake}**, which it looks like.\n` +
+                            `\n` +
+                            `-# This module is part of a new Stewbot feature. Use ${cmds.report_problem.mention} to report any issues.\n` +
+                            `-# If you need to disable this feature, run ${"`/badware_scanner fake_link_check:false`"}`,
+                        allowedMentions:{parse:[]}
+                    })
+                } else if (msg.channel.permissionsFor(client.user).has(PermissionFlagsBits.AddReactions)) {
+                    // await msg.react('🛑');
+                    await msg.react('⚠️');
+                    return await msg.react(scamEmoji);
+                }
             }
         }
 	}
