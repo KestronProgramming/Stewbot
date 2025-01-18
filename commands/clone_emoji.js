@@ -20,6 +20,36 @@ function getEmojiData(emoji) {
 	return {url, emojiName};
 }
 
+async function uploadEmoji(url, name, guild) {
+	// returns [success, message]
+	// We'll do the emoji count checking here
+
+	const isAnimated = url.endsWith(".gif");
+
+	// Get emoji upload limit
+	const serverTier = guild?.premiumTier;
+	let emojiLimit = [
+		50,  // Level 0 (None)
+		100, // Level 1
+		150, // Level 2
+		250  // Level 3
+	][serverTier]
+
+	const emojis = await guild.emojis.fetch();
+	const slotsUsed = emojis.filter(emoji => emoji.animated === isAnimated).size;
+	const slotsLeft = emojiLimit - slotsUsed;
+
+	if (slotsLeft <= 0) {
+		return [ false, `Discord only allows this server to have ${emojiLimit} ${isAnimated?"animated ":''}emojis. To add more, you will need to boost the server or delete some.` ]
+	}
+	
+	const newEmoji = await guild.emojis.create({
+		attachment: url,
+		name: name || "unnamed"
+	});
+	return [ true, `Emoji cloned: ${newEmoji}\nYou have ${slotsLeft} ${isAnimated?"animated ":''}emoji slots left in this server.` ]
+}
+
 module.exports = {
 	data: {
 		// Slash command data
@@ -72,13 +102,6 @@ module.exports = {
 		const action = cmd.options.getString("action");
 		const emoji = cmd.options.getString("emoji");
 
-		// Get emoji upload limit
-		const serverTier = cmd.guild?.premiumTier;
-		let emojiLimit = 50;
-		if (serverTier == 0) emojiLimit = 100
-		else if (serverTier == 1) emojiLimit = 150
-		else if (serverTier == 2) emojiLimit = 250
-
 		// Error checking if this is an option that takes perms
 		if ([
 			"direct_clone", 
@@ -94,9 +117,6 @@ module.exports = {
 			}
 			if (!cmd.guild.members.me.permissions.has(PermissionFlagsBits.CreateGuildExpressions)) {
 				return cmd.followUp(`I must have permission to upload emojis to use this feature.`);
-			}
-			if (await cmd.guild.emojis.fetch()?.size > emojiLimit) {
-				return cmd.followUp(`This server already has ${emojiLimit} emojis, you must delete some or boost the server to add more.`);
 			}
 		}
 	
@@ -124,11 +144,8 @@ module.exports = {
 					if (!primedURL) {
 						return cmd.followUp("You have not primed an emoji yet. Run this command with the `Prime emoji` option in another server to clone the emoji, and run this here again to upload the emoji.");
 					}
-					const newEmoji = await cmd.guild.emojis.create({
-						attachment: primedURL,
-						name: primedName
-					});
-					return cmd.followUp(`Emoji cloned: ${newEmoji}`)
+					var [ worked, result ] = await uploadEmoji(primedURL, primedName, cmd.guild)
+					return cmd.followUp(result)
 
 				case "clone_embed":
 					const primedContent = storage[cmd.user.id].primedEmbed?.content;
@@ -140,11 +157,9 @@ module.exports = {
 					if (!url) {
 						return cmd.followUp("The primed message does not appear to have a valid server emoji.");
 					}
-					const newEmoji2 = await cmd.guild.emojis.create({
-						attachment: url,
-						name: emojiName || "unnamed"
-					});
-					return cmd.followUp(`Emoji cloned: ${newEmoji2}`)
+
+					var [ worked, result ] = await uploadEmoji(url, emojiName, cmd.guild);
+					return cmd.followUp(result)
 
 				case "clone_id":
 					// This one's a bit more complicated
@@ -174,28 +189,23 @@ module.exports = {
 					}
 					
 					const animated = await isEmojiAnimated(emoji);
+					const adaptiveUrl = `https://cdn.discordapp.com/emojis/${emoji}.${animated ? "gif" : "png"}`
 
-					const newEmoji4 = await cmd.guild.emojis.create({
-						attachment: `https://cdn.discordapp.com/emojis/${emoji}.${animated ? "gif" : "png"}`,
-						name: emojiName || "cloned_emoji"
-					});
-					return cmd.followUp(`Emoji cloned: ${newEmoji4}`)
-
+					var [ worked, result ] = await uploadEmoji(adaptiveUrl, emojiName, cmd.guild);
+					return cmd.followUp(result)
 
 				case "direct_clone":
 					var {url, emojiName} = getEmojiData(emoji);
 					if (!url) {
-						return cmd.followUp("The primed message does not appear to have a valid server emoji.");
+						return cmd.followUp("The nitro message does not appear to have a valid server emoji.");
 					}
-					const newEmoji3 = await cmd.guild.emojis.create({
-						attachment: url,
-						name: emojiName || "unnamed"
-					});
-					return cmd.followUp(`Emoji cloned: ${newEmoji3}`)
+
+					var [ worked, result ] = await uploadEmoji(url, emojiName, cmd.guild);
+					return cmd.followUp(result)
 
 			}
 		} catch (e) {
-			notify(1, "Caught clone_emoji error: "+e);
+			notify(1, "Caught clone_emoji error:\n"+e.stack);
 			try{ cmd.followUp(`There seems to have been an error, perhaps the message had an invalid emoji?`); }catch{}
 		}
 	}
