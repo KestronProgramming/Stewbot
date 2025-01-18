@@ -126,7 +126,11 @@ module.exports = {
 		
 		switch(cmd.options.getSubcommand()) {
 			case 'rng':
-				cmd.followUp(`I have selected a random number between **${cmd.options.getInteger("low")||1}** and **${cmd.options.getInteger("high")||10}**: **${Math.round(Math.random()*((cmd.options.getInteger("high")||10)-(cmd.options.getInteger("low")||1))+(cmd.options.getInteger("low")||1))}**`);
+				const low = cmd.options.getInteger("low");
+				const high = cmd.options.getInteger("high");
+				low = low === null ? 10 : low;
+				low = high === null ? 10 : high;
+				cmd.followUp(`I have selected a random number between **${low}** and **${high}**: **${Math.round(Math.random()*(high-low)+low)}**`);
 			break;
 			case '8-ball':
 				var ques=checkDirty(config.homeServer,cmd.options.getString("question"),true)[1];
