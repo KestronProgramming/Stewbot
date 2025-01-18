@@ -43,7 +43,7 @@ module.exports = {
 		
 		extra: {"contexts":[0,1,2],"integration_types":[0,1]},
 
-		requiredGlobals: ["m8ballResponses"],
+		requiredGlobals: ["m8ballResponses", "escapeBackticks"],
 
 		help: {
 			rng:{
@@ -126,16 +126,18 @@ module.exports = {
 		
 		switch(cmd.options.getSubcommand()) {
 			case 'rng':
-				const low = cmd.options.getInteger("low");
-				const high = cmd.options.getInteger("high");
-				low = low === null ? 10 : low;
-				low = high === null ? 10 : high;
+				let low = cmd.options.getInteger("low");
+				let high = cmd.options.getInteger("high");
+				low = low === null ? 1 : low;
+				high = high === null ? 10 : high;
 				cmd.followUp(`I have selected a random number between **${low}** and **${high}**: **${Math.round(Math.random()*(high-low)+low)}**`);
 			break;
 			case '8-ball':
 				var ques=checkDirty(config.homeServer,cmd.options.getString("question"),true)[1];
 				if(cmd.guildId&&storage[cmd.guildId]?.filter.active) ques=checkDirty(cmd.guildId,ques,true)[1];
-				cmd.followUp(`I have generated a random response to the question "**${ques}**".\nThe answer is **${m8ballResponses[Math.floor(Math.random()*m8ballResponses.length)]}**.`);
+				cmd.followUp(
+					`I have generated a random response to the question \`${escapeBackticks(ques)}\`.\n` +
+					`:8ball: The answer is **${m8ballResponses[Math.floor(Math.random()*m8ballResponses.length)]}**.`);
 			break;
 			case 'coin-flip':
 				let coinsToFlip=cmd.options.getInteger("number")||1;
