@@ -23,6 +23,7 @@ function getInterfaceDetails(interfaceName) {
     const interfaces = os.networkInterfaces();
     const iface = interfaces[interfaceName];
     if (!iface) {
+        if (process.env.beta) return null;
         throw new Error(`Interface ${interfaceName} not found`);
     }
     const ipv4 = iface.find((info) => info.family === 'IPv4' && !info.internal);
@@ -45,7 +46,12 @@ async function multicastRequest(message, waitTimeMs) {
     const promises = INTERFACES.map((iface) =>
         new Promise((resolve, reject) => {
             try {
-                const { localIP, broadcastIP } = getInterfaceDetails(iface);
+                const interfaceDetails = getInterfaceDetails(iface);
+                if (!interfaceDetails) {
+                    resolve([]); // Beta clones don't have the same interface setup
+                    return null;
+                }
+                const { localIP, broadcastIP } = interfaceDetails;
                 console.beta(`Using ${iface}: IP=${localIP}, Broadcast=${broadcastIP}`);
 
                 const server = dgram.createSocket('udp4');
