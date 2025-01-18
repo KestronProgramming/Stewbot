@@ -242,7 +242,16 @@ module.exports = {
 				else if(humanChoice!==computerChoice){
 					won=2;
 				}
-				cmd.followUp(`${won==0?`We`:`You`} ${won==0?`tied`:won==1?`lost`:`won`}! You played ${humanChoice} and I played ${computerChoice}.`);
+				let emojified = {
+					"Rock": ":rock:",
+					"Scissors": ":scissors:",
+					"Paper": ":newspaper2:",
+				}
+				const result =
+					`You played: ${humanChoice} ${emojified[humanChoice]}\n` +
+					`I played: ${computerChoice} ${emojified[computerChoice]}\n` +
+					`\n${won==0?`We`:`You`} ${won==0?`tied`:won==1?`lost`:`won`}! ${won==1?":stew:":""}`
+				cmd.followUp(result);
 			break;
 		}
 	}
