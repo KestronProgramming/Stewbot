@@ -15,7 +15,6 @@ const fs=require("fs");
 // const path = require("path")
 const { getCommands } = require("./launchCommands.js"); // Note: current setup requires this to be before the commands.json import
 const cmds=require("./data/commands.json"); global.cmds = cmds;
-const Sentiment = require('sentiment');
 const dns = require('dns');
 const { URL } = require('url');
 console.beta("Importing backup.js")
@@ -56,7 +55,6 @@ turndown.addRule('ignoreAll', {
       return '';
     }
 });
-const sentiment = new Sentiment();
 var client;
 
 // Utility functions needed for processing some data blocks 
@@ -1578,43 +1576,7 @@ function getPrimedEmbed(userId,guildIn){
     }
     return emb;
 }
-function textToEmojiSentiment(text) {
-    // returns: emoji, whether to react (via random test)
 
-    // Return if the message is too large (announcement that mentions stewbot among others, etc)
-    if (text.length > 200) {
-        return [ '😐', false ]
-    }
-
-    const result = sentiment.analyze(text);
-
-    // Take combined score and calculate final score based on size of message
-    const neutralizedScore = result.score / (result.calculation.length||1);
-
-    // The better model takes longer, so we'll swap to the fast one to prevent ddos if necessary
-
-    // Most words lie between 4 to -4, a very few of them go up to 5.
-    var [emoji, chance] = ((score) => {
-        const neutral = [ '👋', 0.2 ]
-        // Positive
-        if (score >= 5) return [env.beta?'<:jerry:1281416051409555486>':"<:jerry:1280238994277535846>", 1];
-        if (score >= 3) return ['🧡', 1];
-        if (score >= 1) return ['🍲', 0.7];
-        // No sentiment - TODO: wave should only react at random
-        if (score == 0) return neutral;
-        // Negative
-        if (score <= -4) return ['😭', 1];
-        if (score <= -3) return ['💔', 1];
-        if (score <= -1) return ['😕', 0.3];
-        // Fallback
-        return neutral;
-    })(neutralizedScore)
-
-    const toReact = Math.random() < chance;
-
-    // The above should always return, but if a mod breaks it this will catch it
-    return [emoji, toReact];
-}
 function sendWelcome(guild) {
     guild.channels.cache.forEach(chan=>{
         if(chan.permissionsFor(client.user.id).has(PermissionFlagsBits.ViewChannel)){
@@ -1986,14 +1948,6 @@ client.on("messageCreate",async msg => {
         return;
     }
     
-    // Sentiment Analysis reactions
-    if (!msg.filtered && !msg.author.bot && /\bstewbot\'?s?\b/i.test(msg.content)) {
-        var [emoji, toReact] = textToEmojiSentiment(msg.content);
-        if (toReact) {
-            msg.react(emoji);
-        }
-     }
-
     // Level-up XP
     if(!msg.author.bot&&storage[msg.guildId]?.levels.active&&storage[msg.guildId]?.users[msg.author.id].expTimeout<Date.now()&&!checkDirty(config.homeServer,msg.content)){
         storage[msg.guildId].users[msg.author.id].expTimeout=Date.now()+60000;
