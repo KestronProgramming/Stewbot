@@ -3,24 +3,20 @@ process.env=require("./env.json");
 console.beta = (...args) => process.env.beta && console.log(...args);
 console.beta("Importing discord")
 const {Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
-console.beta("Discord imported")
-const RSSParser=require("rss-parser");
-const crypto = require('crypto');
-const { createCanvas } = require('canvas');
-const { getEmojiFromMessage, parseEmoji } = require('./util');
 const config=require("./data/config.json");
-const fs=require("fs");
+console.beta("Importing commands")
 const { getCommands } = require("./launchCommands.js"); // Note: current setup requires this to be before the commands.json import
 const cmds=require("./data/commands.json"); global.cmds = cmds;
-const dns = require('dns');
-const { URL } = require('url');
 console.beta("Importing backup.js")
 const startBackupThread = require("./backup.js");
-console.beta("Loading everything else")
-var Turndown = require('turndown');
-const wotdList=fs.readFileSync(`./data/wordlist.txt`,"utf-8").split("\n");
-const cheerio = require('cheerio');
+console.beta("Importing everything else")
+const { getEmojiFromMessage, parseEmoji } = require('./util');
+const fs = require("fs");
+const wotdList = fs.readFileSync(`./data/wordlist.txt`,"utf-8").split("\n");
+const crypto = require('crypto');
+const { createCanvas } = require('canvas');
 const { updateBlocklists } = require("./commands/badware_scanner.js")
+const Turndown = require('turndown');
 
 // Preliminary setup (TODO: move to a setup.sh)
 if (!fs.existsSync("tempMove")) fs.mkdirSync('tempMove');
@@ -42,19 +38,8 @@ let messageListenerModules = getSubscribedCommands(commands, "onmessage");
 let dailyListenerModules = getSubscribedCommands(commands, "daily");
 
 // Variables
-var uptime=0;
-const rssParser=new RSSParser({
-    customFields: {
-      item: ['description'],
-    }
-});
 var turndown = new Turndown();
-turndown.addRule('ignoreAll', {
-    filter: ['img'], // Ignore image tags in description
-    replacement: function () {
-      return '';
-    }
-});
+var uptime=0;
 var client;
 
 // Utility functions needed for processing some data blocks 
@@ -734,115 +719,6 @@ function checkHoliday(){
         client.user.setAvatar(`./pfps/${newPfp}`);
     }
 }
-async function checkRSS(){
-    if(!storage.hasOwnProperty("rss")) storage.rss={};
-    Object.keys(storage.rss).forEach(async feed=>{
-        feed=storage.rss[feed];
-        if(feed.channels.length===0){
-            delete storage.rss[feed.hash];
-        }
-        else{
-            var cont=true;
-            var parsed;
-            try {
-                // Get the URL myself to prevent local IP redirects
-                const data = await (await fetchWithRedirectCheck(feed.url)).text();
-                parsed = await rssParser.parseString(data);
-                feed.fails = 0;
-            } catch (error) {
-                cont = false;
-
-                // Track fails
-                if (feed.fails) {
-                    feed.fails++;
-                } 
-                else {
-                    feed.fails = 1;
-                }
-
-                // Remove failing URLs
-                if (feed.fails > 7) {
-                    delete storage.rss[feed.hash];
-                }
-            }
-            if(cont){
-                let lastSentDate = new Date(feed.lastSent);
-                let mostRecentArticle = lastSentDate;
-
-                for (item of parsed.items.reverse()) {
-                    let thisArticleDate = new Date(item.isoDate);
-                    if(lastSentDate < thisArticleDate){
-                        // Keep track of most recent
-                        if (mostRecentArticle < thisArticleDate) {
-                            mostRecentArticle = thisArticleDate;
-                        }
-
-                        // Parse before sending to each channel
-                        try {
-                            // Extract theoretically required fields per https://www.rssboard.org/rss-specification
-                            const link = item.link || parsed.link; // default to channel URL
-                            let baseUrl = '';
-                            if (link) { // Attempt to get baseURL for turndown parsing
-                                try {
-                                    baseUrl = new URL(link).origin;
-                                } catch (e) {
-                                    baseUrl = ''; // fallback if URL is invalid
-                                }
-                            }
-
-                            let parsedDescription = turndown.turndown(item.description?.replace?.(/href="\/(.*?)"/g, `href="${(baseUrl)}/$1"`) || "");
-                            let content =  parsedDescription || item.contentSnippet || turndown.turndown(item.content || "") || 'No Summary Available';
-                            content = content.replace(/&quot;/g, '"')
-                                .replace(/&amp;/g, '&')
-                                .replace(/&lt;/g, '<')
-                                .replace(/&gt;/g, '>');
-
-                            const embed = new EmbedBuilder()
-                                .setColor(0x5faa66)
-                                .setTitle(limitLength(item.title || parsed.description || 'No Title', 256)) // If no title, grab the feed description
-                                .setDescription(limitLength(content, 1000));
-                            if (link) embed.setURL(link)
-                            
-                            // Optional fields
-                            const creator = item.creator || item["dc:creator"] || parsed.title || "Unknown Creator"; // 
-                            const imageUrl = item?.image?.url || parsed?.image?.url;
-                            if (creator) embed.setAuthor({ name: creator })
-                            if (imageUrl) embed.setThumbnail(imageUrl);
-
-                            // If the description has an image, attempt to load it as a large image (image *fields* are usually thumbnails / logos)
-                            const $ = cheerio.load(item.description || "");
-                            const contentImage = $('img').attr('src');
-                            if (contentImage) embed.setImage(contentImage);
-
-                            // Send this feed to everyone following it
-                            for (chan of feed.channels) {
-                                let c=client.channels.cache.get(chan);
-                                if(c===undefined||c===null||!c?.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
-                                    feed.channels.splice(feed.channels.indexOf(chan),1);
-                                }
-                                else{
-                                    try {
-                                        c.send({ 
-                                            content: `-# New notification from [a followed RSS feed](${item.link})`,
-                                            embeds: [ embed ]
-                                        })
-                                    } catch (e) {
-                                        notify(1, "RSS channel error: " + e.message + "\n" + e.stack);
-                                    }
-                                }
-                            }
-
-                        } catch (e) {
-                            notify(1, "RSS feed error: " + e.message + "\n" + e.stack);
-                        }
-                    }
-                };
-                // Update feed most recent now after sending all new ones since last time
-                feed.lastSent = mostRecentArticle.toISOString();
-            }
-        }
-    });
-}
 function defangURL(message) {
     const urlPattern = /(https?:\/\/[^\s]+)/g;
     return message.replace(urlPattern, (url) => {
@@ -863,87 +739,6 @@ function noPerms(where,what){
         break;
     }
 }
-
-function isPrivateIP(ip) {
-    const privateRanges = [
-        /^127\./,      // Loopback
-        /^10\./,       // Private
-        /^172\.(1[6-9]|2[0-9]|3[0-1])\./, // Private
-        /^192\.168\./, // Private
-        /^169\.254\./  // Link-local
-    ];
-    return privateRanges.some((range) => range.test(ip));
-};
-async function isUrlAllowed(inputUrl) {
-    try {
-        let url;
-        try {
-            url = new URL(inputUrl);
-        } catch {
-            return [false, "that is not a valid url."];
-        }
-
-        // Only allow http/https protocols
-        if (url.protocol !== 'http:' && url.protocol !== 'https:') {
-            return [false, "only http and https are allowed."];
-        }
-
-        const addresses = await new Promise((resolve, reject) => {
-            dns.lookup(url.hostname, { all: true }, (err, addresses) => {
-                if (err) return reject(err);
-                resolve(addresses);
-            });
-        });
-
-        for (const { address } of addresses) {
-            if (isPrivateIP(address)) {
-                return [false, "private IPs are not allowed"];
-            }
-        }
-
-        // URL is safe
-        return [true, "valid"];
-
-    } catch (error) {
-        return [false, "URL validation failed - general failure"];
-    }
-}
-const validateDNSForPrivateIP = async (hostname) => {
-    return new Promise((resolve, reject) => {
-        dns.lookup(hostname, { all: true }, (err, addresses) => {
-            if (err) return reject(err);
-            for (const { address } of addresses) {
-                if (isPrivateIP(address)) {
-                    return reject(new Error('Redirected to restricted IP address'));
-                }
-            }
-            resolve();
-        });
-    });
-};
-const fetchWithRedirectCheck = async (inputUrl, maxRedirects = 5) => {
-    let url = new URL(inputUrl);
-    let redirects = 0;
-
-    while (redirects < maxRedirects) {
-        const response = await fetch(url.href, { redirect: 'manual' });
-        if (response.status < 300 || response.status >= 400) {
-            return response;
-        }
-        const location = response.headers.get('location');
-        if (!location) {
-            throw new Error('Redirect response without Location header');
-        }
-        // Resolve the new URL relative to the original
-        url = new URL(location, url);
-
-        // Perform DNS validation to prevent redirecting to private IPs
-        await validateDNSForPrivateIP(url.hostname);
-        redirects += 1;
-    }
-
-    throw new Error('Too many redirects');
-};
 
 async function doEmojiboardReaction(react) {
     /**
@@ -1757,7 +1552,8 @@ client.on("messageCreate",async msg => {
                     msg.reply(storage.wotd);
                 break;
                 case "checkRSS":
-                    checkRSS();
+                    Object.entries(commands).find(([name, module]) => name === 'rss')[1].daily(psudoGlobals);
+                    // checkRSS();
                 break;
                 case "updateBlocklists":
                     updateBlocklists();
