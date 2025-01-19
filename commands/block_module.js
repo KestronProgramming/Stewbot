@@ -55,6 +55,16 @@ function getCommandFromPath(cmdPath) {
     return command;
 }
 
+function getCommandBlockMessageFromPath(cmdPath) { // Subcommands make this hard to use the other function for
+    var [commandName, subcommandName] = cmdPath.split(" ");
+    var command = commands[commandName];
+    let help = command?.data?.help;
+    if (subcommandName) {
+        help = help?.[subcommandName];
+    }
+    return help?.block_module_message;
+}
+
 module.exports = {
 	data: {
 		// Slash command data
@@ -72,7 +82,7 @@ module.exports = {
                     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator), 
                     //  ^ From my limited testing, "Administrator" is the only perm that lets you enable/disable bot commands
 
-		requiredGlobals: [],
+		requiredGlobals: ["commands"],
 
 		help: {
 			helpCategories: ["Bot","Administration","Configuration","Server Only"],
@@ -90,22 +100,26 @@ module.exports = {
 			*/
 			shortDesc: "Block bot commands and features from being used in this server",
 			detailedDesc: 
-				`Enter a command that you want to disable users from ever using in this server. If you set unblock to true, this command will unblock a command so that users may use it again.`
-		},		
+				`Enter a command that you want to disable users from ever using in this server. If you set unblock to true, this command will unblock a command so that users may use it again.`,
+            
+            block_module_message: "I will be unable to unblock this command if you block it, therefore I cannot block this command."
+        },		
 	},
 
 	async execute(cmd, context) {
 		applyContext(context);
+
         const allCommands = getCommandPaths(cmds, true);
         const commandToBlock = cmd.options.getString("command")
         const unblock = cmd.options.getBoolean("unblock")
 
         if (!allCommands.includes(commandToBlock)) {
-            return cmd.followUp("That doesn't appear to be a valid command. Please check the formatting or use the autocompletes.")
+            return cmd.followUp("That doesn't appear to be a valid command. Please check the spelling or use the autocompletes.")
         }
-
-        if (commandToBlock == "/block_module") {
-            return cmd.followUp("I will be unable to unblock this command if you block it, therefore I cannot block this command.")
+        
+        const blockModuleError = getCommandBlockMessageFromPath(commandToBlock);
+        if (blockModuleError) {
+            return cmd.followUp(blockModuleError);
         }
 
         // Create block list if it doesn't exist
@@ -131,9 +145,6 @@ module.exports = {
                 return cmd.followUp(`${commandMention} does not seem to be blocked in this server.`)
             }
         }
-
-        debugger
-		// This code is called oh the slash command
 	},
 
 	async autocomplete(cmd) {

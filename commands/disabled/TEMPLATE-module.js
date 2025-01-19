@@ -39,7 +39,11 @@ module.exports = {
 				Jerry brings hope.\n
 				Jerry's never tied up\n
 				Jerry helps you in your 'trub\n
-				Yeah! Jerry!`
+				Yeah! Jerry!`,
+
+			// If this module can't be blocked, specify a reason
+			// block_module_message: "Discord requires bot avatars to be set globally, so we cannot be blocked this module in this server.",
+
 		},
 	},
 

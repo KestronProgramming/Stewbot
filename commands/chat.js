@@ -122,7 +122,7 @@ async function getAiResponse(threadID, message, contextualData={}, notify=null, 
 
     if (ollamaInstances.length === 0) {
         return [`Sorry, there are no available AI servers. Try again later.\n\n` + 
-                `We host our own AI servers. If you would like to support this project, feel free to join the [discord server](https://discord.gg/jFCVtHJFTY) and see how you can help!`,
+                `We host our own AI servers. If you would like to support this project, feel free to join the [Support Server](<https://discord.gg/jFCVtHJFTY>) and see how you can help!`,
                 false ];
     }
 

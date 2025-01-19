@@ -112,7 +112,6 @@ setInterval(() => {
 // Other data
 const leetMap = require("./data/filterLeetmap.json");
 const pieCols=require("./data/pieCols.json");
-const setDates=require("./data/setDates.json");
 const defaultGuild=require("./data/defaultGuild.json");
 const defaultGuildUser=require("./data/defaultGuildUser.json");
 const defaultUser=require("./data/defaultUser.json");
@@ -677,48 +676,6 @@ function parsePoll(c,published){
     }
     catch(e){}
 }
-function checkHoliday(){
-    function Easter(Y) {//Thanks StackOverflow :) https://stackoverflow.com/questions/1284314/easter-date-in-javascript
-        var C = Math.floor(Y/100);
-        var N = Y - 19*Math.floor(Y/19);
-        var K = Math.floor((C - 17)/25);
-        var I = C - Math.floor(C/4) - Math.floor((C - K)/3) + 19*N + 15;
-        I = I - 30*Math.floor((I/30));
-        I = I - Math.floor(I/28)*(1 - Math.floor(I/28)*Math.floor(29/(I + 1))*Math.floor((21 - N)/11));
-        var J = Y + Math.floor(Y/4) + I + 2 - C + Math.floor(C/4);
-        J = J - 7*Math.floor(J/7);
-        var L = I - J;
-        var M = 3 + Math.floor((L + 40)/44);
-        var D = L + 28 - 31*Math.floor(M/4);
-        return M+'/'+D;
-    }
-    var newPfp = null;
-    var today=new Date();
-
-    setDates.forEach(holiday=>{
-        // if(holiday.days.includes(`${today.getMonth()+1}/${today.getDate()-1}`)){
-        //     ret="main.jpg";
-        // }
-        if(holiday.days.includes(`${today.getMonth()+1}/${today.getDate()}`)){
-            newPfp=holiday.pfp;
-        }
-    });
-    if(today.getMonth()===10&&today.getDay()===4&&Math.floor(today.getDate()/7)===4){
-        newPfp="turkey.jpg";
-    }
-    if(today.getMonth()===4&&today.getDay()===1&&today.getDate()+7>31){
-        newPfp="patriot.jpg";
-    }
-    if(today.getMonth()+1===Easter(today.getFullYear()).split("/")[0]&&today.getDate()===Easter(today.getFullYear()).split("/")[1]){
-        newPfp="easter.jpg";
-    }
-    
-    newPfp = newPfp || "main.jpg"; // avoid null storage issues
-    if (newPfp !== storage.pfp) {
-        storage.pfp = newPfp;
-        client.user.setAvatar(`./pfps/${newPfp}`);
-    }
-}
 function defangURL(message) {
     const urlPattern = /(https?:\/\/[^\s]+)/g;
     return message.replace(urlPattern, (url) => {
@@ -907,8 +864,6 @@ function daily(dontLoop=false){
     }
 
     Object.values(dailyListenerModules).forEach(module => module.daily(psudoGlobals))
-
-    checkHoliday();
     
     // Daily devo
     var dailyDevo=[];
@@ -1616,13 +1571,13 @@ client.on("interactionCreate",async cmd=>{
 
     // Autocomplete
     if (cmd.isAutocomplete()) {
-        // Dispatch to relevent command if registered
-        // List of general globals it should have access to
+        const providedGlobals = { ...psudoGlobals };
         requestedGlobals = commandScript.data?.requiredGlobals || commandScript.requestGlobals?.() || [];
         for (var name of requestedGlobals) {
-            psudoGlobals[name] = eval(name.match(/[\w-]+/)[0]);
+            providedGlobals[name] = eval(name.match(/[\w-]+/)[0]);
         }
-        commands?.[cmd.commandName]?.autocomplete?.(cmd, psudoGlobals);
+
+        commands?.[cmd.commandName]?.autocomplete?.(cmd, providedGlobals);
         return;
     }
 
@@ -1649,22 +1604,27 @@ client.on("interactionCreate",async cmd=>{
             return cmd.followUp("This command has temporarily been blocked by Stewbot admins.");
         }
         
-        // Checks passed, run command
-        const commandScript = commands[cmd.commandName];
-        // List of general globals it should have access to
-        const providedGlobals = {
-            client,
-            storage,
-            notify, // TODO: schema for some commands like /filter to preload and provide these functions
-            checkDirty,
-            cmds,
-            config
-        };
+        // Checks passed, gather requested data
+        const providedGlobals = { ...psudoGlobals };
         requestedGlobals = commandScript.data?.requiredGlobals || commandScript.requestGlobals?.() || [];
         for (var name of requestedGlobals) {
             providedGlobals[name] = eval(name.match(/[\w-]+/)[0]);
         }
-        await commands[cmd.commandName].execute(cmd, providedGlobals);
+
+        // Run, and catch errors
+        try {
+            await commands[cmd.commandName].execute(cmd, providedGlobals);
+        } catch(e) {
+            try {
+                cmd.followUp(
+                    `Sorry, some error was encountered. It has already been reported, there is nothing you need to do.\n` +
+                    `However, you can keep up with Stewbot's latest features and patches in the [Support Server](<https://discord.gg/jFCVtHJFTY?).`
+                )
+            } catch {}
+            throw e; // Throw it so that it the error notifiers
+        }
+
+        // Command frequency stats 
         if(!usage.hasOwnProperty(cmd.commandName)) usage[cmd.commandName]=0;
         usage[cmd.commandName]++;
         fs.writeFileSync("./data/usage.json",JSON.stringify(usage));
