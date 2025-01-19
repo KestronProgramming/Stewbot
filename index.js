@@ -239,6 +239,9 @@ Object.keys(commands).forEach(commandName=>{
     }
 });
 
+// Dump the help pages so we can import on websites and stuff
+fs.writeFileSync("./data/helpPages.json", JSON.stringify(helpCommands, null, 4))
+
 const helpCategories = ["General", "Bot", "Information", "Entertainment", "Configuration", "Administration", "Safety", "Context Menu", "Server Only"];
 function makeHelp(page,categories,filterMode,forWho){
     page=+page;
