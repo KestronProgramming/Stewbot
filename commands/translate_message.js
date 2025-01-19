@@ -21,7 +21,7 @@ module.exports = {
 			"desc":"Attempt to autodetect the language of a message and translate it"
 		},
 
-		requiredGlobals: ["escapeBackticks"],
+		requiredGlobals: [],
 
 		help: {
 			helpCategories: ["Information","Context Menu"],

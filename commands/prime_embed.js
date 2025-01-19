@@ -7,7 +7,39 @@ function applyContext(context = {}) {
 }
 // #endregion Boilerplate
 
+function getPrimedEmbed(userId,guildIn){
+	var mes=storage[userId].primedEmbed;
+	if(checkDirty(guildIn,mes.content)||checkDirty(guildIn,mes.author.name)||checkDirty(guildIn,mes.server.name)||checkDirty(guildIn,mes.server.channelName)){
+		return {
+			"type": "rich",
+			"title": `Blocked`,
+			"description": `I cannot embed that message due to this server's filter.`,
+			"color": 0xff0000
+		  };
+	}
+	var emb=new EmbedBuilder()
+		.setColor("#006400")
+		.setAuthor({
+			name: mes.author.name,
+			iconURL: "" + mes.author.icon,
+			url: "https://discord.com/users/" + mes.author.id
+		})
+		.setDescription(checkDirty(config.homeServer,mes.content,true)[1]||null)
+		.setTimestamp(new Date(mes.timestamp))
+		.setFooter({
+			text: mes.server.name + " / " + mes.server.channelName,
+			iconURL: mes.server.icon
+		});
+	if(mes.server.channelId){
+		emb=emb.setTitle("(Jump to message)")
+			.setURL(`https://discord.com/channels/${mes.server.id}/${mes.server.channelId}/${mes.id}`)
+	}
+	return emb;
+}
+
 module.exports = {
+	getPrimedEmbed,
+
 	data: {
 		// Slash command data
 		command: new ContextMenuCommandBuilder().setName("prime_embed").setType(ApplicationCommandType.Message),
@@ -19,7 +51,7 @@ module.exports = {
 			"desc": "Get a message ready to be embedded using /embed_message"
 		},
 
-		requiredGlobals: ["getPrimedEmbed"],
+		requiredGlobals: [],
 
 		deferEphemeral: true,
 		

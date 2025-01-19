@@ -9,6 +9,8 @@ function applyContext(context={}) {
 
 const crypto = require('crypto');
 
+const m8ballResponses = ["So it would seem", "Yes", "No", "Perhaps", "Absolutely", "Positively", "Unfortunately", "I am unsure", "I do not know", "Absolutely not", "Possibly", "More likely than not", "Unlikely", "Probably not", "Probably", "Maybe", "Random answers is not the answer"];
+
 function getOrdinal(num) {
     if (typeof num !== 'number' || !Number.isInteger(num)) {
         throw new Error('Input must be an integer.');
@@ -63,7 +65,7 @@ module.exports = {
 		
 		extra: {"contexts":[0,1,2],"integration_types":[0,1]},
 
-		requiredGlobals: ["m8ballResponses", "escapeBackticks"],
+		requiredGlobals: [],
 
 		help: {
 			rng:{

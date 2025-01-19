@@ -38,6 +38,7 @@ let messageListenerModules = Object.fromEntries(
 );
 
 // Variables
+var uptime=0;
 const rssParser=new RSSParser({
     customFields: {
       item: ['description'],
@@ -122,9 +123,11 @@ setInterval(() => {
 
 // Other data
 const leetMap = require("./data/filterLeetmap.json");
-const m8ballResponses = ["So it would seem", "Yes", "No", "Perhaps", "Absolutely", "Positively", "Unfortunately", "I am unsure", "I do not know", "Absolutely not", "Possibly", "More likely than not", "Unlikely", "Probably not", "Probably", "Maybe", "Random answers is not the answer"];
 const pieCols=require("./data/pieCols.json");
 const setDates=require("./data/setDates.json");
+const defaultGuild=require("./data/defaultGuild.json");
+const defaultGuildUser=require("./data/defaultGuildUser.json");
+const defaultUser=require("./data/defaultUser.json");
 const inps={
     "pollAdd":new ButtonBuilder().setCustomId("poll-addOption").setLabel("Add a poll option").setStyle(ButtonStyle.Primary),
     "pollDel":new ButtonBuilder().setCustomId("poll-delOption").setLabel("Remove a poll option").setStyle(ButtonStyle.Danger),
@@ -223,10 +226,8 @@ const presets={
 
     "captcha":[new ActionRowBuilder().addComponents(inps.captcha1,inps.captcha2,inps.captcha3),new ActionRowBuilder().addComponents(inps.captcha4,inps.captcha5,inps.captcha6),new ActionRowBuilder().addComponents(inps.captcha7,inps.captcha8,inps.captcha9),new ActionRowBuilder().addComponents(inps.captchaBack,inps.captcha0,inps.captchaDone)]
 };
-const defaultGuild=require("./data/defaultGuild.json");
-const defaultGuildUser=require("./data/defaultGuildUser.json");
-const defaultUser=require("./data/defaultUser.json");
 
+// Build dynamic help pages
 var helpCommands=[];
 Object.keys(commands).forEach(commandName=>{
     var cmd=commands[commandName];
@@ -526,7 +527,7 @@ async function finTempBan(guild,who,force){
     delete storage[guild].tempBans[who];
 }
 
-function checkDirty(guildID, what, filter=false, applyGlobalFilter=false) {
+global.checkDirty = function(guildID, what, filter=false, applyGlobalFilter=false) { // This function is important enough we can make it global
     // If filter is false, it returns: hasBadWords
     // If filter is true, it returns [hadBadWords, censoredMessage, wordsFound]
 
@@ -616,9 +617,9 @@ function checkDirty(guildID, what, filter=false, applyGlobalFilter=false) {
         
         return [dirty, what, foundWords];
     }
-}; global.checkDirty = checkDirty; // This function is important enough we can make it global
+};
 
-function escapeBackticks(text){
+global.escapeBackticks = function(text){ // This function is useful anywhere to properly escape backticks to prevent format escaping
     return text.replace(/(?<!\\)(?:\\\\)*`/g, "\\`");
 }
 
@@ -643,99 +644,7 @@ function verifyRegex(regexStr) {
     // const result = regex.exec(msg.content);
     // console.log(result);
 }
-function levenshtein(s, t) {
-    if (s === t) {
-        return 0;
-    }
-    var n = s.length, m = t.length;
-    if (n === 0 || m === 0) {
-        return n + m;
-    }
-    var x = 0, y, a, b, c, d, g, h, k;
-    var p = new Array(n);
-    for (y = 0; y < n;) {
-        p[y] = ++y;
-    }
-    for (; (x + 3) < m; x += 4) {
-        var e1 = t.charCodeAt(x);
-        var e2 = t.charCodeAt(x + 1);
-        var e3 = t.charCodeAt(x + 2);
-        var e4 = t.charCodeAt(x + 3);
-        c = x;
-        b = x + 1;
-        d = x + 2;
-        g = x + 3;
-        h = x + 4;
-        for (y = 0; y < n; y++) {
-            k = s.charCodeAt(y);
-            a = p[y];
-            if (a < c || b < c) {
-                c = (a > b ? b + 1 : a + 1);
-            }
-            else {
-                if (e1 !== k) {
-                    c++;
-                }
-            }
-            if (c < b || d < b) {
-                b = (c > d ? d + 1 : c + 1);
-            }
-            else {
-                if (e2 !== k) {
-                    b++;
-                }
-            }
-            if (b < d || g < d) {
-                d = (b > g ? g + 1 : b + 1);
-            }
-            else {
-                if (e3 !== k) {
-                    d++;
-                }
-            }
-            if (d < g || h < g) {
-                g = (d > h ? h + 1 : d + 1);
-            }
-            else {
-                if (e4 !== k) {
-                    g++;
-                }
-            }
-            p[y] = h = g;
-            g = d;
-            d = b;
-            b = c;
-            c = a;
-        }
-    }
-    for (; x < m;) {
-        var e = t.charCodeAt(x);
-        c = x;
-        d = ++x;
-        for (y = 0; y < n; y++) {
-            a = p[y];
-            if (a < c || d < c) {
-                d = (a > d ? d + 1 : a + 1);
-            }
-            else {
-                if (e !== s.charCodeAt(y)) {
-                    d = c + 1;
-                }
-                else {
-                    d = c;
-                }
-            }
-            p[y] = d;
-            c = a;
-        }
-        h = d;
-    }
-    return h;
-}
 
-function backupThreadErrorCallback(error) {
-    notify(1, String(error));
-}
 global.canUseRole = async function(user, role, channel) { // A centralized permission-checking function for users and roles
     // returns [ success, errorMsg ]
     if (user && role.comparePositionTo(channel.guild.members.cache.get(user.id)?.roles?.highest) >= 0) {
@@ -931,7 +840,7 @@ async function checkRSS(){
         }
     });
 }
-function defangURL(message, whitelistDomain="TODO") {
+function defangURL(message) {
     const urlPattern = /(https?:\/\/[^\s]+)/g;
     return message.replace(urlPattern, (url) => {
         return url.replace(/:\/\//g, '[://]').replace(/\./g, '[.]');
@@ -1033,14 +942,14 @@ const fetchWithRedirectCheck = async (inputUrl, maxRedirects = 5) => {
     throw new Error('Too many redirects');
 };
 
-
-/**
-* Handle the information when a user reacts to a message, for emojiboards
-*
-* @param {MessageReaction | import("discord.js").PartialMessageReaction} react The reaction that was added
-* @returns {Promise<void>}
-*/
 async function doEmojiboardReaction(react) {
+    /**
+    * Handle the information when a user reacts to a message, for emojiboards
+    *
+    * @param {MessageReaction | PartialMessageReaction} react: The reaction that was added
+    * @returns {Promise<void>}
+    */
+
     if (react.message.guildId == '0') return; // DMs patch
 
     const emoji = getEmojiFromMessage(
@@ -1353,7 +1262,7 @@ function daily(dontLoop=false){
     updateBlocklists()
 }
 
-let rac = { // TODO: move this into fun.js subfile
+let rac = { // TODO: move this into fun.js module
     board: [],
     lastPlayer: "Nobody",
     timePlayed: 0,
@@ -1480,7 +1389,7 @@ function tallyRac() {
 }
 
 function getStarMsg(msg){
-    var starboardHeaders=[
+    var starboardHeaders = [
         `Excuse me, there is a new message.`,
         `I have detected a notification for you.`,
         `Greetings, esteemed individuals, a new message has achieved popularity.`,
@@ -1491,35 +1400,6 @@ function getStarMsg(msg){
         `It's always a good day when @ posts`
     ];
     return `**${starboardHeaders[Math.floor(Math.random()*starboardHeaders.length)].replaceAll("@",msg.member?.nickname||msg.author?.globalName||msg.author?.username||"this person")}**`;
-}
-function getPrimedEmbed(userId,guildIn){
-    var mes=storage[userId].primedEmbed;
-    if(checkDirty(guildIn,mes.content)||checkDirty(guildIn,mes.author.name)||checkDirty(guildIn,mes.server.name)||checkDirty(guildIn,mes.server.channelName)){
-        return {
-            "type": "rich",
-            "title": `Blocked`,
-            "description": `I cannot embed that message due to this server's filter.`,
-            "color": 0xff0000
-          };
-    }
-    var emb=new EmbedBuilder()
-        .setColor("#006400")
-        .setAuthor({
-            name: mes.author.name,
-            iconURL: "" + mes.author.icon,
-            url: "https://discord.com/users/" + mes.author.id
-        })
-        .setDescription(checkDirty(config.homeServer,mes.content,true)[1]||null)
-        .setTimestamp(new Date(mes.timestamp))
-        .setFooter({
-            text: mes.server.name + " / " + mes.server.channelName,
-            iconURL: mes.server.icon
-        });
-    if(mes.server.channelId){
-        emb=emb.setTitle("(Jump to message)")
-            .setURL(`https://discord.com/channels/${mes.server.id}/${mes.server.channelId}/${mes.id}`)
-    }
-    return emb;
 }
 
 function sendWelcome(guild) {
@@ -1617,8 +1497,6 @@ function sendWelcome(guild) {
     });
 }
 
-
-
 var ints=Object.keys(GatewayIntentBits).map(a=>GatewayIntentBits[a]);
 ints.splice(ints.indexOf(GatewayIntentBits.GuildPresences),1);
 ints.splice(ints.indexOf("GuildPresences"),1);
@@ -1652,19 +1530,13 @@ function notify(urgencyLevel,what,useWebhook=false) {
         if (process.env.beta) console.log("Couldn't send notify()")
     }
 }
-function betaLog(error) {
-    if (!process.env.beta) return;
-    if (error instanceof Error) {
-        error = e.stack;
-    }
-    notify(1, error)
-}
-var uptime=0;
 
 //Actionable events
 client.once("ready",async ()=>{
     // Schedule cloud backups every hour
-    startBackupThread("./storage.json", 60*60*1000, backupThreadErrorCallback, true)
+    startBackupThread("./storage.json", 60*60*1000, error => {
+        notify(1, String(error));
+    }, true)
 
     uptime=Math.round(Date.now()/1000);
     notify(1,`Started <t:${uptime}:R>`);
@@ -1884,6 +1756,11 @@ client.on("messageCreate",async msg => {
                 case "updateBlocklists":
                     updateBlocklists();
                 break;
+                case "crash":
+                    setTimeout(die => { undefined.instructed_to_crash = instructed_to_crash })
+                    setTimeout(async die => { undefined.instructed_to_crash = instructed_to_crash })
+                    undefined.instructed_to_crash = instructed_to_crash
+                break;
             }
         }
         else{
@@ -1892,6 +1769,7 @@ client.on("messageCreate",async msg => {
         return;
     }
 });
+
 client.on("interactionCreate",async cmd=>{
     const commandScript = commands[cmd.commandName];
     if (!commandScript && (cmd.isCommand() || cmd.isAutocomplete())) return; // Ignore any potential cache issues 
@@ -2916,8 +2794,11 @@ client.on("interactionCreate",async cmd=>{
         }
     }
 });
+
 client.on("messageReactionAdd",async (react,user)=>{
     if(react.message.guildId===null) return;
+
+    // Create storage objects if needed
     if(react.message.guildId!=="0"){
         if(!storage.hasOwnProperty(react.message.guildId)){
             storage[react.message.guildId]=structuredClone(defaultGuild);
@@ -2930,15 +2811,19 @@ client.on("messageReactionAdd",async (react,user)=>{
     }
     if(!storage.hasOwnProperty(user.id)){
         storage[user.id]=structuredClone(defaultUser);
-        
     }
+
+    // Reaction filters
     if(storage[react.message.guild?.id]?.filter.active&&react.message.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageMessages)){
         if(checkDirty(react.message.guild.id,`${react._emoji}`)){
             react.remove();
             if(storage[react.message.guild.id].filter.log){
                 var c=client.channels.cache.get(storage[react.message.guild.id].filter.channel);
                 if(c.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
-                    c.send({content:`I removed a ${react._emoji.id===null?react._emoji.name:`<:${react._emoji.name}:${react._emoji.id}>`} reaction from https://discord.com/channels/${react.message.guild.id}/${react.message.channel.id}/${react.message.id} added by <@${user.id}> due to being in the filter.`});
+                    c.send({
+                        content: `I removed a ${react._emoji.id===null?react._emoji.name:`<:${react._emoji.name}:${react._emoji.id}>`} reaction from https://discord.com/channels/${react.message.guild.id}/${react.message.channel.id}/${react.message.id} added by <@${user.id}> due to being in the filter.`,
+                        allowedMentions: []
+                    });
                 }
                 else{
                     storage[react.message.guild.id].filter.log=false;
@@ -3034,13 +2919,19 @@ client.on("messageReactionAdd",async (react,user)=>{
         }
     }
 
+    // Emojiboard reactions
     doEmojiboardReaction(react);
 });
+
 client.on("messageDelete",async msg=>{
     if(msg.guild?.id===undefined) return;
+
+    // Create needed storage objects
     if(!storage.hasOwnProperty(msg.guild.id)){
         storage[msg.guild.id]=structuredClone(defaultGuild);
     }
+
+    // Emojiboard deleted handlers
     if(Object.keys(storage[msg.guild.id].emojiboards).length>0){
         Object.keys(storage[msg.guild.id].emojiboards).forEach(async emoji=>{
             emoji=storage[msg.guild.id].emojiboards[emoji];
@@ -3057,7 +2948,6 @@ client.on("messageDelete",async msg=>{
                     }
                 } catch(e) {
                     // Cache issues, nothing we can do
-                    betaLog(e);
                 }
             }
         });
@@ -3074,6 +2964,7 @@ client.on("messageDelete",async msg=>{
         }
     }
 
+    // Logs stuff
     if(storage[msg.guild.id]?.logs.mod_actions&&storage[msg.guild.id]?.logs.active){
         if(msg.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ViewAuditLog)){
             setTimeout(async ()=>{
@@ -3100,8 +2991,11 @@ client.on("messageDelete",async msg=>{
         }
     }
 });
+
 client.on("messageUpdate",async (msgO,msg)=>{
     if(msg.guild?.id===undefined||client.user.id===msg.author?.id) return;//Currently there's no use for messageUpdate in DMs, only in servers. If this ever changes, remove the guildId check and add more further down
+    
+    // Manage storage
     if(!storage.hasOwnProperty(msg.author.id)){
         storage[msg.author.id]=structuredClone(defaultUser);   
     }
@@ -3111,10 +3005,12 @@ client.on("messageUpdate",async (msgO,msg)=>{
     if(!storage[msg.guildId].users.hasOwnProperty(msg.author.id)){
         storage[msg.guildId].users[msg.author.id]=structuredClone(defaultGuildUser);
     }
+
+    // Filter edit handler
     if(storage[msg.guild.id]?.filter.active){
         let [filtered, filteredContent, foundWords] = checkDirty(msg.guildId, msg.content, true)
 
-        if(filtered){
+        if(filtered) {
             storage[msg.guild.id].users[msg.author.id].infractions++;
             if(storage[msg.guildId].filter.censor){
                 msg.channel.send({content:`A post by <@${msg.author.id}> sent at <t:${Math.round(msg.createdTimestamp/1000)}:f> <t:${Math.round(msg.createdTimestamp/1000)}:R> has been deleted due to retroactively editing a blocked word into the message.`,allowedMentions:{parse:[]}});
@@ -3130,6 +3026,8 @@ client.on("messageUpdate",async (msgO,msg)=>{
             return;
         }
     }
+
+    // Emojiboard edit handlers??
     if(Object.keys(storage[msg.guild.id].emojiboards).length>0){
         Object.keys(storage[msg.guild.id].emojiboards).forEach(async emote=>{
             var emoji=storage[msg.guild.id].emojiboards[emote];
@@ -3174,6 +3072,8 @@ client.on("messageUpdate",async (msgO,msg)=>{
             }
         }); 
     }
+
+    // Counting edit handlers...?? - TODO this needs to be ported to the new counting format
     if(storage[msg.guild.id]?.counting.active&&storage[msg.guild.id]?.counting.channel===msg.channel.id){
         var num=msgO.content?.match(/^(\d|,)+(?:\b)/i);
         if(num!==null&&num!==undefined){
@@ -3183,7 +3083,9 @@ client.on("messageUpdate",async (msgO,msg)=>{
         }
     }
 });
+
 client.on("guildMemberAdd",async member=>{
+    // Storage creators for new members... - TODO: can we handle this better? This is probably the most space in stewbot's database
     if(!storage.hasOwnProperty(member.guild.id)){
         storage[member.guild.id]=structuredClone(defaultGuild);
     }
@@ -3196,6 +3098,7 @@ client.on("guildMemberAdd",async member=>{
     storage[member.guild.id].users[member.id].inServer=true;
     
 
+    // Auto join messages
     if(storage[member.guild.id].ajm.active){
         if(!member.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageWebhooks)){
             storage[member.guild.id].ajm.dm=true;
@@ -3238,6 +3141,8 @@ client.on("guildMemberAdd",async member=>{
             }
         }
     }
+
+    // Stick roles
     var addedStickyRoles=0;
     if(storage[member.guild.id].stickyRoles){
         if(!member.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageRoles)){
@@ -3279,7 +3184,9 @@ client.on("guildMemberAdd",async member=>{
         client.channels.cache.get(storage[member.guild.id].logs.channel).send({content:`**<@${member.id}> (${member.user.username}) has joined the server.**`,allowedMentions:{parse:[]}});
     }
 });
+
 client.on("guildMemberRemove",async member=>{
+    // Manage storage
     if(!storage.hasOwnProperty(member.guild.id)){
         storage[member.guild.id]=structuredClone(defaultGuild);
         
@@ -3293,10 +3200,11 @@ client.on("guildMemberRemove",async member=>{
         
     }
 
+    // TODO - this can mess up logs if a user left while stewbot was offline... hmm... there's gotta be a better place we can put it
     storage[member.guild.id].users[member.id].roles=member.roles.cache.map(r=>r.id);
     storage[member.guild.id].users[member.id].inServer=false;
     
-
+    // Logs
     if(storage[member.guild.id].logs.active&&storage[member.guild.id].logs.joining_and_leaving){
         var bans=await member.guild.bans.fetch();
         var c=client.channels.cache.get(storage[member.guild.id].logs.channel);
@@ -3307,6 +3215,8 @@ client.on("guildMemberRemove",async member=>{
             storage[member.guild.id].logs.active=false;
         }
     }
+
+    // Auto Leave Messages
     if(storage[member.guild.id].alm?.active){
         if(!member.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageWebhooks)){
             storage[member.guild.id].alm.active=false;
@@ -3338,7 +3248,6 @@ client.on("guildMemberRemove",async member=>{
 client.on("channelDelete",async channel=>{
     if(!storage.hasOwnProperty(channel.guild.id)){
         storage[channel.guild.id]=structuredClone(defaultGuild);
-        
     }
 
     if(storage[channel.guild.id].logs.active&&storage[channel.guild.id].logs.channel_events){
@@ -3741,14 +3650,16 @@ client.on("guildMemberUpdate",async (memberO,member)=>{
     }
 });
 
-//Events for staff notifications
+// Bot events for staff notifications
 client.on("rateLimit",async d=>{
     notify(1,"Ratelimited -\n\n"+d);
+});
+client.on("error",async e=>{
+    notify(1,"Client emitted error:\n\n"+e.stack);
 });
 client.on("guildCreate",async guild=>{
     storage[guild.id]=structuredClone(defaultGuild);
     notify(1,`Added to **a new server**!`);
-
     sendWelcome(guild);
 });
 client.on("guildDelete",async guild=>{
@@ -3759,6 +3670,8 @@ client.on("guildDelete",async guild=>{
 //Error handling
 process.on('unhandledRejection', e=>notify(1, e.stack));
 process.on('unhandledException', e=>notify(1, e.stack));
+process.on('uncaughtException', e=>notify(1, e.stack));
+process.on('uncaughtRejection', e=>notify(1, e.stack));
 
 //Begin
 client.login(process.env.token);
