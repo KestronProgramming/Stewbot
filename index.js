@@ -124,34 +124,7 @@ setInterval(() => {
 
 
 // Other data
-const leetMap = {
-    "a": "(a|4|@)",
-    "b": "(b|ß)",
-    "c": "(c|<|\\[|\\{)",
-    "d": "(d|cl)",
-    "e": "(e|3|€)",
-    "f": "(f|ƒ)",
-    "g": "(g|6|&)",
-    "h": "(h|#)",
-    "i": "(i|1|!)",
-    "j": "(j)",
-    "k": "(k|\\{|<)",
-    "l": "(l|1|!)",
-    "m": "(m)",
-    "n": "(n)",
-    "o": "(o|0|ø)",
-    "p": "(p)",
-    "q": "(q|9)",
-    "r": "(r)",
-    "s": "(s|5|\\$)",
-    "t": "(t|7)",
-    "u": "(u)",
-    "v": "(v)",
-    "w": "(w|vv)",
-    "x": "(x|%|><)",
-    "y": "(y)",
-    "z": "(z|2)"
-};
+const leetMap = require("./data/filterLeetmap.json");
 const m8ballResponses = ["So it would seem", "Yes", "No", "Perhaps", "Absolutely", "Positively", "Unfortunately", "I am unsure", "I do not know", "Absolutely not", "Possibly", "More likely than not", "Unlikely", "Probably not", "Probably", "Maybe", "Random answers is not the answer"];
 const pieCols=require("./data/pieCols.json");
 const setDates=require("./data/setDates.json");
