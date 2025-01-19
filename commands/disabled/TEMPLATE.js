@@ -72,6 +72,7 @@ module.exports = {
 	},
 
 	async onmessage(msg, context) {
+		applyContext(context);
 		// `context` currently does not respect requested globals
 	},
 

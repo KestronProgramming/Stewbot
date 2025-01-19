@@ -7,6 +7,8 @@ function applyContext(context={}) {
 }
 // #endregion Boilerplate
 
+const translate = require("@vitalets/google-translate-api").translate; // Import requires, even though it's greyed out
+
 module.exports = {
 	data: {
 		// Slash command data
@@ -25,7 +27,7 @@ module.exports = {
 		
 		extra: {"contexts":[0,1,2],"integration_types":[0,1]},
 
-		requiredGlobals: ["translate", "escapeBackticks"],
+		requiredGlobals: ["escapeBackticks"],
 
 		help: {
 			helpCategories: ["Information"],

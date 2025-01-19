@@ -4,15 +4,12 @@ console.beta = (...args) => process.env.beta && console.log(...args);
 console.beta("Importing discord")
 const {Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
 console.beta("Discord imported")
-const translate = require("@vitalets/google-translate-api").translate; // Import requires, even though it's greyed out
 const RSSParser=require("rss-parser");
 const crypto = require('crypto');
 const { createCanvas } = require('canvas');
 const { getEmojiFromMessage, parseEmoji } = require('./util');
 const config=require("./data/config.json");
-// const bible=require("./data/kjv.json");
 const fs=require("fs");
-// const path = require("path")
 const { getCommands } = require("./launchCommands.js"); // Note: current setup requires this to be before the commands.json import
 const cmds=require("./data/commands.json"); global.cmds = cmds;
 const dns = require('dns');
@@ -1835,7 +1832,6 @@ client.on("messageCreate",async msg => {
         const devadminChannel = await client.channels.fetch("986097382267715604");
         await devadminChannel.guild.members.fetch(msg.author.id);
 
-        // if(client.channels.cache.get("986097382267715604")?.permissionsFor(msg.author.id)?.has(PermissionFlagsBits.SendMessages)){
         if(devadminChannel?.permissionsFor(msg.author.id)?.has(PermissionFlagsBits.SendMessages)){
             switch(msg.content.split(" ")[1]){
                 case "permStatus":
@@ -1894,69 +1890,6 @@ client.on("messageCreate",async msg => {
             msg.reply("I was unable to verify you.");
         }
         return;
-    }
-    
-    // Anti-hack message
-    if(msg.guild && !msg.author.bot){
-        var hash = crypto.createHash('md5').update(msg.content.slice(0,148)).digest('hex');
-        if(!storage[msg.author.id].hasOwnProperty("hashStreak")) storage[msg.author.id].hashStreak=0;
-        if(!storage[msg.guild.id].users[msg.author.id].hasOwnProperty("lastMessages")){
-            storage[msg.guild.id].users[msg.author.id].lastMessages=[];
-        }
-        if(storage[msg.author.id].lastHash===hash){
-            if(msg.content.toLowerCase().includes("@everyone")||msg.content.toLowerCase().includes("@here")||msg.content.toLowerCase().includes("http")) storage[msg.author.id].hashStreak++;
-            if(storage[msg.author.id].hashStreak>=3){
-                storage[msg.author.id].captcha=true;
-                var botInServer=msg.guild?.members.cache.get(client.user.id);
-                if(botInServer?.permissions.has(PermissionFlagsBits.ModerateMembers)&&!storage[msg.guild.id].disableAntiHack&&new Date()-(storage[msg.guild.id].users[msg.author.id].safeTimestamp||0)>60000*60*24*7){
-                    try{
-                        msg.member.timeout(60000*60*24,`Detected spam activity of high profile pings and/or a URL of some kind. Automatically applied for safety.`);//One day, by then any automated hacks should've run their course
-                        if(!storage[msg.author.id].hasOwnProperty("timedOutIn")) storage[msg.author.id].timedOutIn=[];
-                        storage[msg.author.id].timedOutIn.push(msg.guild.id);
-                        if(msg.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
-                            var sendRow=[new ButtonBuilder().setCustomId("untimeout-"+msg.author.id).setLabel("Remove Timeout").setStyle(ButtonStyle.Success)];
-                            if(botInServer.permissions.has(PermissionFlagsBits.BanMembers)&&msg.member.bannable){
-                                sendRow.push(new ButtonBuilder().setCustomId("ban-"+msg.author.id).setLabel(`Ban`).setStyle(ButtonStyle.Danger));
-                            }
-                            if(botInServer.permissions.has(PermissionFlagsBits.KickMembers)&&msg.member.kickable){
-                                sendRow.push(new ButtonBuilder().setCustomId("kick-"+msg.author.id).setLabel(`Kick`).setStyle(ButtonStyle.Danger));
-                            }
-                            if(botInServer.permissions.has(PermissionFlagsBits.ManageMessages)){
-                                // sendRow.push(new ButtonBuilder().setCustomId("del-"+msg.author.id).setLabel(`Delete the Messages in Question`).setStyle(ButtonStyle.Primary));
-
-                                // Instead just delete dirrectly
-                                for(var i=0;i<storage[msg.guild.id].users[msg.author.id].lastMessages.length;i++){
-                                    try{
-                                        var badMess=await client.channels.cache.get(storage[msg.guild.id].users[msg.author.id].lastMessages[i].split("/")[0]).messages.fetch(storage[msg.guild.id].users[msg.author.id].lastMessages[i].split("/")[1]);
-                                        badMess.delete().catch(e=>{console.log(e)});
-                                        storage[msg.guild.id].users[msg.author.id].lastMessages.splice(i,1);
-                                        i--;
-                                    }
-                                    catch(e){console.log(e)}
-                                }
-                            }
-                            await msg.reply({content:`I have detected unusual activity from <@${msg.author.id}>. I have temporarily applied a timeout. To remove this timeout, please use ${cmds.captcha.mention} in a DM with me, or a moderator can remove this timeout manually.\n\nIf a mod wishes to disable this behaviour, designed to protect servers from mass spam, ping, and NSFW hacked or spam accounts, run ${cmds.general_config.mention} and specify to disable Anti Hack Protection.`,components:[new ActionRowBuilder().addComponents(...sendRow)]});
-                            setTimeout(_ => { msg.delete() }, 50)
-                        }
-                    }
-                    catch(e){}
-                }
-            }
-        }
-        else{
-            storage[msg.author.id].lastHash=hash;
-            storage[msg.author.id].hashStreak=0;
-            storage[msg.guild.id].users[msg.author.id].lastMessages=[];
-        }
-        storage[msg.guild.id].users[msg.author.id].lastMessages.push(`${msg.channel.id}/${msg.id}`);
-        
-    }
-    if(storage[msg.guild?.id]?.users[msg.author.id].gone?.active&&storage[msg.guild?.id]?.users[msg.author.id].gone?.autoOff){
-        storage[msg.guild.id].users[msg.author.id].gone.active=false;
-        
-    }
-    if(storage[msg.author.id].gone?.active&&storage[msg.author.id].gone?.autoOff){
-        storage[msg.author.id].gone.active=false;
     }
 });
 client.on("interactionCreate",async cmd=>{
