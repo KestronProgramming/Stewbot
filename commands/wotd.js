@@ -7,6 +7,8 @@ function applyContext(context={}) {
 }
 // #endregion Boilerplate
 
+const fs = require("node:fs")
+
 module.exports = {
 	data: {
 		// Slash command data
@@ -44,5 +46,15 @@ module.exports = {
 		applyContext(context);
 		
 		cmd.followUp({content:`# WOTD Game${"\n` ` ` ` ` ` ` ` ` `".repeat(6)}\nQ W E R T Y U I O P\nA S D F G H J K L\nZ X C V B N M`,components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setLabel(`Make a Guess`).setCustomId(`wotd-${cmd.user.id}`).setStyle(ButtonStyle.Primary),new ButtonBuilder().setLabel(`Based on Wordle`).setURL(`https://www.nytimes.com/games/wordle/index.html`).setStyle(ButtonStyle.Link))]});
+	},
+
+	async daily(context) {
+		applyContext(context);
+
+		// Until the button handler that also uses this file is ported here, just read it in this scope
+		const wotdList = fs.readFileSync(`./data/wordlist.txt`,"utf-8").split("\n");
+
+		storage.wotd=wotdList[Math.floor(Math.random()*wotdList.length)];
+		notify(1, `WOTD is now ||${storage.wotd}||, use \`~sudo setWord jerry\` to change it.`)
 	}
 };

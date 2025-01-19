@@ -793,10 +793,6 @@ function daily(dontLoop=false){
 
     Object.values(dailyListenerModules).forEach(module => module.daily(psudoGlobals))
     
-    // Set wotd
-    storage.wotd=wotdList[Math.floor(Math.random()*wotdList.length)];
-    notify(1, `WOTD is now ||${storage.wotd}||, use \`~sudo setWord jerry\` to change it.`)
-
     // Update badware blocklists
     updateBlocklists()
 }
@@ -1271,8 +1267,8 @@ client.on("messageCreate",async msg => {
                     msg.reply(`The next number to enter is **${storage[msg.guild.id].counting.nextNum}**.`);
                 break;
                 case "runDaily":
+                    await msg.reply(`Running the daily function...`);
                     daily(true);
-                    msg.reply(`Running the daily function...`);
                 break;
                 case "runWelcome":
                     storage[msg.guild.id].sentWelcome=false;
