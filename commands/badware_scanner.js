@@ -325,5 +325,13 @@ module.exports = {
                 throw error;
             }
         }
-	}
+	},
+
+
+    async daily(context) {
+        applyContext(context);
+
+        // Update badware blocklists
+        updateBlocklists()
+    }
 };

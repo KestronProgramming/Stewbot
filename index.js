@@ -792,9 +792,6 @@ function daily(dontLoop=false){
     }
 
     Object.values(dailyListenerModules).forEach(module => module.daily(psudoGlobals))
-    
-    // Update badware blocklists
-    updateBlocklists()
 }
 
 let rac = { // TODO: move this into fun.js module
