@@ -1895,74 +1895,7 @@ client.on("messageCreate",async msg => {
         }
         return;
     }
-        
-    // Ticket system
-    if(msg.channel.name?.startsWith("Ticket with ")&&!msg.author.bot){
-        var resp={files:[],content:`Ticket response from **${msg.guild.name}**. To respond, make sure to reply to this message.\nTicket ID: ${msg.channel.name.split("Ticket with ")[1].split(" in ")[1]}/${msg.channel.id}`};
-        msg.attachments.forEach((attached,i) => {
-            let url=attached.url.toLowerCase();
-            if(i!==0||(!url.includes(".jpg")&&!url.includes(".png")&&!url.includes(".jpeg"))){
-                resp.files.push(attached.url);
-            }
-        });
-        resp.embeds=[new EmbedBuilder()
-            .setColor(0x006400)
-            .setTitle(`Ticket Message from ${msg.guild.name}`)
-            .setAuthor({
-                name: msg.author.globalName||msg.author.username,
-                iconURL:msg.author.displayAvatarURL(),
-                url:`https://discord.com/users/${msg.author.id}`
-            })
-            .setDescription(msg.content?msg.content:"⠀")
-            .setTimestamp(new Date(msg.createdTimestamp))
-            .setThumbnail(msg.guild.iconURL())
-            .setFooter({
-                text: "Make sure to reply to this message to respond",
-            })
-            .setImage(msg.attachments.first()?msg.attachments.first().url:null)
-        ];
-        try{client.users.cache.get(msg.channel.name.split("Ticket with ")[1].split(" in ")[0]).send(resp).catch(e=>{});}catch(e){}
-    }
-    if(msg.reference&&msg.channel instanceof DMChannel&&!msg.author.bot){
-        var rmsg=await msg.channel.messages.fetch(msg.reference.messageId);
-        if(rmsg.author.id===client.user.id&&rmsg.content.includes("Ticket ID: ")){
-            var resp={
-                content:msg.content,
-                username:msg.member?.nickname||msg.author.globalName||msg.author.username,
-                avatar_url:msg.author.displayAvatarURL()
-            };
-            var c=client.channels.cache.get(rmsg.content.split("Ticket ID: ")[1].split("/")[0]);
-            if(c.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
-                var hook=await c.fetchWebhooks();
-                hook=hook.find(h=>h.token);
-                if(hook){
-                    fetch(`https://discord.com/api/webhooks/${hook.id}/${hook.token}?thread_id=${rmsg.content.split("Ticket ID:")[1].split("/")[1]}`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify(resp),
-                    }).then(d=>d.text());
-                }
-                else{
-                    client.channels.cache.get(rmsg.content.split("Ticket ID: ")[1].split("/")[0]).createWebhook({
-                        name: config.name,
-                        avatar: config.pfp
-                    }).then(d=>{
-                        fetch(`https://discord.com/api/webhooks/${d.id}/${d.token}?thread_id=${rmsg.content.split("Ticket ID:")[1].split("/")[1]}`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify(resp),
-                        });
-                    });
-                }
-            }
-            return;
-        }
-    }
-
+    
     // Anti-hack message
     if(msg.guild && !msg.author.bot){
         var hash = crypto.createHash('md5').update(msg.content.slice(0,148)).digest('hex');
