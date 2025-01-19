@@ -1,9 +1,11 @@
-const { ContextMenuCommandBuilder, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
+const { ContextMenuCommandBuilder, DiscordAPIError, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
 function applyContext(context={}) {
 	for (key in context) {
 		this[key] = context[key];
 	}
 }
+
+
 
 const blocklistsLocation = `./data/filterCache/`
 const blocklists = [
@@ -264,48 +266,63 @@ module.exports = {
 	async onmessage(msg, context) {
 		applyContext(context);
 
-		// Check domain
-        if (msg.guild && !(storage[msg.guild.id].config.domain_scanning === false)) {
-            const urlRegex = /https?:\/\/[^\s/$.?#].[^\s]*/g;
-            const links = msg.content.match(urlRegex) || [];
-            for (const link of links) {
-                const triggerdBlocklist = await checkURL(link);
-                if (triggerdBlocklist) {
+        try {
+
+
+            // Check domain
+            if (msg.guild && !(storage[msg.guild.id].config.domain_scanning === false)) {
+                const urlRegex = /https?:\/\/[^\s/$.?#].[^\s]*/g;
+                const links = msg.content.match(urlRegex) || [];
+                for (const link of links) {
+                    const triggerdBlocklist = await checkURL(link);
+                    if (triggerdBlocklist) {
+                        if (msg.channel.permissionsFor(client.user).has(PermissionFlagsBits.SendMessages)) {
+                            return await msg.reply(
+                                `## :warning: WARNING :warning:\n` +
+                                `The link sent in this message was found in the blocklist [${triggerdBlocklist.title}](${triggerdBlocklist.url})\n` +
+                                `\n` +
+                                `-# This module is part of a new Stewbot feature. Use ${cmds.report_problem.mention} to report any issues.\n` +
+                                `-# If you need to disable this feature, run ${"`/badware_scanner domain_scanning:false`"}`
+                            );
+                        } else if (msg.channel.permissionsFor(client.user).has(PermissionFlagsBits.AddReactions)) {
+                            await msg.react('⚠️');
+                            return await msg.react(scamEmoji);
+                        }
+                    }
+                }
+            }
+
+            // Check for link hiding behind fake link
+            if (msg.guild && !(storage[msg.guild.id].config.fake_link_check === false)) {
+                const fakeLink = detectMismatchedDomains(msg.content);
+                if (fakeLink) {
                     if (msg.channel.permissionsFor(client.user).has(PermissionFlagsBits.SendMessages)) {
-                        return await msg.reply(
-                            `## :warning: WARNING :warning:\n` +
-                            `The link sent in this message was found in the blocklist [${triggerdBlocklist.title}](${triggerdBlocklist.url})\n` +
-                            `\n` +
-                            `-# This module is part of a new Stewbot feature. Use ${cmds.report_problem.mention} to report any issues.\n` +
-                            `-# If you need to disable this feature, run ${"`/badware_scanner domain_scanning:false`"}`
-                        );
+                        return await msg.reply({
+                            content:
+                                `## :warning: WARNING :warning:\n` +
+                                `The link in this message links to **${fakeLink.real}**, NOT **${fakeLink.fake}**, which it looks like.\n` +
+                                `\n` +
+                                `-# This module is part of a new Stewbot feature. Use ${cmds.report_problem.mention} to report any issues.\n` +
+                                `-# If you need to disable this feature, run ${"`/badware_scanner fake_link_check:false`"}`,
+                            allowedMentions:{parse:[]}
+                        })
                     } else if (msg.channel.permissionsFor(client.user).has(PermissionFlagsBits.AddReactions)) {
+                        // await msg.react('🛑');
                         await msg.react('⚠️');
                         return await msg.react(scamEmoji);
                     }
                 }
             }
-        }
 
-        // Check for link hiding behind fake link
-        if (msg.guild && !(storage[msg.guild.id].config.fake_link_check === false)) {
-            const fakeLink = detectMismatchedDomains(msg.content);
-            if (fakeLink) {
-                if (msg.channel.permissionsFor(client.user).has(PermissionFlagsBits.SendMessages)) {
-                    return await msg.reply({
-                        content:
-                            `## :warning: WARNING :warning:\n` +
-                            `The link in this message links to **${fakeLink.real}**, NOT **${fakeLink.fake}**, which it looks like.\n` +
-                            `\n` +
-                            `-# This module is part of a new Stewbot feature. Use ${cmds.report_problem.mention} to report any issues.\n` +
-                            `-# If you need to disable this feature, run ${"`/badware_scanner fake_link_check:false`"}`,
-                        allowedMentions:{parse:[]}
-                    })
-                } else if (msg.channel.permissionsFor(client.user).has(PermissionFlagsBits.AddReactions)) {
-                    // await msg.react('🛑');
-                    await msg.react('⚠️');
-                    return await msg.react(scamEmoji);
-                }
+        } catch (error) {
+            if (
+                error instanceof DiscordAPIError &&
+                error.code === 50035 && // Invalid Form Body
+                error.message.includes('MESSAGE_REFERENCE_UNKNOWN_MESSAGE') // Specific error message check
+            ) {
+                // This will happen when it was deleted before (likely by ourselves) before we could reply. 
+            } else {
+                throw error;
             }
         }
 	}
