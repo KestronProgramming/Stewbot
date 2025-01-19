@@ -19,13 +19,13 @@ function getCommandPaths(cmds, includeAllModules) {
     if (cmdPathCache) return cmdPathCache;
     const commandPaths = [];
     for (let commandKey in cmds) {
-        commandPaths.push("/"+commandKey);
+        commandPaths.push(commandKey);
         // Collect subcommands
         for (let subcommandName in cmds?.[commandKey]) {
             // Some properties here are not subcommands so we verify by checking if it has a .mention property
             let subcommand = cmds?.[commandKey]?.[subcommandName];
             if (subcommand?.mention) {
-                const subcommandPath = "/" + commandKey + " " + subcommandName
+                const subcommandPath = commandKey + " " + subcommandName
                 commandPaths.push(subcommandPath)
             }
         }
@@ -36,8 +36,8 @@ function getCommandPaths(cmds, includeAllModules) {
     if (includeAllModules) {
         const allModules = fs.readdirSync("./commands").filter(file => file.endsWith(".js")).map(file => file.slice(0, -3));
         for (const module of allModules) {
-            if (!commandPaths.includes("/" + module)) {
-                commandPaths.push("/" + module);
+            if (!commandPaths.includes(module)) {
+                commandPaths.push(module);
             }
         }
     }
@@ -48,7 +48,7 @@ function getCommandPaths(cmds, includeAllModules) {
 
 function getCommandFromPath(cmdPath) {
     var [commandName, subcommandName] = cmdPath.split(" ");
-    var command = cmds[commandName.substring(1)];
+    var command = cmds[commandName];
     if (subcommandName) {
         command = command[subcommandName];
     }
@@ -59,7 +59,7 @@ module.exports = {
 	data: {
 		// Slash command data
 		command: new SlashCommandBuilder()
-					.setName('block_command')
+					.setName('block_module')
 					.setDescription('Block bot commands and features from being used in this server')
                     .addStringOption(option=>
                         option.setName("command").setDescription("The command to block").setRequired(true)
@@ -104,7 +104,7 @@ module.exports = {
             return cmd.followUp("That doesn't appear to be a valid command. Please check the formatting or use the autocompletes.")
         }
 
-        if (commandToBlock == "/block_command") {
+        if (commandToBlock == "/block_module") {
             return cmd.followUp("I will be unable to unblock this command if you block it, therefore I cannot block this command.")
         }
 
@@ -113,7 +113,7 @@ module.exports = {
 
         const index = storage[cmd.guild.id].blockedCommands.indexOf(commandToBlock);
         const isBlocked = index !== -1;
-        const commandMention = getCommandFromPath(commandToBlock)?.mention || commandToBlock;
+        const commandMention = getCommandFromPath(commandToBlock)?.mention || '`'+commandToBlock+'`';
         if (!unblock) {
             if (isBlocked) {
                 return cmd.followUp(`${commandMention} is already blocked.`)

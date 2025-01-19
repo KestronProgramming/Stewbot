@@ -112,7 +112,7 @@ module.exports = {
 	async autocomplete(cmd, context) {
 		applyContext(context);
         const userInput = cmd.options.getFocused() || "";
-		var possibleCommands=helpCommands.map(a=>a.name);
+		var possibleCommands = helpCommands.map(a=>a.name);
         // Get the top matching results
         if (userInput) {
             possibleCommands = sortByMatch(possibleCommands, userInput);

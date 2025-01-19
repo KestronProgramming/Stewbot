@@ -260,16 +260,24 @@ const defaultGuildUser=require("./data/defaultGuildUser.json");
 const defaultUser=require("./data/defaultUser.json");
 
 var helpCommands=[];
-Object.keys(commands).forEach(command=>{
-    var cmd=commands[command];
+Object.keys(commands).forEach(commandName=>{
+    var cmd=commands[commandName];
     if(cmd.data?.help?.shortDesc!==undefined&&cmd.data?.help?.shortDesc!==`Stewbot's Admins Only`&&cmd.data?.help?.helpCategories.length>0){
-        helpCommands.push(Object.assign({name:cmd.data?.command?.name,mention:cmds[cmd.data?.command?.name]?.mention},cmd.data?.help));
+        const commandMention = cmds[cmd.data?.command?.name]?.mention || `\`${commandName}\` Module`; // non-command modules don't have a mention
+        helpCommands.push(Object.assign({
+            name: cmd.data?.command?.name || commandName,
+            mention: commandMention
+        },cmd.data?.help));
     }
     else if(cmd.data?.help?.shortDesc!==`Stewbot's Admins Only`){
         Object.keys(cmd.data?.help).forEach(subcommand=>{
             var subcommandHelp=cmd.data?.help[subcommand];
+            const subcommandMention = cmds[cmd.data?.command?.name]?.[subcommand]?.mention || `\`${commandName}\` Module` // No case for this rn but might have one in the future
             if(subcommandHelp.helpCategories?.length>0){
-                helpCommands.push(Object.assign({name:`${command} ${subcommand}`,mention:cmds[cmd.data?.command?.name]?.[subcommand]?.mention},subcommandHelp));
+                helpCommands.push(Object.assign({
+                    name: `${commandName} ${subcommand}`,
+                    mention: subcommandMention
+                },subcommandHelp));
             }
         });
     }
@@ -1864,11 +1872,12 @@ client.on("messageCreate",async msg => {
         config
     };
     Object.entries(messageListenerModules).forEach(([name, module]) => {
-        // Check if this command is blocked with /block_command
-        const commandPath = `/${module.data?.command?.name || name}`; // ||name handles non-command modules
+        // Check if this command is blocked with /block_module
+        const commandPath = `${module.data?.command?.name || name}`; // ||name handles non-command modules
         // If this is a guild, check for blocklist
         if (msg.guild?.id) {
-            const guildBlocklist = storage[msg.guild.id].blockedCommands || []
+            let guildBlocklist = storage[msg.guild.id].blockedCommands || []
+            guildBlocklist = guildBlocklist.map(blockCommand => blockCommand.replace(/^\//, '')) // Backwards compatability with block_command which had a leading /
             if (guildBlocklist.includes(commandPath)) {
                 return; // Ignore this module
             }
@@ -2279,11 +2288,11 @@ client.on("messageCreate",async msg => {
     }
     if(storage[msg.author.id].gone?.active&&storage[msg.author.id].gone?.autoOff){
         storage[msg.author.id].gone.active=false;
-        
     }
 });
 client.on("interactionCreate",async cmd=>{
     const commandScript = commands[cmd.commandName];
+    if (!commandScript && (cmd.isCommand() || cmd.isAutocomplete())) return; // Ignore any potential cache issues 
 
     try{
         if(
@@ -2347,15 +2356,17 @@ client.on("interactionCreate",async cmd=>{
 
     // Slash commands
     if (commands.hasOwnProperty(cmd.commandName)) {
-        const commandPathWithSubcommand = `/${cmd.commandName} ${cmd.options._subcommand ? cmd.options.getSubcommand() : "<none>"}`; //meh but it works
-        const commandPath = `/${cmd.commandName}`;
+        const commandPathWithSubcommand = `${cmd.commandName} ${cmd.options._subcommand ? cmd.options.getSubcommand() : "<none>"}`; //meh but it works
+        const commandPath = `${cmd.commandName}`;
         // If this is a guild, check for blocklist
         if (cmd.guild?.id) {
-            const guildBlocklist = storage[cmd.guild.id].blockedCommands || []
+            let guildBlocklist = storage[cmd.guild.id].blockedCommands || []
+            guildBlocklist = guildBlocklist.map(blockedCommand => blockedCommand.replace(/^\//, '')) // Backwards compatability with block_command which had a leading /
+
             if (guildBlocklist.includes(commandPath) || guildBlocklist.includes(commandPathWithSubcommand)) {
                 let response = "This command has been blocked by this server.";
                 if (cmd.member.permissions.has('Administrator')) {
-                    response += ` You can use ${cmds.block_command.mention} to unblock it.`
+                    response += `\nYou can use ${cmds.block_module.mention} to unblock it.`
                 }
                 return cmd.followUp(response);
             }
