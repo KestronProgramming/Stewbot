@@ -2242,16 +2242,17 @@ client.on("messageCreate",async msg => {
     }
     
     // Persistent messages - always at the bottom of the channel. 
-    if((msg.webhookId===null||msg.webhookId===undefined)&&storage[msg.guildId]?.hasOwnProperty("persistence")){
-        if(!storage[msg.guild.id].persistence.hasOwnProperty(msg.channel.id)){
-            storage[msg.guild.id].persistence[msg.channel.id]={
-                "active":false,
-                "content":"Jerry",
-                "lastPost":null
-            };
-        }
-        if(storage[msg.guild.id].persistence[msg.channel.id].active){
-            if(msg.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.ManageWebhooks)&&msg.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.ManageMessages)){
+    if ((!msg.webhookId) && storage[msg.guildId]?.hasOwnProperty("persistence")){
+        // I commented out this code because it doesn't seem to be necessary if we optional-chain stuff below and it just takes up storage space - WKoA
+        // if(!storage[msg.guild.id].persistence.hasOwnProperty(msg.channel.id)){
+        //     storage[msg.guild.id].persistence[msg.channel.id]={
+        //         "active":false,
+        //         "content":"Jerry",
+        //         "lastPost":null
+        //     };
+        // }
+        if(storage[msg.guild.id].persistence?.[msg.channel.id]?.active) {
+            if(msg.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.ManageWebhooks) && msg.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.ManageMessages)){
                 if(storage[msg.guild.id].persistence[msg.channel.id].lastPost!==null){
                     try{
                         var mes=await msg.channel.messages.fetch(storage[msg.guild.id].persistence[msg.channel.id].lastPost).catch(e=>{});
@@ -2282,7 +2283,7 @@ client.on("messageCreate",async msg => {
                     });
                 }
             }
-            else{
+            else {
                 if(msg.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
                     msg.channel.send(`I do not have sufficient permissions to manage persistent messages for this channel. Please make sure I can both manage webhooks and delete messages and then run ${cmds.set_persistent_message.mention}.`);
                 }

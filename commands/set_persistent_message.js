@@ -47,18 +47,29 @@ module.exports = {
 
 	async execute(cmd, context) {
 		applyContext(context);
-		
+
+        // If we're changing settings, clear the old message since we'll send a new one
+        if (storage[cmd.guild.id]?.persistence?.[cmd.channel.id]?.lastPost) {
+            try {
+                var lastPersistent = await cmd.channel.messages.fetch(storage[cmd.guild.id].persistence[cmd.channel.id].lastPost);
+                if (lastPersistent) await lastPersistent.delete();
+            } catch {}
+        }
+        
+        // Initialize data
         if(!storage[cmd.guild.id].hasOwnProperty("persistence")){
             storage[cmd.guild.id].persistence={};
         }
         if(!storage[cmd.guild.id].persistence.hasOwnProperty(cmd.channel.id)){
             storage[cmd.guild.id].persistence[cmd.channel.id]={
-                "active":false,
-                "content":"Jerry",
-                "lastPost":null
+                "active":   false,
+                "content":  "Jerry",
+                "lastPost": null
             };
         }
+
         storage[cmd.guild.id].persistence[cmd.channel.id].active=cmd.options.getBoolean("active");
+
         if(cmd.options.getString("content")!==null) storage[cmd.guild.id].persistence[cmd.channel.id].content=cmd.options.getString("content");
         if(cmd.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.ManageWebhooks)){
             cmd.followUp(`I have set your settings for this channel's persistent messages.`);
@@ -68,26 +79,30 @@ module.exports = {
                 "avatarURL":cmd.guild.iconURL(),
                 "username":cmd.guild.name
             };
-            // Discord server name edge case
-            if (resp?.username?.toLowerCase().includes("discord")) {
-                resp.username = "[SERVER]"
-            }
-            var hook=await cmd.channel.fetchWebhooks();
-            hook=hook.find(h=>h.token);
-            if(hook){
-                hook.send(resp).then(d=>{
-                    storage[cmd.guild.id].persistence[cmd.channel.id].lastPost=d.id;
-                });
-            }
-            else{
-                client.channels.cache.get(cmd.channel.id).createWebhook({
-                    name: config.name,
-                    avatar: config.pfp
-                }).then(d=>{
-                    d.send(resp).then(d=>{
+
+            // If they just set it to active, send the message
+            if (storage[cmd.guild.id].persistence[cmd.channel.id].active) {
+                // Discord server name edge case
+                if (resp?.username?.toLowerCase().includes("discord")) {
+                    resp.username = "[SERVER]"
+                }
+                var hook=await cmd.channel.fetchWebhooks();
+                hook=hook.find(h=>h.token);
+                if(hook){
+                    hook.send(resp).then(d=>{
                         storage[cmd.guild.id].persistence[cmd.channel.id].lastPost=d.id;
                     });
-                });
+                }
+                else{
+                    client.channels.cache.get(cmd.channel.id).createWebhook({
+                        name: config.name,
+                        avatar: config.pfp
+                    }).then(d=>{
+                        d.send(resp).then(d=>{
+                            storage[cmd.guild.id].persistence[cmd.channel.id].lastPost=d.id;
+                        });
+                    });
+                }
             }
         }
         else{
