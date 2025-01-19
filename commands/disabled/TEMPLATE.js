@@ -34,6 +34,9 @@ module.exports = {
 		// When this command defers, should it be ephemeral? (if the private option is defined, it can override this)
 		deferEphemeral: true,
 
+		// A priority calling system for handlers like onmessage, only use when required. Smaller = loaded sooner, default = 100
+		// priority: 100,
+
 		// Allow variables from the global index file to be accessed here - requiredGlobals["helpPages"]
 		requiredGlobals: [],
 

@@ -5,7 +5,14 @@ function applyContext(context={}) {
 		this[key] = context[key];
 	}
 }
-// #endregion Boilerplate
+
+// NOTE:
+// This is a PRIORITY module. 
+// That means this module will be run before any others
+// 
+// Impacts:
+//  1. This module's onmessage handler sets a msg.filtered attribute on the msg object
+//     that can be used elsewhere in the code.
 
 module.exports = {
 	data: {
@@ -45,7 +52,9 @@ module.exports = {
         extra: {"contexts":[0],"integration_types":[0],"cat":6},
             
 		// Optional fields
-		requiredGlobals: ["finTimer"],
+		requiredGlobals: ["finTimer", "limitLength"],
+
+        priority: 0,
 
 		help: {
             config:{
@@ -189,4 +198,54 @@ module.exports = {
             break;
         }
     },
+
+    async onmessage(msg, context) {
+		applyContext(context);
+
+        // Filter
+        if(storage[msg.guildId]?.filter.active){
+            let [filtered, filteredContent, foundWords] = checkDirty(msg.guildId, msg.content, true)
+
+            if(filtered && msg.webhookId===null){
+                msg.ogContent = msg.content;
+                msg.content = filteredContent;
+
+                storage[msg.guildId].users[msg.author.id].infractions++;
+                msg.delete();
+                if(storage[msg.guildId].filter.censor){
+                    var replyBlip="";
+                    if(msg.type===MessageType.Reply){
+                        var rMsg=await msg.fetchReference();
+                        replyBlip=`_[Reply to **${rMsg.author.username}**: ${rMsg.content.slice(0,22).replace(/(https?\:\/\/|\n)/ig,"").replace(/\@/ig,"[@]")}${rMsg.content.length>22?"...":""}](<https://discord.com/channels/${rMsg.guild.id}/${rMsg.channel.id}/${rMsg.id}>)_\n`;
+                    }
+
+                    const filteredMessageData = {
+                        "username": msg.member?.nickname||msg.author.globalName||msg.author.username,
+                        "avatarURL": msg.member?.displayAvatarURL(),
+                        "content": limitLength(`\`\`\`\nThe following message from ${msg.author.username} has been censored by Stewbot.\`\`\`${replyBlip}${msg.content.slice(0,1800)}`),
+                    }
+
+                    sendHook(filteredMessageData, msg);
+                }
+                if(storage[msg.author.id].config.dmOffenses&&msg.webhookId===null){
+                    try{msg.author.send(limitLength(`Your message in **${msg.guild.name}** was ${storage[msg.guildId].filter.censor?"censored":"deleted"} due to the following word${foundWords.length>1?"s":""} being in the filter: ||${foundWords.join("||, ||")}||${storage[msg.author.id].config.returnFiltered?"```\n"+msg.ogContent.replaceAll("`","\\`")+"```":""}`)).catch(e=>{});}catch(e){}
+                }
+                if(storage[msg.guildId].filter.log&&storage[msg.guildId].filter.channel){
+                    var c=client.channels.cache.get(storage[msg.guildId].filter.channel);
+                    if(c.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
+                        c.send(limitLength(`I have ${storage[msg.guildId].filter.censor?"censored":"deleted"} a message from **${msg.author.username}** in <#${msg.channel.id}> for the following blocked word${foundWords.length>1?"s":""}: ||${foundWords.join("||, ||")}||\`\`\`\n${msg.ogContent.replaceAll("`","\\`").replaceAll(/(?<=https?:\/\/[^(\s|\/)]+)\./gi, "[.]").replaceAll(/(?<=https?):\/\//gi, "[://]")}\`\`\``));
+                    }
+                    else{
+                        storage[msg.guildId].filter.log=false;
+                    }
+                }
+                
+                return;
+            }
+        }
+
+        // Set a flag for other modules to reference
+        const messageFiltered = Boolean(msg.ogContent);
+        msg.filtered = messageFiltered;
+    }
 };

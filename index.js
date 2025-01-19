@@ -38,7 +38,9 @@ const usage=require("./data/usage.json");
 console.beta("Loading commands")
 let commands = getCommands();
 let messageListenerModules = Object.fromEntries(
-    Object.entries(commands).filter(([name, command]) => command.onmessage)
+    (Object.entries(commands)
+            .filter(([name, command]) => command.onmessage) // Get all onmessage subscribed modules
+    ).sort((a, b) => (a[1].data?.priority ?? 100) - (b[1].data?.priority ?? 100))
 );
 
 // Variables
@@ -802,7 +804,7 @@ function backupThreadErrorCallback(error) {
     notify(1, String(error));
 }
 
-function limitLength(s, size=1999){
+global.limitLength = function(s, size=1999) { // Used everywhere, so global function.
     s = String(s);
     return s.length>size?s.slice(0,size-3)+"...":s;
 }
@@ -997,7 +999,6 @@ function noPerms(where,what){
             storage[where].filter.censor=false;
         break;
     }
-    
 }
 
 function getLvl(lvl){
@@ -1831,7 +1832,7 @@ client.once("ready",async ()=>{
     });
 });
 
-async function sendHook(what, msg){
+global.sendHook = async function(what, msg) {
     if(typeof what==="string"){
         what={"content": what}
     }
@@ -1868,27 +1869,27 @@ async function sendHook(what, msg){
 client.on("messageCreate",async msg => {
     if(msg.author.id===client.user.id) return;
 
-        // Some storage management thing, probably should stay up top
-        msg.guildId=msg.guildId||"0";
-        if(msg.guildId!=="0"){
-            if(!storage.hasOwnProperty(msg.guildId)){
-                storage[msg.guildId]=structuredClone(defaultGuild);
+    // Create guild objects if they don't exist should stay up top
+    msg.guildId=msg.guildId||"0";
+    if(msg.guildId!=="0"){
+        if(!storage.hasOwnProperty(msg.guildId)){
+            storage[msg.guildId]=structuredClone(defaultGuild);
+        }
+        if(!storage[msg.guildId].users.hasOwnProperty(msg.author.id)){
+            storage[msg.guildId].users[msg.author.id]=structuredClone(defaultGuildUser);
+        }
+    }
+    if(!storage.hasOwnProperty(msg.author.id)){
+        storage[msg.author.id]=structuredClone(defaultUser);
+    }
+    if(msg.guild){
+        // Disable features in the server that the bot does not have permissions for.
+        Object.keys(PermissionFlagsBits).forEach(perm=>{
+            if(!msg.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits[perm])){
+                noPerms(msg.guild.id,perm);
             }
-            if(!storage[msg.guildId].users.hasOwnProperty(msg.author.id)){
-                storage[msg.guildId].users[msg.author.id]=structuredClone(defaultGuildUser);
-            }
-        }
-        if(!storage.hasOwnProperty(msg.author.id)){
-            storage[msg.author.id]=structuredClone(defaultUser);
-            
-        }
-        if(msg.guild){
-            Object.keys(PermissionFlagsBits).forEach(perm=>{
-                if(!msg.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits[perm])){
-                    noPerms(msg.guild.id,perm);
-                }
-            });
-        }
+        });
+    }
     
 
     // Dispatch to listening modules
@@ -1984,53 +1985,9 @@ client.on("messageCreate",async msg => {
         }
         return;
     }
-
-    // Filter
-    if(storage[msg.guildId]?.filter.active){
-        
-        let [filtered, filteredContent, foundWords] = checkDirty(msg.guildId, msg.content, true)
-
-        if(filtered && msg.webhookId===null){
-            msg.ogContent = msg.content;
-            msg.content = filteredContent;
-
-            storage[msg.guildId].users[msg.author.id].infractions++;
-            msg.delete();
-            if(storage[msg.guildId].filter.censor){
-                var replyBlip="";
-                if(msg.type===MessageType.Reply){
-                    var rMsg=await msg.fetchReference();
-                    replyBlip=`_[Reply to **${rMsg.author.username}**: ${rMsg.content.slice(0,22).replace(/(https?\:\/\/|\n)/ig,"").replace(/\@/ig,"[@]")}${rMsg.content.length>22?"...":""}](<https://discord.com/channels/${rMsg.guild.id}/${rMsg.channel.id}/${rMsg.id}>)_\n`;
-                }
-
-                const filteredMessageData = {
-                    "username": msg.member?.nickname||msg.author.globalName||msg.author.username,
-                    "avatarURL": msg.member?.displayAvatarURL(),
-                    "content": limitLength(`\`\`\`\nThe following message from ${msg.author.username} has been censored by Stewbot.\`\`\`${replyBlip}${msg.content.slice(0,1800)}`),
-                }
-
-                sendHook(filteredMessageData, msg);
-            }
-            if(storage[msg.author.id].config.dmOffenses&&msg.webhookId===null){
-                try{msg.author.send(limitLength(`Your message in **${msg.guild.name}** was ${storage[msg.guildId].filter.censor?"censored":"deleted"} due to the following word${foundWords.length>1?"s":""} being in the filter: ||${foundWords.join("||, ||")}||${storage[msg.author.id].config.returnFiltered?"```\n"+msg.ogContent.replaceAll("`","\\`")+"```":""}`)).catch(e=>{});}catch(e){}
-            }
-            if(storage[msg.guildId].filter.log&&storage[msg.guildId].filter.channel){
-                var c=client.channels.cache.get(storage[msg.guildId].filter.channel);
-                if(c.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
-                    c.send(limitLength(`I have ${storage[msg.guildId].filter.censor?"censored":"deleted"} a message from **${msg.author.username}** in <#${msg.channel.id}> for the following blocked word${foundWords.length>1?"s":""}: ||${foundWords.join("||, ||")}||\`\`\`\n${msg.ogContent.replaceAll("`","\\`").replaceAll(/(?<=https?:\/\/[^(\s|\/)]+)\./gi, "[.]").replaceAll(/(?<=https?):\/\//gi, "[://]")}\`\`\``));
-                }
-                else{
-                    storage[msg.guildId].filter.log=false;
-                }
-            }
-            
-            return;
-        }
-    }
-    const messageFiltered = Boolean(msg.ogContent);
     
     // Sentiment Analysis reactions
-    if (!messageFiltered && !msg.author.bot && /\bstewbot\'?s?\b/i.test(msg.content)) {
+    if (!msg.filtered && !msg.author.bot && /\bstewbot\'?s?\b/i.test(msg.content)) {
         var [emoji, toReact] = textToEmojiSentiment(msg.content);
         if (toReact) {
             msg.react(emoji);
