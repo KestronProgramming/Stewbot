@@ -109,5 +109,52 @@ module.exports = {
             cmd.followUp(`I need to be able to delete messages as well as manage webhooks for this channel. Without these permissions I cannot manage persistent messages here.`);
             storage[cmd.guild.id].persistence[cmd.channel.id].active=false;
         }
-	}
+	},
+
+    async onmessage(msg, context) {
+		applyContext(context);
+
+        // Persistent messages, if the server has them enabled
+        if ((!msg.webhookId) && storage[msg.guildId]?.hasOwnProperty("persistence")){
+            if(storage[msg.guild.id].persistence?.[msg.channel.id]?.active) {
+                if(msg.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.ManageWebhooks) && msg.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.ManageMessages)){
+                    if(storage[msg.guild.id].persistence[msg.channel.id].lastPost!==null){
+                        try{
+                            var mes=await msg.channel.messages.fetch(storage[msg.guild.id].persistence[msg.channel.id].lastPost).catch(e=>{});
+                            if(mes) mes.delete();
+                        }
+                        catch(e){}
+                    }
+                    var resp={
+                        "content":storage[msg.guild.id].persistence[msg.channel.id].content,
+                        "avatarURL":msg.guild.iconURL(),
+                        "username":msg.guild.name
+                    };
+                    var hook=await msg.channel.fetchWebhooks();
+                    hook=hook.find(h=>h.token);
+                    if(hook){
+                        hook.send(resp).then(d=>{
+                            storage[msg.guild.id].persistence[msg.channel.id].lastPost=d.id;
+                        });
+                    }
+                    else{
+                        client.channels.cache.get(msg.channel.id).createWebhook({
+                            name: config.name,
+                            avatar: config.pfp
+                        }).then(d=>{
+                            d.send(resp).then(d=>{
+                                storage[msg.guild.id].persistence[msg.channel.id].lastPost=d.id;
+                            });
+                        });
+                    }
+                }
+                else {
+                    if(msg.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
+                        msg.channel.send(`I do not have sufficient permissions to manage persistent messages for this channel. Please make sure I can both manage webhooks and delete messages and then run ${cmds.set_persistent_message.mention}.`);
+                    }
+                    storage[msg.guild.id].persistence[msg.channel.id].active=false;
+                }
+            }
+        }
+    }
 };
