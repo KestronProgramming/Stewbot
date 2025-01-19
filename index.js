@@ -1111,9 +1111,7 @@ function daily(dontLoop=false){
         started24=true;
     }
 
-    Object.values(dailyListenerModules).forEach(module => module.daily())
-
-    checkRSS();
+    Object.values(dailyListenerModules).forEach(module => module.daily(psudoGlobals))
 
     checkHoliday();
     
@@ -1537,6 +1535,16 @@ function notify(urgencyLevel,what,useWebhook=false) {
     }
 }
 
+// Now that setup is dine, define data that should be passed to each module - TODO migrate to `global` instead
+const psudoGlobals = {
+    client,
+    storage,
+    notify,
+    checkDirty,
+    cmds,
+    config
+};
+
 //Actionable events
 client.once("ready",async ()=>{
     // Schedule cloud backups every hour
@@ -1677,14 +1685,6 @@ client.on("messageCreate",async msg => {
     }
     
     // Dispatch to listening modules
-    const psudoGlobals = {
-        client,
-        storage,
-        notify,
-        checkDirty,
-        cmds,
-        config
-    };
     Object.entries(messageListenerModules).forEach(([name, module]) => {
         // Check if this command is blocked with /block_module
         const commandPath = `${module.data?.command?.name || name}`; // ||name handles non-command modules
@@ -1822,15 +1822,6 @@ client.on("interactionCreate",async cmd=>{
     if (cmd.isAutocomplete()) {
         // Dispatch to relevent command if registered
         // List of general globals it should have access to
-        const psudoGlobals = {
-            client,
-            storage,
-            notify, // TODO: schema for some commands like /filter to preload and provide these functions
-            checkDirty,
-            cmds,
-            config
-        };
-
         requestedGlobals = commandScript.data?.requiredGlobals || commandScript.requestGlobals?.() || [];
         for (var name of requestedGlobals) {
             psudoGlobals[name] = eval(name.match(/[\w-]+/)[0]);

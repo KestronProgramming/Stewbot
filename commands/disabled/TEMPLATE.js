@@ -80,7 +80,8 @@ module.exports = {
 
 	},
 
-	async daily() {
+	async daily(context) {
+		applyContext(context);
 		
 	}
 };

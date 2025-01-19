@@ -48,7 +48,8 @@ module.exports = {
 		// `context` currently does not respect requested globals
 	},
 
-	async daily() {
+	async daily(context) {
+		applyContext(context);
 		
 	}
 };
