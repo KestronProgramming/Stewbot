@@ -791,7 +791,7 @@ function daily(dontLoop=false){
         started24=true;
     }
 
-    Object.values(dailyListenerModules).forEach(module => module.daily(psudoGlobals))
+    Object.values(dailyListenerModules).forEach(module => module.daily(pseudoGlobals))
 }
 
 let rac = { // TODO: move this into fun.js module
@@ -1064,7 +1064,7 @@ function notify(urgencyLevel,what,useWebhook=false) {
 }
 
 // Now that setup is dine, define data that should be passed to each module - TODO migrate to `global` instead
-const psudoGlobals = {
+const pseudoGlobals = {
     notify,
     checkDirty,
     cmds,
@@ -1228,7 +1228,7 @@ client.on("messageCreate",async msg => {
             return;
         }
 
-        module.onmessage(msg, psudoGlobals);
+        module.onmessage(msg, pseudoGlobals);
     })
 
     // The sudo handler uses so many globals, it can stay in index.js for now
@@ -1283,7 +1283,7 @@ client.on("messageCreate",async msg => {
                     msg.reply(storage.wotd);
                 break;
                 case "checkRSS":
-                    Object.entries(commands).find(([name, module]) => name === 'rss')[1].daily(psudoGlobals);
+                    Object.entries(commands).find(([name, module]) => name === 'rss')[1].daily(pseudoGlobals);
                     // checkRSS();
                 break;
                 case "updateBlocklists":
@@ -1347,7 +1347,7 @@ client.on("interactionCreate",async cmd=>{
 
     // Autocomplete
     if (cmd.isAutocomplete()) {
-        const providedGlobals = { ...psudoGlobals };
+        const providedGlobals = { ...pseudoGlobals };
         requestedGlobals = commandScript.data?.requiredGlobals || commandScript.requestGlobals?.() || [];
         for (var name of requestedGlobals) {
             providedGlobals[name] = eval(name.match(/[\w-]+/)[0]);
@@ -1381,7 +1381,7 @@ client.on("interactionCreate",async cmd=>{
         }
         
         // Checks passed, gather requested data
-        const providedGlobals = { ...psudoGlobals };
+        const providedGlobals = { ...pseudoGlobals };
         requestedGlobals = commandScript.data?.requiredGlobals || commandScript.requestGlobals?.() || [];
         for (var name of requestedGlobals) {
             providedGlobals[name] = eval(name.match(/[\w-]+/)[0]);
