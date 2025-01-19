@@ -739,7 +739,25 @@ function levenshtein(s, t) {
 function backupThreadErrorCallback(error) {
     notify(1, String(error));
 }
-
+global.canUseRole = async function(user, role, channel) { // A centralized permission-checking function for users and roles
+    // returns [ success, errorMsg ]
+    if (user && role.comparePositionTo(channel.guild.members.cache.get(user.id)?.roles?.highest) >= 0) {
+        return [ false, `You cannot add this role because it is equal to or higher than your highest role.` ];
+    }
+    if (user && !channel.permissionsFor(user.id).has(PermissionFlagsBits.ManageRoles)){
+        return [ false, `You do not have permission to manage roles.` ]
+    }
+    if (role.managed){
+        return [ false, `This role is managed by an integration an cannot be used.` ]
+    }
+    if (!channel.permissionsFor(client.user.id).has(PermissionFlagsBits.ManageRoles)){
+        return [ false, `I do not have the ManageRoles permission needed to preform this action.` ]
+    }
+    if (channel.guild.members.cache.get(client.user.id)?.roles?.highest.position<=role.rawPosition){
+        return [ false, `I cannot help with that role. If you would like me to, grant me a role that is ordered to be higher in the roles list than ${role.name}. You can reorder roles from Server Settings -> Roles.` ];
+    }
+    return [ true, null ]
+}
 global.limitLength = function(s, size=1999) { // Used everywhere, so global function.
     s = String(s);
     return s.length>size?s.slice(0,size-3)+"...":s;

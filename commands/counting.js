@@ -135,6 +135,15 @@ module.exports = {
 
 	async execute(cmd, context) {
 		applyContext(context);
+
+		// Permissions checking for roles:
+		for (const role of [cmd.options.getRole("warn-role"), cmd.options.getRole("fail-role")]) {
+			if (!role) continue;
+			const [ canUse, error ] = await canUseRole(cmd.user, role, cmd.channel);
+			if (!canUse) {
+				return cmd.followUp(error);
+			};
+		}
 		
 		switch (cmd.options.getSubcommand()) {
 			case "config":
@@ -268,7 +277,7 @@ module.exports = {
 									}
 									else{
 										if(msg.guild.members.cache.get(client.user.id).roles.highest.position>fr.rawPosition){
-											msg.member.roles.add(fr);
+											try{ await msg.member.roles.add(fr); }catch{}
 										}
 										else{
 											storage[msg.guild.id].counting.failRoleActive=false;
@@ -288,7 +297,7 @@ module.exports = {
 								}
 								else{
 									if(msg.guild.members.cache.get(client.user.id).roles.highest.position>wr.rawPosition){
-										msg.member.roles.add(wr);
+										try{ await msg.member.roles.add(wr); }catch{}
 									}
 									else{
 										storage[msg.guild.id].counting.warnRoleActive=false;
@@ -315,8 +324,7 @@ module.exports = {
 							}
 							else{
 								if(msg.guild.members.cache.get(client.user.id).roles.highest.position>fr.rawPosition){
-									msg.member.roles.add(fr);
-								}
+									try{ await msg.member.roles.add(fr); }catch{}								}
 								else{
 									storage[msg.guild.id].counting.failRoleActive=false;
 								}
@@ -334,8 +342,7 @@ module.exports = {
 							}
 							else{
 								if(msg.guild.members.cache.get(client.user.id).roles.highest.position>wr.rawPosition){
-									msg.member.roles.add(wr);
-								}
+									try{ await msg.member.roles.add(wr); }catch{}								}
 								else{
 									storage[msg.guild.id].counting.warnRoleActive=false;
 								}
