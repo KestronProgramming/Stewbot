@@ -7,7 +7,18 @@ function applyContext(context={}) {
 }
 // #endregion Boilerplate
 
+function getLvl(lvl){
+    var total=0;
+    while(lvl>-1){
+        total+=5*(lvl*lvl)+(50*lvl)+100;
+        lvl--;
+    }
+    return total;
+}
+
 module.exports = {
+    getLvl, // exported functions
+
 	data: {
 		// Slash command data
 		command: new SlashCommandBuilder().setName("rank").setDescription("View someone's rank for this server's level ups")
@@ -21,7 +32,7 @@ module.exports = {
 		
 		extra: {"contexts":[0],"integration_types":[0]},
 
-		requiredGlobals: ["getLvl"],
+		requiredGlobals: [],
         help:{
             helpCategories: ["Information","General","Entertainment","Server Only"],
 			/*

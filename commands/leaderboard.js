@@ -7,6 +7,8 @@ function applyContext(context = {}) {
 }
 // #endregion Boilerplate
 
+const { getLvl } = require("./rank.js")
+
 module.exports = {
     data: {
         // Slash command data
@@ -31,7 +33,7 @@ module.exports = {
 
         extra: { "contexts": [0, 1, 2], "integration_types": [0, 1] },
 
-        requiredGlobals: ["getLvl", "getEmojiFromMessage"],
+        requiredGlobals: ["getEmojiFromMessage"],
 
         help: {
             helpCategories: ["Information","Entertainment"],

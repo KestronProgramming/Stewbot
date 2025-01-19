@@ -7,6 +7,8 @@ function applyContext(context={}) {
 }
 // #endregion Boilerplate
 
+const { getLvl } = require("./rank.js")
+
 module.exports = {
 	data: {
 		// Slash command data
@@ -69,5 +71,86 @@ module.exports = {
 			disclaimers.push(`I do not have the MANAGE_WEBHOOKS permission for this server, so I cannot post level-up messages. I have set the location for level-up notifications to DMs instead.`);
 		}
 		cmd.followUp(`Level ups configured.${disclaimers.map(d=>`\n\n${d}`).join("")}`);
+	},
+
+	async onmessage(msg, context) {
+		applyContext(context);
+
+		// Level-up XP
+		if(!msg.author.bot&&storage[msg.guildId]?.levels.active&&storage[msg.guildId]?.users[msg.author.id].expTimeout<Date.now()&&!checkDirty(config.homeServer,msg.content)){
+			storage[msg.guildId].users[msg.author.id].expTimeout=Date.now()+60000;
+			storage[msg.guildId].users[msg.author.id].exp+=Math.floor(Math.random()*11)+15;//Between 15 and 25
+			if(storage[msg.guild.id].users[msg.author.id].exp>getLvl(storage[msg.guild.id].users[msg.author.id].lvl)){
+				storage[msg.guild.id].users[msg.author.id].lvl++;
+				if(storage[msg.author.id].config.levelUpMsgs){
+					if(storage[msg.guild.id].levels.hasOwnProperty("channelOrDM")){
+						storage[msg.guild.id].levels.location=storage[msg.guild.id].levels.channelOrDM;
+						delete storage[msg.guild.id].levels.channelOrDM;
+					}
+					if(storage[msg.guild.id].levels.location==="DM"){
+						try{
+							msg.author.send({embeds:[{
+								"type": "rich",
+								"title": `Level Up`,
+								"description": storage[msg.guild.id].levels.msg.replaceAll("${USERNAME}",`**${msg.author.username}**`).replaceAll("${USER}",`<@${msg.author.id}>`).replaceAll("${LVL}",storage[msg.guild.id].users[msg.author.id].lvl),
+								"color": 0x006400,
+								"thumbnail": {
+									"url": msg.guild.iconURL(),
+									"height": 0,
+									"width": 0
+								},
+								"footer": {
+									"text": `Sent from ${msg.guild.name}. To disable these messages, use /personal_config.`
+								}
+							}]}).catch(e=>{});
+						}catch(e){}
+					}
+					else{
+						var resp={
+							"content":storage[msg.guildId].levels.msg.replaceAll("${USERNAME}",`**${msg.author.username}**`).replaceAll("${USER}",`<@${msg.author.id}>`).replaceAll("${LVL}",storage[msg.guild.id].users[msg.author.id].lvl),
+							"avatarURL":msg.guild.iconURL(),
+							"username":msg.guild.name
+						};
+						var c=client.channels.cache.get(storage[msg.guild.id].levels.location==="channel"?storage[msg.guild.id].levels.channel:msg.channel.id);
+						if(c.permissionsFor(client.user.id).has(PermissionFlagsBits.ManageWebhooks)){
+							var hook=await c.fetchWebhooks();
+							hook=hook.find(h=>h.token);
+							if(hook){
+								hook.send(resp);
+							}
+							else{
+								client.channels.cache.get(storage[msg.guild.id].levels.location==="channel"?storage[msg.guild.id].levels.channel:msg.channel.id).createWebhook({
+									name:config.name,
+									avatar: config.pfp
+								}).then(d=>{
+									d.send(resp);
+								});
+							}
+						}
+						else{
+							storage[msg.guild.id].levels.location="DM";
+							try{
+								msg.author.send({embeds:[{
+									"type": "rich",
+									"title": `Level Up`,
+									"description": storage[msg.guild.id].levels.msg.replaceAll("${USERNAME}",`**${msg.author.username}**`).replaceAll("${USER}",`<@${msg.author.id}>`).replaceAll("${LVL}",storage[msg.guild.id].users[msg.author.id].lvl),
+									"color": 0x006400,
+									"thumbnail": {
+										"url": msg.guild.iconURL(),
+										"height": 0,
+										"width": 0
+									},
+									"footer": {
+										"text": `Sent from ${msg.guild.name}. To disable these messages, use /personal_config.`
+									}
+								}]}).catch(e=>{});
+							}catch(e){}
+						}
+					}
+				}
+			}
+			
+		}
+		
 	}
 };
