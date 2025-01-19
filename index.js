@@ -1897,6 +1897,7 @@ client.on("messageCreate",async msg => {
         module.onmessage(msg, psudoGlobals);
     })
 
+    // The sudo handler uses so many globals, it can stay in index.js for now
     if(msg.content.startsWith("~sudo ")&&!process.env.beta||msg.content.startsWith("~betaSudo ")&&process.env.beta){
         const devadminChannel = await client.channels.fetch("986097382267715604");
         await devadminChannel.guild.members.fetch(msg.author.id);

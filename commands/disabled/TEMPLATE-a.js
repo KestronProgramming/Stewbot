@@ -6,7 +6,7 @@ function applyContext(context={}) {
 }
 
 // 
-// TEMPLATE-cmd.js is an exhaustive template showcasing every feature available to modules.
+// TEMPLATE.js is an exhaustive template showcasing every feature available to modules.
 //  Any module/command can be derived from these.
 // 
 
