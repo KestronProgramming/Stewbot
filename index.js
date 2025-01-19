@@ -288,7 +288,7 @@ function makeHelp(page,categories,filterMode,forWho){
         new ButtonBuilder().setCustomId(`help-page-${page-1}-${forWho}-salt2`).setLabel(`Previous`).setStyle(ButtonStyle.Primary).setDisabled(page-1<0),
         new ButtonBuilder().setCustomId(`help-page-${page}-${forWho}-salt3`).setLabel(`Page ${page+1}`).setStyle(ButtonStyle.Primary).setDisabled(true),
         new ButtonBuilder().setCustomId(`help-page-${page+1}-${forWho}-salt4`).setLabel(`Next`).setStyle(ButtonStyle.Primary).setDisabled(page+1>=totalPages),
-        new ButtonBuilder().setCustomId(`help-page-${totalPages-1}-${forWho}-salt5`).setLabel(`Last`).setStyle(ButtonStyle.Primary).setDisabled(page===totalPages-1)
+        new ButtonBuilder().setCustomId(`help-page-${totalPages-1}-${forWho}-salt5`).setLabel(`Last`).setStyle(ButtonStyle.Primary).setDisabled(page===totalPages-1&&totalPages>1)
     ];
     buttonRows.push(new ActionRowBuilder().addComponents(...pagesArray));
     buttonRows.push(...chunkArray(helpCategories, 5).map(chunk => 
