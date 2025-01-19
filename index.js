@@ -252,7 +252,7 @@ function makeHelp(page,categories,filterMode,forWho){
         categories=[];
     }
     const buttonRows=[];
-    buttonRows.push(...chunkArray(chunkArray(helpCommands.filter(command=>{
+    var totalPages=[...chunkArray(helpCommands.filter(command=>{
         switch(filterMode){
             case 'And':
                 var ret=true;
@@ -282,13 +282,15 @@ function makeHelp(page,categories,filterMode,forWho){
                 return ret;
             break;
         }
-    }), 9).map((chunk,i)=>
-        new ButtonBuilder().setCustomId(`help-page-${i}-${forWho}`).setLabel(`Page ${i+1}`).setStyle(ButtonStyle.Primary).setDisabled(i===page)
-    ),5).map(chunk=>
-        new ActionRowBuilder().addComponents(
-            ...chunk
-        )
-    ));
+    }), 9)].length;
+    var pagesArray=[
+        new ButtonBuilder().setCustomId(`help-page-0-${forWho}-salt1`).setLabel(`First`).setStyle(ButtonStyle.Primary).setDisabled(page===0),
+        new ButtonBuilder().setCustomId(`help-page-${page-1}-${forWho}-salt2`).setLabel(`Previous`).setStyle(ButtonStyle.Primary).setDisabled(page-1<0),
+        new ButtonBuilder().setCustomId(`help-page-${page}-${forWho}-salt3`).setLabel(`Page ${page+1}`).setStyle(ButtonStyle.Primary).setDisabled(true),
+        new ButtonBuilder().setCustomId(`help-page-${page+1}-${forWho}-salt4`).setLabel(`Next`).setStyle(ButtonStyle.Primary).setDisabled(page+1>=totalPages),
+        new ButtonBuilder().setCustomId(`help-page-${totalPages-1}-${forWho}-salt5`).setLabel(`Last`).setStyle(ButtonStyle.Primary).setDisabled(page===totalPages-1)
+    ];
+    buttonRows.push(new ActionRowBuilder().addComponents(...pagesArray));
     buttonRows.push(...chunkArray(helpCategories, 5).map(chunk => 
         new ActionRowBuilder().addComponents(
             chunk.map(a => 
@@ -302,7 +304,7 @@ function makeHelp(page,categories,filterMode,forWho){
     buttonRows.push(new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId(`help-mode-And-${forWho}`).setLabel("AND Mode").setStyle(ButtonStyle.Danger).setDisabled(filterMode==="And"),new ButtonBuilder().setCustomId(`help-mode-Or-${forWho}`).setLabel("OR Mode").setStyle(ButtonStyle.Danger).setDisabled(filterMode==="Or"),new ButtonBuilder().setCustomId(`help-mode-Not-${forWho}`).setLabel("NOT Mode").setStyle(ButtonStyle.Danger).setDisabled(filterMode==="Not")));	
     
     return {
-        content: `## Help Menu\nPage: ${page+1} | Mode: ${filterMode} | Categories: ${categories.length===0?`None`:categories.length===helpCategories.length?`All`:categories.join(", ")}`, embeds: [{
+        content: `## Help Menu\nPage: ${page+1}/${totalPages} | Mode: ${filterMode} | Categories: ${categories.length===0?`None`:categories.length===helpCategories.length?`All`:categories.join(", ")}`, embeds: [{
             "type": "rich",
             "title": `Help Menu`,
             "description": ``,
