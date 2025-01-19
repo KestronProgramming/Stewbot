@@ -1868,6 +1868,29 @@ async function sendHook(what, msg){
 client.on("messageCreate",async msg => {
     if(msg.author.id===client.user.id) return;
 
+        // Some storage management thing, probably should stay up top
+        msg.guildId=msg.guildId||"0";
+        if(msg.guildId!=="0"){
+            if(!storage.hasOwnProperty(msg.guildId)){
+                storage[msg.guildId]=structuredClone(defaultGuild);
+            }
+            if(!storage[msg.guildId].users.hasOwnProperty(msg.author.id)){
+                storage[msg.guildId].users[msg.author.id]=structuredClone(defaultGuildUser);
+            }
+        }
+        if(!storage.hasOwnProperty(msg.author.id)){
+            storage[msg.author.id]=structuredClone(defaultUser);
+            
+        }
+        if(msg.guild){
+            Object.keys(PermissionFlagsBits).forEach(perm=>{
+                if(!msg.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits[perm])){
+                    noPerms(msg.guild.id,perm);
+                }
+            });
+        }
+    
+
     // Dispatch to listening modules
     const psudoGlobals = {
         client,
@@ -1877,7 +1900,6 @@ client.on("messageCreate",async msg => {
         cmds,
         config
     };
-
     Object.entries(messageListenerModules).forEach(([name, module]) => {
         // Check if this command is blocked with /block_command
         const commandPath = `/${module.data?.command?.name || name}`; // ||name handles non-command modules
@@ -1961,27 +1983,6 @@ client.on("messageCreate",async msg => {
             msg.reply("I was unable to verify you.");
         }
         return;
-    }
-
-    msg.guildId=msg.guildId||"0";
-    if(msg.guildId!=="0"){
-        if(!storage.hasOwnProperty(msg.guildId)){
-            storage[msg.guildId]=structuredClone(defaultGuild);
-        }
-        if(!storage[msg.guildId].users.hasOwnProperty(msg.author.id)){
-            storage[msg.guildId].users[msg.author.id]=structuredClone(defaultGuildUser);
-        }
-    }
-    if(!storage.hasOwnProperty(msg.author.id)){
-        storage[msg.author.id]=structuredClone(defaultUser);
-        
-    }
-    if(msg.guild){
-        Object.keys(PermissionFlagsBits).forEach(perm=>{
-            if(!msg.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits[perm])){
-                noPerms(msg.guild.id,perm);
-            }
-        });
     }
 
     // Filter
