@@ -78,5 +78,9 @@ module.exports = {
 
 	async autocomplete(cmd) {
 
+	},
+
+	async daily() {
+		
 	}
 };

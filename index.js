@@ -29,13 +29,17 @@ if (!fs.existsSync("./data/usage.json")) fs.writeFileSync('./data/usage.json', '
 const usage=require("./data/usage.json");
 
 // Load commands modules
+function getSubscribedCommands(commands, subscription) {
+    return Object.fromEntries(
+        (Object.entries(commands)
+                .filter(([name, command]) => command[subscription]) // Get all subscribed modules
+        ).sort((a, b) => (a[1].data?.priority ?? 100) - (b[1].data?.priority ?? 100))
+    )
+}
 console.beta("Loading commands")
 let commands = getCommands();
-let messageListenerModules = Object.fromEntries(
-    (Object.entries(commands)
-            .filter(([name, command]) => command.onmessage) // Get all onmessage subscribed modules
-    ).sort((a, b) => (a[1].data?.priority ?? 100) - (b[1].data?.priority ?? 100))
-);
+let messageListenerModules = getSubscribedCommands(commands, "onmessage");
+let dailyListenerModules = getSubscribedCommands(commands, "daily");
 
 // Variables
 var uptime=0;
@@ -119,7 +123,6 @@ setInterval(() => {
         if (process.env.beta) console.log(`Just wrote DB to ${writeLocation}`)
     }
 }, 10 * 1000);
-
 
 // Other data
 const leetMap = require("./data/filterLeetmap.json");
@@ -1102,10 +1105,13 @@ async function doEmojiboardReaction(react) {
 
 var started24=false;
 function daily(dontLoop=false){
+    // Loop every 24 hours
     if(!started24&&!dontLoop){
         setInterval(daily,60000*60*24);
         started24=true;
     }
+
+    Object.values(dailyListenerModules).forEach(module => module.daily())
 
     checkRSS();
 

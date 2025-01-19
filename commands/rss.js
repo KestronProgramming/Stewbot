@@ -186,5 +186,9 @@ module.exports = {
 				
 			break;
 		}
+	},
+
+	async daily() {
+		
 	}
 };

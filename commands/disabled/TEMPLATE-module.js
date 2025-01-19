@@ -14,6 +14,9 @@ module.exports = {
 	data: {
 		command: null,
 
+		// A priority calling system for handlers like onmessage, only use when required. Smaller = loaded sooner, default = 100
+		// priority: 100,
+
 		// Not all modules will have help commands, but they can in theory to showcase bot features.
 		help: {
 			helpCategories: [],
@@ -43,5 +46,9 @@ module.exports = {
 	async onmessage(msg, context) {
 		applyContext(context);
 		// `context` currently does not respect requested globals
+	},
+
+	async daily() {
+		
 	}
 };
