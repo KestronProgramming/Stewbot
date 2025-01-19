@@ -20,8 +20,6 @@ const { URL } = require('url');
 console.beta("Importing backup.js")
 const startBackupThread = require("./backup.js");
 console.beta("Loading everything else")
-const mathjs = require('mathjs');
-const nlp = require('compromise');
 var Turndown = require('turndown');
 const wotdList=fs.readFileSync(`./data/wordlist.txt`,"utf-8").split("\n");
 const cheerio = require('cheerio');
@@ -652,47 +650,6 @@ function checkDirty(guildID, what, filter=false, applyGlobalFilter=false) {
 
 function escapeBackticks(text){
     return text.replace(/(?<!\\)(?:\\\\)*`/g, "\\`");
-}
-function processForNumber(text) {
-    text = text?.toLowerCase() || '';                                                                                     
-
-    const text2MathMap = {
-        'plus': '+',
-        'minus': '-',
-        'times': '*',
-        'multiplied by': '*',
-        'divided by': '/', 
-        'to the power of': '^', 
-        'squared': '^2',
-        'cubed': '^3',
-    };
-
-    // Temporarily replace " - " or "-" with a unique marker
-    text = text.replace(/(\s*-\s+)|(\s+-\s*)/g, ' __HYD__ ');  // Replace spaces around hyphen or just hyphen
-    text = text.replace(/(\s*minus\s+)|(\s+minus\s*)/g, ' __HYD__ ');
-
-    var doc = nlp(text);
-    doc.numbers().toNumber();
-    text = doc.text();
-
-    for (let [word, symbol] of Object.entries(text2MathMap)) {
-        text = text.replace(new RegExp(`\\b${word}\\b`, 'g'), symbol);
-    }
-
-    text = text.replace(/__HYD__/g, '-');
-
-    // Extract equation as far up as is possible
-    text = text.match(/^([0-9+\-*/^()\s\.]|sqrt)+/, '')?.[0]?.trim() || '';
-    
-    try {
-        let result = +mathjs.evaluate(text);
-        if (result) {
-            return +result.toFixed(1)
-        }
-    } catch (error) {
-        return null;
-    }
-    return null;
 }
 
 function verifyRegex(regexStr) {
@@ -1948,133 +1905,6 @@ client.on("messageCreate",async msg => {
         return;
     }
         
-    // If the server uses counting, but Stewbot cannot add reactions or send messages, don't do counting
-    if(!msg.author.bot&&storage[msg.guildId]?.counting.active&&msg.channel.id===storage[msg.guildId]?.counting.channel&&(!msg.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.AddReactions)||!msg.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages))){
-        storage[msg.guildId].counting.active=false;
-    }
-    
-    // Counting
-    if(!msg.author.bot&&storage[msg.guildId]?.counting.active&&msg.channel.id===storage[msg.guildId]?.counting.channel){
-        var num = processForNumber(msg.content);
-        if(num){
-            if(num===storage[msg.guild.id].counting.nextNum){
-                if(storage[msg.guild.id].users[msg.author.id].countTurns<=0) {
-
-                    // Discord glitches if the reaction is added too quickly
-                    setTimeout(_ => {
-                        try {
-                            msg.react("✅");
-                        } catch(e) {} // user could have blocked, a bot could have deleted it faster, etc...
-                    }, 150);
-                    
-                    storage[msg.guild.id].counting.nextNum++;
-                    if(storage[msg.guild.id].counting.legit&&num>storage[msg.guild.id].counting.highestNum){
-                        msg.react("🎉");
-                        storage[msg.guild.id].counting.highestNum=num;
-                    }
-                    for(let a in storage[msg.guild.id].users){
-                        storage[msg.guild.id].users[a].countTurns--;
-                    }
-                    storage[msg.guild.id].users[msg.author.id].count++;
-                    storage[msg.guild.id].users[msg.author.id].countTurns=storage[msg.guild.id].counting.takeTurns;
-                    
-                }
-                else{
-                    msg.react("❌");
-                    if(storage[msg.guild.id].users[msg.author.id].beenCountWarned&&storage[msg.guild.id].counting.reset){
-                        msg.reply(`⛔ **Reset**\nNope, you need to wait for ${storage[msg.guild.id].counting.takeTurns} other ${storage[msg.guild.id].counting.takeTurns===1?"person":"people"} to post before you post again!${storage[msg.guild.id].counting.reset?` The next number to post was going to be \`${storage[msg.guild.id].counting.nextNum}\`, but now it's \`1\`.`:""}`);
-                        if(storage[msg.guild.id].counting.reset){
-                            storage[msg.guild.id].counting.nextNum=1;
-                            if(storage[msg.guild.id].counting.reset&&storage[msg.guild.id].counting.takeTurns>0) storage[msg.guild.id].counting.legit=true;
-                            for(let a in storage[msg.guild.id].users){
-                                storage[msg.guild.id].users[a].countTurns=0;
-                            }
-                            if(storage[msg.guild.id].counting.failRoleActive&&msg.guild.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageRoles)){
-                                var fr=msg.guild.roles.cache.get(storage[msg.guild.id].counting.failRole);
-                                if(fr===null||fr===undefined){
-                                    storage[msg.guild.id].counting.failRoleActive=false;
-                                }
-                                else{
-                                    if(msg.guild.members.cache.get(client.user.id).roles.highest.position>fr.rawPosition){
-                                        msg.member.roles.add(fr);
-                                    }
-                                    else{
-                                        storage[msg.guild.id].counting.failRoleActive=false;
-                                    }
-                                }
-                            }
-                            
-                        }
-                    }
-                    else{
-                        msg.reply(`⚠️ **Warning**\nNope, that's incorrect. You have been warned! Next time this will reset the count. The next number is **${storage[msg.guild.id].counting.nextNum}**.\`\`\`\nNumbers entered must be the last number plus one, (so if the last entered number is 148, the next number is 149).${storage[msg.guild.id].counting.takeTurns>0?` You also need to make sure at least ${storage[msg.guild.id].counting.takeTurns} other ${storage[msg.guild.id].counting.takeTurns===1?"person":"people"} take${storage[msg.guild.id].counting.takeTurns===1?"s":""} a turn before you take another turn.\`\`\``:"```"}`);
-                        storage[msg.guild.id].users[msg.author.id].beenCountWarned=true;
-                        if(storage[msg.guild.id].counting.warnRoleActive&&msg.guild.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageRoles)){
-                            var wr=msg.guild.roles.cache.get(storage[msg.guild.id].counting.warnRole);
-                            if(wr===null||wr===undefined){
-                                storage[msg.guild.id].counting.warnRoleActive=false;
-                            }
-                            else{
-                                if(msg.guild.members.cache.get(client.user.id).roles.highest.position>wr.rawPosition){
-                                    msg.member.roles.add(wr);
-                                }
-                                else{
-                                    storage[msg.guild.id].counting.warnRoleActive=false;
-                                }
-                            }
-                        }
-                        
-                    }
-                }
-            }
-            else if(storage[msg.guild.id].counting.reset&&storage[msg.guild.id].counting.nextNum!==1){
-                msg.react("❌");
-                if(storage[msg.guild.id].users[msg.author.id].beenCountWarned&&storage[msg.guild.id].counting.reset){
-                    msg.reply(`⛔ **Reset**\nNope, that was incorrect! The next number to post was going to be \`${storage[msg.guild.id].counting.nextNum}\`, but now it's \`1\`.`);
-                    storage[msg.guild.id].counting.nextNum=1;
-                    if(storage[msg.guild.id].counting.reset&&storage[msg.guild.id].counting.takeTurns>0) storage[msg.guild.id].counting.legit=true;
-                    for(let a in storage[msg.guild.id].users){
-                        storage[msg.guild.id].users[a].countTurns=0;
-                    }
-                    if(storage[msg.guild.id].counting.failRoleActive&&msg.guild.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageRoles)){
-                        var fr=msg.guild.roles.cache.get(storage[msg.guild.id].counting.failRole);
-                        if(!fr){
-                            storage[msg.guild.id].counting.failRoleActive=false;
-                        }
-                        else{
-                            if(msg.guild.members.cache.get(client.user.id).roles.highest.position>fr.rawPosition){
-                                msg.member.roles.add(fr);
-                            }
-                            else{
-                                storage[msg.guild.id].counting.failRoleActive=false;
-                            }
-                        }
-                    }
-                    
-                }
-                else{
-                    msg.reply(`⚠️ **Warning**\nNope, that's incorrect. You have been warned! Next time this will reset the count. The next number is **${storage[msg.guild.id].counting.nextNum}**.\`\`\`\nNumbers entered must be the last number plus one, (so if the last entered number is 148, the next number is 149).${storage[msg.guild.id].counting.takeTurns>0?` You also need to make sure at least ${storage[msg.guild.id].counting.takeTurns} other ${storage[msg.guild.id].counting.takeTurns===1?"person":"people"} take${storage[msg.guild.id].counting.takeTurns===1?"s":""} a turn before you take another turn.\`\`\``:"```"}`);
-                    storage[msg.guild.id].users[msg.author.id].beenCountWarned=true;
-                    if(storage[msg.guild.id].counting.warnRoleActive&&msg.guild.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageRoles)){
-                        var wr=msg.guild.roles.cache.get(storage[msg.guild.id].counting.warnRole);
-                        if(wr===null||wr===undefined){
-                            storage[msg.guild.id].counting.warnRoleActive=false;
-                        }
-                        else{
-                            if(msg.guild.members.cache.get(client.user.id).roles.highest.position>wr.rawPosition){
-                                msg.member.roles.add(wr);
-                            }
-                            else{
-                                storage[msg.guild.id].counting.warnRoleActive=false;
-                            }
-                        }
-                    }
-                    
-                }
-            }
-        }
-    }
-    
     // Ticket system
     if(msg.channel.name?.startsWith("Ticket with ")&&!msg.author.bot){
         var resp={files:[],content:`Ticket response from **${msg.guild.name}**. To respond, make sure to reply to this message.\nTicket ID: ${msg.channel.name.split("Ticket with ")[1].split(" in ")[1]}/${msg.channel.id}`};
