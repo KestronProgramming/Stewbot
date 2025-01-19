@@ -7,7 +7,37 @@ function applyContext(context={}) {
 }
 // #endregion Boilerplate
 
+
+async function finTempSlow(guild,channel,force){
+    var chan=client.channels.cache.get(channel);
+    if(!storage[guild]?.hasOwnProperty("tempSlow")||!storage[guild]?.tempSlow?.hasOwnProperty(channel)){
+        return;
+    }
+    if(storage[guild].tempSlow[channel].ends-Date.now()>10000&&!force){
+        setTimeout(()=>{finTempSlow(guild,channel)},storage[guild].tempSlow[channel].ends-Date.now());
+        return;
+    }
+    if(chan===null||chan===undefined){
+        client.users.cache.get(storage[guild].tempSlow[channel].invoker).send(`I was unable to remove the temporary slowmode setting in <#${channel}>.`).catch(e=>{});
+        delete storage[guild].tempSlow[channel];
+        return;
+    }
+    if(!chan.permissionsFor(client.user.id).has(PermissionFlagsBits.ManageChannels)){
+        client.users.cache.get(storage[guild].tempSlow[channel].invoker).send(`I was unable to remove the temporary slowmode setting in <#${channel}> due to not having the \`ManageChannels\` permission.`).catch(e=>{});
+        delete storage[guild].tempSlow[channel];
+        return;
+    }
+    chan.setRateLimitPerUser(storage[guild].tempSlow[channel].origMode);
+    if(!storage[guild].tempSlow[channel].private){
+        chan.send(`Temporary slowmode setting reverted.`);
+        delete storage[guild].tempSlow[channel];
+    }
+}
+
+
 module.exports = {
+    finTempSlow, 
+
 	data: {
 		// Slash command data
 		command: new SlashCommandBuilder().setName('slowmode').setDescription('Set a slowmode for this channel, temporarily if desired').addIntegerOption(option=>
@@ -111,5 +141,10 @@ module.exports = {
         }
         cmd.channel.setRateLimitPerUser(time);
         cmd.followUp({content:`Alright, I have set a${temp?` temporary`:``} slowmode setting for this channel${temp?` until <t:${Math.round(storage[cmd.guild.id].tempSlow[cmd.channel.id].ends/1000)}:f> <t:${Math.round(storage[cmd.guild.id].tempSlow[cmd.channel.id].ends/1000)}:R>`:``}.`,components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setStyle(ButtonStyle.Danger).setLabel("Revert Now").setCustomId(`revertTempSlow`))]});
-	}
+	},
+
+    async daily(context) {
+		applyContext(context);
+
+    }
 };

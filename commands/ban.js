@@ -135,5 +135,28 @@ module.exports = {
 			comps=[new ActionRowBuilder().addComponents(new ButtonBuilder().setStyle(ButtonStyle.Danger).setLabel("Unban Now").setCustomId(`unban-${b.id}`))];
 		}
 		cmd.followUp({content:`I have ${temp?`temporarily `:``}banned <@${cmd.options.getUser("target").id}>${temp?` until <t:${Math.round((Date.now()+timer)/1000)}:f> <t:${Math.round((Date.now()+timer)/1000)}:R>`:``}.`,components:comps});
+	},
+
+	async daily(context) {
+		applyContext(context);
+
+		// Check all servers, register timers for the tempBans
+		Object.keys(storage).forEach(s => {					
+			// Removing temp bans / setting timeouts to remove temp bans when it's within 24 hours of them
+			try {
+				if(storage[s]?.hasOwnProperty("tempBans")){
+					Object.keys(storage[s].tempBans).forEach(ban=>{
+						if(storage[s].tempBans[ban].ends-Date.now()>0&&!storage[s].tempBans[ban].registered){
+							setTimeout(()=>{finTempBan(s,ban)},storage[s].tempBans[ban].ends-Date.now());
+						}
+						else if(!storage[s].tempBans[ban].registered){
+							finTempBan(s,ban);
+						}
+					});
+				}
+			} catch (e) {
+				notify(1, "Error creating tempBan removing timer: " + e.stack);
+			}
+		});
 	}
 };

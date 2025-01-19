@@ -7,7 +7,41 @@ function applyContext(context={}) {
 }
 // #endregion Boilerplate
 
+async function finHatPull(who,force){
+    if(!storage[who].hasOwnProperty("hat_pull")){
+        return;
+    }
+    if(storage[who].hat_pull.closes-Date.now()>10000&&!force){
+        if(storage[who].hat_pull.registered){
+            setTimeout(()=>{finHatPull(who)},storage[who].hat_pull.closes-Date.now());
+        }
+        return;
+    }
+    var winners=[];
+    for(var i=0;i<storage[who].hat_pull.winCount;i++){
+        winners.push(storage[who].hat_pull.entered[Math.floor(Math.random()*storage[who].hat_pull.entered.length)]);
+    }
+    var chan=client.channels.cache.get(storage[who].hat_pull.location.split("/")[1]);
+    if(chan===null||chan===undefined){
+        client.users.cache.get(who).send(`I could not end the hat pull.\nhttps://discord.com/channels/${storage[who].hat_pull.location}${winners.map(a=>`\n- <@${a}>`).join("")}`).catch(e=>{});
+        delete storage[who].hat_pull;
+        return;
+    }
+    var cont=`This has ended! ${winners.length===0?`Nobody entered though.`:winners.length>1?`Here are our winners!${winners.map(a=>`\n- <@${a}>`).join("")}`:`Here is our winner: <@${winners[0]}>!`}`;
+    var msg=await chan.messages.fetch(storage[who].hat_pull.location.split("/")[2]);
+    if(msg===null||msg===undefined){
+        chan.send(cont);
+    }
+    else{
+        msg.edit({components:[]});
+        msg.reply(cont);
+    }
+    delete storage[who].hat_pull;
+}
+
 module.exports = {
+    finHatPull,
+    
 	data: {
 		// Slash command data
 		command: new SlashCommandBuilder().setName('hat_pull').setDescription('Draw (a) name(s) from a hat, like a raffle or giveaway').addStringOption(option=>
@@ -28,7 +62,7 @@ module.exports = {
 		
 		extra: {"contexts": [0], "integration_types": [0]},
 
-		requiredGlobals: ["finHatPull"],
+		requiredGlobals: [],
 
 		help: {
 			helpCategories: ["Entertainment","Server Only"],
@@ -80,5 +114,30 @@ module.exports = {
         if(timer<=60000*60*24){
             setTimeout(()=>{finHatPull(cmd.user.id)});
         }
-	}
+	},
+
+    async daily(context) {
+        applyContext(context);
+
+        // Check each server for which need the hat pull done
+        Object.keys(storage).forEach(s => {
+            // Hat pull, i.e. giveaways
+            try {
+                if(storage[s]?.hasOwnProperty("hat_pull")){
+                    if(storage[s].hat_pull.ends-Date.now()<=60000*60*24){
+                        storage[s].hat_pull.registered=true;
+                        if(storage[s].hat_pull.ends-Date.now()>0){
+                            setTimeout(()=>{finHatPull(s)},storage[s].hat_pull.ends-Date.now());
+                        }
+                        else{
+                            finHatPull(s);
+                        }
+                    }
+                }
+            } catch (e) {
+                notify(1, "hat_pull timer creating error: " + e.stack);
+            }
+        });
+
+    }
 };

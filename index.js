@@ -16,7 +16,9 @@ const wotdList = fs.readFileSync(`./data/wordlist.txt`,"utf-8").split("\n");
 const crypto = require('crypto');
 const { createCanvas } = require('canvas');
 const { updateBlocklists } = require("./commands/badware_scanner.js")
-const Turndown = require('turndown');
+const { finTempSlow } = require("./commands/slowmode.js")
+const { finTempRole } = require("./commands/temp_role.js")
+const { finHatPull } = require("./commands/hat_pull.js")
 
 // Preliminary setup (TODO: move to a setup.sh)
 if (!fs.existsSync("tempMove")) fs.mkdirSync('tempMove');
@@ -38,9 +40,7 @@ let messageListenerModules = getSubscribedCommands(commands, "onmessage");
 let dailyListenerModules = getSubscribedCommands(commands, "daily");
 
 // Variables
-var turndown = new Turndown();
 var uptime=0;
-var client;
 
 // Utility functions needed for processing some data blocks 
 function escapeRegex(input) {
@@ -95,7 +95,7 @@ function readLatestDatabase() {
     notify(1, `No storage locations could be loaded. Tried: ${sortedLocations.join(", ")}.`);
     process.exit();
 }
-const storage = readLatestDatabase();
+global.storage = readLatestDatabase(); // Storage needs to be global for our submodules
 let lastStorageHash = hash(storage);
 setInterval(() => {
     writeLocation = storageLocations[storageCycleIndex % storageLocations.length];
@@ -401,79 +401,7 @@ async function finTimer(who,force){
     }
     delete storage[who].timer;
 }
-async function finTempRole(guild,user,role){
-    if(!storage[guild].users[user].tempRoles?.hasOwnProperty(role)){
-        return;
-    }
-    guild=client.guilds.cache.get(guild);
-    if(guild===null||guild===undefined) return;
-    user=guild.members.cache.get(user);
-    role=guild.roles.cache.get(role);
-    if(role===null||role===undefined||user===null||user===undefined) return;
-    if(user.roles.cache.has(role.id)){
-        user.roles.remove(role).catch(e=>{});
-    }
-    else{
-        user.roles.add(role).catch(e=>{});
-    }
-    delete storage[guild.id].users[user.id].tempRoles[role.id];
-}
-async function finTempSlow(guild,channel,force){
-    var chan=client.channels.cache.get(channel);
-    if(!storage[guild]?.hasOwnProperty("tempSlow")||!storage[guild]?.tempSlow?.hasOwnProperty(channel)){
-        return;
-    }
-    if(storage[guild].tempSlow[channel].ends-Date.now()>10000&&!force){
-        setTimeout(()=>{finTempSlow(guild,channel)},storage[guild].tempSlow[channel].ends-Date.now());
-        return;
-    }
-    if(chan===null||chan===undefined){
-        client.users.cache.get(storage[guild].tempSlow[channel].invoker).send(`I was unable to remove the temporary slowmode setting in <#${channel}>.`).catch(e=>{});
-        delete storage[guild].tempSlow[channel];
-        return;
-    }
-    if(!chan.permissionsFor(client.user.id).has(PermissionFlagsBits.ManageChannels)){
-        client.users.cache.get(storage[guild].tempSlow[channel].invoker).send(`I was unable to remove the temporary slowmode setting in <#${channel}> due to not having the \`ManageChannels\` permission.`).catch(e=>{});
-        delete storage[guild].tempSlow[channel];
-        return;
-    }
-    chan.setRateLimitPerUser(storage[guild].tempSlow[channel].origMode);
-    if(!storage[guild].tempSlow[channel].private){
-        chan.send(`Temporary slowmode setting reverted.`);
-        delete storage[guild].tempSlow[channel];
-    }
-}
-async function finHatPull(who,force){
-    if(!storage[who].hasOwnProperty("hat_pull")){
-        return;
-    }
-    if(storage[who].hat_pull.closes-Date.now()>10000&&!force){
-        if(storage[who].hat_pull.registered){
-            setTimeout(()=>{finHatPull(who)},storage[who].hat_pull.closes-Date.now());
-        }
-        return;
-    }
-    var winners=[];
-    for(var i=0;i<storage[who].hat_pull.winCount;i++){
-        winners.push(storage[who].hat_pull.entered[Math.floor(Math.random()*storage[who].hat_pull.entered.length)]);
-    }
-    var chan=client.channels.cache.get(storage[who].hat_pull.location.split("/")[1]);
-    if(chan===null||chan===undefined){
-        client.users.cache.get(who).send(`I could not end the hat pull.\nhttps://discord.com/channels/${storage[who].hat_pull.location}${winners.map(a=>`\n- <@${a}>`).join("")}`).catch(e=>{});
-        delete storage[who].hat_pull;
-        return;
-    }
-    var cont=`This has ended! ${winners.length===0?`Nobody entered though.`:winners.length>1?`Here are our winners!${winners.map(a=>`\n- <@${a}>`).join("")}`:`Here is our winner: <@${winners[0]}>!`}`;
-    var msg=await chan.messages.fetch(storage[who].hat_pull.location.split("/")[2]);
-    if(msg===null||msg===undefined){
-        chan.send(cont);
-    }
-    else{
-        msg.edit({components:[]});
-        msg.reply(cont);
-    }
-    delete storage[who].hat_pull;
-}
+
 async function finTempBan(guild,who,force){
     if(!storage[guild].tempBans.hasOwnProperty(who)){
         return;
@@ -865,149 +793,6 @@ function daily(dontLoop=false){
 
     Object.values(dailyListenerModules).forEach(module => module.daily(psudoGlobals))
     
-    // Daily devo
-    var dailyDevo=[];
-    fetch("https://www.biblegateway.com/devotionals/niv-365-devotional/today").then(d=>d.text()).then(d=>{
-        var temp=turndown.turndown(d.split(`<div class="col-xs-12">`)[1].split("</div>")[0].trim()).split("\\n");
-        var cc=0;
-        var cOn=0;
-        var now=new Date();
-        temp.forEach(t=>{
-            if(cc+t.length>4000){
-                dailyDevo[cOn]={
-                    "type": "rich",
-                    "title": `The NIV 365 Day Devotional`,
-                    "description": dailyDevo[cOn].startsWith("undefined")?dailyDevo[cOn].slice(9):dailyDevo[cOn],
-                    "color": 0x773e09,
-                    "url": `https://www.biblegateway.com/devotionals/niv-365-devotional/2024/today`,
-                    "footer":{
-                        "text":`Bible Gateway, ${now.getMonth()+1}/${now.getDate()}/${now.getFullYear()}`
-                    }
-                };
-                cOn++;
-                dailyDevo.push("");
-                cc=0;
-            }
-            cc+=t.length;
-            dailyDevo[cOn]+=`${t}\n`;
-        });
-        dailyDevo[dailyDevo.length-1]={
-            "type": "rich",
-            "title": `The NIV 365 Day Devotional`,
-            "description": dailyDevo[cOn].startsWith("undefined")?dailyDevo[cOn].slice(9):dailyDevo[cOn],
-            "color": 0x773e09,
-            "url": `https://www.biblegateway.com/devotionals/niv-365-devotional/today`,
-            "footer":{
-                "text":`Bible Gateway, ${now.getMonth()+1}/${now.getDate()}/${now.getFullYear()}`
-            }
-        }
-        Object.keys(storage).forEach(s=>{
-            if(storage[s]?.daily?.devos?.active){
-                var c=client.channels.cache.get(storage[s].daily.devos.channel);
-                if(c.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
-                    c.send({embeds:dailyDevo});
-                }
-                else{
-                    storage[s].daily.devos.active=false;
-                }
-            }
-        });
-    }).catch(e => {
-        notify(1, "Devo daily: " + e.stack);
-    });
-
-    // Verse of the day
-    fetch("https://www.bible.com/verse-of-the-day").then(d=>d.text()).then(d=>{
-        var now=new Date();
-        const nextData = JSON.parse(d.match(/<script id="__NEXT_DATA__" type="application\/json">(.+?)<\/script>/)[1])
-        const verse = nextData.props.pageProps.verses[0];
-        const versionData = nextData.props.pageProps.versionData; 
-
-        // var verseContainer=d.split(`mbs-3 border border-l-large rounded-1 border-black dark:border-white pli-1 plb-1 pis-2`)[1].split("</div>")[0].split("</a>");
-        var votd={
-            "type":"rich",
-            "title":`Verse of the Day`,
-            // "description":`${verseContainer[0].split(">")[verseContainer[0].split(">").length-1]}\n\\- ${verseContainer[1].split("</p>")[0].split(">")[verseContainer[1].split("</p>")[0].split(">").length-1]}`,
-            "description":`${verse.content}\n\n\\- **${verse.reference.human}** (${versionData.abbreviation})`,
-            "color":0x773e09,
-            "url":"https://www.bible.com/verse-of-the-day",
-            "footer":{
-                "text":`${now.getMonth()+1}/${now.getDate()}/${now.getFullYear()}`
-            }
-        };
-
-
-        Object.keys(storage).forEach(s=>{
-            if(storage[s]?.daily?.verses?.active){
-                var c=client.channels.cache.get(storage[s].daily.verses.channel);
-                if(c.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
-                    c.send({embeds:[votd]});
-                }
-                else{
-                    storage[s].daily.verses.active=false;
-                }
-            }
-        });
-    }).catch(e => {
-        notify(1, "Verse Of The Day error: " + e.stack);
-    });
-
-    // Daily meme process
-    if(storage.dailyMeme===undefined||storage.dailyMeme===null) storage.dailyMeme=-1;
-    storage.dailyMeme++;
-    if(storage.dailyMeme >= fs.readdirSync("./memes").length) storage.dailyMeme=0;
-
-    // Per-server daily checks
-    Object.keys(storage).forEach(s => {
-        // Daily meme posting
-        try {
-            if(storage[s]?.daily?.memes?.active){
-                var c=client.channels.cache.get(storage[s].daily.memes.channel);
-                if(c.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
-                    c.send({content:`## Daily Meme\n-# Meme \\#${storage.dailyMeme}`,files:[`./memes/${storage.dailyMeme}.${fs.readdirSync("./memes").filter(a=>a.split(".")[0]===`${storage.dailyMeme}`)[0].split(".")[1]}`]});
-                }
-                else{
-                    storage[s].daily.memes.active=false;
-                }
-            }
-        } catch (e) {
-            notify(1, "Daily meme error: " + e.stack);
-        }
-        
-        // Hat pull, i.e. giveaways
-        try {
-            if(storage[s]?.hasOwnProperty("hat_pull")){
-                if(storage[s].hat_pull.ends-Date.now()<=60000*60*24){
-                    storage[s].hat_pull.registered=true;
-                    if(storage[s].hat_pull.ends-Date.now()>0){
-                        setTimeout(()=>{finHatPull(s)},storage[s].hat_pull.ends-Date.now());
-                    }
-                    else{
-                        finHatPull(s);
-                    }
-                }
-            }
-        } catch (e) {
-            notify(1, "hat_pull timer creating error: " + e.stack);
-        }
-        
-        // Temoving temp bans / setting timeouts to remove temp bans when it's within 24 hours of them
-        try {
-            if(storage[s]?.hasOwnProperty("tempBans")){
-                Object.keys(storage[s].tempBans).forEach(ban=>{
-                    if(storage[s].tempBans[ban].ends-Date.now()>0&&!storage[s].tempBans[ban].registered){
-                        setTimeout(()=>{finTempBan(s,ban)},storage[s].tempBans[ban].ends-Date.now());
-                    }
-                    else if(!storage[s].tempBans[ban].registered){
-                        finTempBan(s,ban);
-                    }
-                });
-            }
-        } catch (e) {
-            notify(1, "Error creating tempBan removing timer: " + e.stack);
-        }
-    });
-
     // Set wotd
     storage.wotd=wotdList[Math.floor(Math.random()*wotdList.length)];
     notify(1, `WOTD is now ||${storage.wotd}||, use \`~sudo setWord jerry\` to change it.`)
@@ -1254,7 +1039,7 @@ function sendWelcome(guild) {
 var ints=Object.keys(GatewayIntentBits).map(a=>GatewayIntentBits[a]);
 ints.splice(ints.indexOf(GatewayIntentBits.GuildPresences),1);
 ints.splice(ints.indexOf("GuildPresences"),1);
-client=new Client({
+global.client=new Client({
     intents:ints,
     partials:Object.keys(Partials).map(a=>Partials[a])
 });
@@ -1287,8 +1072,6 @@ function notify(urgencyLevel,what,useWebhook=false) {
 
 // Now that setup is dine, define data that should be passed to each module - TODO migrate to `global` instead
 const psudoGlobals = {
-    client,
-    storage,
     notify,
     checkDirty,
     cmds,
@@ -1461,7 +1244,7 @@ client.on("messageCreate",async msg => {
         await devadminChannel.guild.members.fetch(msg.author.id);
 
         if(devadminChannel?.permissionsFor(msg.author.id)?.has(PermissionFlagsBits.SendMessages)){
-            switch(msg.content.split(" ")[1]){
+            switch(msg.content.split(" ")[1].replaceAll(".","")){
                 case "permStatus":
                     var missingPerms=[];
                     Object.keys(PermissionFlagsBits).forEach(perm=>{

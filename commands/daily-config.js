@@ -7,6 +7,10 @@ function applyContext(context={}) {
 }
 // #endregion Boilerplate
 
+const fs = require("node:fs")
+const Turndown = require('turndown');
+var turndown = new Turndown();
+
 module.exports = {
 	data: {
 		// Slash command data
@@ -89,5 +93,128 @@ module.exports = {
             return;
         }
         cmd.followUp(`${storage[cmd.guildId].daily[cmd.options.getString("type")].active?"A":"Dea"}ctivated daily \`${cmd.options.getString("type")}\` for this server in <#${storage[cmd.guildId].daily[cmd.options.getString("type")].channel}>.`);
-	}
+	},
+
+    async daily(context) {
+		applyContext(context);
+
+        // Daily devo
+        var dailyDevo=[];
+        fetch("https://www.biblegateway.com/devotionals/niv-365-devotional/today").then(d=>d.text()).then(d=>{
+            var temp=turndown.turndown(d.split(`<div class="col-xs-12">`)[1].split("</div>")[0].trim()).split("\\n");
+            var cc=0;
+            var cOn=0;
+            var now=new Date();
+            temp.forEach(t=>{
+                if(cc+t.length>4000){
+                    dailyDevo[cOn]={
+                        "type": "rich",
+                        "title": `The NIV 365 Day Devotional`,
+                        "description": dailyDevo[cOn].startsWith("undefined")?dailyDevo[cOn].slice(9):dailyDevo[cOn],
+                        "color": 0x773e09,
+                        "url": `https://www.biblegateway.com/devotionals/niv-365-devotional/2024/today`,
+                        "footer":{
+                            "text":`Bible Gateway, ${now.getMonth()+1}/${now.getDate()}/${now.getFullYear()}`
+                        }
+                    };
+                    cOn++;
+                    dailyDevo.push("");
+                    cc=0;
+                }
+                cc+=t.length;
+                dailyDevo[cOn]+=`${t}\n`;
+            });
+            dailyDevo[dailyDevo.length-1]={
+                "type": "rich",
+                "title": `The NIV 365 Day Devotional`,
+                "description": dailyDevo[cOn].startsWith("undefined")?dailyDevo[cOn].slice(9):dailyDevo[cOn],
+                "color": 0x773e09,
+                "url": `https://www.biblegateway.com/devotionals/niv-365-devotional/today`,
+                "footer":{
+                    "text":`Bible Gateway, ${now.getMonth()+1}/${now.getDate()}/${now.getFullYear()}`
+                }
+            }
+            Object.keys(storage).forEach(s=>{
+                if(storage[s]?.daily?.devos?.active){
+                    var c=client.channels.cache.get(storage[s].daily.devos.channel);
+                    if(c.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
+                        c.send({embeds:dailyDevo});
+                    }
+                    else{
+                        storage[s].daily.devos.active=false;
+                    }
+                }
+            });
+        }).catch(e => {
+            notify(1, "Devo daily: " + e.stack);
+        });
+
+        // Verse of the day
+        fetch("https://www.bible.com/verse-of-the-day").then(d=>d.text()).then(d=>{
+            var now=new Date();
+            const nextData = JSON.parse(d.match(/<script id="__NEXT_DATA__" type="application\/json">(.+?)<\/script>/)[1])
+            const verse = nextData.props.pageProps.verses[0];
+            const versionData = nextData.props.pageProps.versionData; 
+    
+            // var verseContainer=d.split(`mbs-3 border border-l-large rounded-1 border-black dark:border-white pli-1 plb-1 pis-2`)[1].split("</div>")[0].split("</a>");
+            var votd={
+                "type":"rich",
+                "title":`Verse of the Day`,
+                // "description":`${verseContainer[0].split(">")[verseContainer[0].split(">").length-1]}\n\\- ${verseContainer[1].split("</p>")[0].split(">")[verseContainer[1].split("</p>")[0].split(">").length-1]}`,
+                "description":`${verse.content}\n\n\\- **${verse.reference.human}** (${versionData.abbreviation})`,
+                "color":0x773e09,
+                "url":"https://www.bible.com/verse-of-the-day",
+                "footer":{
+                    "text":`${now.getMonth()+1}/${now.getDate()}/${now.getFullYear()}`
+                }
+            };
+    
+    
+            Object.keys(storage).forEach(s=>{
+                if(storage[s]?.daily?.verses?.active){
+                    var c=client.channels.cache.get(storage[s].daily.verses.channel);
+                    if(c.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
+                        c.send({embeds:[votd]});
+                    }
+                    else{
+                        storage[s].daily.verses.active=false;
+                    }
+                }
+            });
+        }).catch(e => {
+            notify(1, "Verse Of The Day error: " + e.stack);
+        });
+
+        // Send the daily meme to each server
+        if(storage.dailyMeme===undefined||storage.dailyMeme===null) storage.dailyMeme=-1;
+        storage.dailyMeme++;
+        if(storage.dailyMeme >= fs.readdirSync("./memes").length) storage.dailyMeme=0;
+        Object.keys(storage).forEach(s => {
+            try {
+                if(storage[s]?.daily?.memes?.active){
+                    var c=client.channels.cache.get(storage[s].daily.memes.channel);
+                    if(c.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
+                        c.send({
+                            content: `## Daily Meme\n-# Meme \\#${storage.dailyMeme}`,
+                            files: [
+                                `./memes/${storage.dailyMeme}.${
+                                    fs.readdirSync("./memes")
+                                        .filter((a) =>
+                                            a.split(".")[0] ===
+                                            `${storage.dailyMeme}`
+                                        )[0]
+                                        .split(".")[1]
+                                }`,
+                            ],
+                        });
+                    }
+                    else{
+                        storage[s].daily.memes.active=false;
+                    }
+                }
+            } catch (e) {
+                notify(1, "Daily meme error: " + e.stack);
+            }
+        })
+    }
 };

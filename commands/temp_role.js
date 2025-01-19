@@ -6,7 +6,28 @@ function applyContext(context={}) {
 	}
 }
 // #endregion Boilerplate
+
+async function finTempRole(guild,user,role){
+    if(!storage[guild].users[user].tempRoles?.hasOwnProperty(role)){
+        return;
+    }
+    guild=client.guilds.cache.get(guild);
+    if(guild===null||guild===undefined) return;
+    user=guild.members.cache.get(user);
+    role=guild.roles.cache.get(role);
+    if(role===null||role===undefined||user===null||user===undefined) return;
+    if(user.roles.cache.has(role.id)){
+        user.roles.remove(role).catch(e=>{});
+    }
+    else{
+        user.roles.add(role).catch(e=>{});
+    }
+    delete storage[guild.id].users[user.id].tempRoles[role.id];
+}
+
 module.exports = {
+    finTempRole,
+    
 	data: {
 		// Slash command data
 		command: new SlashCommandBuilder().setName('temp_role').setDescription('Temporarily add or remove a role from someone').addUserOption(option=>
