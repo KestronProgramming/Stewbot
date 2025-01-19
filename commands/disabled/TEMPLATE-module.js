@@ -6,39 +6,17 @@ function applyContext(context={}) {
 }
 
 // 
-// TEMPLATE-cmd.js is an exhaustive template showcasing every feature available to modules.
-//  Any module/command can be derived from these.
+// TEMPLATE-module.js is a minimal template for modules that do not have attached commands.
+// 	These can be message handlers like ~sudo, etc
 // 
-
 
 module.exports = {
 	data: {
-		command: new SlashCommandBuilder().setName('jerry').setDescription('Jerry Jerry Jerry Jerry Yeah!!!').addBooleanOption(option=>
-                option.setName("private").setDescription("Make the response ephemeral?")//Do not remove private option unless the command is REQUIRED to be ephemeral or non-ephemeral.
-            ),
-		
-		// Optional fields below this point
+		command: null,
 
-		extra: {"contexts": [0,1,2], "integration_types": [0,1]},//Where the command can be used and what kind of installs it supports
-        /*
-            Contexts
-             - 0: Server command
-             - 1: Bot's DMs
-             - 2: User command
-
-            Integration Types:
-             - 0: Installed to servers
-             - 1: Installed to users
-        */
-
-		// When this command defers, should it be ephemeral? (if the private option is defined, it can override this)
-		deferEphemeral: true,
-
-		// Allow variables from the global index file to be accessed here - requiredGlobals["helpPages"]
-		requiredGlobals: [],
-
+		// Not all modules will have help commands, but they can in theory to showcase bot features.
 		help: {
-			helpCategories: ["Jerry"],
+			helpCategories: [],
 			/*
 				- General -> Generic commands almost every bot has
 				- Information -> A command designed purely to provide information of some kind
@@ -62,17 +40,7 @@ module.exports = {
 		},
 	},
 
-	async execute(cmd, context) {
-		applyContext(context);
-		
-		cmd.followUp(`Jerry the rope!`);
-	},
-
 	async onmessage(msg, context) {
 		// `context` currently does not respect requested globals
-	},
-
-	async autocomplete(cmd) {
-
 	}
 };
