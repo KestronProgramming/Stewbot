@@ -73,7 +73,7 @@ module.exports = {
 				- User Install Only -> Commands that can only be run if Stewbot is installed to your user
 				- Safety -> Anti-hack, anti-spam, etc
 			*/
-			shortDesc: "Keep Stewbot's Avatar seasonal",
+			shortDesc: "Keep Stewbot's avatar seasonal",
 			detailedDesc: //Detailed on exactly what the command does and how to use it
 				`This module sets Stewbot's profile picture to various presets on national holidays.`,
 
