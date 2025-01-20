@@ -118,10 +118,6 @@ const inps={
     "joinRoleAdd":new RoleSelectMenuBuilder().setCustomId("join-roleOption").setMinValues(1).setMaxValues(20).setPlaceholder("Select all the roles you would like to add to new users"),
     "channels":new ChannelSelectMenuBuilder().setCustomId("move-message").setChannelTypes(ChannelType.GuildText).setMaxValues(1).setMinValues(1),
 
-    "tzUp":new ButtonBuilder().setCustomId("tzUp").setEmoji("⬆️").setStyle(ButtonStyle.Primary),
-    "tzDown":new ButtonBuilder().setCustomId("tzDown").setEmoji("⬇️").setStyle(ButtonStyle.Primary),
-    "tzSave":new ButtonBuilder().setCustomId("tzSave").setEmoji("✅").setStyle(ButtonStyle.Success),
-
     "tsHour":new ButtonBuilder().setCustomId("tsHour").setLabel("Hour").setStyle(ButtonStyle.Primary),
     "tsMinutes":new ButtonBuilder().setCustomId("tsMinutes").setLabel("Minutes").setStyle(ButtonStyle.Primary),
     "tsSeconds":new ButtonBuilder().setCustomId("tsSeconds").setLabel("Seconds").setStyle(ButtonStyle.Primary),
@@ -180,7 +176,6 @@ const presets={
     "rolesCreation":new ActionRowBuilder().addComponents(inps.roleAdd),
     "autoJoinRoles":[new ActionRowBuilder().addComponents(inps.joinRoleAdd)],
     "moveMessage":new ActionRowBuilder().addComponents(inps.channels),
-    "tzConfig":[new ActionRowBuilder().addComponents(inps.tzUp,inps.tzDown,inps.tzSave)],
     "timestamp":[new ActionRowBuilder().addComponents(inps.tsHour,inps.tsMinutes,inps.tsSeconds,inps.tsDay,inps.tsYear),new ActionRowBuilder().addComponents(inps.tsMonth),new ActionRowBuilder().addComponents(inps.tsType),new ActionRowBuilder().addComponents(inps.howToCopy,inps.onDesktop)],
 
     "tsHourModal":new ModalBuilder().setCustomId("tsHourModal").setTitle("Set the Hour for the Timestamp").addComponents(new ActionRowBuilder().addComponents(inps.tsHourModal),new ActionRowBuilder().addComponents(inps.tsAmPm)),
@@ -1220,36 +1215,6 @@ client.on("interactionCreate",async cmd=>{
 
     switch(cmd.customId) {
         //Buttons
-        case "export":
-            var bad=cmd.message.content.match(/\|\|\w+\|\|/gi).map(a=>a.split("||")[1]);
-            fs.writeFileSync("./badExport.csv",bad.join(","));
-            cmd.reply({ephemeral:true,files:["./badExport.csv"]}).then(()=>{
-                fs.unlinkSync("./badExport.csv");
-            });
-        break;
-        case 'tzUp':
-            if(!storage[cmd.user.id].config.hasOwnProperty("timeOffset")){
-                storage[cmd.user.id].config.timeOffset=0;
-                storage[cmd.user.id].config.hasSetTZ=false;
-            }
-            storage[cmd.user.id].config.timeOffset++;
-            var cur=new Date();
-            cmd.update(`## Timezone Configuration\n\nPlease use the buttons to make the following number your current time (you can ignore minutes)\n${(cur.getHours()+storage[cmd.user.id].config.timeOffset)===0?"12":(cur.getHours()+storage[cmd.user.id].config.timeOffset)>12?(cur.getHours()+storage[cmd.user.id].config.timeOffset)-12:(cur.getHours()+storage[cmd.user.id].config.timeOffset)}:${(cur.getMinutes()+"").padStart(2,"0")} ${(cur.getHours()+storage[cmd.user.id].config.timeOffset)>11?"PM":"AM"}\n${((cur.getHours()+storage[cmd.user.id].config.timeOffset)+"").padStart(2,"0")}${(cur.getMinutes()+"").padStart(2,"0")}`);
-        break;
-        case 'tzDown':
-            if(!storage[cmd.user.id].config.hasOwnProperty("timeOffset")){
-                storage[cmd.user.id].config.timeOffset=0;
-                storage[cmd.user.id].config.hasSetTZ=false;
-            }
-            storage[cmd.user.id].config.timeOffset--;
-            var cur=new Date();
-            cmd.update(`## Timezone Configuration\n\nPlease use the buttons to make the following number your current time (you can ignore minutes)\n${(cur.getHours()+storage[cmd.user.id].config.timeOffset)===0?"12":(cur.getHours()+storage[cmd.user.id].config.timeOffset)>12?(cur.getHours()+storage[cmd.user.id].config.timeOffset)-12:(cur.getHours()+storage[cmd.user.id].config.timeOffset)}:${(cur.getMinutes()+"").padStart(2,"0")} ${(cur.getHours()+storage[cmd.user.id].config.timeOffset)>11?"PM":"AM"}\n${((cur.getHours()+storage[cmd.user.id].config.timeOffset)+"").padStart(2,"0")}${(cur.getMinutes()+"").padStart(2,"0")}`);
-        break;
-        case 'tzSave':
-            storage[cmd.user.id].config.hasSetTZ=true;
-            
-            cmd.update({content:`## Timezone Configured\n\nUTC ${storage[cmd.user.id].config.timeOffset}`,components:[]});
-        break;
         case 'howToCopy':
             cmd.reply({content:`## Desktop\n- Press the \`On Desktop\` button\n- Press the copy icon on the top right of the code block\n- Paste it where you want to use it\n## Mobile\n- Hold down on the message until the context menu appears\n- Press \`Copy Text\`\n- Paste it where you want to use it`,ephemeral:true});
         break;

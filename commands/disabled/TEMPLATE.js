@@ -93,5 +93,8 @@ module.exports = {
 	async onbutton(cmd, context) {
 		applyContext(context);
 
+		switch(cmd.customId) {
+
+		}
 	}
 };

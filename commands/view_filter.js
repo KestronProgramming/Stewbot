@@ -7,6 +7,8 @@ function applyContext(context={}) {
 }
 // #endregion Boilerplate
 
+const fs = require("node:fs")
+
 module.exports = {
 	data: {
 		// Slash command data
@@ -49,17 +51,29 @@ module.exports = {
 		}
     },
 
-	subscribedButtons: [/view_filter/],
+	subscribedButtons: ["view_filter", "export"],
 	async onbutton(cmd, context) {
 		applyContext(context);
 
-		cmd.user.send({
-            content: `The following is the blacklist for **${ cmd.guild.name}** as requested.\n\n||${storage[cmd.guildId].filter.blacklist.join("||, ||")}||`,
-            components: [new ActionRowBuilder().addComponents(
-				new ButtonBuilder().setCustomId("delete-all").setLabel("Delete message").setStyle(ButtonStyle.Danger), 
-				new ButtonBuilder().setCustomId("export").setLabel("Export to CSV").setStyle(ButtonStyle.Primary),
-			)],
-        });
-		cmd.deferUpdate();
+		switch (cmd.customId) {
+			case "view_filter":
+				cmd.user.send({
+					content: `The following is the blacklist for **${ cmd.guild.name}** as requested.\n\n||${storage[cmd.guildId].filter.blacklist.join("||, ||")}||`,
+					components: [new ActionRowBuilder().addComponents(
+						new ButtonBuilder().setCustomId("delete-all").setLabel("Delete message").setStyle(ButtonStyle.Danger), 
+						new ButtonBuilder().setCustomId("export").setLabel("Export to CSV").setStyle(ButtonStyle.Primary),
+					)],
+				});
+				cmd.deferUpdate();
+			break;
+			case "export":
+				var bad=cmd.message.content.match(/\|\|\w+\|\|/gi).map(a=>a.split("||")[1]);
+				fs.writeFileSync("./badExport.csv",bad.join(","));
+				cmd.reply({ephemeral:true,files:["./badExport.csv"]}).then(()=>{
+					fs.unlinkSync("./badExport.csv");
+				});
+			break;
+        
+		}
 	}
 };
