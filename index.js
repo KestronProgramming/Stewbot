@@ -1215,68 +1215,7 @@ client.on("interactionCreate",async cmd=>{
 
     switch(cmd.customId) {
         //Buttons
-        case 'enterHatPull':
-            await cmd.deferUpdate();
-            Object.keys(storage).forEach(key=>{
-                if(storage[key].hasOwnProperty("hat_pull")){
-                    if(storage[key].hat_pull.location===`${cmd.guild.id}/${cmd.channel.id}/${cmd.message.id}`){
-                        if(!storage[key].hat_pull.entered.includes(cmd.user.id)){
-                            storage[key].hat_pull.entered.push(cmd.user.id);
-                        }
-                        else{
-                            cmd.followUp({content:`You've already entered this`,ephemeral:true});
-                        }
-                    }
-                }
-            });
-        break;
-        case 'leaveHatPull':
-            await cmd.deferUpdate();
-            Object.keys(storage).forEach(key=>{
-                if(storage[key].hasOwnProperty("hat_pull")){
-                    if(storage[key].hat_pull.location===`${cmd.guild.id}/${cmd.channel.id}/${cmd.message.id}`){
-                        if(storage[key].hat_pull.entered.includes(cmd.user.id)){
-                            storage[key].hat_pull.entered.splice(storage[key].hat_pull.entered.indexOf(cmd.user.id),1);
-                        }
-                        else{
-                            cmd.followUp({content:`You haven't entered this`,ephemeral:true});
-                        }
-                    }
-                }
-            });
-        break;
-        case 'closeHatPull':
-            await cmd.deferUpdate();
-            Object.keys(storage).forEach(key=>{
-                if(storage[key].hasOwnProperty("hat_pull")){
-                    if(storage[key].hat_pull.location===`${cmd.guild.id}/${cmd.channel.id}/${cmd.message.id}`){
-                        if(key===cmd.user.id||cmd.memberPermissions?.has(PermissionFlagsBits.ManageMessages)){
-                            finHatPull(key,true);
-                        }
-                        else{
-                            cmd.followUp({content:`This isn't yours to close`,ephemeral:true});
-                        }
-                    }
-                }
-            });
-        break;
-        case 'cancelHatPull':
-            await cmd.deferUpdate();
-            Object.keys(storage).forEach(key=>{
-                if(storage[key].hasOwnProperty("hat_pull")){
-                    if(storage[key].hat_pull.location===`${cmd.guild.id}/${cmd.channel.id}/${cmd.message.id}`){
-                        if(key===cmd.user.id||cmd.memberPermissions?.has(PermissionFlagsBits.ManageMessages)){
-                            cmd.message.edit({components:[]});
-                            delete storage[key].hat_pull;
-                        }
-                        else{
-                            cmd.followUp({content:`This isn't yours to cancel`,ephemeral:true});
-                        }
-                    }
-                }
-            });
-        break;
-
+        
         //Modals
         case "wotdModal":
             var guess=cmd.fields.getTextInputValue("wotdInput").toLowerCase();
