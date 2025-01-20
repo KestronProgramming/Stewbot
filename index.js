@@ -1214,31 +1214,6 @@ client.on("interactionCreate",async cmd=>{
 
     switch(cmd.customId) {
         //Select Menus
-        case 'role-addOption':
-            let myRole=cmd.guild.members.cache.get(client.user.id).roles.highest.position;
-            var badRoles=[];
-            var rows=[];
-            var tempRow=[];
-            cmd.values.forEach(role=>{
-                if(cmd.roles.get(role).name===null||cmd.roles.get(role).name===undefined) return;
-                tempRow.push(new ButtonBuilder().setCustomId("autoRole-"+role).setLabel(cmd.roles.get(role).name).setStyle(ButtonStyle.Success));
-                if(myRole<=cmd.roles.get(role).rawPosition){
-                    badRoles.push(cmd.roles.get(role).name);
-                }
-                if(tempRow.length===5){
-                    rows.push(new ActionRowBuilder().addComponents(...tempRow));
-                    tempRow=[];
-                }
-            });
-            if(tempRow.length>0) rows.push(new ActionRowBuilder().addComponents(...tempRow));
-            if(badRoles.length===0){
-                cmd.channel.send({"content":`**Auto-Roles**\n${cmd.message.content}`,"components":rows});
-                cmd.update({"content":"\u200b",components:[]});
-            }
-            else{
-                cmd.reply({ephemeral:true,content:limitLength(`I'm sorry, but I can't help with the following roles as I don't have high enough permissions to. If you'd like me to offer these roles, visit Server Settings and make sure I have a role listed above the following roles. You can do this by dragging the order around or adding roles.\n\n${badRoles.map(a=>`- **${a}**`).join("\n")}`)});
-            }
-        break;
         case 'join-roleOption':
             let myHighestRole=cmd.guild.members.cache.get(client.user.id).roles.highest.position;
             let goodRoles=[];
