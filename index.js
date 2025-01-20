@@ -849,7 +849,7 @@ client.on("interactionCreate",async cmd=>{
             try {
                 cmd.followUp(
                     `Sorry, some error was encountered. It has already been reported, there is nothing you need to do.\n` +
-                    `However, you can keep up with Stewbot's latest features and patches in the [Support Server](<https://discord.gg/jFCVtHJFTY?).`
+                    `However, you can keep up with Stewbot's latest features and patches in the [Support Server](<https://discord.gg/>).`
                 )
             } catch {}
             throw e; // Throw it so that it hits the error notifiers
