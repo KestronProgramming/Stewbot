@@ -8,6 +8,11 @@ function applyContext(context = {}) {
 // #endregion Boilerplate
 const fs = require("fs")
 
+const components = [new ActionRowBuilder().addComponents(
+    new ButtonBuilder().setCustomId("save_meme").setLabel("Approve meme").setStyle(ButtonStyle.Success),
+    new ButtonBuilder().setCustomId("delete-all").setLabel("Delete message").setStyle(ButtonStyle.Danger)
+)]
+
 module.exports = {
     data: {
         // Slash command data
@@ -65,9 +70,37 @@ module.exports = {
             });
             i++;
         }
-        await client.channels.cache.get(process.env.noticeChannel).send({ content: limitLength(`User ${cmd.user.username} submitted a meme for evaluation.`), files: fs.readdirSync("./tempMemes").map(a => `./tempMemes/${a}`), components: presets.meme });
+        await client.channels.cache.get(process.env.noticeChannel).send({ 
+            content: limitLength(`User ${cmd.user.username} submitted a meme for evaluation.`), 
+            files: fs.readdirSync("./tempMemes").map(a => `./tempMemes/${a}`), 
+            components: components 
+        });
+
         fs.readdirSync("./tempMemes").forEach(file => {
             fs.unlinkSync("./tempMemes/" + file);
         });
-    }
+    },
+
+	async onbutton(cmd, context) {
+		applyContext(context);
+
+		switch (cmd.customId) {
+            case "save_meme":
+                cmd.message.attachments.forEach(a=>{
+                    var dots=a.url.split("?")[0].split(".");
+                    dots=dots[dots.length-1];
+                    if(!["mov","png","jpg","jpeg","gif","mp4","mp3","wav","webm","ogg"].includes(dots)){
+                        cmd.reply({content:`I don't support or recognize that format (\`.${dots}\`)`,ephemeral:true});
+                        return;
+                    }
+                    fetch(a.url).then(d=>d.arrayBuffer()).then(d=>{
+                        fs.writeFileSync(`./memes/${fs.readdirSync("./memes").length}.${dots}`,Buffer.from(d));
+                    });
+                });
+                cmd.update({components:[]});
+                cmd.message.react("✅");
+            break;
+    
+		}
+	}
 };

@@ -39,6 +39,7 @@ console.beta("Loading commands")
 let commands = getCommands();
 let messageListenerModules = getSubscribedCommands(commands, "onmessage");
 let dailyListenerModules = getSubscribedCommands(commands, "daily");
+let buttonListenerModules = getSubscribedCommands(commands, "onbutton");
 
 // Utility functions needed for processing some data blocks 
 function escapeRegex(input) {
@@ -130,7 +131,6 @@ const inps={
     "delete":new ButtonBuilder().setCustomId("delete-all").setLabel("Delete message").setStyle(ButtonStyle.Danger),
     "export":new ButtonBuilder().setCustomId("export").setLabel("Export to CSV").setStyle(ButtonStyle.Primary),
 
-    "approve":new ButtonBuilder().setCustomId("save_meme").setLabel("Approve meme").setStyle(ButtonStyle.Success),
 
     "tzUp":new ButtonBuilder().setCustomId("tzUp").setEmoji("⬆️").setStyle(ButtonStyle.Primary),
     "tzDown":new ButtonBuilder().setCustomId("tzDown").setEmoji("⬇️").setStyle(ButtonStyle.Primary),
@@ -194,7 +194,6 @@ const presets={
     "pollCreation":new ActionRowBuilder().addComponents(inps.pollAdd,inps.pollDel,inps.pollLaunch),
     "rolesCreation":new ActionRowBuilder().addComponents(inps.roleAdd),
     "autoJoinRoles":[new ActionRowBuilder().addComponents(inps.joinRoleAdd)],
-    "meme":[new ActionRowBuilder().addComponents(inps.approve,inps.delete)],
     "moveMessage":new ActionRowBuilder().addComponents(inps.channels),
     "tzConfig":[new ActionRowBuilder().addComponents(inps.tzUp,inps.tzDown,inps.tzSave)],
     "timestamp":[new ActionRowBuilder().addComponents(inps.tsHour,inps.tsMinutes,inps.tsSeconds,inps.tsDay,inps.tsYear),new ActionRowBuilder().addComponents(inps.tsMonth),new ActionRowBuilder().addComponents(inps.tsType),new ActionRowBuilder().addComponents(inps.howToCopy,inps.onDesktop)],
@@ -1362,24 +1361,9 @@ client.on("interactionCreate",async cmd=>{
     }
 
     //Buttons, Modals, and Select Menus
-    // MODULARIZE: use regex matching, maybe, for who to send buttons to?
-    switch(cmd.customId){
+    Object.values(buttonListenerModules).forEach(module => module.onbutton(cmd, pseudoGlobals))
+    switch(cmd.customId) {
         //Buttons
-        case "save_meme":
-            cmd.message.attachments.forEach(a=>{
-                var dots=a.url.split("?")[0].split(".");
-                dots=dots[dots.length-1];
-                if(!["mov","png","jpg","jpeg","gif","mp4","mp3","wav","webm","ogg"].includes(dots)){
-                    cmd.reply({content:`I don't support or recognize that format (\`.${dots}\`)`,ephemeral:true});
-                    return;
-                }
-                fetch(a.url).then(d=>d.arrayBuffer()).then(d=>{
-                    fs.writeFileSync(`./memes/${fs.readdirSync("./memes").length}.${dots}`,Buffer.from(d));
-                });
-            });
-            cmd.update({components:[]});
-            cmd.message.react("✅");
-        break;
         case "view_filter":
             cmd.user.send({"content":`The following is the blacklist for **${cmd.guild.name}** as requested.\n\n||${storage[cmd.guildId].filter.blacklist.join("||, ||")}||`,"components":[new ActionRowBuilder().addComponents(inps.delete,inps.export)]});
             cmd.deferUpdate();

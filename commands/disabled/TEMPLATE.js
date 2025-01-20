@@ -86,5 +86,11 @@ module.exports = {
 	async daily(context) {
 		applyContext(context);
 		
+	},
+
+	async onbutton(cmd, context) {
+		switch (cmd.customId) {
+
+		}
 	}
 };
