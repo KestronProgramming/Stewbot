@@ -41,9 +41,6 @@ const dailyListenerModules = getSubscribedCommands(commands, "daily");
 const buttonListenerModules = getSubscribedCommands(commands, "onbutton");
 
 // Utility functions needed for processing some data blocks 
-function escapeRegex(input) {
-    return input.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
-}
 function hash(obj) {
     const input = typeof obj === 'string' ? obj : JSON.stringify(obj);
     return crypto.createHash('md5').update(input).digest('hex');
@@ -109,7 +106,6 @@ setInterval(() => {
 
 // Other data
 var uptime=0;
-const leetMap = require("./data/filterLeetmap.json");
 const defaultGuild=require("./data/defaultGuild.json");
 const defaultGuildUser=require("./data/defaultGuildUser.json");
 const defaultUser=require("./data/defaultUser.json");
@@ -166,97 +162,6 @@ global.limitLength = function(s, size=1999) { // Used everywhere, so global func
     s = String(s);
     return s.length>size?s.slice(0,size-3)+"...":s;
 }
-global.checkDirty = function(guildID, what, filter=false, applyGlobalFilter=false) { // This function is important enough we can make it global
-    // If filter is false, it returns: hasBadWords
-    // If filter is true, it returns [hadBadWords, censoredMessage, wordsFound]
-
-    const originalContent = what; // Because we're preprocessing content, if the message was clean allow the original content without preprocessing 
-
-    if (!guildID || !what) 
-        if (!filter) return false
-        else [false, what, []]
-
-    // Preprocessing - anything here is destructive and will be processed this way if filtered
-    what = String(what).replace(/<:(\w+):[0-9]+>/g, ":$1:") // unsnowflake emojis
-    what = what.replace(/[\u200B-\u200D\u00AD]/g, ""); // strip 0-widths
-    what = what.normalize("NFKD"); // unicode variants
-    what = what.replace(/(\s)\s+/g, "$1"); // collapse spacing
-
-    let dirty = false;
-    let foundWords = []; // keep track of all filtered words to later tell the user what was filtered
-
-    // Mostly for stewbot-created content (like AI), filter from both our and their server
-    let blacklist = storage[guildID]?.filter?.blacklist;
-    if (applyGlobalFilter) {
-        const globalBlacklist = storage[config.homeServer]?.filter?.blacklist || [];
-        blacklist = [...new Set([...(blacklist || []), ...globalBlacklist])];
-    }
-
-    if (blacklist) for (blockedWord of blacklist) {
-        // Ignore the new beta json format for now
-        if (typeof(blockedWord) !== 'string') {
-            continue
-        }
-
-        // Unsnowflake blocked word to match unsnowflaked message
-        blockedWord = blockedWord.replace(/<:(\w+):[0-9]+>/g, ":$1:");
-        
-        let blockedWordRegex;
-        try {
-            let word = escapeRegex(blockedWord)
-
-            // More flexible matching
-            if (word.length > 3) {
-                for (let key in leetMap) { // Leet processing
-                    if (leetMap.hasOwnProperty(key)) {
-                        const replacement = leetMap[key];
-                        word = word.replaceAll(key, replacement)
-                    }
-                }
-                
-                // This rule needs a ton more work, things like '(A|4|@|\\()\\(B\\|C\\+\\)\\+D' break it
-                // word = word.replace(/(?:\\\S)|(?:\([^()]+\))|./g, '$1.{0,1}');
-
-                word = word+"(ing|s|ed|er|ism|ist|es|ual)?" // match variations
-            }
-            blockedWordRegex = new RegExp(`(\\b|^)${word}(\\b|$)`, "ig")
-        } catch (e) {
-            // This should only ever be hit on old servers that have invalid regex before the escapeRegex was implemented
-            if (!e?.message?.includes?.("http")) notify(1, "Caught filter error:\n" + JSON.stringify(e.message) + "\n" + e.stack);
-            // We can ignore this filter word
-            continue
-        }
-
-        // Check for the word 
-        if (blockedWordRegex.test(what) || what === blockedWord) {
-            dirty = true;
-            if (!filter) {
-                return true;
-            }
-            else {
-                foundWords.push(blockedWord)
-                what = what.replace(blockedWordRegex, "[\\_]");
-            }
-        }
-    }
-
-    if (!filter) {
-        // If we passed the check without exiting, it's clean
-        return false;
-    } 
-    else {
-        // If we're filtering, it needs a more structured output
-
-        // Additional sanitization content
-        if (dirty) {
-            what = defangURL(what)
-        } else {
-            what = originalContent; // Put snowflakes back how they were
-        }
-        
-        return [dirty, what, foundWords];
-    }
-};
 global.escapeBackticks = function(text){ // This function is useful anywhere to properly escape backticks to prevent format escaping
     return text.replace(/(?<!\\)(?:\\\\)*`/g, "\\`");
 }
@@ -289,12 +194,6 @@ function verifyRegex(regexStr) {
     // const regex = new RE2(userProvidedRegex, 'ui'); // TODO: figure out some system for flags - i should default on but some uses cases may need it off
     // const result = regex.exec(msg.content);
     // console.beta(result);
-}
-function defangURL(message) {
-    const urlPattern = /(https?:\/\/[^\s]+)/g;
-    return message.replace(urlPattern, (url) => {
-        return url.replace(/:\/\//g, '[://]').replace(/\./g, '[.]');
-    });
 }
 function noPerms(where,what){
     if(where===false||where===undefined) return false;
@@ -701,7 +600,6 @@ client.once("ready",async ()=>{
         }
     });
 });
-
 global.sendHook = async function(what, msg) {
     if(typeof what==="string"){
         what={"content": what}
