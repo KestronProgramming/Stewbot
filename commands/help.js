@@ -7,6 +7,124 @@ function applyContext(context={}) {
 }
 // #endregion Boilerplate
 
+function makeHelp(page,categories,filterMode,forWho){
+    const helpCategories = ["General", "Bot", "Information", "Entertainment", "Configuration", "Administration", "Safety", "Context Menu", "Server Only"];
+
+    page=+page;
+    if(categories.includes("All")){
+        categories=structuredClone(helpCategories);
+    }
+    if(categories.includes("None")){
+        categories=[];
+    }
+    const buttonRows=[];
+    var totalPages=[...chunkArray(helpCommands.filter(command=>{
+        switch(filterMode){
+            case 'And':
+                var ret=true;
+                categories.forEach(category=>{
+                    if(!command.helpCategories.includes(category)){
+                        ret=false;
+                    }
+                });
+                return ret;
+            break;
+            case 'Or':
+                var ret=false;
+                categories.forEach(category=>{
+                    if(command.helpCategories.includes(category)){
+                        ret=true;
+                    }
+                });
+                return ret;
+            break;
+            case 'Not':
+                var ret=true;
+                categories.forEach(category=>{
+                    if(command.helpCategories.includes(category)){
+                        ret=false;
+                    }
+                });
+                return ret;
+            break;
+        }
+    }), 9)].length;
+    var pagesArray=[
+        new ButtonBuilder().setCustomId(`help-page-0-${forWho}-salt1`).setLabel(`First`).setStyle(ButtonStyle.Primary).setDisabled(page===0),
+        new ButtonBuilder().setCustomId(`help-page-${page-1}-${forWho}-salt2`).setLabel(`Previous`).setStyle(ButtonStyle.Primary).setDisabled(page-1<0),
+        new ButtonBuilder().setCustomId(`help-page-${page}-${forWho}-salt3`).setLabel(`Page ${page+1}`).setStyle(ButtonStyle.Primary).setDisabled(true),
+        new ButtonBuilder().setCustomId(`help-page-${page+1}-${forWho}-salt4`).setLabel(`Next`).setStyle(ButtonStyle.Primary).setDisabled(page+1>=totalPages),
+        new ButtonBuilder().setCustomId(`help-page-${totalPages-1}-${forWho}-salt5`).setLabel(`Last`).setStyle(ButtonStyle.Primary).setDisabled(page===totalPages-1&&totalPages>1)
+    ];
+    buttonRows.push(new ActionRowBuilder().addComponents(...pagesArray));
+    buttonRows.push(...chunkArray(helpCategories, 5).map(chunk => 
+        new ActionRowBuilder().addComponents(
+            chunk.map(a => 
+                new ButtonBuilder()
+                    .setCustomId(`help-category-${a}-${forWho}`)
+                    .setLabel(a)
+                    .setStyle(categories.includes(a)?ButtonStyle.Success:ButtonStyle.Secondary)
+            )
+        )
+    ));	
+    buttonRows.push(new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId(`help-mode-And-${forWho}`).setLabel("AND Mode").setStyle(ButtonStyle.Danger).setDisabled(filterMode==="And"),new ButtonBuilder().setCustomId(`help-mode-Or-${forWho}`).setLabel("OR Mode").setStyle(ButtonStyle.Danger).setDisabled(filterMode==="Or"),new ButtonBuilder().setCustomId(`help-mode-Not-${forWho}`).setLabel("NOT Mode").setStyle(ButtonStyle.Danger).setDisabled(filterMode==="Not")));	
+    
+    return {
+        content: `## Help Menu\nPage: ${page+1}/${totalPages} | Mode: ${filterMode} | Categories: ${categories.length===0?`None`:categories.length===helpCategories.length?`All`:categories.join(", ")}`, embeds: [{
+            "type": "rich",
+            "title": `Help Menu`,
+            "description": ``,
+            "color": 0x006400,
+            "fields": helpCommands.filter(command=>{
+                switch(filterMode){
+                    case 'And':
+                        var ret=true;
+                        categories.forEach(category=>{
+                            if(!command.helpCategories.includes(category)){
+                                ret=false;
+                            }
+                        });
+                        return ret;
+                    break;
+                    case 'Or':
+                        var ret=false;
+                        categories.forEach(category=>{
+                            if(command.helpCategories.includes(category)){
+                                ret=true;
+                            }
+                        });
+                        return ret;
+                    break;
+                    case 'Not':
+                        var ret=true;
+                        categories.forEach(category=>{
+                            if(command.helpCategories.includes(category)){
+                                ret=false;
+                            }
+                        });
+                        return ret;
+                    break;
+                }
+            }).slice(page*9,(page+1)*9).map(a => {
+                return {
+                    "name": limitLength(a.mention, 256),
+                    "value": limitLength(a.shortDesc, 1024),
+                    "inline": true
+                };
+            }),
+            "thumbnail": {
+                "url": config.pfp,
+                "height": 0,
+                "width": 0
+            },
+            "footer": {
+                "text": `Help Menu for Stewbot. To view a detailed description of a command, run /help and tell it which command you are looking for.`
+            }
+        }],
+        components: buttonRows
+    };
+}
+
 const Fuse = require('fuse.js');
 const fuseOptions = {
 	includeScore: true,
@@ -33,7 +151,7 @@ module.exports = {
 		
 		extra: {"contexts":[0,1,2],"integration_types":[0,1]},
 
-		requiredGlobals: ["makeHelp", "helpCommands", "chunkArray", "commands"],
+		requiredGlobals: ["helpCommands", "chunkArray", "commands"],
 
 		help: {
 			helpCategories: ["General","Bot","Information"],

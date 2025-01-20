@@ -262,123 +262,6 @@ global.escapeBackticks = function(text){ // This function is useful anywhere to 
 }
 
 // Functions
-function makeHelp(page,categories,filterMode,forWho){
-    const helpCategories = ["General", "Bot", "Information", "Entertainment", "Configuration", "Administration", "Safety", "Context Menu", "Server Only"];
-
-    page=+page;
-    if(categories.includes("All")){
-        categories=structuredClone(helpCategories);
-    }
-    if(categories.includes("None")){
-        categories=[];
-    }
-    const buttonRows=[];
-    var totalPages=[...chunkArray(helpCommands.filter(command=>{
-        switch(filterMode){
-            case 'And':
-                var ret=true;
-                categories.forEach(category=>{
-                    if(!command.helpCategories.includes(category)){
-                        ret=false;
-                    }
-                });
-                return ret;
-            break;
-            case 'Or':
-                var ret=false;
-                categories.forEach(category=>{
-                    if(command.helpCategories.includes(category)){
-                        ret=true;
-                    }
-                });
-                return ret;
-            break;
-            case 'Not':
-                var ret=true;
-                categories.forEach(category=>{
-                    if(command.helpCategories.includes(category)){
-                        ret=false;
-                    }
-                });
-                return ret;
-            break;
-        }
-    }), 9)].length;
-    var pagesArray=[
-        new ButtonBuilder().setCustomId(`help-page-0-${forWho}-salt1`).setLabel(`First`).setStyle(ButtonStyle.Primary).setDisabled(page===0),
-        new ButtonBuilder().setCustomId(`help-page-${page-1}-${forWho}-salt2`).setLabel(`Previous`).setStyle(ButtonStyle.Primary).setDisabled(page-1<0),
-        new ButtonBuilder().setCustomId(`help-page-${page}-${forWho}-salt3`).setLabel(`Page ${page+1}`).setStyle(ButtonStyle.Primary).setDisabled(true),
-        new ButtonBuilder().setCustomId(`help-page-${page+1}-${forWho}-salt4`).setLabel(`Next`).setStyle(ButtonStyle.Primary).setDisabled(page+1>=totalPages),
-        new ButtonBuilder().setCustomId(`help-page-${totalPages-1}-${forWho}-salt5`).setLabel(`Last`).setStyle(ButtonStyle.Primary).setDisabled(page===totalPages-1&&totalPages>1)
-    ];
-    buttonRows.push(new ActionRowBuilder().addComponents(...pagesArray));
-    buttonRows.push(...chunkArray(helpCategories, 5).map(chunk => 
-        new ActionRowBuilder().addComponents(
-            chunk.map(a => 
-                new ButtonBuilder()
-                    .setCustomId(`help-category-${a}-${forWho}`)
-                    .setLabel(a)
-                    .setStyle(categories.includes(a)?ButtonStyle.Success:ButtonStyle.Secondary)
-            )
-        )
-    ));	
-    buttonRows.push(new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId(`help-mode-And-${forWho}`).setLabel("AND Mode").setStyle(ButtonStyle.Danger).setDisabled(filterMode==="And"),new ButtonBuilder().setCustomId(`help-mode-Or-${forWho}`).setLabel("OR Mode").setStyle(ButtonStyle.Danger).setDisabled(filterMode==="Or"),new ButtonBuilder().setCustomId(`help-mode-Not-${forWho}`).setLabel("NOT Mode").setStyle(ButtonStyle.Danger).setDisabled(filterMode==="Not")));	
-    
-    return {
-        content: `## Help Menu\nPage: ${page+1}/${totalPages} | Mode: ${filterMode} | Categories: ${categories.length===0?`None`:categories.length===helpCategories.length?`All`:categories.join(", ")}`, embeds: [{
-            "type": "rich",
-            "title": `Help Menu`,
-            "description": ``,
-            "color": 0x006400,
-            "fields": helpCommands.filter(command=>{
-                switch(filterMode){
-                    case 'And':
-                        var ret=true;
-                        categories.forEach(category=>{
-                            if(!command.helpCategories.includes(category)){
-                                ret=false;
-                            }
-                        });
-                        return ret;
-                    break;
-                    case 'Or':
-                        var ret=false;
-                        categories.forEach(category=>{
-                            if(command.helpCategories.includes(category)){
-                                ret=true;
-                            }
-                        });
-                        return ret;
-                    break;
-                    case 'Not':
-                        var ret=true;
-                        categories.forEach(category=>{
-                            if(command.helpCategories.includes(category)){
-                                ret=false;
-                            }
-                        });
-                        return ret;
-                    break;
-                }
-            }).slice(page*9,(page+1)*9).map(a => {
-                return {
-                    "name": limitLength(a.mention, 256),
-                    "value": limitLength(a.shortDesc, 1024),
-                    "inline": true
-                };
-            }),
-            "thumbnail": {
-                "url": config.pfp,
-                "height": 0,
-                "width": 0
-            },
-            "footer": {
-                "text": `Help Menu for Stewbot. To view a detailed description of a command, run /help and tell it which command you are looking for.`
-            }
-        }],
-        components: buttonRows
-    };
-}
 function chunkArray(array, size) {
     const result = [];
     for (let i = 0; i < array.length; i += size) {
@@ -1027,9 +910,9 @@ client.on("interactionCreate",async cmd=>{
 
     // Slash commands
     if (cmd.isCommand() && commands.hasOwnProperty(cmd.commandName)) {
+        // If this is a guild, check for blocklist
         const commandPathWithSubcommand = `${cmd.commandName} ${cmd.options._subcommand ? cmd.options.getSubcommand() : "<none>"}`; //meh but it works
         const commandPath = `${cmd.commandName}`;
-        // If this is a guild, check for blocklist
         if (cmd.guild?.id) {
             let guildBlocklist = storage[cmd.guild.id].blockedCommands || []
             guildBlocklist = guildBlocklist.map(blockedCommand => blockedCommand.replace(/^\//, '')) // Backwards compatability with block_command which had a leading /
@@ -1042,6 +925,7 @@ client.on("interactionCreate",async cmd=>{
                 return cmd.followUp(response);
             }
         }
+        
         // Check global blacklist from home server
         const globalBlocklist = storage[config.homeServer]?.blockedCommands || []
         if (globalBlocklist.includes(commandPath) || globalBlocklist.includes(commandPathWithSubcommand)) {
@@ -1059,13 +943,18 @@ client.on("interactionCreate",async cmd=>{
         try {
             await commands[cmd.commandName].execute(cmd, providedGlobals);
         } catch(e) {
+            // Catch blocked by automod
+            if (e.code === 200000) {
+                return cmd.followUp(`Sorry, something in this reply was blocked by AutoMod.`)
+            }
+
             try {
                 cmd.followUp(
                     `Sorry, some error was encountered. It has already been reported, there is nothing you need to do.\n` +
                     `However, you can keep up with Stewbot's latest features and patches in the [Support Server](<https://discord.gg/jFCVtHJFTY?).`
                 )
             } catch {}
-            throw e; // Throw it so that it the error notifiers
+            throw e; // Throw it so that it hits the error notifiers
         }
 
         // Command frequency stats 
