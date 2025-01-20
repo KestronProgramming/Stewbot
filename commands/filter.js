@@ -52,7 +52,7 @@ module.exports = {
         extra: {"contexts":[0],"integration_types":[0],"cat":6},
             
 		// Optional fields
-		requiredGlobals: ["finTimer", "limitLength"],
+		requiredGlobals: [],
 
         priority: 0,
 

@@ -69,7 +69,7 @@ module.exports = {
 		
 		extra: {"contexts":[0],"integration_types":[0]},
 
-		requiredGlobals: ["finTempBan"],
+		requiredGlobals: [],
 
 		help: {
 			helpCategories: ["General","Administration","Server Only"],

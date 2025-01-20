@@ -18,7 +18,7 @@ module.exports = {
 		
 		extra: {"contexts":[0],"integration_types":[0]},
 
-		requiredGlobals: ["limitLength"],
+		requiredGlobals: [],
 
 		help: {
 			helpCategories: ["Information","Entertainment","Server Only"],

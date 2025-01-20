@@ -75,7 +75,7 @@ module.exports = {
 		
 		extra: {"contexts": [0], "integration_types": [0]},
 
-		requiredGlobals: ["finTempSlow"],
+		requiredGlobals: [],
 
 		help: {
 			helpCategories: ["Configuration","Administration","Server Only"],

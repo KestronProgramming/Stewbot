@@ -33,7 +33,7 @@ module.exports = {
 		
 		extra: {"contexts":[0,1,2],"integration_types":[0,1]},
 
-		requiredGlobals: ["makeHelp", "helpCommands", "config", "limitLength", "chunkArray", "commands"],
+		requiredGlobals: ["makeHelp", "helpCommands", "chunkArray", "commands"],
 
 		help: {
 			helpCategories: ["General","Bot","Information"],

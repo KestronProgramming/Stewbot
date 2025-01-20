@@ -44,7 +44,7 @@ module.exports = {
 		
 		extra: {"contexts": [0], "integration_types": [0]},
 
-		requiredGlobals: ["finTempRole"],
+		requiredGlobals: [],
 
 		help: {
 			helpCategories: ["Administration","Server Only"],

@@ -259,7 +259,7 @@ module.exports = {
         */
 
 		// Allow variables from the global index file to be accessed here - requiredGlobals["helpPages"]
-		requiredGlobals: ["notify", "limitLength"],
+		requiredGlobals: [],
 
 		help: {
 			helpCategories: ["General","Bot","Information","Entertainment"],

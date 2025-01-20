@@ -26,7 +26,7 @@ module.exports = {
 		
 		extra: {"contexts":[0],"integration_types":[0]},
 
-		requiredGlobals: ["defaultGuildUser", "limitLength"],
+		requiredGlobals: ["defaultGuildUser"],
 
 		help: {
 			helpCategories: ["Administration","Information","Server Only"],

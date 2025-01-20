@@ -21,7 +21,7 @@ module.exports = {
         
         extra: { "contexts": [0], "integration_types": [0] },
 
-        requiredGlobals: ["config", "limitLength"],
+        requiredGlobals: [],
 
         deferEphemeral: true,
 
