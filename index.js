@@ -1,9 +1,9 @@
 // Imports
-process.env=require("./env.json");
+Object.assign(process.env, require('./env.json'));
+global.config = require("./data/config.json");
 console.beta = (...args) => process.env.beta && console.log(...args);
 console.beta("Importing discord")
 const {Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
-const config=require("./data/config.json");
 console.beta("Importing commands")
 const { getCommands } = require("./launchCommands.js"); // Note: current setup requires this to be before the commands.json import
 const cmds=require("./data/commands.json"); global.cmds = cmds;
@@ -19,7 +19,7 @@ const { finTempRole } = require("./commands/temp_role.js")
 const { finHatPull } = require("./commands/hat_pull.js")
 const { finTempBan } = require("./commands/hat_pull.js")
 
-// Preliminary setup (TODO: move to a setup.sh)
+// Preliminary setup (TODO: move to a setup.sh?)
 if (!fs.existsSync("tempMove")) fs.mkdirSync('tempMove');
 if (!fs.existsSync("tempMemes")) fs.mkdirSync('tempMemes');
 if (!fs.existsSync("./data/usage.json")) fs.writeFileSync('./data/usage.json', '{}');
@@ -34,10 +34,10 @@ function getSubscribedCommands(commands, subscription) {
     )
 }
 console.beta("Loading commands")
-let commands = getCommands();
-let messageListenerModules = getSubscribedCommands(commands, "onmessage");
-let dailyListenerModules = getSubscribedCommands(commands, "daily");
-let buttonListenerModules = getSubscribedCommands(commands, "onbutton");
+const commands = getCommands();
+const messageListenerModules = getSubscribedCommands(commands, "onmessage");
+const dailyListenerModules = getSubscribedCommands(commands, "daily");
+const buttonListenerModules = getSubscribedCommands(commands, "onbutton");
 
 // Utility functions needed for processing some data blocks 
 function escapeRegex(input) {
@@ -74,7 +74,7 @@ function readLatestDatabase() {
     for (let location of sortedLocations) {
         try {
             const data = require(location);
-            if(process.env.beta) console.log(`Read database from ${location}`)
+            console.beta(`Read database from ${location}`)
 
             // This shouldn't be needed, unless it was a boot-loop error that kept corrupting its own files. Plan for the worst.
             corruptedFiles.forEach(file => {
@@ -102,7 +102,7 @@ setInterval(() => {
         fs.writeFileSync(writeLocation, storageString);
         lastStorageHash = thisWriteHash;
         storageCycleIndex++; 
-        if (process.env.beta) console.log(`Just wrote DB to ${writeLocation}`)
+        console.beta(`Just wrote DB to ${writeLocation}`)
     }
 }, 10 * 1000);
 
@@ -466,9 +466,9 @@ async function finTimer(who,force){
     }
     if(storage[who].timer.respLocation==="DM"){
         try{
-            client.users.cache.get(who).send(`Your timer is done!${storage[who].timer.reminder.length>0?`\n\`${storage[who].timer.reminder}\``:``}`).catch(e=>{console.log(e)});
+            client.users.cache.get(who).send(`Your timer is done!${storage[who].timer.reminder.length>0?`\n\`${storage[who].timer.reminder}\``:``}`).catch(e=>{console.beta(e)});
         }
-        catch(e){console.log(e)}
+        catch(e){console.beta(e)}
     }
     else{
         try{
@@ -485,14 +485,14 @@ async function finTimer(who,force){
                     }
                 }
                 else{
-                    client.users.cache.get(who).send(`Your timer is done!${storage[who].timer.reminder.length>0?`\n\`${escapeBackticks(storage[who].timer.reminder)}\``:``}`).catch(e=>{console.log(e)});
+                    client.users.cache.get(who).send(`Your timer is done!${storage[who].timer.reminder.length>0?`\n\`${escapeBackticks(storage[who].timer.reminder)}\``:``}`).catch(e=>{console.beta(e)});
                 }
             }
             catch(e){
-                client.users.cache.get(who).send(`Your timer is done!${storage[who].timer.reminder.length>0?`\n\`${storage[who].timer.reminder}\``:``}`).catch(e=>{console.log(e)});
+                client.users.cache.get(who).send(`Your timer is done!${storage[who].timer.reminder.length>0?`\n\`${storage[who].timer.reminder}\``:``}`).catch(e=>{console.beta(e)});
             }
         }
-        catch(e){console.log(e)}
+        catch(e){console.beta(e)}
     }
     delete storage[who].timer;
 }
@@ -515,7 +515,7 @@ function verifyRegex(regexStr) {
     // TODO evaluate user regexes like this:
     // const regex = new RE2(userProvidedRegex, 'ui'); // TODO: figure out some system for flags - i should default on but some uses cases may need it off
     // const result = regex.exec(msg.content);
-    // console.log(result);
+    // console.beta(result);
 }
 function defangURL(message) {
     const urlPattern = /(https?:\/\/[^\s]+)/g;
@@ -840,16 +840,13 @@ function notify(urgencyLevel,what,useWebhook=false) {
             else client.channels.cache.get(process.env.noticeChannel).send(limitLength(what));//Notify the staff of the Kestron Support server
         break;
     }}catch(e){
-        if (process.env.beta) console.log("Couldn't send notify()")
+        console.beta("Couldn't send notify()")
     }
 }
 
-// Now that setup is done, define data that should be passed to each module - TODO migrate to `global` instead
+// Now that setup is done, define data that should be passed to each module - 
 const pseudoGlobals = {
-    notify, // Has been made global 
-    checkDirty, // Has been made global
-    cmds, // Has been made global
-    config // Has been made global
+    config
 };
 
 //Actionable events
@@ -861,7 +858,7 @@ client.once("ready",async ()=>{
 
     uptime=Math.round(Date.now()/1000);
     notify(1,`Started <t:${uptime}:R>`);
-    console.log(`Logged into ${client.user.tag}`);
+    console.beta(`Logged into ${client.user.tag}`);
     
     client.user.setActivity("𝐒teward 𝐓o 𝐄xpedite 𝐖ork",{type:ActivityType.Custom},1000*60*60*4);
     setInterval(()=>{
@@ -1676,7 +1673,6 @@ client.on("channelDelete",async channel=>{
 client.on("channelUpdate",async (channelO,channel)=>{
     if(!storage.hasOwnProperty(channel.guild.id)){
         storage[channel.guild.id]=structuredClone(defaultGuild);
-        
     }
 
     if(storage[channel.guild.id].logs.active&&storage[channel.guild.id].logs.channel_events){
@@ -1755,7 +1751,6 @@ client.on("channelUpdate",async (channelO,channel)=>{
 client.on("emojiCreate",async emoji=>{
     if(!storage.hasOwnProperty(emoji.guild.id)){
         storage[emoji.guild.id]=structuredClone(defaultGuild);
-        
     }
 
     if(storage[emoji.guild.id].logs.active&&storage[emoji.guild.id].logs.emoji_events){
@@ -1771,7 +1766,6 @@ client.on("emojiCreate",async emoji=>{
 client.on("emojiDelete",async emoji=>{
     if(!storage.hasOwnProperty(emoji.guild.id)){
         storage[emoji.guild.id]=structuredClone(defaultGuild);
-        
     }
 
     if(storage[emoji.guild.id].logs.active&&storage[emoji.guild.id].logs.emoji_events){
@@ -1787,7 +1781,6 @@ client.on("emojiDelete",async emoji=>{
 client.on("emojiUpdate",async (emojiO,emoji)=>{
     if(!storage.hasOwnProperty(emoji.guild.id)){
         storage[emoji.guild.id]=structuredClone(defaultGuild);
-        
     }
 
     if(storage[emoji.guild.id].logs.active&&storage[emoji.guild.id].logs.emoji_events){
@@ -1803,7 +1796,6 @@ client.on("emojiUpdate",async (emojiO,emoji)=>{
 client.on("stickerCreate",async sticker=>{
     if(!storage.hasOwnProperty(sticker.guild.id)){
         storage[sticker.guild.id]=structuredClone(defaultGuild);
-        
     }
 
     if(storage[sticker.guild.id].logs.active&&storage[sticker.guild.id].logs.emoji_events){
@@ -1819,7 +1811,6 @@ client.on("stickerCreate",async sticker=>{
 client.on("stickerDelete",async sticker=>{
     if(!storage.hasOwnProperty(sticker.guild.id)){
         storage[sticker.guild.id]=structuredClone(defaultGuild);
-        
     }
 
     if(storage[sticker.guild.id].logs.active&&storage[sticker.guild.id].logs.emoji_events){
@@ -1835,7 +1826,6 @@ client.on("stickerDelete",async sticker=>{
 client.on("stickerUpdate",async (stickerO,sticker)=>{
     if(!storage.hasOwnProperty(sticker.guild.id)){
         storage[sticker.guild.id]=structuredClone(defaultGuild);
-        
     }
 
     if(storage[sticker.guild.id].logs.active&&storage[sticker.guild.id].logs.emoji_events){
@@ -1859,7 +1849,6 @@ client.on("stickerUpdate",async (stickerO,sticker)=>{
 client.on("inviteCreate",async invite=>{
     if(!storage.hasOwnProperty(invite.guild.id)){
         storage[invite.guild.id]=structuredClone(defaultGuild);
-        
     }
 
     if(storage[invite.guild.id].logs.active&&storage[invite.guild.id].logs.invite_events){
@@ -1875,7 +1864,6 @@ client.on("inviteCreate",async invite=>{
 client.on("inviteDelete",async invite=>{
     if(!storage.hasOwnProperty(invite.guild.id)){
         storage[invite.guild.id]=structuredClone(defaultGuild);
-        
     }
 
     if(storage[invite.guild.id].logs.active&&storage[invite.guild.id].logs.invite_events){
@@ -1891,7 +1879,6 @@ client.on("inviteDelete",async invite=>{
 client.on("roleCreate",async role=>{
     if(!storage.hasOwnProperty(role.guild.id)){
         storage[role.guild.id]=structuredClone(defaultGuild);
-        
     }
 
     if(storage[role.guild.id].logs.active&&storage[role.guild.id].logs.role_events){
@@ -1907,7 +1894,6 @@ client.on("roleCreate",async role=>{
 client.on("roleDelete",async role=>{
     if(!storage.hasOwnProperty(role.guild.id)){
         storage[role.guild.id]=structuredClone(defaultGuild);
-        
     }
 
     if(storage[role.guild.id].logs.active&&storage[role.guild.id].logs.role_events){
@@ -1923,7 +1909,6 @@ client.on("roleDelete",async role=>{
 client.on("roleUpdate",async (roleO,role)=>{
     if(!storage.hasOwnProperty(role.guild.id)){
         storage[role.guild.id]=structuredClone(defaultGuild);
-        
     }
 
     if(storage[role.guild.id].logs.active&&storage[role.guild.id].logs.role_events){
