@@ -12,7 +12,6 @@ const startBackupThread = require("./backup.js");
 console.beta("Importing everything else")
 const { getEmojiFromMessage, parseEmoji } = require('./util');
 const fs = require("fs");
-const wotdList = fs.readFileSync(`./data/wordlist.txt`,"utf-8").split("\n");
 const crypto = require('crypto');
 const { updateBlocklists } = require("./commands/badware_scanner.js")
 const { finTempSlow } = require("./commands/slowmode.js")
@@ -1214,87 +1213,6 @@ client.on("interactionCreate",async cmd=>{
     })
 
     switch(cmd.customId) {
-        //Buttons
-        
-        //Modals
-        case "wotdModal":
-            var guess=cmd.fields.getTextInputValue("wotdInput").toLowerCase();
-            if(!/^[a-z]{5}$/.test(guess)){
-                cmd.reply({content:`Please enter a valid word.`,ephemeral:true});
-                break;
-            }
-            if(checkDirty(config.homeServer,guess)){
-                cmd.reply({content:`I am not willing to process this word.`,ephemeral:true});
-                break;
-            }
-            if(!wotdList.includes(guess)){
-                cmd.reply({content:`This is not a valid word.`,ephemeral:true});
-                break;
-            }
-            var priorGuesses=cmd.message.content.split("\n").slice(1,7);
-            var nextInp=-1;
-            var accuracies={};
-            var won=false;
-            if(guess===storage.wotd) won=true;
-            `ABCDEFGHIJKLMNOPQRSTUVWXYZ`.split("").forEach(letter=>{
-                accuracies[letter]="";
-            });
-            for(var i=0;i<priorGuesses.length;i++){
-                if(nextInp===-1){
-                    var t;
-                    if(priorGuesses[i].includes("*")){
-                        t=priorGuesses[i].match(/(?<=\*)[A-Z]/ig)
-                        if(t){
-                            t.forEach(match=>{
-                                accuracies[match]=`**`;
-                            });
-                        }
-                    }
-                    if(priorGuesses[i].includes("_")){
-                        t=priorGuesses[i].match(/(?<=\_)[A-Z]/ig);
-                        if(t){
-                            t.forEach(match=>{
-                                if(accuracies[match]!=="**") accuracies[match]=`__`;
-                            });
-                        }
-                    }
-                    if(priorGuesses[i].includes("`")){
-                        t=priorGuesses[i].match(/(?<=\`)[A-Z]/ig)
-                        if(t){
-                            t.forEach(match=>{
-                                accuracies[match]=`~~`;
-                            });
-                        }
-                    }
-                }
-                if(priorGuesses[i]==="` ` ` ` ` ` ` ` ` `"&&nextInp===-1){
-                    nextInp=i;
-                }
-            }
-            var guessAccuracy=[];
-            guess.split("").forEach((char,i)=>{
-                if(storage.wotd.split("")[i]===char){
-                    guessAccuracy.push(`**${char.toUpperCase()}** `);
-                    accuracies[char.toUpperCase()]=`**`;
-                }
-                else if(storage.wotd.includes(char)){
-                    guessAccuracy.push(`__${char.toUpperCase()}__ `);
-                    if(accuracies[char.toUpperCase()]!=="**") accuracies[char.toUpperCase()]=`__`;
-                }
-                else{
-                    guessAccuracy.push(`\`${char.toUpperCase()}\``);
-                    accuracies[char.toUpperCase()]=`~~`;
-                }
-            });
-            priorGuesses[nextInp]=guessAccuracy.join(" ");//guess.split("").map(a=>`${guessAccuracies[a]}${a.toUpperCase()}${guessAccuracies[a]}${guessAccuracies[a]==="`"?``:` `}`).join(" ");
-            if(nextInp===5||won){
-                cmd.update({content:`# WOTD Game\n${priorGuesses.join("\n")}\n\n${`QWERTYUIOP`.split("").map(lett=>`${accuracies[lett]}${lett}${accuracies[lett]}`).join(" ")}\n${`ASDFGHJKL`.split("").map(lett=>`${accuracies[lett]}${lett}${accuracies[lett]}`).join(" ")}\n${`ZXCVBNM`.split("").map(lett=>`${accuracies[lett]}${lett}${accuracies[lett]}`).join(" ")}\n## Word: ||${storage.wotd.toUpperCase()}||`,components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setLabel(`Make a Guess`).setCustomId(`wotd-${cmd.user.id}`).setStyle(ButtonStyle.Primary).setDisabled(true),new ButtonBuilder().setLabel(`Based on Wordle`).setURL(`https://www.nytimes.com/games/wordle/index.html`).setStyle(ButtonStyle.Link))]});
-            }
-            else{
-                cmd.update(`# WOTD Game\n${priorGuesses.join("\n")}\n\n${`QWERTYUIOP`.split("").map(lett=>`${accuracies[lett]}${lett}${accuracies[lett]}`).join(" ")}\n${`ASDFGHJKL`.split("").map(lett=>`${accuracies[lett]}${lett}${accuracies[lett]}`).join(" ")}\n${`ZXCVBNM`.split("").map(lett=>`${accuracies[lett]}${lett}${accuracies[lett]}`).join(" ")}`);
-            }
-        break;
-
         //Select Menus
         case 'role-addOption':
             let myRole=cmd.guild.members.cache.get(client.user.id).roles.highest.position;
