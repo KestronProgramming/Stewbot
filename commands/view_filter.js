@@ -51,7 +51,7 @@ module.exports = {
 		}
     },
 
-	subscribedButtons: ["view_filter", "export"],
+	subscribedButtons: ["view_filter", "export", /delete-.*/],
 	async onbutton(cmd, context) {
 		applyContext(context);
 
@@ -74,6 +74,16 @@ module.exports = {
 				});
 			break;
         
+		}
+
+		// NOTE: this command is just handled here, it's a useful button that can be put anywhere on stewbot's responses
+		if(cmd.customId?.startsWith("delete-")){
+			if(cmd.user.id===cmd.customId.split("-")[1]||cmd.customId==="delete-all"||cmd.member?.permissions.has(PermissionFlagsBits.ManageMessages)){
+				cmd.message.delete();
+			}
+			else{
+				cmd.reply({content:`I can't do that for you just now.`,ephemeral:true});
+			}
 		}
 	}
 };

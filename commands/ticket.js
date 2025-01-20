@@ -136,6 +136,24 @@ module.exports = {
 				return;
 			}
 		}
-		
+	},
+
+	// Only button subscriptions matched will be sent to the handler 
+	subscribedButtons: [/ticket-.*/],
+	async onbutton(cmd, context) {
+		applyContext(context);
+
+		if(cmd.customId?.startsWith("ticket-")){
+			client.channels.cache.get(cmd.customId.split("-")[1]).send(`Ticket opened by **${cmd.member.nickname||cmd.user.globalName||cmd.user.username}**.`).then(msg=>{
+				msg.startThread({
+					name:`Ticket with ${cmd.user.id} in ${cmd.customId.split("-")[1]}`,
+					autoArchiveDuration:60,
+					type:"GUILD_PUBLIC_THREAD",
+					reason:`Ticket opened by ${cmd.user.username}`
+				});
+				cmd.user.send(`Ticket opened in **${cmd.guild.name}**. You can reply to this message to converse in the ticket. Note that any messages not a reply will not be sent to the ticket.\n\nTicket ID: ${cmd.customId.split("-")[1]}/${msg.id}`);
+			});
+			cmd.deferUpdate();
+		}
 	}
 };

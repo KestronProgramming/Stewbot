@@ -98,5 +98,84 @@ module.exports = {
 		if(storage[msg.author.id].gone?.active&&storage[msg.author.id].gone?.autoOff){
 			storage[msg.author.id].gone.active=false;
 		}
+	},
+
+	// Only button subscriptions matched will be sent to the handler 
+	subscribedButtons: [/ban-.*/, /kick-.*/, /untimeout-.*/],
+	async onbutton(cmd, context) {
+		applyContext(context);
+
+		if(cmd.customId?.startsWith("ban-")) {
+			if(cmd.member.permissions.has(PermissionFlagsBits.BanMembers)){
+				var target=cmd.guild.members.cache.get(cmd.customId.split("-")[1]);
+				if(target){
+					target.ban({reason:`Detected high spam activity with high profile pings and/or a URL, was instructed to ban by ${cmd.user.username}.`});
+					cmd.message.delete();
+				}
+				else{
+					cmd.reply({content:`I was unable to find the target in question.`,ephemeral:true});
+				}
+				if(cmd.member.permissions.has(PermissionFlagsBits.ManageMessages)){
+					for(var i=0;i<storage[cmd.guild.id].users[cmd.customId.split("-")[1]].lastMessages.length;i++){
+						try{
+							var badMess=await client.channels.cache.get(storage[cmd.guild.id].users[cmd.customId.split("-")[1]].lastMessages[i].split("/")[0]).messages.fetch(storage[cmd.guild.id].users[cmd.customId.split("-")[1]].lastMessages[i].split("/")[1]);
+							badMess.delete().catch(e=>{console.log(e)});
+							storage[cmd.guild.id].users[cmd.customId.split("-")[1]].lastMessages.splice(i,1);
+							i--;
+						}
+						catch(e){ console.log(e) }
+					}
+				}
+			}
+			else{
+				cmd.reply({content:`You do not have sufficient permissions to ban members.`,ephemeral:true});
+			}
+		}
+
+		if(cmd.customId?.startsWith("untimeout-")){
+			if(cmd.member.permissions.has(PermissionFlagsBits.ModerateMembers)){
+				storage[cmd.guild.id].users[cmd.customId.split("-")[1]].safeTimestamp=new Date();
+				var target=cmd.guild.members.cache.get(cmd.customId.split("-")[1]);
+				if(target){
+					target.timeout(null);
+					cmd.message.delete();
+				}
+				else{
+					cmd.reply({content:`I was unable to find the target in question.`,ephemeral:true});
+				}
+			}
+			else{
+				cmd.reply({content:`You do not have sufficient permissions to timeout members.`,ephemeral:true});
+			}
+		}
+
+		if(cmd.customId?.startsWith("kick-")){
+			if(cmd.member.permissions.has(PermissionFlagsBits.KickMembers)){
+				var target=cmd.guild.members.cache.get(cmd.customId.split("-")[1]);
+				if(target){
+					target.kick({reason:`Detected high spam activity with high profile pings and/or a URL, was instructed to kick by ${cmd.user.username}.`});
+					// await cmd.reply({content:`Done. Do you wish to delete the messages in question as well?`,components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId("del-"+target.id).setLabel("Yes").setStyle(ButtonStyle.Success))],ephemeral:true});
+					await cmd.reply({content:`Attempted to kick.`, ephemeral:true});
+					cmd.message.delete();
+				}
+				else{
+					cmd.reply({content:`I was unable to find the target in question.`,ephemeral:true});
+				}
+				if(cmd.member.permissions.has(PermissionFlagsBits.ManageMessages)){
+					for(var i=0;i<storage[cmd.guild.id].users[cmd.customId.split("-")[1]].lastMessages.length;i++){
+						try{
+							var badMess=await client.channels.cache.get(storage[cmd.guild.id].users[cmd.customId.split("-")[1]].lastMessages[i].split("/")[0]).messages.fetch(storage[cmd.guild.id].users[cmd.customId.split("-")[1]].lastMessages[i].split("/")[1]);
+							badMess.delete().catch(e=>{console.log(e)});
+							storage[cmd.guild.id].users[cmd.customId.split("-")[1]].lastMessages.splice(i,1);
+							i--;
+						}
+						catch(e){console.log(e)}
+					}
+				}
+			}
+			else{
+				cmd.reply({content:`You do not have sufficient permissions to kick members.`,ephemeral:true});
+			}
+		}
 	}
 };

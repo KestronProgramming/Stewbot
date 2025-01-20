@@ -119,5 +119,21 @@ module.exports = {
         cmd.followUp({content:`Alright, I have ${added?`added`:`removed`} <@&${role.id}> ${added?`to`:`from`} <@${targetMember.id}> until <t:${Math.round((Date.now()+timer)/1000)}:f> <t:${Math.round((Date.now()+timer)/1000)}:R>`,components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setLabel("Finish Early").setCustomId(`finishTempRole-${user.id}-${role.id}`).setStyle(ButtonStyle.Secondary))]});
         
         setTimeout(()=>{finTempRole(cmd.guild.id,cmd.user.id,role.id)},timer);
-    }
+    },
+
+	subscribedButtons: [/finishTempRole-.*/],
+	async onbutton(cmd, context) {
+		applyContext(context);
+
+		if(cmd.customId?.startsWith("finishTempRole-")){
+            if(cmd.member.permissions.has(PermissionFlagsBits.ManageRoles)){
+                cmd.deferUpdate();
+                finTempRole(cmd.guild.id,cmd.customId.split("-")[1],cmd.customId.split("-")[2],true);
+                cmd.message.edit({components:[]});
+            }
+            else{
+                cmd.reply({content:`You do not have sufficient permissions.`,ephemeral:true});
+            }
+        }
+	}
 };

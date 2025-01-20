@@ -32,7 +32,7 @@ module.exports = {
         */
 
 		// When this command defers, should it be ephemeral? (if the private option is defined, it can override this)
-		deferEphemeral: true,
+		// deferEphemeral: false,
 
 		// A priority calling system for handlers like onmessage, only use when required. Smaller = loaded sooner, default = 100
 		// priority: 100,
@@ -93,8 +93,6 @@ module.exports = {
 	async onbutton(cmd, context) {
 		applyContext(context);
 
-		switch(cmd.customId) {
-
-		}
+		
 	}
 };

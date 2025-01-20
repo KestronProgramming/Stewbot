@@ -60,7 +60,47 @@ module.exports = {
             if(!storage[cmd.guild.id].users[cmd.options.getUser("who").id].hasOwnProperty("warnings")){
                 storage[cmd.guild.id].users[cmd.options.getUser("who").id].warnings=[];
             }
-            cmd.followUp({content:limitLength(`${storage[cmd.guild.id].users[cmd.options.getUser("who").id].warnings.length>0?`There are ${storage[cmd.guild.id].users[cmd.options.getUser("who").id].warnings.length} warnings for <@${cmd.options.getUser("who").id}>.${storage[cmd.guild.id].users[cmd.options.getUser("who").id].warnings.map((a,i)=>`\n${i}. <@${a.moderator}>: \`${a.reason}\`, level **${a.severity}**, given <t:${a.when}:R>.`).join("")}`:`This user has no warnings currently present.`}`),allowedMentions:{parse:[]},components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setLabel("Remove a Warning").setStyle(ButtonStyle.Danger).setCustomId(`remWarn-${cmd.options.getUser("who").id}`),new ButtonBuilder().setLabel("Clear all Warnings").setStyle(ButtonStyle.Danger).setCustomId(`clearWarn-${cmd.options.getUser("who").id}`))]});
+            cmd.followUp({
+                content: limitLength(
+                    `${
+                        storage[cmd.guild.id].users[
+                            cmd.options.getUser("who").id
+                        ].warnings.length > 0
+                            ? `There are ${
+                                  storage[cmd.guild.id].users[
+                                      cmd.options.getUser("who").id
+                                  ].warnings.length
+                              } warnings for <@${
+                                  cmd.options.getUser("who").id
+                              }>.${storage[cmd.guild.id].users[
+                                  cmd.options.getUser("who").id
+                              ].warnings
+                                  .map(
+                                      (a, i) =>
+                                          `\n${i}. <@${a.moderator}>: \`${a.reason}\`, level **${a.severity}**, given <t:${a.when}:R>.`
+                                  )
+                                  .join("")}`
+                            : `This user has no warnings currently present.`
+                    }`
+                ),
+                allowedMentions: { parse: [] },
+                components: [
+                    new ActionRowBuilder().addComponents(
+                        new ButtonBuilder()
+                            .setLabel("Remove a Warning")
+                            .setStyle(ButtonStyle.Danger)
+                            .setCustomId(
+                                `remWarn-${cmd.options.getUser("who").id}`
+                            ),
+                        new ButtonBuilder()
+                            .setLabel("Clear all Warnings")
+                            .setStyle(ButtonStyle.Danger)
+                            .setCustomId(
+                                `clearWarn-${cmd.options.getUser("who").id}`
+                            )
+                    ),
+                ],
+            });
         }
         else {
             // Collect all users with warnings
@@ -102,6 +142,53 @@ module.exports = {
                 ),
                 allowedMentions: { parse: [] },
             });
+        }
+	},
+
+	// Only button subscriptions matched will be sent to the handler 
+	subscribedButtons: [/.*Warn.*/],
+	async onbutton(cmd, context) {
+		applyContext(context);
+
+		if(cmd.customId?.startsWith("remWarn-")){
+            if(cmd.member.permissions.has(PermissionFlagsBits.ManageNicknames)){
+                cmd.showModal(new ModalBuilder().setTitle("Remove a Warning").setCustomId(`remWarning-${cmd.customId.split("remWarn-")[1]}`).addComponents(new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId("warning").setLabel("Warning to remove").setPlaceholder("1").setStyle(TextInputStyle.Short).setMaxLength(2))));
+            }
+            else{
+                cmd.deferUpdate();
+            }
+        }
+        
+        if(cmd.customId?.startsWith("clearWarn-")){
+            if(cmd.member.permissions.has(PermissionFlagsBits.KickMembers)){
+                cmd.showModal(new ModalBuilder().setTitle("Clear All Warnings - Are you sure?").setCustomId(`clearWarning-${cmd.customId.split("clearWarn-")[1]}`).addComponents(new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId("confirm").setLabel("Are you sure?").setPlaceholder("\"Yes\"").setStyle(TextInputStyle.Short).setMaxLength(3).setMinLength(3))));
+            }
+            else{
+                cmd.deferUpdate();
+            }
+        }
+
+        if(cmd.customId?.startsWith("remWarning-")){
+            if(!/\d\d?/ig.test(cmd.fields.getTextInputValue("warning"))){
+                cmd.deferUpdate();
+            }
+            else if(+cmd.fields.getTextInputValue("warning")>=storage[cmd.guild.id].users[cmd.customId.split("-")[1]].warnings.length){
+                cmd.deferUpdate();
+            }
+            else{
+                storage[cmd.guild.id].users[cmd.customId.split("-")[1]].warnings.splice(cmd.fields.getTextInputValue("warning")-1,1);
+                cmd.reply({content:`Alright, I have removed warning \`${cmd.fields.getTextInputValue("warning")}\` from <@${cmd.customId.split("-")[1]}>.`,allowedMentioned:{parse:[]}});
+            }
+        }
+        
+        if(cmd.customId?.startsWith("clearWarning-")){
+            if(cmd.fields.getTextInputValue("confirm").toLowerCase()!=="yes"){
+                cmd.deferUpdate();
+            }
+            else{
+                storage[cmd.guild.id].users[cmd.customId.split("-")[1]].warnings=[];
+                cmd.reply({content:`Alright, I have cleared all warnings for <@${cmd.customId.split("-")[1]}>`,allowedMentions:{parse:[]}});
+            }
         }
 	}
 };

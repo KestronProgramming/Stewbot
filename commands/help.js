@@ -131,5 +131,43 @@ module.exports = {
         }
 
         cmd.respond(autocompletes);
+	},
+
+	// Only button subscriptions matched will be sent to the handler 
+	subscribedButtons: [/help-.*/],
+	async onbutton(cmd, context) {
+		applyContext(context);
+
+		if(cmd.customId?.startsWith("help-")){
+			var opts=cmd.customId.split("-");
+			if(opts[3]!==cmd.user.id){
+				cmd.reply({content:`This isn't your help command! Use ${cmds.help.mention} to start your own help command.`,ephemeral:true});
+			}
+			else{
+				switch(opts[1]){
+					case 'page':
+						cmd.update(makeHelp(+opts[2],cmd.message.content.split("Categories: ")[1].split(", "),cmd.message.content.split("Mode: ")[1].split(" |")[0],cmd.user.id));
+					break;
+					case 'category':
+						var cats=cmd.message.content.split("Categories: ")[1]?.split(", ");
+						if(cats.length===0) cats=["None"];
+						if(cats.includes("All")){
+							cats=[opts[2]];
+						}
+						else if(cats.includes(opts[2])){
+							cats.splice(cats.indexOf(opts[2]),1);
+						}
+						else{
+							if(cats.includes("None")) cats=[];
+							cats.push(opts[2]);
+						}
+						cmd.update(makeHelp(0,cats,cmd.message.content.split("Mode: ")[1].split(" |")[0],cmd.user.id));
+					break;
+					case 'mode':
+						cmd.update(makeHelp(0,cmd.message.content.split("Categories: ")[1].split(", "),opts[2],cmd.user.id));
+					break;
+				}
+			}
+		}
 	}
 };

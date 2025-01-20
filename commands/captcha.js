@@ -46,5 +46,50 @@ module.exports = {
 			captcha+=Math.floor(Math.random()*10);
 		}
 		cmd.followUp({content:`Please enter the following: \`${captcha}\`\n\nEntered: \`\``,components:presets.captcha});
+	},
+
+	subscribedButtons: [/captcha-.*/],
+	async onbutton(cmd, context) {
+		applyContext(context);
+
+		if(cmd.customId?.startsWith("captcha-")){
+			var action=cmd.customId.split("captcha-")[1];
+			if(action==="done"){
+				if(cmd.message.content.split("Entered: ")[1].replaceAll("`","")===cmd.message.content.split("`")[1]){
+					cmd.update({content:`Thank you.`,components:[]});
+					storage[cmd.user.id].captcha=false;
+					storage[cmd.user.id].lastHash="";
+					storage[cmd.user.id].hashStreak=0;
+					if(!storage[cmd.user.id].hasOwnProperty("timedOutIn")) storage[cmd.user.id].timedOutIn=[];
+					for(var to=0;to<storage[cmd.user.id].timedOutIn.length;to++){
+						try{
+							client.guilds.cache.get(storage[cmd.user.id].timedOutIn[to]).members.fetch().then(members=>{
+								members.forEach(m=>{
+									if(m.id===cmd.user.id){
+										m.timeout(null);
+										storage[m.guild.id].users[m.id].safeTimestamp=new Date();
+									}
+								});
+							});
+						}catch(e){console.log(e)}
+						storage[cmd.user.id].timedOutIn.splice(to,1);
+						to--;
+					}
+				}
+				else{
+					cmd.message.delete();
+				}
+			}
+			else if(action==="back"){
+				var inp=cmd.message.content.split("Entered: ")[1].replaceAll("`","");
+				if(inp.length>0){
+					inp=inp.slice(0,inp.length-1);
+				}
+				cmd.update(`${cmd.message.content.split("Entered: ")[0]}Entered: \`${inp}\``);
+			}
+			else{
+				cmd.update(`${cmd.message.content.split("Entered: ")[0]}Entered: \`${cmd.message.content.split("Entered: ")[1].replaceAll("`","")}${action}\``);
+			}
+		}
 	}
 };

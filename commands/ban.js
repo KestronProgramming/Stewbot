@@ -179,6 +179,33 @@ module.exports = {
 		cmd.followUp({content:`I have ${temp?`temporarily `:``}banned <@${cmd.options.getUser("target").id}>${temp?` until <t:${Math.round((Date.now()+timer)/1000)}:f> <t:${Math.round((Date.now()+timer)/1000)}:R>`:``}.`,components:comps});
 	},
 
+	// Only button subscriptions matched will be sent to the handler 
+	subscribedButtons: [/unban-.*/],
+	async onbutton(cmd, context) {
+		applyContext(context);
+
+		if(cmd.customId?.startsWith("unban-")){
+			if(!cmd.memberPermissions.has(PermissionFlagsBits.BanMembers)){
+				cmd.reply({content:`You do not have permission to use this button.`,ephemeral:true});
+			}
+			else{
+				cmd.update({
+                    components: [
+                        new ActionRowBuilder().addComponents(
+                            new ButtonBuilder()
+                                .setStyle(ButtonStyle.Danger)
+                                .setLabel("Unban Now")
+                                .setCustomId(`unban`)
+                                .setDisabled(true)
+                        ),
+                    ],
+                });
+				finTempBan(cmd.guild.id, cmd.customId.split("-")[1],true);
+			}
+		}
+	},
+
+
 	async daily(context) {
 		applyContext(context);
 
