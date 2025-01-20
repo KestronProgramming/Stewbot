@@ -143,8 +143,21 @@ module.exports = {
         cmd.followUp({content:`Alright, I have set a${temp?` temporary`:``} slowmode setting for this channel${temp?` until <t:${Math.round(storage[cmd.guild.id].tempSlow[cmd.channel.id].ends/1000)}:f> <t:${Math.round(storage[cmd.guild.id].tempSlow[cmd.channel.id].ends/1000)}:R>`:``}.`,components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setStyle(ButtonStyle.Danger).setLabel("Revert Now").setCustomId(`revertTempSlow`))]});
 	},
 
-    async daily(context) {
+	// Only button subscriptions matched will be sent to the handler 
+	subscribedButtons: ["revertTempSlow"],
+	async onbutton(cmd, context) {
 		applyContext(context);
 
-    }
+        if(!cmd.channel.permissionsFor(cmd.user.id).has(PermissionFlagsBits.ManageChannels)){
+            cmd.reply({content:`You don't have sufficient permissions to use this button.`,ephemeral:true});
+            return;
+        }
+        if(!cmd.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.ManageChannels)){
+            cmd.reply({content:`I don't have the \`ManageChannels\` permission and so I'm unable to revert the slowmode setting.`,ephemeral:true});
+            return;
+        }
+        finTempSlow(cmd.guild.id,cmd.channel.id,true);
+        cmd.message.edit({components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setStyle(ButtonStyle.Danger).setLabel("Revert Now").setCustomId("revertTempSlow").setDisabled(true))]});
+        cmd.reply({content:`Alright, reverted the setting early.`,ephemeral:true});
+	}
 };
