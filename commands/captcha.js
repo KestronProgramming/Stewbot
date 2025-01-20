@@ -7,6 +7,29 @@ function applyContext(context={}) {
 }
 // #endregion Boilerplate
 
+const captchaButtons = [
+    new ActionRowBuilder().addComponents(
+        new ButtonBuilder().setCustomId("captcha-1").setLabel("1").setStyle(ButtonStyle.Primary),
+        new ButtonBuilder().setCustomId("captcha-2").setLabel("2").setStyle(ButtonStyle.Primary),
+        new ButtonBuilder().setCustomId("captcha-3").setLabel("3").setStyle(ButtonStyle.Primary)
+    ),
+    new ActionRowBuilder().addComponents(
+        new ButtonBuilder().setCustomId("captcha-4").setLabel("4").setStyle(ButtonStyle.Primary),
+        new ButtonBuilder().setCustomId("captcha-5").setLabel("5").setStyle(ButtonStyle.Primary),
+        new ButtonBuilder().setCustomId("captcha-6").setLabel("6").setStyle(ButtonStyle.Primary)
+    ),
+    new ActionRowBuilder().addComponents(
+        new ButtonBuilder().setCustomId("captcha-7").setLabel("7").setStyle(ButtonStyle.Primary),
+        new ButtonBuilder().setCustomId("captcha-8").setLabel("8").setStyle(ButtonStyle.Primary),
+        new ButtonBuilder().setCustomId("captcha-9").setLabel("9").setStyle(ButtonStyle.Primary)
+    ),
+    new ActionRowBuilder().addComponents(
+        new ButtonBuilder().setCustomId("captcha-back").setEmoji("❌").setStyle(ButtonStyle.Danger),
+        new ButtonBuilder().setCustomId("captcha-0").setLabel("0").setStyle(ButtonStyle.Primary),
+        new ButtonBuilder().setCustomId("captcha-done").setEmoji("✅").setStyle(ButtonStyle.Success)
+    ),
+];
+
 module.exports = {
 	data: {
 		// Slash command data
@@ -16,7 +39,7 @@ module.exports = {
 		
 		extra: {"contexts":[1],"integration_types":[0,1]},
 
-		requiredGlobals: ["presets"],
+		requiredGlobals: [],
 
 		help: {
 			helpCategories: ["Safety"],
@@ -45,7 +68,7 @@ module.exports = {
 		for(var ca=0;ca<5;ca++){
 			captcha+=Math.floor(Math.random()*10);
 		}
-		cmd.followUp({content:`Please enter the following: \`${captcha}\`\n\nEntered: \`\``,components:presets.captcha});
+		cmd.followUp({content:`Please enter the following: \`${captcha}\`\n\nEntered: \`\``,components:captchaButtons});
 	},
 
 	subscribedButtons: [/captcha-.*/],

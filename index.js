@@ -112,77 +112,34 @@ const leetMap = require("./data/filterLeetmap.json");
 const defaultGuild=require("./data/defaultGuild.json");
 const defaultGuildUser=require("./data/defaultGuildUser.json");
 const defaultUser=require("./data/defaultUser.json");
-const inps={
-    "roleAdd":new RoleSelectMenuBuilder().setCustomId("role-addOption").setMinValues(1).setMaxValues(20).setPlaceholder("Select all the roles you would like to offer"),
-    "joinRoleAdd":new RoleSelectMenuBuilder().setCustomId("join-roleOption").setMinValues(1).setMaxValues(20).setPlaceholder("Select all the roles you would like to add to new users"),
-    "channels":new ChannelSelectMenuBuilder().setCustomId("move-message").setChannelTypes(ChannelType.GuildText).setMaxValues(1).setMinValues(1),
-
-    "tsHour":new ButtonBuilder().setCustomId("tsHour").setLabel("Hour").setStyle(ButtonStyle.Primary),
-    "tsMinutes":new ButtonBuilder().setCustomId("tsMinutes").setLabel("Minutes").setStyle(ButtonStyle.Primary),
-    "tsSeconds":new ButtonBuilder().setCustomId("tsSeconds").setLabel("Seconds").setStyle(ButtonStyle.Primary),
-    "tsMonth":new StringSelectMenuBuilder().setCustomId("tsMonth").setPlaceholder("Month...").addOptions(
-            new StringSelectMenuOptionBuilder().setLabel("January").setDescription("January").setValue("0"),
-            new StringSelectMenuOptionBuilder().setLabel("February").setDescription("February").setValue("1"),
-            new StringSelectMenuOptionBuilder().setLabel("March").setDescription("March").setValue("2"),
-            new StringSelectMenuOptionBuilder().setLabel("April").setDescription("April").setValue("3"),
-            new StringSelectMenuOptionBuilder().setLabel("May").setDescription("May").setValue("4"),
-            new StringSelectMenuOptionBuilder().setLabel("June").setDescription("June").setValue("5"),
-            new StringSelectMenuOptionBuilder().setLabel("July").setDescription("July").setValue("6"),
-            new StringSelectMenuOptionBuilder().setLabel("August").setDescription("August").setValue("7"),
-            new StringSelectMenuOptionBuilder().setLabel("September").setDescription("September").setValue("8"),
-            new StringSelectMenuOptionBuilder().setLabel("October").setDescription("October").setValue("9"),
-            new StringSelectMenuOptionBuilder().setLabel("November").setDescription("November").setValue("10"),
-            new StringSelectMenuOptionBuilder().setLabel("December").setDescription("December").setValue("11")
+const presets = {
+    rolesCreation: new ActionRowBuilder().addComponents(
+        new RoleSelectMenuBuilder()
+            .setCustomId("role-addOption")
+            .setMinValues(1)
+            .setMaxValues(20)
+            .setPlaceholder("Select all the roles you would like to offer")
+    ),
+    autoJoinRoles: [
+        new ActionRowBuilder().addComponents(
+            new RoleSelectMenuBuilder()
+                .setCustomId("join-roleOption")
+                .setMinValues(1)
+                .setMaxValues(20)
+                .setPlaceholder(
+                    "Select all the roles you would like to add to new users"
+                )
         ),
-    "tsDay":new ButtonBuilder().setCustomId("tsDay").setLabel("Day").setStyle(ButtonStyle.Primary),
-    "tsYear":new ButtonBuilder().setCustomId("tsYear").setLabel("Year").setStyle(ButtonStyle.Primary),
-    "tsType":new StringSelectMenuBuilder().setCustomId("tsType").setPlaceholder("Display Type...").addOptions(
-            new StringSelectMenuOptionBuilder().setLabel("Relative").setDescription("Example: 10 seconds ago").setValue("R"),
-            new StringSelectMenuOptionBuilder().setLabel("Short Time").setDescription("Example: 1:48 PM").setValue("t"),
-            new StringSelectMenuOptionBuilder().setLabel("Short Date").setDescription("Example: 4/19/22").setValue("d"),
-            new StringSelectMenuOptionBuilder().setLabel("Short Time w/ Seconds").setDescription("Example: 1:48:00 PM").setValue("T"),
-            new StringSelectMenuOptionBuilder().setLabel("Long Date").setDescription("Example: April 19, 2022").setValue("D"),
-            new StringSelectMenuOptionBuilder().setLabel("Long Date & Short Time").setDescription("April 19, 2022 at 1:48 PM").setValue("f"),
-            new StringSelectMenuOptionBuilder().setLabel("Full Date").setDescription("Example: Tuesday, April 19, 2022 at 1:48 PM").setValue("F")
-        ),
-
-    "howToCopy":new ButtonBuilder().setCustomId("howToCopy").setLabel("How to Copy").setStyle(ButtonStyle.Danger),
-    "onDesktop":new ButtonBuilder().setCustomId("onDesktop").setLabel("On Desktop").setStyle(ButtonStyle.Success),
-
-    "tsHourModal":new TextInputBuilder().setCustomId("tsHourInp").setLabel("The hour of day...").setStyle(TextInputStyle.Short).setMinLength(1).setMaxLength(4).setRequired(true),
-    "tsMinutesModal":new TextInputBuilder().setCustomId("tsMinutesInp").setLabel("The minutes...").setStyle(TextInputStyle.Short).setMinLength(1).setMaxLength(2).setRequired(true),
-    "tsSecondsModal":new TextInputBuilder().setCustomId("tsSecondsInp").setLabel("The seconds...").setStyle(TextInputStyle.Short).setMinLength(1).setMaxLength(2).setRequired(true),
-    "tsDayModal":new TextInputBuilder().setCustomId("tsDayInp").setLabel("The day of the month...").setStyle(TextInputStyle.Short).setMinLength(1).setMaxLength(2).setRequired(true),
-    "tsYearModal":new TextInputBuilder().setCustomId("tsYearInp").setLabel("The year...").setStyle(TextInputStyle.Short).setMinLength(2).setMaxLength(4).setRequired(true),
-    "tsAmPm":new TextInputBuilder().setCustomId("tsAmPm").setLabel("If you used 12 hour, AM/PM").setStyle(TextInputStyle.Short).setMinLength(1).setMaxLength(2).setRequired(false),
-
-    "captcha0":new ButtonBuilder().setCustomId("captcha-0").setLabel("0").setStyle(ButtonStyle.Primary),
-    "captcha1":new ButtonBuilder().setCustomId("captcha-1").setLabel("1").setStyle(ButtonStyle.Primary),
-    "captcha2":new ButtonBuilder().setCustomId("captcha-2").setLabel("2").setStyle(ButtonStyle.Primary),
-    "captcha3":new ButtonBuilder().setCustomId("captcha-3").setLabel("3").setStyle(ButtonStyle.Primary),
-    "captcha4":new ButtonBuilder().setCustomId("captcha-4").setLabel("4").setStyle(ButtonStyle.Primary),
-    "captcha5":new ButtonBuilder().setCustomId("captcha-5").setLabel("5").setStyle(ButtonStyle.Primary),
-    "captcha6":new ButtonBuilder().setCustomId("captcha-6").setLabel("6").setStyle(ButtonStyle.Primary),
-    "captcha7":new ButtonBuilder().setCustomId("captcha-7").setLabel("7").setStyle(ButtonStyle.Primary),
-    "captcha8":new ButtonBuilder().setCustomId("captcha-8").setLabel("8").setStyle(ButtonStyle.Primary),
-    "captcha9":new ButtonBuilder().setCustomId("captcha-9").setLabel("9").setStyle(ButtonStyle.Primary),
-    "captchaBack":new ButtonBuilder().setCustomId("captcha-back").setEmoji("❌").setStyle(ButtonStyle.Danger),
-    "captchaDone":new ButtonBuilder().setCustomId("captcha-done").setEmoji("✅").setStyle(ButtonStyle.Success)
+    ],
+    moveMessage: new ActionRowBuilder().addComponents(
+        new ChannelSelectMenuBuilder()
+            .setCustomId("move-message")
+            .setChannelTypes(ChannelType.GuildText)
+            .setMaxValues(1)
+            .setMinValues(1)
+    ),
 };
-const presets={
-    "rolesCreation":new ActionRowBuilder().addComponents(inps.roleAdd),
-    "autoJoinRoles":[new ActionRowBuilder().addComponents(inps.joinRoleAdd)],
-    "moveMessage":new ActionRowBuilder().addComponents(inps.channels),
-    "timestamp":[new ActionRowBuilder().addComponents(inps.tsHour,inps.tsMinutes,inps.tsSeconds,inps.tsDay,inps.tsYear),new ActionRowBuilder().addComponents(inps.tsMonth),new ActionRowBuilder().addComponents(inps.tsType),new ActionRowBuilder().addComponents(inps.howToCopy,inps.onDesktop)],
 
-    "tsHourModal":new ModalBuilder().setCustomId("tsHourModal").setTitle("Set the Hour for the Timestamp").addComponents(new ActionRowBuilder().addComponents(inps.tsHourModal),new ActionRowBuilder().addComponents(inps.tsAmPm)),
-    "tsMinutesModal":new ModalBuilder().setCustomId("tsMinutesModal").setTitle("Set the Minutes for the Timestamp").addComponents(new ActionRowBuilder().addComponents(inps.tsMinutesModal)),
-    "tsSecondsModal":new ModalBuilder().setCustomId("tsSecondsModal").setTitle("Set the Seconds for the Timestamp").addComponents(new ActionRowBuilder().addComponents(inps.tsSecondsModal)),
-    "tsDayModal":new ModalBuilder().setCustomId("tsDayModal").setTitle("Set the Day for the Timestamp").addComponents(new ActionRowBuilder().addComponents(inps.tsDayModal)),
-    "tsYearModal":new ModalBuilder().setCustomId("tsYearModal").setTitle("Set the Year for the Timestamp").addComponents(new ActionRowBuilder().addComponents(inps.tsYearModal)),
-
-    "captcha":[new ActionRowBuilder().addComponents(inps.captcha1,inps.captcha2,inps.captcha3),new ActionRowBuilder().addComponents(inps.captcha4,inps.captcha5,inps.captcha6),new ActionRowBuilder().addComponents(inps.captcha7,inps.captcha8,inps.captcha9),new ActionRowBuilder().addComponents(inps.captchaBack,inps.captcha0,inps.captchaDone)]
-};
 
 // Build dynamic help pages
 var helpCommands=[];
@@ -817,7 +774,7 @@ const client=new Client({
     partials:Object.keys(Partials).map(a=>Partials[a])
 });
 global.client = client; // I like my intellisense
-function notify(urgencyLevel,what,useWebhook=false) {
+global.notify = function(urgencyLevel,what,useWebhook=false) {
     console.beta(what);
     try{switch(urgencyLevel){
         default:

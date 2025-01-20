@@ -7,6 +7,73 @@ function applyContext(context={}) {
 }
 // #endregion Boilerplate
 
+const components = {
+	timestamp: [
+        new ActionRowBuilder().addComponents(
+            new ButtonBuilder().setCustomId("tsHour").setLabel("Hour").setStyle(ButtonStyle.Primary),
+            new ButtonBuilder().setCustomId("tsMinutes").setLabel("Minutes").setStyle(ButtonStyle.Primary),
+            new ButtonBuilder().setCustomId("tsSeconds").setLabel("Seconds").setStyle(ButtonStyle.Primary),
+            new ButtonBuilder().setCustomId("tsDay").setLabel("Day").setStyle(ButtonStyle.Primary),
+            new ButtonBuilder().setCustomId("tsYear").setLabel("Year").setStyle(ButtonStyle.Primary)
+        ),
+        new ActionRowBuilder().addComponents(new StringSelectMenuBuilder().setCustomId("tsMonth").setPlaceholder("Month...").addOptions(
+            new StringSelectMenuOptionBuilder().setLabel("January").setDescription("January").setValue("0"),
+            new StringSelectMenuOptionBuilder().setLabel("February").setDescription("February").setValue("1"),
+            new StringSelectMenuOptionBuilder().setLabel("March").setDescription("March").setValue("2"),
+            new StringSelectMenuOptionBuilder().setLabel("April").setDescription("April").setValue("3"),
+            new StringSelectMenuOptionBuilder().setLabel("May").setDescription("May").setValue("4"),
+            new StringSelectMenuOptionBuilder().setLabel("June").setDescription("June").setValue("5"),
+            new StringSelectMenuOptionBuilder().setLabel("July").setDescription("July").setValue("6"),
+            new StringSelectMenuOptionBuilder().setLabel("August").setDescription("August").setValue("7"),
+            new StringSelectMenuOptionBuilder().setLabel("September").setDescription("September").setValue("8"),
+            new StringSelectMenuOptionBuilder().setLabel("October").setDescription("October").setValue("9"),
+            new StringSelectMenuOptionBuilder().setLabel("November").setDescription("November").setValue("10"),
+            new StringSelectMenuOptionBuilder().setLabel("December").setDescription("December").setValue("11")
+        )),
+        new ActionRowBuilder().addComponents(new StringSelectMenuBuilder().setCustomId("tsType").setPlaceholder("Display Type...").addOptions(
+            new StringSelectMenuOptionBuilder().setLabel("Relative").setDescription("Example: 10 seconds ago").setValue("R"),
+            new StringSelectMenuOptionBuilder().setLabel("Short Time").setDescription("Example: 1:48 PM").setValue("t"),
+            new StringSelectMenuOptionBuilder().setLabel("Short Date").setDescription("Example: 4/19/22").setValue("d"),
+            new StringSelectMenuOptionBuilder().setLabel("Short Time w/ Seconds").setDescription("Example: 1:48:00 PM").setValue("T"),
+            new StringSelectMenuOptionBuilder().setLabel("Long Date").setDescription("Example: April 19, 2022").setValue("D"),
+            new StringSelectMenuOptionBuilder().setLabel("Long Date & Short Time").setDescription("April 19, 2022 at 1:48 PM").setValue("f"),
+            new StringSelectMenuOptionBuilder().setLabel("Full Date").setDescription("Example: Tuesday, April 19, 2022 at 1:48 PM").setValue("F")
+        )),
+        new ActionRowBuilder().addComponents(
+            new ButtonBuilder().setCustomId("howToCopy").setLabel("How to Copy").setStyle(ButtonStyle.Danger), 
+            new ButtonBuilder().setCustomId("onDesktop").setLabel("On Desktop").setStyle(ButtonStyle.Success)
+        ),
+    ],
+
+    tsHourModal: new ModalBuilder()
+        .setCustomId("tsHourModal")
+        .setTitle("Set the Hour for the Timestamp")
+        .addComponents(
+            new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId("tsHourInp").setLabel("The hour of day...").setStyle(TextInputStyle.Short).setMinLength(1).setMaxLength(4).setRequired(true)),
+            new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId("tsAmPm").setLabel("If you used 12 hour, AM/PM").setStyle(TextInputStyle.Short).setMinLength(1).setMaxLength(2).setRequired(false))
+        ),
+    tsMinutesModal: new ModalBuilder()
+        .setCustomId("tsMinutesModal")
+        .setTitle("Set the Minutes for the Timestamp")
+        .addComponents(
+            new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId("tsMinutesInp").setLabel("The minutes...").setStyle(TextInputStyle.Short).setMinLength(1).setMaxLength(2).setRequired(true))
+        ),
+    tsSecondsModal: new ModalBuilder()
+        .setCustomId("tsSecondsModal")
+        .setTitle("Set the Seconds for the Timestamp")
+        .addComponents(
+            new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId("tsSecondsInp").setLabel("The seconds...").setStyle(TextInputStyle.Short).setMinLength(1).setMaxLength(2).setRequired(true))
+        ),
+    tsDayModal: new ModalBuilder()
+        .setCustomId("tsDayModal")
+        .setTitle("Set the Day for the Timestamp")
+        .addComponents(new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId("tsDayInp").setLabel("The day of the month...").setStyle(TextInputStyle.Short).setMinLength(1).setMaxLength(2).setRequired(true))),
+    tsYearModal: new ModalBuilder()
+        .setCustomId("tsYearModal")
+        .setTitle("Set the Year for the Timestamp")
+        .addComponents(new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId("tsYearInp").setLabel("The year...").setStyle(TextInputStyle.Short).setMinLength(2).setMaxLength(4).setRequired(true))),
+}
+
 module.exports = {
 	data: {
 		// Slash command data
@@ -16,7 +83,7 @@ module.exports = {
 		
 		extra: {"contexts":[0,1,2],"integration_types":[0,1]},
 
-		requiredGlobals: ["presets"],
+		requiredGlobals: [],
 
 		deferEphemeral: true,
 
@@ -45,7 +112,7 @@ module.exports = {
 		applyContext(context);
 		
 		if(storage[cmd.user.id].config.hasSetTZ){
-			cmd.followUp({content:`<t:${Math.round((new Date().setSeconds(0))/1000)}:t>`,components:presets.timestamp});
+			cmd.followUp({content:`<t:${Math.round((new Date().setSeconds(0))/1000)}:t>`,components:components.timestamp});
 		}
 		else{
 			cmd.followUp(`This command needs you to set your timezone first! Run ${cmds.personal_config.mention} and specify \`configure_timezone\` to get started,`);
@@ -66,19 +133,19 @@ module.exports = {
 				cmd.reply({content:`\`\`\`\n${cmd.message.content}\`\`\``,ephemeral:true});
 			break;
 			case 'tsHour':
-				cmd.showModal(presets.tsHourModal);
+				cmd.showModal(components.tsHourModal);
 			break;
 			case 'tsMinutes':
-				cmd.showModal(presets.tsMinutesModal);
+				cmd.showModal(components.tsMinutesModal);
 			break;
 			case 'tsSeconds':
-				cmd.showModal(presets.tsSecondsModal);
+				cmd.showModal(components.tsSecondsModal);
 			break;
 			case 'tsDay':
-				cmd.showModal(presets.tsDayModal);
+				cmd.showModal(components.tsDayModal);
 			break;
 			case 'tsYear':
-				cmd.showModal(presets.tsYearModal);
+				cmd.showModal(components.tsYearModal);
 			break;
 
 			// Modals
