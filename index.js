@@ -1214,27 +1214,6 @@ client.on("interactionCreate",async cmd=>{
 
     switch(cmd.customId) {
         //Select Menus
-        case 'join-roleOption':
-            let myHighestRole=cmd.guild.members.cache.get(client.user.id).roles.highest.position;
-            let goodRoles=[];
-            let cantRoles=[];
-            cmd.values.forEach(role=>{
-                if(myHighestRole<=cmd.roles.get(role).rawPosition){
-                    cantRoles.push(cmd.roles.get(role).id);
-                }
-                else{
-                    goodRoles.push(cmd.roles.get(role).id);
-                }
-            });
-            if(cantRoles.length>0){
-                cmd.reply({ephemeral:true,content:`I'm sorry, but I don't have a high enough permission to handle the following roles. If you'd like my help with these, go into Roles in the Server Settings, and drag a role I have above the roles you want me to manage.\n<@&${cantRoles.join(">, <@&")}>`,allowedMentions:{parse:[]}});
-            }
-            else{
-                storage[cmd.guildId].autoJoinRoles=goodRoles;
-                cmd.reply({content:`Alright, I will add these roles to new members: <@&${goodRoles.join(">, <@&")}>`,allowedMentions:{parse:[]},ephemeral:true});
-                
-            }
-        break;
         case 'move-message':
             var msg=await cmd.channel.messages.fetch(cmd.message.content.split("`")[1]);
             var resp={files:[]};
