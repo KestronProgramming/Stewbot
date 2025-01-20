@@ -17,18 +17,18 @@ const components = {
             new ButtonBuilder().setCustomId("tsYear").setLabel("Year").setStyle(ButtonStyle.Primary)
         ),
         new ActionRowBuilder().addComponents(new StringSelectMenuBuilder().setCustomId("tsMonth").setPlaceholder("Month...").addOptions(
-            new StringSelectMenuOptionBuilder().setLabel("January").setDescription("January").setValue("0"),
-            new StringSelectMenuOptionBuilder().setLabel("February").setDescription("February").setValue("1"),
-            new StringSelectMenuOptionBuilder().setLabel("March").setDescription("March").setValue("2"),
-            new StringSelectMenuOptionBuilder().setLabel("April").setDescription("April").setValue("3"),
-            new StringSelectMenuOptionBuilder().setLabel("May").setDescription("May").setValue("4"),
-            new StringSelectMenuOptionBuilder().setLabel("June").setDescription("June").setValue("5"),
-            new StringSelectMenuOptionBuilder().setLabel("July").setDescription("July").setValue("6"),
-            new StringSelectMenuOptionBuilder().setLabel("August").setDescription("August").setValue("7"),
-            new StringSelectMenuOptionBuilder().setLabel("September").setDescription("September").setValue("8"),
-            new StringSelectMenuOptionBuilder().setLabel("October").setDescription("October").setValue("9"),
-            new StringSelectMenuOptionBuilder().setLabel("November").setDescription("November").setValue("10"),
-            new StringSelectMenuOptionBuilder().setLabel("December").setDescription("December").setValue("11")
+			new StringSelectMenuOptionBuilder().setLabel("January").setValue("0"),
+			new StringSelectMenuOptionBuilder().setLabel("February").setValue("1"),
+			new StringSelectMenuOptionBuilder().setLabel("March").setValue("2"),
+			new StringSelectMenuOptionBuilder().setLabel("April").setValue("3"),
+			new StringSelectMenuOptionBuilder().setLabel("May").setValue("4"),
+			new StringSelectMenuOptionBuilder().setLabel("June").setValue("5"),
+			new StringSelectMenuOptionBuilder().setLabel("July").setValue("6"),
+			new StringSelectMenuOptionBuilder().setLabel("August").setValue("7"),
+			new StringSelectMenuOptionBuilder().setLabel("September").setValue("8"),
+			new StringSelectMenuOptionBuilder().setLabel("October").setValue("9"),
+			new StringSelectMenuOptionBuilder().setLabel("November").setValue("10"),
+			new StringSelectMenuOptionBuilder().setLabel("December").setValue("11")
         )),
         new ActionRowBuilder().addComponents(new StringSelectMenuBuilder().setCustomId("tsType").setPlaceholder("Display Type...").addOptions(
             new StringSelectMenuOptionBuilder().setLabel("Relative").setDescription("Example: 10 seconds ago").setValue("R"),
@@ -112,7 +112,7 @@ module.exports = {
 		applyContext(context);
 		
 		if(storage[cmd.user.id].config.hasSetTZ){
-			cmd.followUp({content:`<t:${Math.round((new Date().setSeconds(0))/1000)}:t>`,components:components.timestamp});
+			cmd.followUp({content:`<t:${Math.round((new Date().setUTCSeconds(0))/1000)}:t>`,components:components.timestamp});
 		}
 		else{
 			cmd.followUp(`This command needs you to set your timezone first! Run ${cmds.personal_config.mention} and specify \`configure_timezone\` to get started,`);
@@ -155,7 +155,7 @@ module.exports = {
 					cmd.deferUpdate();
 					break;
 				}
-				cmd.update(`<t:${Math.round(new Date(+cmd.message.content.split(":")[1]*1000).setYear(+inp)/1000)}:${cmd.message.content.split(":")[2].split(">")[0]}>`);
+				cmd.update(`<t:${Math.round(new Date(+cmd.message.content.split(":")[1]*1000).setUTCFullYear(+inp)/1000)}:${cmd.message.content.split(":")[2].split(">")[0]}>`);
 			break;
 			case "tsMinutesModal":
 				var inp=cmd.fields.getTextInputValue("tsMinutesInp");
@@ -163,15 +163,15 @@ module.exports = {
 					cmd.deferUpdate();
 					break;
 				}
-				cmd.update(`<t:${Math.round(new Date(+cmd.message.content.split(":")[1]*1000).setMinutes(+inp)/1000)}:${cmd.message.content.split(":")[2].split(">")[0]}>`);
+				cmd.update(`<t:${Math.round(new Date(+cmd.message.content.split(":")[1]*1000).setUTCMinutes(+inp)/1000)}:${cmd.message.content.split(":")[2].split(">")[0]}>`);
 			break;
 			case "tsSecondsModal":
 				var inp=cmd.fields.getTextInputValue("tsSecondsInp");
-				if(!/^\d+$/.test(inp)){
+				if(!/^\d+$/.test(inp)) {
 					cmd.deferUpdate();
 					break;
 				}
-				cmd.update(`<t:${Math.round(new Date(+cmd.message.content.split(":")[1]*1000).setSeconds(+inp)/1000)}:${cmd.message.content.split(":")[2].split(">")[0]}>`);
+				cmd.update(`<t:${Math.round(new Date(+cmd.message.content.split(":")[1]*1000).setUTCSeconds(+inp)/1000)}:${cmd.message.content.split(":")[2].split(">")[0]}>`);
 			break;
 			case "tsHourModal":
 				var inp=cmd.fields.getTextInputValue("tsHourInp");
@@ -189,8 +189,9 @@ module.exports = {
 				while(inp<0){
 					inp+=24;
 				}
-				cmd.update(`<t:${Math.round(new Date(+cmd.message.content.split(":")[1]*1000).setHours(inp)/1000)}:${cmd.message.content.split(":")[2].split(">")[0]}>`);
+				cmd.update(`<t:${Math.round(new Date(+cmd.message.content.split(":")[1]*1000).setUTCHours(inp)/1000)}:${cmd.message.content.split(":")[2].split(">")[0]}>`);
 			break;
+
 			case "tsDayModal":
 				var inp=cmd.fields.getTextInputValue("tsDayInp");
 				if(!/^\d+$/.test(inp)){
@@ -199,18 +200,18 @@ module.exports = {
 				}
 				inp=+inp;
 				var t=new Date(+cmd.message.content.split(":")[1]*1000);
-				if(24-t.getHours()<storage[cmd.user.id].config.timeOffset){
+				if(24-t.getUTCHours()<storage[cmd.user.id].config.timeOffset){
 					inp++;
 				}
-				if(t.getHours()-storage[cmd.user.id].config.timeOffset<0){
+				if(t.getUTCHours()-storage[cmd.user.id].config.timeOffset<0){
 					inp--;
 				}
-				cmd.update(`<t:${Math.round(t.setDate(inp)/1000)}:${cmd.message.content.split(":")[2].split(">")[0]}>`);
+				cmd.update(`<t:${Math.round(t.setUTCDate(inp)/1000)}:${cmd.message.content.split(":")[2].split(">")[0]}>`);
 			break;
         
 			// Menus
 			case 'tsMonth':
-				cmd.update(`<t:${Math.round(new Date(+cmd.message.content.split(":")[1]*1000).setMonth(cmd.values[0])/1000)}:${cmd.message.content.split(":")[2].split(">")[0]}>`);
+				cmd.update(`<t:${Math.round(new Date(+cmd.message.content.split(":")[1]*1000).setUTCMonth(cmd.values[0])/1000)}:${cmd.message.content.split(":")[2].split(">")[0]}>`);
 			break;
 			case 'tsType':
 				cmd.update(`<t:${Math.round(new Date(+cmd.message.content.split(":")[1]*1000)/1000)}:${cmd.values[0]}>`);
