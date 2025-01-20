@@ -88,9 +88,10 @@ module.exports = {
 		
 	},
 
+	// Only button subscriptions matched will be sent to the handler 
+	subscribedButtons: ["example", /example/],
 	async onbutton(cmd, context) {
-		switch (cmd.customId) {
+		applyContext(context);
 
-		}
 	}
 };

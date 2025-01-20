@@ -81,26 +81,22 @@ module.exports = {
         });
     },
 
+    subscribedButtons: ["save_meme"],
 	async onbutton(cmd, context) {
 		applyContext(context);
 
-		switch (cmd.customId) {
-            case "save_meme":
-                cmd.message.attachments.forEach(a=>{
-                    var dots=a.url.split("?")[0].split(".");
-                    dots=dots[dots.length-1];
-                    if(!["mov","png","jpg","jpeg","gif","mp4","mp3","wav","webm","ogg"].includes(dots)){
-                        cmd.reply({content:`I don't support or recognize that format (\`.${dots}\`)`,ephemeral:true});
-                        return;
-                    }
-                    fetch(a.url).then(d=>d.arrayBuffer()).then(d=>{
-                        fs.writeFileSync(`./memes/${fs.readdirSync("./memes").length}.${dots}`,Buffer.from(d));
-                    });
-                });
-                cmd.update({components:[]});
-                cmd.message.react("✅");
-            break;
-    
-		}
+        cmd.message.attachments.forEach(a=>{
+            var dots=a.url.split("?")[0].split(".");
+            dots=dots[dots.length-1];
+            if(!["mov","png","jpg","jpeg","gif","mp4","mp3","wav","webm","ogg"].includes(dots)){
+                cmd.reply({content:`I don't support or recognize that format (\`.${dots}\`)`,ephemeral:true});
+                return;
+            }
+            fetch(a.url).then(d=>d.arrayBuffer()).then(d=>{
+                fs.writeFileSync(`./memes/${fs.readdirSync("./memes").length}.${dots}`,Buffer.from(d));
+            });
+        });
+        cmd.update({components:[]});
+        cmd.message.react("✅");
 	}
 };

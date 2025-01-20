@@ -128,10 +128,6 @@ const inps={
     "joinRoleAdd":new RoleSelectMenuBuilder().setCustomId("join-roleOption").setMinValues(1).setMaxValues(20).setPlaceholder("Select all the roles you would like to add to new users"),
     "channels":new ChannelSelectMenuBuilder().setCustomId("move-message").setChannelTypes(ChannelType.GuildText).setMaxValues(1).setMinValues(1),
 
-    "delete":new ButtonBuilder().setCustomId("delete-all").setLabel("Delete message").setStyle(ButtonStyle.Danger),
-    "export":new ButtonBuilder().setCustomId("export").setLabel("Export to CSV").setStyle(ButtonStyle.Primary),
-
-
     "tzUp":new ButtonBuilder().setCustomId("tzUp").setEmoji("⬆️").setStyle(ButtonStyle.Primary),
     "tzDown":new ButtonBuilder().setCustomId("tzDown").setEmoji("⬇️").setStyle(ButtonStyle.Primary),
     "tzSave":new ButtonBuilder().setCustomId("tzSave").setEmoji("✅").setStyle(ButtonStyle.Success),
@@ -986,10 +982,11 @@ function sendWelcome(guild) {
 var ints=Object.keys(GatewayIntentBits).map(a=>GatewayIntentBits[a]);
 ints.splice(ints.indexOf(GatewayIntentBits.GuildPresences),1);
 ints.splice(ints.indexOf("GuildPresences"),1);
-global.client=new Client({
+const client=new Client({
     intents:ints,
     partials:Object.keys(Partials).map(a=>Partials[a])
 });
+global.client = client; // I like my intellisense
 function notify(urgencyLevel,what,useWebhook=false) {
     console.beta(what);
     try{switch(urgencyLevel){
@@ -1312,7 +1309,7 @@ client.on("interactionCreate",async cmd=>{
     }
 
     // Slash commands
-    if (commands.hasOwnProperty(cmd.commandName)) {
+    if (cmd.isCommand() && commands.hasOwnProperty(cmd.commandName)) {
         const commandPathWithSubcommand = `${cmd.commandName} ${cmd.options._subcommand ? cmd.options.getSubcommand() : "<none>"}`; //meh but it works
         const commandPath = `${cmd.commandName}`;
         // If this is a guild, check for blocklist
@@ -1358,16 +1355,31 @@ client.on("interactionCreate",async cmd=>{
         if(!usage.hasOwnProperty(cmd.commandName)) usage[cmd.commandName]=0;
         usage[cmd.commandName]++;
         fs.writeFileSync("./data/usage.json",JSON.stringify(usage));
+
+        return;
     }
 
-    //Buttons, Modals, and Select Menus
-    Object.values(buttonListenerModules).forEach(module => module.onbutton(cmd, pseudoGlobals))
+    // Buttons, Modals, and Select Menu
+
+    // Emit buttons to subscribed handlers
+    Object.values(buttonListenerModules).forEach(module => {
+        const moduleSubscriptions = module.subscribedButtons || [];
+        let subbed = false;
+        for (const sub of moduleSubscriptions) {
+            if (
+                (typeof sub === 'string' && sub === cmd.customId) || 
+                (sub instanceof RegExp && sub.test(cmd.customId))
+            ) {
+                subbed = true;
+                continue;
+            }
+        }
+
+        if (subbed) module.onbutton(cmd, pseudoGlobals)
+    })
+
     switch(cmd.customId) {
         //Buttons
-        case "view_filter":
-            cmd.user.send({"content":`The following is the blacklist for **${cmd.guild.name}** as requested.\n\n||${storage[cmd.guildId].filter.blacklist.join("||, ||")}||`,"components":[new ActionRowBuilder().addComponents(inps.delete,inps.export)]});
-            cmd.deferUpdate();
-        break;
         case 'poll-addOption':
             cmd.showModal(presets.pollAddModal);
         break;

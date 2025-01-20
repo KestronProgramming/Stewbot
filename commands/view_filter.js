@@ -47,5 +47,19 @@ module.exports = {
 		else{
 			cmd.followUp(`This server doesn't have any words blacklisted at the moment. To add some, you can use ${cmds.filter.add.mention}.`);
 		}
-    }
+    },
+
+	subscribedButtons: [/view_filter/],
+	async onbutton(cmd, context) {
+		applyContext(context);
+
+		cmd.user.send({
+            content: `The following is the blacklist for **${ cmd.guild.name}** as requested.\n\n||${storage[cmd.guildId].filter.blacklist.join("||, ||")}||`,
+            components: [new ActionRowBuilder().addComponents(
+				new ButtonBuilder().setCustomId("delete-all").setLabel("Delete message").setStyle(ButtonStyle.Danger), 
+				new ButtonBuilder().setCustomId("export").setLabel("Export to CSV").setStyle(ButtonStyle.Primary),
+			)],
+        });
+		cmd.deferUpdate();
+	}
 };
