@@ -22,6 +22,8 @@ function getStarMsg(msg){
 }
 
 module.exports = {
+	getStarMsg,
+	
 	data: {
 		// Slash command data
 		command: new SlashCommandBuilder().setName("add_emojiboard").setDescription("Create a new emojiboard")
