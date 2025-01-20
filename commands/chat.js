@@ -350,7 +350,7 @@ module.exports = {
 
                 // React
                 try {
-                    if (emoji) msg.react(emoji);
+                    if (emoji) await msg.react(emoji);
                 } catch {
                     // Some emojis are not in discord
                     response += emoji;

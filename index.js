@@ -14,7 +14,6 @@ const { getEmojiFromMessage, parseEmoji } = require('./util');
 const fs = require("fs");
 const wotdList = fs.readFileSync(`./data/wordlist.txt`,"utf-8").split("\n");
 const crypto = require('crypto');
-const { createCanvas } = require('canvas');
 const { updateBlocklists } = require("./commands/badware_scanner.js")
 const { finTempSlow } = require("./commands/slowmode.js")
 const { finTempRole } = require("./commands/temp_role.js")
@@ -111,19 +110,10 @@ setInterval(() => {
 // Other data
 var uptime=0;
 const leetMap = require("./data/filterLeetmap.json");
-const pieCols=require("./data/pieCols.json");
 const defaultGuild=require("./data/defaultGuild.json");
 const defaultGuildUser=require("./data/defaultGuildUser.json");
 const defaultUser=require("./data/defaultUser.json");
 const inps={
-    "pollAdd":new ButtonBuilder().setCustomId("poll-addOption").setLabel("Add a poll option").setStyle(ButtonStyle.Primary),
-    "pollDel":new ButtonBuilder().setCustomId("poll-delOption").setLabel("Remove a poll option").setStyle(ButtonStyle.Danger),
-    "pollLaunch":new ButtonBuilder().setCustomId("poll-publish").setLabel("Publish the poll").setStyle(ButtonStyle.Success),
-    "pollVoters":new ButtonBuilder().setCustomId("poll-voters").setLabel("View voters").setStyle(ButtonStyle.Primary),
-
-    "pollInp":new TextInputBuilder().setCustomId("poll-addedInp").setLabel("What should the option be?").setStyle(TextInputStyle.Short).setMinLength(1).setMaxLength(70).setRequired(true),
-    "pollNum":new TextInputBuilder().setCustomId("poll-removedInp").setLabel("Which # option should I remove?").setStyle(TextInputStyle.Short).setMinLength(1).setMaxLength(2).setRequired(true),
-
     "roleAdd":new RoleSelectMenuBuilder().setCustomId("role-addOption").setMinValues(1).setMaxValues(20).setPlaceholder("Select all the roles you would like to offer"),
     "joinRoleAdd":new RoleSelectMenuBuilder().setCustomId("join-roleOption").setMinValues(1).setMaxValues(20).setPlaceholder("Select all the roles you would like to add to new users"),
     "channels":new ChannelSelectMenuBuilder().setCustomId("move-message").setChannelTypes(ChannelType.GuildText).setMaxValues(1).setMinValues(1),
@@ -187,15 +177,11 @@ const inps={
     "captchaDone":new ButtonBuilder().setCustomId("captcha-done").setEmoji("✅").setStyle(ButtonStyle.Success)
 };
 const presets={
-    "pollCreation":new ActionRowBuilder().addComponents(inps.pollAdd,inps.pollDel,inps.pollLaunch),
     "rolesCreation":new ActionRowBuilder().addComponents(inps.roleAdd),
     "autoJoinRoles":[new ActionRowBuilder().addComponents(inps.joinRoleAdd)],
     "moveMessage":new ActionRowBuilder().addComponents(inps.channels),
     "tzConfig":[new ActionRowBuilder().addComponents(inps.tzUp,inps.tzDown,inps.tzSave)],
     "timestamp":[new ActionRowBuilder().addComponents(inps.tsHour,inps.tsMinutes,inps.tsSeconds,inps.tsDay,inps.tsYear),new ActionRowBuilder().addComponents(inps.tsMonth),new ActionRowBuilder().addComponents(inps.tsType),new ActionRowBuilder().addComponents(inps.howToCopy,inps.onDesktop)],
-
-    "pollAddModal":new ModalBuilder().setCustomId("poll-added").setTitle("Add a poll option").addComponents(new ActionRowBuilder().addComponents(inps.pollInp)),
-    "pollRemModal":new ModalBuilder().setCustomId("poll-removed").setTitle("Remove a poll option").addComponents(new ActionRowBuilder().addComponents(inps.pollNum)),
 
     "tsHourModal":new ModalBuilder().setCustomId("tsHourModal").setTitle("Set the Hour for the Timestamp").addComponents(new ActionRowBuilder().addComponents(inps.tsHourModal),new ActionRowBuilder().addComponents(inps.tsAmPm)),
     "tsMinutesModal":new ModalBuilder().setCustomId("tsMinutesModal").setTitle("Set the Minutes for the Timestamp").addComponents(new ActionRowBuilder().addComponents(inps.tsMinutesModal)),
@@ -540,27 +526,6 @@ function verifyRegex(regexStr) {
     // const regex = new RE2(userProvidedRegex, 'ui'); // TODO: figure out some system for flags - i should default on but some uses cases may need it off
     // const result = regex.exec(msg.content);
     // console.log(result);
-}
-function parsePoll(c,published){
-    try{
-        var ret={};
-        ret.title=c.split("**")[1];
-        ret.options=c.match(/(?<=^\d\.\s|\d\d\.\s).+(?:$)/gm)||[];
-        if(published){
-            var temp={};
-            ret.choices=[];
-            ret.options.forEach(a=>{
-                var t=+a.split("**")[a.split("**").length-1];
-                a=a.split("**")[0].trim();
-                ret.choices.push(a);
-                temp[a]=t;
-            });
-            ret.options=structuredClone(temp);
-            ret.starter=c.split("<@")[1].split(">")[0];
-        }
-        return ret;
-    }
-    catch(e){}
 }
 function defangURL(message) {
     const urlPattern = /(https?:\/\/[^\s]+)/g;
@@ -1016,10 +981,10 @@ function notify(urgencyLevel,what,useWebhook=false) {
 
 // Now that setup is done, define data that should be passed to each module - TODO migrate to `global` instead
 const pseudoGlobals = {
-    notify,
-    checkDirty,
-    cmds,
-    config
+    notify, // Has been made global 
+    checkDirty, // Has been made global
+    cmds, // Has been made global
+    config // Has been made global
 };
 
 //Actionable events
@@ -1380,42 +1345,6 @@ client.on("interactionCreate",async cmd=>{
 
     switch(cmd.customId) {
         //Buttons
-        case 'poll-addOption':
-            cmd.showModal(presets.pollAddModal);
-        break;
-        case 'poll-delOption':
-            cmd.showModal(presets.pollRemModal);
-        break;
-        case 'poll-publish':
-            if(!cmd.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
-                cmd.reply({content:`I can't send messages in this channel.`,ephemeral:true});
-                break;
-            }
-            var poll=parsePoll(cmd.message.content);
-            var comp=[];
-            var comp2=[];
-            for(var i=0;i<poll.options.length;i++){
-                comp2.push(new ButtonBuilder().setCustomId("voted"+i).setLabel(poll.options[i]).setStyle(ButtonStyle.Primary));
-                if(comp2.length===5){
-                    comp.push(new ActionRowBuilder().addComponents(...comp2));
-                    comp2=[];
-                }
-            }
-            if(comp2.length>0) comp.push(new ActionRowBuilder().addComponents(...comp2));
-                cmd.channel.send({content:`<@${cmd.user.id}> asks: **${poll.title}**${poll.options.map((a,i)=>`\n${i}. ${a} **0**`).join("")}`,components:[...comp,new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId("poll-removeVote").setLabel("Remove vote").setStyle(ButtonStyle.Danger),inps.pollVoters,new ButtonBuilder().setCustomId("poll-closeOption"+cmd.user.id).setLabel("Close poll").setStyle(ButtonStyle.Danger))],allowedMentions:{"users":[]}}).then(msg=>{
-                var t={};
-                poll.options.forEach(option=>{
-                    t[option]=[];
-                });
-                poll.options=structuredClone(t);
-                storage[cmd.guildId].polls[msg.id]=structuredClone(poll);
-                
-            });
-            cmd.update({"content":"\u200b",components:[]});
-        break;
-        case 'poll-voters':
-            cmd.reply({content:limitLength(`**Voters**\n${Object.keys(storage[cmd.guildId].polls[cmd.message.id].options).map(opt=>`\n${opt}${storage[cmd.guildId].polls[cmd.message.id].options[opt].map(a=>`\n- <@${a}>`).join("")}`).join("")}`),ephemeral:true,allowedMentions:{parse:[]}});
-        break;
         case "racMove":
             let moveModal=new ModalBuilder().setCustomId("moveModal").setTitle("Rows & Columns Move");
             let moveModalInput=new TextInputBuilder().setCustomId("moveMade").setLabel("Where would you like to move? (Example: AC)").setStyle(TextInputStyle.Short).setMaxLength(2).setRequired(true);
@@ -1456,43 +1385,6 @@ client.on("interactionCreate",async cmd=>{
             cmd.reply({ephemeral:true,files:["./badExport.csv"]}).then(()=>{
                 fs.unlinkSync("./badExport.csv");
             });
-        break;
-        case 'poll-removeVote':
-            var poll=parsePoll(cmd.message.content,true);
-            var keys=Object.keys(storage[cmd.guildId].polls[cmd.message.id].options);
-            for(var i=0;i<keys.length;i++){
-                if(storage[cmd.guildId].polls[cmd.message.id].options[keys[i]].includes(cmd.user.id)){
-                    storage[cmd.guildId].polls[cmd.message.id].options[keys[i]].splice(storage[cmd.guildId].polls[cmd.message.id].options[keys[i]].indexOf(cmd.user.id),1);
-                    i--;
-                }
-            }
-            
-
-            var finalResults={};
-            var totalVotes=0;
-            keys.forEach(a=>{
-                totalVotes+=storage[cmd.guildId].polls[cmd.message.id].options[a].length;
-            });
-            keys.forEach(a=>{
-                if(storage[cmd.guildId].polls[cmd.message.id].options[a].length>0) finalResults[a]=((360/totalVotes)*storage[cmd.guildId].polls[cmd.message.id].options[a].length);
-            });
-            let canvas = createCanvas(600, 600);
-            let ctx = canvas.getContext('2d');
-            ctx.fillStyle = "black";
-            ctx.strokeStyle = "black";
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            var t=0;
-            Object.keys(finalResults).forEach((key,i)=>{
-                ctx.beginPath();
-                ctx.fillStyle="#"+pieCols[poll.choices.indexOf(key)][0];
-                ctx.arc(canvas.width/2,canvas.height/2,canvas.width/2-50,(t)*(Math.PI/180),(finalResults[key]+t)*(Math.PI/180));
-                ctx.lineTo(300, 300);
-                t+=finalResults[key];
-                ctx.fill();
-                if(Object.keys(finalResults).length>1) ctx.stroke();
-            });
-            fs.writeFileSync("./tempPoll.png",canvas.toBuffer("image/png"));
-            cmd.update({content:`<@${poll.starter}> asks: **${poll.title}**${poll.choices.map((a,i)=>`\n${i}. ${a} **${storage[cmd.guildId].polls[cmd.message.id].options[a].length}**${finalResults.hasOwnProperty(a)?` - ${pieCols[i][1]}`:""}`).join("")}`,files:["./tempPoll.png"]});
         break;
         case 'tzUp':
             if(!storage[cmd.user.id].config.hasOwnProperty("timeOffset")){
@@ -1614,33 +1506,6 @@ client.on("interactionCreate",async cmd=>{
         break;
 
         //Modals
-        case 'poll-added':
-            var poll=parsePoll(cmd.message.content);
-            if(poll.options.length>=20){
-                cmd.reply({content:"It looks like you've already generated the maximum amount of options!",ephemeral:true});
-                break;
-            }
-            if(checkDirty(cmd.guild?.id,cmd.fields.getTextInputValue("poll-addedInp"))){
-                cmd.reply({ephemeral:true,content:"I have been asked not to add this option by this server"});
-                break;
-            }
-            poll.options.push(cmd.fields.getTextInputValue("poll-addedInp"));
-            cmd.update(checkDirty(config.homeServer,`**${poll.title}**${poll.options.map((a,i)=>`\n${i}. ${a}`).join("")}`,true)[1]);
-        break;
-        case 'poll-removed':
-            var i=cmd.fields.getTextInputValue("poll-removedInp");
-            if(!/^\d+$/.test(i)){
-                cmd.deferUpdate();
-                return;
-            }
-            var poll=parsePoll(cmd.message.content);
-            if(+i>poll.options.length||+i<1){
-                cmd.deferUpdate();
-                return;
-            }
-            poll.options.splice(+i-1,1);
-            cmd.update(`**${poll.title}**${poll.options.map((a,i)=>`\n${i}. ${a}`).join("")}`);
-        break;
         case "moveModal":
             let cont=cmd.fields.getTextInputValue("moveMade").toUpperCase();
             readRACBoard(cmd.message.content);
@@ -1964,81 +1829,6 @@ client.on("interactionCreate",async cmd=>{
         else{
             cmd.reply({content:`I can't do that for you just now.`,ephemeral:true});
         }
-    }
-    if(cmd.customId?.startsWith("poll-closeOption")){
-        if(cmd.user.id===cmd.customId.split("poll-closeOption")[1]||cmd.member.permissions.has(PermissionFlagsBits.ManageMessages)){
-            var poll=parsePoll(cmd.message.content,true);
-            var keys=Object.keys(storage[cmd.guildId].polls[cmd.message.id].options);
-            var finalResults={};
-            var totalVotes=0;
-            keys.forEach(a=>{
-                totalVotes+=storage[cmd.guildId].polls[cmd.message.id].options[a].length;
-            });
-            keys.forEach(a=>{
-                if(storage[cmd.guildId].polls[cmd.message.id].options[a].length>0) finalResults[a]=((360/totalVotes)*storage[cmd.guildId].polls[cmd.message.id].options[a].length);
-            });
-            let canvas = createCanvas(600, 600);
-            let ctx = canvas.getContext('2d');
-            ctx.fillStyle = "black";
-            ctx.strokeStyle = "black";
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            var t=0;
-            Object.keys(finalResults).forEach((key,i)=>{
-                ctx.beginPath();
-                ctx.fillStyle="#"+pieCols[poll.choices.indexOf(key)][0];
-                ctx.arc(canvas.width/2,canvas.height/2,canvas.width/2-50,(t)*(Math.PI/180),(finalResults[key]+t)*(Math.PI/180));
-                ctx.lineTo(300, 300);
-                t+=finalResults[key];
-                ctx.fill();
-                if(Object.keys(finalResults).length>1) ctx.stroke();
-            });
-            fs.writeFileSync("./tempPoll.png",canvas.toBuffer("image/png"));
-            cmd.update({content:limitLength(`**Poll Closed**\n<@${poll.starter}> asked: **${poll.title}**${poll.choices.map((a,i)=>`\n${i}. ${a} **${storage[cmd.guildId].polls[cmd.message.id].options[a].length}** - ${pieCols[i][1]}`).join("")}\n\n**Voters**${Object.keys(storage[cmd.guildId].polls[cmd.message.id].options).map(opt=>`\n${opt}${storage[cmd.guildId].polls[cmd.message.id].options[opt].map(a=>`\n- <@${a}>`).join("")}`).join("")}`),components:[],allowedMentions:{"parse":[]},files:["./tempPoll.png"]});
-            delete storage[cmd.guildId].polls[cmd.message.id];
-            
-        }
-        else{
-            cmd.reply({"ephemeral":true,"content":"You didn't start this poll and you don't have sufficient permissions to override this."});
-        }
-    }
-    if(cmd.customId?.startsWith("voted")){
-        var poll=parsePoll(cmd.message.content,true);
-        var choice=poll.choices[+cmd.customId.split('voted')[1]];
-        var keys=Object.keys(storage[cmd.guildId].polls[cmd.message.id].options);
-        for(var i=0;i<keys.length;i++){
-            if(storage[cmd.guildId].polls[cmd.message.id].options[keys[i]].includes(cmd.user.id)){
-                storage[cmd.guildId].polls[cmd.message.id].options[keys[i]].splice(storage[cmd.guildId].polls[cmd.message.id].options[keys[i]].indexOf(cmd.user.id),1);
-                i--;
-            }
-        }
-        storage[cmd.guildId].polls[cmd.message.id].options[choice].push(cmd.user.id);
-
-        var finalResults={};
-        var totalVotes=0;
-        keys.forEach(a=>{
-            totalVotes+=storage[cmd.guildId].polls[cmd.message.id].options[a].length;
-        });
-        keys.forEach(a=>{
-            if(storage[cmd.guildId].polls[cmd.message.id].options[a].length>0) finalResults[a]=((360/totalVotes)*storage[cmd.guildId].polls[cmd.message.id].options[a].length);
-        });
-        let canvas = createCanvas(600, 600);
-        let ctx = canvas.getContext('2d');
-        ctx.fillStyle = "black";
-        ctx.strokeStyle="black";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        var t=0;
-        Object.keys(finalResults).forEach((key,i)=>{
-            ctx.beginPath();
-            ctx.fillStyle="#"+pieCols[poll.choices.indexOf(key)][0];
-            ctx.arc(canvas.width/2,canvas.height/2,canvas.width/2-50,(t)*(Math.PI/180),(finalResults[key]+t)*(Math.PI/180));
-            ctx.lineTo(300, 300);
-            t+=finalResults[key];
-            ctx.fill();
-            if(Object.keys(finalResults).length>1) ctx.stroke();
-        });
-        fs.writeFileSync("./tempPoll.png",canvas.toBuffer("image/png"));
-        cmd.update({content:`<@${poll.starter}> asks: **${poll.title}**${poll.choices.map((a,i)=>`\n${i}. ${a} **${storage[cmd.guildId].polls[cmd.message.id].options[a].length}**${finalResults.hasOwnProperty(a)?` - ${pieCols[i][1]}`:""}`).join("")}`,files:["./tempPoll.png"]});
-        
     }
     if(cmd.customId?.startsWith("autoRole-")){
         let myRole=cmd.guild.members.cache.get(client.user.id).roles.highest.position;
