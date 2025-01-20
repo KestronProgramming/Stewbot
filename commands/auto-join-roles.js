@@ -17,7 +17,7 @@ module.exports = {
 		
 		extra: {"contexts":[0],"integration_types":[0]},
 
-		requiredGlobals: ["presets"],
+		requiredGlobals: [],
 
 		deferEphemeral: true,
 
@@ -48,7 +48,21 @@ module.exports = {
 			cmd.followUp(`I do not have the MANAGE_ROLES permission for this server, so I cannot run auto join roles.`);
 			return;
 		}
-		cmd.followUp({"content":`Select all of the roles you'd like the user to have upon joining`,'ephemeral':true,"components":presets.autoJoinRoles});
+		cmd.followUp({
+            content: `Select all of the roles you'd like the user to have upon joining`,
+            ephemeral: true,
+            components: [
+				new ActionRowBuilder().addComponents(
+					new RoleSelectMenuBuilder()
+						.setCustomId("join-roleOption")
+						.setMinValues(1)
+						.setMaxValues(20)
+						.setPlaceholder(
+							"Select all the roles you would like to add to new users"
+						)
+				),
+			],
+        });
 	},
 
 	// Only button subscriptions matched will be sent to the handler 

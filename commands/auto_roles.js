@@ -18,7 +18,7 @@ module.exports = {
 		
 		extra: {"contexts":[0],"integration_types":[0]},
 
-		requiredGlobals: ["presets"],
+		requiredGlobals: [],
 
 		deferEphemeral: true,
 
@@ -49,7 +49,23 @@ module.exports = {
 			cmd.followUp(`I do not have the MANAGE_ROLES permission for this server, so I cannot run auto roles.`);
 			return;
 		}
-		cmd.followUp({"content":`${checkDirty(config.homeServer,cmd.options.getString("message"),true)[1]}`,"ephemeral":true,"components":[presets.rolesCreation]});
+		cmd.followUp({
+            content: `${
+                checkDirty(
+                    config.homeServer,
+                    cmd.options.getString("message"),
+                    true
+                )[1]
+            }`,
+            ephemeral: true,
+            components: [new ActionRowBuilder().addComponents(
+				new RoleSelectMenuBuilder()
+					.setCustomId("role-addOption")
+					.setMinValues(1)
+					.setMaxValues(20)
+					.setPlaceholder("Select all the roles you would like to offer")
+			)],
+        });
 	},
 
 	// Only button subscriptions matched will be sent to the handler 

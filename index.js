@@ -112,34 +112,6 @@ const leetMap = require("./data/filterLeetmap.json");
 const defaultGuild=require("./data/defaultGuild.json");
 const defaultGuildUser=require("./data/defaultGuildUser.json");
 const defaultUser=require("./data/defaultUser.json");
-const presets = {
-    rolesCreation: new ActionRowBuilder().addComponents(
-        new RoleSelectMenuBuilder()
-            .setCustomId("role-addOption")
-            .setMinValues(1)
-            .setMaxValues(20)
-            .setPlaceholder("Select all the roles you would like to offer")
-    ),
-    autoJoinRoles: [
-        new ActionRowBuilder().addComponents(
-            new RoleSelectMenuBuilder()
-                .setCustomId("join-roleOption")
-                .setMinValues(1)
-                .setMaxValues(20)
-                .setPlaceholder(
-                    "Select all the roles you would like to add to new users"
-                )
-        ),
-    ],
-    moveMessage: new ActionRowBuilder().addComponents(
-        new ChannelSelectMenuBuilder()
-            .setCustomId("move-message")
-            .setChannelTypes(ChannelType.GuildText)
-            .setMaxValues(1)
-            .setMinValues(1)
-    ),
-};
-
 
 // Build dynamic help pages
 var helpCommands=[];

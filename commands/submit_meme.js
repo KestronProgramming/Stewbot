@@ -25,7 +25,7 @@ module.exports = {
             "desc": "Submit a meme to the Stewbot moderators for verification to show up in `/fun meme`"
         },
 
-        requiredGlobals: ["presets", "limitLength"],
+        requiredGlobals: [],
 
         deferEphemeral: true,
 

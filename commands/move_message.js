@@ -21,7 +21,7 @@ module.exports = {
 			"desc": "Move a message from one channel into another"
 		},
 
-		requiredGlobals: ["presets"],
+		requiredGlobals: [],
 
 		deferEphemeral: true,
 
@@ -53,7 +53,17 @@ module.exports = {
 				return;
 		}
 		if (cmd.member.permissions.has(PermissionFlagsBits.ManageMessages) || cmd.user.id === cmd.targetMessage.author.id) {
-			cmd.followUp({ "content": `Where do you want to move message \`${cmd.targetMessage.id}\` by **${cmd.targetMessage.author.username}**?`, "ephemeral": true, "components": [presets.moveMessage] });
+			cmd.followUp({
+                content: `Where do you want to move message \`${cmd.targetMessage.id}\` by **${cmd.targetMessage.author.username}**?`,
+                ephemeral: true,
+                components: [new ActionRowBuilder().addComponents(
+					new ChannelSelectMenuBuilder()
+						.setCustomId("move-message")
+						.setChannelTypes(ChannelType.GuildText)
+						.setMaxValues(1)
+						.setMinValues(1)
+				)],
+            });
 		}
 		else {
 			cmd.followUp(`To use this command, you need to either be the one to have sent the message, or be a moderator with the MANAGE MESSAGES permission.`);
