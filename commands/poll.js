@@ -82,7 +82,6 @@ module.exports = {
 		)] });
 	},
 
-	// Only button subscriptions matched will be sent to the handler 
 	subscribedButtons: [/poll-.+/, /voted.*/],
 	async onbutton(cmd, context) {
 		applyContext(context);

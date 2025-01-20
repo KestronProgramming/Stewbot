@@ -9,6 +9,132 @@ function applyContext(context={}) {
 
 const fs = require("fs");
 
+// RaC utilities
+let rac = { // TODO: move this into fun.js module
+    board: [],
+    lastPlayer: "Nobody",
+    timePlayed: 0,
+    players: [],
+    icons: "!@#$%^&*()_+=[]{};':`~,./<>?0123456789",
+};
+function getRACBoard(localRac) {
+    rac = localRac || rac; // Handle calls from inside modules and outside using the above global
+    let racChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    let mess = [];
+    let temp = "  ";
+    for (var i=0; i<rac.board.length;i++) {
+        mess.push(`${racChars[i]} |${rac.board[i].join("|")}|`);
+        temp += ` ${racChars[i]}`;
+    }
+    mess.unshift(temp);
+    const lastMoveStr = rac.lastPlayer === "Nobody" ? "None" : `<@${rac.lastPlayer}>`
+    mess=`Last Moved: ${lastMoveStr} ${(rac.timePlayed!==0?`<t:${Math.round(rac.timePlayed/1000)}:R>`:"")}\`\`\`\n${mess.join("\n")}\`\`\`\nPlayers: `;
+    for (var i=0;i<rac.players.length;i++) {
+        mess+=`\n<@${rac.players[i]}>: \`${rac.icons[i]}\``;
+    }
+    return `**Rows & Columns**\n${mess}`;
+}
+function readRACBoard(toRead) {
+    rac.lastPlayer=toRead.split("<@")[1].split(">")[0];
+    try {
+        rac.timePlayed=Math.round(+toRead.split("<t:")[1].split(":R>")[0]*1000);
+    }
+    catch(e){
+        rac.timePlayed=0;
+    }
+    let board=toRead.split("```\n")[1].split("```")[0];
+    let rows=board.split("\n");
+    rac.rowsActive=rows[0].replaceAll(" ","");
+    rows.splice(0, 1);
+    for(var i=0; i<rows.length;i++) {
+        rows[i]=rows[i].slice(3, rows[i].length).replaceAll("|", "").split("");
+    }
+    rac.board=rows;
+    let tmpPlayers=toRead.split("Players: \n")[1].split("<@");
+    rac.players = [];
+    for(var i=1;i<tmpPlayers.length;i++) {
+        rac.players.push(tmpPlayers[i].split(">")[0]);
+    }
+}
+function scoreRows(game,char) {
+    var score = 0;
+    game.forEach((row)=>{
+        row = row.join(""); // row is an array of chars, this function expects a string
+        var search=char.repeat(row.length);
+        while (search.length>2&&row) {
+            if (row.includes(search)) {
+                row=row.substring(0,row.indexOf(search))+row.substring(row.indexOf(search)+search.length);
+                score+=search.length-2;
+            }
+            else{
+                search=search.substring(1);
+            }
+        }
+    });
+    return score;
+}
+function rotateGame(game) {
+    var newGame=[];
+    for (var i=0;i<game.length;i++) {
+        var newCol = [];
+        for (var j=0;j<game.length;j++) {
+            newCol.push(game[j][i]);
+        }
+        newGame.push(newCol);
+    }
+    return newGame;
+}
+function score(game,char) {
+    var score=scoreRows(game,char);
+    score+=scoreRows(rotateGame(game),char);
+    return score;
+}
+function tallyRac() {
+    let scores=[];
+    let playerObjects = []; // we're gonna manage this the right way
+    for (var i = 0; i < rac.players.length; i++) {
+        const playerScore = score(rac.board, rac.icons[i]);
+        playerObjects.push({
+            playerID: rac.players[i],
+            score: playerScore
+        })
+    }
+    // Build the board
+    let resultsMessage=[];
+    let temp="  ";
+    let racChars="ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    for (var i=0;i<rac.board.length;i++) {
+        resultsMessage.push(`${racChars[i]} |${rac.board[i].join("|")}|`);
+        temp+=` ${racChars[i]}`;
+    }
+    resultsMessage.unshift(temp);
+    playerObjects.sort((a, b) => b.score - a.score);
+    const highestScore = playerObjects[0].score;
+    const winningPlayers = playerObjects.filter(player => player.score === highestScore);
+    
+    const winnersMention = `<@${winningPlayers.map(obj => obj.playerID).join(">, <@")}>`
+    resultsMessage=`Winner${winningPlayers.length>1?"s":''}: ${winnersMention} :trophy:\`\`\`\n${resultsMessage.join("\n")}\`\`\`\nPlayers: `;
+    
+    // Now add everybody else
+    const positionEmojis = [
+        ":first_place:",
+        ":second_place:",
+        ":third_place:",
+    ]
+
+    let currentRank = 0;
+    let previousScore = null;
+    playerObjects.forEach((player, index) => {
+        if (player.score !== previousScore) {
+            currentRank = index;
+        }
+        const emoji = positionEmojis[currentRank] || "";
+        resultsMessage += `\n<@${player.playerID}>: \`${rac.icons[rac.players.indexOf(player.playerID)]}\` - score ${player.score} ${emoji}`;
+        previousScore = player.score;
+    });
+
+    return `**Rows & Columns**\n${resultsMessage}`;
+}
 
 module.exports = {
 	data: {
@@ -255,6 +381,95 @@ module.exports = {
 					`\n${won==0?`We`:`You`} ${won==0?`tied`:won==1?`lost`:`won`}! ${won==1?":stew:":""}`
 				cmd.followUp(result);
 			break;
+		}
+	},
+
+	subscribedButtons: ["racMove", "racJoin", "moveModal"],
+	async onbutton(cmd, context) {
+		applyContext(context);
+
+		switch(cmd.customId) {
+			case "racMove":
+				let moveModal=new ModalBuilder().setCustomId("moveModal").setTitle("Rows & Columns Move");
+				let moveModalInput=new TextInputBuilder().setCustomId("moveMade").setLabel("Where would you like to move? (Example: AC)").setStyle(TextInputStyle.Short).setMaxLength(2).setRequired(true);
+				let row=new ActionRowBuilder().addComponents(moveModalInput);
+				moveModal.addComponents(row);
+				await cmd.showModal(moveModal);
+			break;
+
+			case "racJoin":
+				readRACBoard(cmd.message.content);
+				var bad=false;
+				for(var i=0;i<rac.players.length;i++) {
+					if(rac.players[i]===cmd.user.id){
+						cmd.reply({
+							content: "You can't join more than once!",
+							ephemeral: true,
+						});
+						bad=true;
+					}
+				}
+				if(bad) break;
+				rac.players.push(cmd.user.id);
+				if(rac.players.length>rac.icons.length){
+					cmd.reply({content:"I'm sorry, but this game has hit the limit of players. I don't have any more symbols to use.",ephemeral:true});
+					return;
+				}
+				if(getRACBoard().length>1999) {
+					rac.players.splice(rac.players.length-1,1);
+					cmd.reply({content:"Sadly the board can't handle any more players. This is a Discord character limit, and you can add more players by using less rows.",ephemeral:true});
+					let row=new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId("racJoin").setLabel("Join Game").setStyle(ButtonStyle.Danger).setDisabled(true),new ButtonBuilder().setCustomId("racMove").setLabel("Make a Move").setStyle(ButtonStyle.Success));
+					cmd.message.edit({content:getRACBoard(),components:[row]});
+					return;
+				}
+				cmd.update(getRACBoard());
+			break;
+
+			// Modal
+			case "moveModal":
+				let cont=cmd.fields.getTextInputValue("moveMade").toUpperCase();
+				readRACBoard(cmd.message.content);
+				let foundOne=-1;
+				for(var i=0;i<rac.players.length;i++){
+					if(rac.players[i]===cmd.user.id){
+						foundOne=i;
+					}
+				}
+				if(foundOne===-1){
+					cmd.reply({content:"I didn't find you in the player list, use the `Join Game` button first.",ephemeral: true});
+					break;
+				}
+				if(!rac.rowsActive.includes(cont[0])||!rac.rowsActive.includes(cont[1])){
+					cmd.reply({content:"That location isn't on the board",ephemeral:true});
+					break;
+				}
+				if((Date.now()-+rac.timePlayed)<900000&&cmd.user.id===rac.lastPlayer){
+					cmd.reply({content:`I'm sorry, you can make another move after somebody else does OR <t:${Math.round((rac.timePlayed+900000)/1000)}:R>`,ephemeral:true});
+					break;
+				}
+				if (rac.board[rac.rowsActive.indexOf(cont[0])][rac.rowsActive.indexOf(cont[1])]!=="-"){
+					cmd.reply({content: "That location is occupied.",ephemeral:true});
+					break;
+				}
+				rac.lastPlayer=cmd.user.id;
+				rac.timePlayed=Date.now();
+				rac.board[rac.rowsActive.indexOf(cont[0])][rac.rowsActive.indexOf(cont[1])]=rac.icons[foundOne];
+				await cmd.update(getRACBoard());
+
+				let foundZero=false;
+				for (var i=0;i<rac.board.length;i++) {
+					for(var j=0;j<rac.board[i].length;j++) {
+						if(rac.board[i][j]==="-") {
+							foundZero=true;
+						}
+					}
+				}
+				if(!foundZero){
+					let row=new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId("racJoin").setLabel("Join Game").setStyle(ButtonStyle.Danger).setDisabled(true),new ButtonBuilder().setCustomId("racMove").setLabel("Make a Move").setStyle(ButtonStyle.Success).setDisabled(true));
+					cmd.message.edit({content:tallyRac(),components:[row]});
+				}
+			break;
+
 		}
 	}
 };
