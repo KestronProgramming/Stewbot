@@ -7,7 +7,8 @@
         "aiPings":true,
         "levelUpMsgs":true,
         "timeOffset":0,
-        "hasSetTZ":false
+        "hasSetTZ":false,
+        "beenAIDisclaimered":false
     },
     "gone":{
         "active":false,
