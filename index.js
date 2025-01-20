@@ -3096,7 +3096,7 @@ client.on("roleUpdate",async (roleO,role)=>{
         }
     }
 });
-client.on("userUpdate",async (userO,user)=>{
+client.on("userUpdate",async (userO, user)=>{
     var diffs=[];
     var caredAboutDiffs=["username","globalName","avatar","banner"];
     Object.keys(userO).forEach(key=>{
@@ -3123,6 +3123,7 @@ client.on("userUpdate",async (userO,user)=>{
                         "inline": true
                     });
                 }
+                if (diffs.length == 0) return;
                 c.send({content:`**User <@${user.id}> Edited Globally**`,embeds:[{
                         "type": "rich",
                         "title": `${diffs.includes("globalName")?`${userO.globalName} -> `:""}${user.globalName}`,
