@@ -356,6 +356,11 @@ module.exports = {
                     response += emoji;
                 }
 
+                if(!storage[msg.author.id].config.beenAIDisclaimered){
+                    storage[msg.author.id].config.beenAIDisclaimered=true;
+                    response+=`\n-# This is part of a Stewbot feature. If you wish to disable it, a user can run /personal_config to disable it for them personally, or a moderator can run /general_config.`;
+                }
+
                 // If response is > 2000 chars, split it up.
                 while (response.length > 0) {
                     let chunk = response.slice(0, 2000-3);
