@@ -7,7 +7,49 @@ function applyContext(context={}) {
 }
 // #endregion Boilerplate
 
+async function finTempBan(guild,who,force){
+    if(!storage[guild].tempBans.hasOwnProperty(who)){
+        return;
+    }
+    if(storage[guild].tempBans[who].ends>Date.now()+10000&&!force){
+        if(storage[guild].tempBans[who].ends-Date.now()<60000*60*24){
+            setTimeout(()=>{finTempBan(guild,who)},storage[guild].tempBans[who].ends-Date.now());
+        }
+        return;
+    }
+    var g=client.guilds.cache.get(guild);
+    if(g===null||g===undefined){
+        try{
+            client.users.cache.get(storage[guild].tempBans[who].invoker).send(`I was unable to unban <@${who}>.`).catch(e=>{});
+        }
+        catch(e){}
+        delete storage[guild].tempBans[who];
+        return;
+    }
+    if(!g.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.BanMembers)){
+        try{
+            client.users.cache.get(storage[guild].tempBans[who].invoker).send(`I no longer have permission to unban <@${who}>.`).catch(e=>{});
+        }
+        catch(e){}
+        delete storage[guild].tempBans[who];
+        return;
+    }
+    try{
+        g.members.unban(who).catch(e=>{});
+    }
+    catch(e){}
+    if(!storage[guild].tempBans[who].private){
+        try{
+            client.users.cache.get(who).send(`You have been unbanned in ${g.name}.`).catch(e=>{});
+        }
+        catch(e){}
+    }
+    delete storage[guild].tempBans[who];
+}
+
 module.exports = {
+	finTempBan,
+	
 	data: {
 		// Slash command data
 		command: new SlashCommandBuilder().setName("ban").setDescription("Ban a user, temporarily if desired")

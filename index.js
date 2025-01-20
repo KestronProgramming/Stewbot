@@ -19,6 +19,7 @@ const { updateBlocklists } = require("./commands/badware_scanner.js")
 const { finTempSlow } = require("./commands/slowmode.js")
 const { finTempRole } = require("./commands/temp_role.js")
 const { finHatPull } = require("./commands/hat_pull.js")
+const { finTempBan } = require("./commands/hat_pull.js")
 
 // Preliminary setup (TODO: move to a setup.sh)
 if (!fs.existsSync("tempMove")) fs.mkdirSync('tempMove');
@@ -38,9 +39,6 @@ console.beta("Loading commands")
 let commands = getCommands();
 let messageListenerModules = getSubscribedCommands(commands, "onmessage");
 let dailyListenerModules = getSubscribedCommands(commands, "daily");
-
-// Variables
-var uptime=0;
 
 // Utility functions needed for processing some data blocks 
 function escapeRegex(input) {
@@ -110,6 +108,7 @@ setInterval(() => {
 }, 10 * 1000);
 
 // Other data
+var uptime=0;
 const leetMap = require("./data/filterLeetmap.json");
 const pieCols=require("./data/pieCols.json");
 const defaultGuild=require("./data/defaultGuild.json");
@@ -242,8 +241,129 @@ Object.keys(commands).forEach(commandName=>{
 // Dump the help pages so we can import on websites and stuff
 fs.writeFileSync("./data/helpPages.json", JSON.stringify(helpCommands, null, 4))
 
-const helpCategories = ["General", "Bot", "Information", "Entertainment", "Configuration", "Administration", "Safety", "Context Menu", "Server Only"];
+// Global functions
+global.canUseRole = async function(user, role, channel) { // A centralized permission-checking function for users and roles
+    // returns [ success, errorMsg ]
+    if (user && role.comparePositionTo(channel.guild.members.cache.get(user.id)?.roles?.highest) >= 0) {
+        return [ false, `You cannot add this role because it is equal to or higher than your highest role.` ];
+    }
+    if (user && !channel.permissionsFor(user.id).has(PermissionFlagsBits.ManageRoles)){
+        return [ false, `You do not have permission to manage roles.` ]
+    }
+    if (role.managed){
+        return [ false, `This role is managed by an integration an cannot be used.` ]
+    }
+    if (!channel.permissionsFor(client.user.id).has(PermissionFlagsBits.ManageRoles)){
+        return [ false, `I do not have the ManageRoles permission needed to preform this action.` ]
+    }
+    if (channel.guild.members.cache.get(client.user.id)?.roles?.highest.position<=role.rawPosition){
+        return [ false, `I cannot help with that role. If you would like me to, grant me a role that is ordered to be higher in the roles list than ${role.name}. You can reorder roles from Server Settings -> Roles.` ];
+    }
+    return [ true, null ]
+}
+global.limitLength = function(s, size=1999) { // Used everywhere, so global function.
+    s = String(s);
+    return s.length>size?s.slice(0,size-3)+"...":s;
+}
+global.checkDirty = function(guildID, what, filter=false, applyGlobalFilter=false) { // This function is important enough we can make it global
+    // If filter is false, it returns: hasBadWords
+    // If filter is true, it returns [hadBadWords, censoredMessage, wordsFound]
+
+    const originalContent = what; // Because we're preprocessing content, if the message was clean allow the original content without preprocessing 
+
+    if (!guildID || !what) 
+        if (!filter) return false
+        else [false, what, []]
+
+    // Preprocessing - anything here is destructive and will be processed this way if filtered
+    what = String(what).replace(/<:(\w+):[0-9]+>/g, ":$1:") // unsnowflake emojis
+    what = what.replace(/[\u200B-\u200D\u00AD]/g, ""); // strip 0-widths
+    what = what.normalize("NFKD"); // unicode variants
+    what = what.replace(/(\s)\s+/g, "$1"); // collapse spacing
+
+    let dirty = false;
+    let foundWords = []; // keep track of all filtered words to later tell the user what was filtered
+
+    // Mostly for stewbot-created content (like AI), filter from both our and their server
+    let blacklist = storage[guildID]?.filter?.blacklist;
+    if (applyGlobalFilter) {
+        const globalBlacklist = storage[config.homeServer]?.filter?.blacklist || [];
+        blacklist = [...new Set([...(blacklist || []), ...globalBlacklist])];
+    }
+
+    if (blacklist) for (blockedWord of blacklist) {
+        // Ignore the new beta json format for now
+        if (typeof(blockedWord) !== 'string') {
+            continue
+        }
+
+        // Unsnowflake blocked word to match unsnowflaked message
+        blockedWord = blockedWord.replace(/<:(\w+):[0-9]+>/g, ":$1:");
+        
+        let blockedWordRegex;
+        try {
+            let word = escapeRegex(blockedWord)
+
+            // More flexible matching
+            if (word.length > 3) {
+                for (let key in leetMap) { // Leet processing
+                    if (leetMap.hasOwnProperty(key)) {
+                        const replacement = leetMap[key];
+                        word = word.replaceAll(key, replacement)
+                    }
+                }
+                
+                // This rule needs a ton more work, things like '(A|4|@|\\()\\(B\\|C\\+\\)\\+D' break it
+                // word = word.replace(/(?:\\\S)|(?:\([^()]+\))|./g, '$1.{0,1}');
+
+                word = word+"(ing|s|ed|er|ism|ist|es|ual)?" // match variations
+            }
+            blockedWordRegex = new RegExp(`(\\b|^)${word}(\\b|$)`, "ig")
+        } catch (e) {
+            // This should only ever be hit on old servers that have invalid regex before the escapeRegex was implemented
+            if (!e?.message?.includes?.("http")) notify(1, "Caught filter error:\n" + JSON.stringify(e.message) + "\n" + e.stack);
+            // We can ignore this filter word
+            continue
+        }
+
+        // Check for the word 
+        if (blockedWordRegex.test(what) || what === blockedWord) {
+            dirty = true;
+            if (!filter) {
+                return true;
+            }
+            else {
+                foundWords.push(blockedWord)
+                what = what.replace(blockedWordRegex, "[\\_]");
+            }
+        }
+    }
+
+    if (!filter) {
+        // If we passed the check without exiting, it's clean
+        return false;
+    } 
+    else {
+        // If we're filtering, it needs a more structured output
+
+        // Additional sanitization content
+        if (dirty) {
+            what = defangURL(what)
+        } else {
+            what = originalContent; // Put snowflakes back how they were
+        }
+        
+        return [dirty, what, foundWords];
+    }
+};
+global.escapeBackticks = function(text){ // This function is useful anywhere to properly escape backticks to prevent format escaping
+    return text.replace(/(?<!\\)(?:\\\\)*`/g, "\\`");
+}
+
+// Functions
 function makeHelp(page,categories,filterMode,forWho){
+    const helpCategories = ["General", "Bot", "Information", "Entertainment", "Configuration", "Administration", "Safety", "Context Menu", "Server Only"];
+
     page=+page;
     if(categories.includes("All")){
         categories=structuredClone(helpCategories);
@@ -358,7 +478,6 @@ function makeHelp(page,categories,filterMode,forWho){
         components: buttonRows
     };
 }
-
 function chunkArray(array, size) {
     const result = [];
     for (let i = 0; i < array.length; i += size) {
@@ -406,143 +525,6 @@ async function finTimer(who,force){
     }
     delete storage[who].timer;
 }
-
-async function finTempBan(guild,who,force){
-    if(!storage[guild].tempBans.hasOwnProperty(who)){
-        return;
-    }
-    if(storage[guild].tempBans[who].ends>Date.now()+10000&&!force){
-        if(storage[guild].tempBans[who].ends-Date.now()<60000*60*24){
-            setTimeout(()=>{finTempBan(guild,who)},storage[guild].tempBans[who].ends-Date.now());
-        }
-        return;
-    }
-    var g=client.guilds.cache.get(guild);
-    if(g===null||g===undefined){
-        try{
-            client.users.cache.get(storage[guild].tempBans[who].invoker).send(`I was unable to unban <@${who}>.`).catch(e=>{});
-        }
-        catch(e){}
-        delete storage[guild].tempBans[who];
-        return;
-    }
-    if(!g.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.BanMembers)){
-        try{
-            client.users.cache.get(storage[guild].tempBans[who].invoker).send(`I no longer have permission to unban <@${who}>.`).catch(e=>{});
-        }
-        catch(e){}
-        delete storage[guild].tempBans[who];
-        return;
-    }
-    try{
-        g.members.unban(who).catch(e=>{});
-    }
-    catch(e){}
-    if(!storage[guild].tempBans[who].private){
-        try{
-            client.users.cache.get(who).send(`You have been unbanned in ${g.name}.`).catch(e=>{});
-        }
-        catch(e){}
-    }
-    delete storage[guild].tempBans[who];
-}
-
-global.checkDirty = function(guildID, what, filter=false, applyGlobalFilter=false) { // This function is important enough we can make it global
-    // If filter is false, it returns: hasBadWords
-    // If filter is true, it returns [hadBadWords, censoredMessage, wordsFound]
-
-    const originalContent = what; // Because we're preprocessing content, if the message was clean allow the original content without preprocessing 
-
-    if (!guildID || !what) 
-        if (!filter) return false
-        else [false, what, []]
-
-    // Preprocessing - anything here is destructive and will be processed this way if filtered
-    what = String(what).replace(/<:(\w+):[0-9]+>/g, ":$1:") // unsnowflake emojis
-    what = what.replace(/[\u200B-\u200D\u00AD]/g, ""); // strip 0-widths
-    what = what.normalize("NFKD"); // unicode variants
-    what = what.replace(/(\s)\s+/g, "$1"); // collapse spacing
-
-    let dirty = false;
-    let foundWords = []; // keep track of all filtered words to later tell the user what was filtered
-
-    // Mostly for stewbot-created content (like AI), filter from both our and their server
-    let blacklist = storage[guildID]?.filter?.blacklist;
-    if (applyGlobalFilter) {
-        const globalBlacklist = storage[config.homeServer]?.filter?.blacklist || [];
-        blacklist = [...new Set([...(blacklist || []), ...globalBlacklist])];
-    }
-
-    if (blacklist) for (blockedWord of blacklist) {
-        // Ignore the new beta json format for now
-        if (typeof(blockedWord) !== 'string') {
-            continue
-        }
-
-        // Unsnowflake blocked word to match unsnowflaked message
-        blockedWord = blockedWord.replace(/<:(\w+):[0-9]+>/g, ":$1:");
-        
-        let blockedWordRegex;
-        try {
-            let word = escapeRegex(blockedWord)
-
-            // More flexible matching
-            if (word.length > 3) {
-                for (let key in leetMap) { // Leet processing
-                    if (leetMap.hasOwnProperty(key)) {
-                        const replacement = leetMap[key];
-                        word = word.replaceAll(key, replacement)
-                    }
-                }
-                
-                // This rule needs a ton more work, things like '(A|4|@|\\()\\(B\\|C\\+\\)\\+D' break it
-                // word = word.replace(/(?:\\\S)|(?:\([^()]+\))|./g, '$1.{0,1}');
-
-                word = word+"(ing|s|ed|er|ism|ist|es|ual)?" // match variations
-            }
-            blockedWordRegex = new RegExp(`(\\b|^)${word}(\\b|$)`, "ig")
-        } catch (e) {
-            // This should only ever be hit on old servers that have invalid regex before the escapeRegex was implemented
-            if (!e?.message?.includes?.("http")) notify(1, "Caught filter error:\n" + JSON.stringify(e.message) + "\n" + e.stack);
-            // We can ignore this filter word
-            continue
-        }
-
-        // Check for the word 
-        if (blockedWordRegex.test(what) || what === blockedWord) {
-            dirty = true;
-            if (!filter) {
-                return true;
-            }
-            else {
-                foundWords.push(blockedWord)
-                what = what.replace(blockedWordRegex, "[\\_]");
-            }
-        }
-    }
-
-    if (!filter) {
-        // If we passed the check without exiting, it's clean
-        return false;
-    } 
-    else {
-        // If we're filtering, it needs a more structured output
-
-        // Additional sanitization content
-        if (dirty) {
-            what = defangURL(what)
-        } else {
-            what = originalContent; // Put snowflakes back how they were
-        }
-        
-        return [dirty, what, foundWords];
-    }
-};
-
-global.escapeBackticks = function(text){ // This function is useful anywhere to properly escape backticks to prevent format escaping
-    return text.replace(/(?<!\\)(?:\\\\)*`/g, "\\`");
-}
-
 function verifyRegex(regexStr) {
     // returns: [isValid, error]
 
@@ -563,30 +545,6 @@ function verifyRegex(regexStr) {
     // const regex = new RE2(userProvidedRegex, 'ui'); // TODO: figure out some system for flags - i should default on but some uses cases may need it off
     // const result = regex.exec(msg.content);
     // console.log(result);
-}
-
-global.canUseRole = async function(user, role, channel) { // A centralized permission-checking function for users and roles
-    // returns [ success, errorMsg ]
-    if (user && role.comparePositionTo(channel.guild.members.cache.get(user.id)?.roles?.highest) >= 0) {
-        return [ false, `You cannot add this role because it is equal to or higher than your highest role.` ];
-    }
-    if (user && !channel.permissionsFor(user.id).has(PermissionFlagsBits.ManageRoles)){
-        return [ false, `You do not have permission to manage roles.` ]
-    }
-    if (role.managed){
-        return [ false, `This role is managed by an integration an cannot be used.` ]
-    }
-    if (!channel.permissionsFor(client.user.id).has(PermissionFlagsBits.ManageRoles)){
-        return [ false, `I do not have the ManageRoles permission needed to preform this action.` ]
-    }
-    if (channel.guild.members.cache.get(client.user.id)?.roles?.highest.position<=role.rawPosition){
-        return [ false, `I cannot help with that role. If you would like me to, grant me a role that is ordered to be higher in the roles list than ${role.name}. You can reorder roles from Server Settings -> Roles.` ];
-    }
-    return [ true, null ]
-}
-global.limitLength = function(s, size=1999) { // Used everywhere, so global function.
-    s = String(s);
-    return s.length>size?s.slice(0,size-3)+"...":s;
 }
 function parsePoll(c,published){
     try{
@@ -629,7 +587,6 @@ function noPerms(where,what){
         break;
     }
 }
-
 async function doEmojiboardReaction(react) {
     /**
     * Handle the information when a user reacts to a message, for emojiboards
@@ -787,18 +744,11 @@ async function doEmojiboardReaction(react) {
     }catch(e){}
     
 }
-
-var started24=false;
 function daily(dontLoop=false){
-    // Loop every 24 hours
-    if(!started24&&!dontLoop){
-        setInterval(daily,60000*60*24);
-        started24=true;
-    }
+    if(!dontLoop) setInterval(()=> { daily(true) },60000*60*24);
 
     Object.values(dailyListenerModules).forEach(module => module.daily(pseudoGlobals))
 }
-
 let rac = { // TODO: move this into fun.js module
     board: [],
     lastPlayer: "Nobody",
@@ -1068,7 +1018,7 @@ function notify(urgencyLevel,what,useWebhook=false) {
     }
 }
 
-// Now that setup is dine, define data that should be passed to each module - TODO migrate to `global` instead
+// Now that setup is done, define data that should be passed to each module - TODO migrate to `global` instead
 const pseudoGlobals = {
     notify,
     checkDirty,
