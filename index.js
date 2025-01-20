@@ -18,6 +18,7 @@ const { finTempSlow } = require("./commands/slowmode.js")
 const { finTempRole } = require("./commands/temp_role.js")
 const { finHatPull } = require("./commands/hat_pull.js")
 const { finTempBan } = require("./commands/hat_pull.js")
+const { finTimer } = require("./commands/timer.js")
 
 // Preliminary setup (TODO: move to a setup.sh?)
 if (!fs.existsSync("tempMove")) fs.mkdirSync('tempMove');
@@ -384,46 +385,6 @@ function chunkArray(array, size) {
         result.push(array.slice(i, i + size));
     }
     return result;
-}
-async function finTimer(who,force){
-    if(!storage[who].hasOwnProperty("timer")){
-        return;
-    }
-    if(storage[who].timer.time-Date.now()>10000&&!force){
-        setTimeout(()=>{finTimer(who)},storage[who].timer.time-Date.now());
-        return;
-    }
-    if(storage[who].timer.respLocation==="DM"){
-        try{
-            client.users.cache.get(who).send(`Your timer is done!${storage[who].timer.reminder.length>0?`\n\`${storage[who].timer.reminder}\``:``}`).catch(e=>{console.beta(e)});
-        }
-        catch(e){console.beta(e)}
-    }
-    else{
-        try{
-            var chan=await client.channels.cache.get(storage[who].timer.respLocation.split("/")[0]);
-            try{
-                if(chan&&chan?.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
-                    var msg=await chan.messages.fetch(storage[who].timer.respLocation.split("/")[1]);
-                    if(msg){
-                        msg.reply(`<@${who}>, your timer is done!${storage[who].timer.reminder.length>0?`\n\`${escapeBackticks(storage[who].timer.reminder)}\``:``}`);
-                        msg.edit({components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setLabel("Clear Timer").setCustomId("jerry").setStyle(ButtonStyle.Danger).setDisabled(true))]});
-                    }
-                    else{
-                        chan.send(`<@${who}>, your timer is done!${storage[who].timer.reminder.length>0?`\n\`${escapeBackticks(storage[who].timer.reminder)}\``:``}`);
-                    }
-                }
-                else{
-                    client.users.cache.get(who).send(`Your timer is done!${storage[who].timer.reminder.length>0?`\n\`${escapeBackticks(storage[who].timer.reminder)}\``:``}`).catch(e=>{console.beta(e)});
-                }
-            }
-            catch(e){
-                client.users.cache.get(who).send(`Your timer is done!${storage[who].timer.reminder.length>0?`\n\`${storage[who].timer.reminder}\``:``}`).catch(e=>{console.beta(e)});
-            }
-        }
-        catch(e){console.beta(e)}
-    }
-    delete storage[who].timer;
 }
 function verifyRegex(regexStr) {
     // returns: [isValid, error]
