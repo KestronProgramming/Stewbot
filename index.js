@@ -1,4 +1,4 @@
-// Imports
+//#region Imports
 Object.assign(process.env, require('./env.json'));
 global.config = require("./data/config.json");
 console.beta = (...args) => process.env.beta && console.log(...args);
@@ -13,13 +13,17 @@ console.beta("Importing everything else")
 const { getEmojiFromMessage, parseEmoji } = require('./util');
 const fs = require("fs");
 const crypto = require('crypto');
+
 const { updateBlocklists } = require("./commands/badware_scanner.js")
 const { finTempSlow } = require("./commands/slowmode.js")
 const { finTempRole } = require("./commands/temp_role.js")
 const { finHatPull } = require("./commands/hat_pull.js")
 const { finTempBan } = require("./commands/hat_pull.js")
 const { finTimer } = require("./commands/timer.js")
+const { getStarMsg } = require("./commands/add_emojiboard.js")
+//#endregion Imports
 
+//#region Setup
 // Preliminary setup (TODO: move to a setup.sh?)
 if (!fs.existsSync("tempMove")) fs.mkdirSync('tempMove');
 if (!fs.existsSync("tempMemes")) fs.mkdirSync('tempMemes');
@@ -138,6 +142,22 @@ Object.keys(commands).forEach(commandName=>{
 // Dump the help pages so we can import on websites and stuff
 fs.writeFileSync("./data/helpPages.json", JSON.stringify(helpCommands, null, 4))
 
+var ints=Object.keys(GatewayIntentBits).map(a=>GatewayIntentBits[a]);
+ints.splice(ints.indexOf(GatewayIntentBits.GuildPresences),1);
+ints.splice(ints.indexOf("GuildPresences"),1);
+const client=new Client({
+    intents:ints,
+    partials:Object.keys(Partials).map(a=>Partials[a])
+});
+global.client = client; // I like my intellisense
+
+// Now that setup is done, define data that should be passed to each module - 
+const pseudoGlobals = {
+    config
+};
+//#endregion Setup
+
+//#region Functions
 // Global functions
 global.canUseRole = async function(user, role, channel) { // A centralized permission-checking function for users and roles
     // returns [ success, errorMsg ]
@@ -166,35 +186,7 @@ global.escapeBackticks = function(text){ // This function is useful anywhere to 
     return text.replace(/(?<!\\)(?:\\\\)*`/g, "\\`");
 }
 
-// Functions
-function chunkArray(array, size) {
-    const result = [];
-    for (let i = 0; i < array.length; i += size) {
-        result.push(array.slice(i, i + size));
-    }
-    return result;
-}
-function verifyRegex(regexStr) {
-    // returns: [isValid, error]
-
-    // Check for backtracing
-    if (!safe(regexStr)) {
-        return [false, "This regex has catastrophic backtracking, please improve the regex and try again"]
-    }
-
-    // Check for RE2 compatibility
-    try {
-        new RE2(regexStr, 'ui');
-    } catch {
-        return [false, "This regex is invalid or uses features unsupported by [RE2](https://github.com/google/re2-wasm)"]
-    }
-    return [true, "Added to the filter."];
-
-    // TODO evaluate user regexes like this:
-    // const regex = new RE2(userProvidedRegex, 'ui'); // TODO: figure out some system for flags - i should default on but some uses cases may need it off
-    // const result = regex.exec(msg.content);
-    // console.beta(result);
-}
+// Local functions
 function noPerms(where,what){
     if(where===false||where===undefined) return false;
     switch(what){
@@ -368,24 +360,9 @@ async function doEmojiboardReaction(react) {
 }
 function daily(dontLoop=false){
     if(!dontLoop) setInterval(()=> { daily(true) },60000*60*24);
-
+    // Dispatch daily calls to all listening modules
     Object.values(dailyListenerModules).forEach(module => module.daily(pseudoGlobals))
 }
-
-function getStarMsg(msg){
-    var starboardHeaders = [
-        `Excuse me, there is a new message.`,
-        `I have detected a notification for you.`,
-        `Greetings, esteemed individuals, a new message has achieved popularity.`,
-        `Here's the mail it never fails`,
-        `Detected popularity. Shall I put it on screen for you?`,
-        `And now it's time for a word from our sponsor.`,
-        `Got a message for you.`,
-        `It's always a good day when @ posts`
-    ];
-    return `**${starboardHeaders[Math.floor(Math.random()*starboardHeaders.length)].replaceAll("@",msg.member?.nickname||msg.author?.globalName||msg.author?.username||"this person")}**`;
-}
-
 function sendWelcome(guild) {
     guild.channels.cache.forEach(chan=>{
         if(chan.permissionsFor(client.user.id).has(PermissionFlagsBits.ViewChannel)){
@@ -480,15 +457,6 @@ function sendWelcome(guild) {
         }
     });
 }
-
-var ints=Object.keys(GatewayIntentBits).map(a=>GatewayIntentBits[a]);
-ints.splice(ints.indexOf(GatewayIntentBits.GuildPresences),1);
-ints.splice(ints.indexOf("GuildPresences"),1);
-const client=new Client({
-    intents:ints,
-    partials:Object.keys(Partials).map(a=>Partials[a])
-});
-global.client = client; // I like my intellisense
 global.notify = function(urgencyLevel,what,useWebhook=false) {
     console.beta(what);
     try{switch(urgencyLevel){
@@ -515,12 +483,9 @@ global.notify = function(urgencyLevel,what,useWebhook=false) {
         console.beta("Couldn't send notify()")
     }
 }
+//#endregion Functions
 
-// Now that setup is done, define data that should be passed to each module - 
-const pseudoGlobals = {
-    config
-};
-
+//#region Listeners
 //Actionable events
 client.once("ready",async ()=>{
     // Schedule cloud backups every hour
@@ -1742,6 +1707,7 @@ client.on("guildDelete",async guild=>{
     delete storage[guild.id];
     notify(1,`Removed from **a server**.`);
 });
+//#endregion Listeners
 
 //Error handling
 process.on('unhandledRejection', e=>notify(1, e.stack));

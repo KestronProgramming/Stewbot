@@ -7,6 +7,20 @@ function applyContext(context={}) {
 }
 // #endregion Boilerplate
 
+function getStarMsg(msg){
+	var starboardHeaders = [
+		`Excuse me, there is a new message.`,
+		`I have detected a notification for you.`,
+		`Greetings, esteemed individuals, a new message has achieved popularity.`,
+		`Here's the mail it never fails`,
+		`Detected popularity. Shall I put it on screen for you?`,
+		`And now it's time for a word from our sponsor.`,
+		`Got a message for you.`,
+		`It's always a good day when @ posts`
+	];
+	return `**${starboardHeaders[Math.floor(Math.random()*starboardHeaders.length)].replaceAll("@",msg.member?.nickname||msg.author?.globalName||msg.author?.username||"this person")}**`;
+}
+
 module.exports = {
 	data: {
 		// Slash command data

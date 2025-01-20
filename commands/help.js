@@ -7,6 +7,14 @@ function applyContext(context={}) {
 }
 // #endregion Boilerplate
 
+function chunkArray(array, size) {
+    const result = [];
+    for (let i = 0; i < array.length; i += size) {
+        result.push(array.slice(i, i + size));
+    }
+    return result;
+}
+
 function makeHelp(page,categories,filterMode,forWho){
     const helpCategories = ["General", "Bot", "Information", "Entertainment", "Configuration", "Administration", "Safety", "Context Menu", "Server Only"];
 
@@ -151,7 +159,7 @@ module.exports = {
 		
 		extra: {"contexts":[0,1,2],"integration_types":[0,1]},
 
-		requiredGlobals: ["helpCommands", "chunkArray", "commands"],
+		requiredGlobals: ["helpCommands", "commands"],
 
 		help: {
 			helpCategories: ["General","Bot","Information"],
