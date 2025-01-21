@@ -54,6 +54,8 @@ function processForNumber(text) {
 
 
 module.exports = {
+	processForNumber,
+
 	data: {
 		// Slash command data
 		command: new SlashCommandBuilder().setName("counting").setDescription("Manage counting functions for this server")

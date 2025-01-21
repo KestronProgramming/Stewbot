@@ -1,14 +1,8 @@
 //#region Imports
 const envs = require('./env.json')
 Object.keys(envs).forEach(key => process.env[key] = envs[key] );
-
 global.config = require("./data/config.json");
-process.env.beta=process.env.beta==='true'?true:false;
-console.beta=function(toLog){
-    if(process.env.beta){
-        console.log(toLog);
-    }
-}
+console.beta= (...args) => process.env.beta && console.log(...args)
 console.beta("Importing discord")
 const {Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
 console.beta("Importing commands")
@@ -28,6 +22,7 @@ const { finHatPull } = require("./commands/hat_pull.js")
 const { finTempBan } = require("./commands/hat_pull.js")
 const { finTimer } = require("./commands/timer.js")
 const { getStarMsg } = require("./commands/add_emojiboard.js")
+const { processForNumber } = require("./commands/counting.js")
 //#endregion Imports
 
 //#region Setup
