@@ -822,9 +822,8 @@ client.on("interactionCreate",async cmd=>{
 
         // Command frequency stats 
         if(!usage.hasOwnProperty(cmd.commandName)) usage[cmd.commandName]=0;
-        usage[cmd.commandName]++;
+        usage[commandPathWithSubcommand]++;
         fs.writeFileSync("./data/usage.json",JSON.stringify(usage));
-
         return;
     }
 
