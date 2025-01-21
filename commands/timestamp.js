@@ -9,12 +9,12 @@ function applyContext(context={}) {
 
 const chrono = require('chrono-node');
 
-function getOffsetDateByUTCOffset(targetOffset) {
-    const now = new Date();
-    const serverOffset = now.getTimezoneOffset();
-    const targetOffsetMinutes = targetOffset * 60;
-    const offsetDiff = -serverOffset - targetOffsetMinutes;
-    return new Date(now.getTime() + (offsetDiff * 60 * 1000));
+function getOffsetDateByUTCOffset(timestamp, targetOffset) {
+	const date = new Date(timestamp);
+	const serverOffset = date.getTimezoneOffset();
+	const targetOffsetMinutes = targetOffset * 60;
+	const offsetDiff = -serverOffset - targetOffsetMinutes;
+	return new Date(date.getTime() + (offsetDiff * 60 * 1000));
 }
 
 const components = {
@@ -128,7 +128,12 @@ module.exports = {
 			let startingTime;
 			if (quickInput) {
 				const myTimezone = storage[cmd.user.id].config.timeOffset;
-				startingTime = chrono.parseDate(quickInput, getOffsetDateByUTCOffset(myTimezone))
+				startingTime = chrono.parseDate(quickInput);
+				
+				if (startingTime) {
+					startingTime = getOffsetDateByUTCOffset(startingTime, myTimezone);
+				}
+
 				if (isNaN(startingTime.getTime())) startingTime = null; // If it didn't parse into a timestamp, ignore it
 			}
 
