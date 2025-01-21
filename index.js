@@ -1,5 +1,4 @@
 //#region Imports
-Object.assign(process.env, require('./env.json'));
 const envs = require('./env.json')
 Object.keys(envs).forEach(key => process.env[key] = envs[key] );
 
