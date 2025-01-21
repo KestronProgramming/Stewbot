@@ -16,7 +16,7 @@ function chunkArray(array, size) {
 }
 
 function makeHelp(page,categories,filterMode,forWho){
-    const helpCategories = ["General", "Bot", "Information", "Entertainment", "Configuration", "Administration", "Safety", "Context Menu", "Server Only","Modules"];
+    const helpCategories = ["General", "Bot", "Information", "Entertainment", "Configuration", "Administration", "Safety", "Context Menu", "Server Only","Module"];
 
     page=+page;
     if(categories.includes("All")){
