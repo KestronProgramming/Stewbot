@@ -1,7 +1,12 @@
 //#region Imports
 Object.assign(process.env, require('./env.json'));
 global.config = require("./data/config.json");
-console.beta = (...args) => process.env.beta && console.log(...args);
+process.env.beta=process.env.beta==='true'?true:false;
+console.beta=function(toLog){
+    if(process.env.beta){
+        console.log(toLog);
+    }
+}
 console.beta("Importing discord")
 const {Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
 console.beta("Importing commands")

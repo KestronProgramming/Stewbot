@@ -78,11 +78,12 @@
     },
     {
         "name": "badware_scanner",
-        "mention": "</badware_scanner:1330279306454368288>",
+        "mention": "`badware_scanner` Module",
         "helpCategories": [
             "Administration",
             "Server Only",
-            "Safety"
+            "Safety",
+            "Module"
         ],
         "shortDesc": "A module that scans links for malicious content.",
         "detailedDesc": "This is a developing command using public lists and other methods to identify malicious links."
@@ -110,7 +111,7 @@
     },
     {
         "name": "block_module",
-        "mention": "</block_module:1330391745871220736>",
+        "mention": "`block_module` Module",
         "helpCategories": [
             "Bot",
             "Administration",
@@ -122,17 +123,8 @@
         "block_module_message": "I will be unable to unblock this command if you block it, therefore I cannot block this command."
     },
     {
-        "name": "captcha",
-        "mention": "</captcha:1289093272932974652>",
-        "helpCategories": [
-            "Safety"
-        ],
-        "shortDesc": "This command is used in the event of an automatic spam timeout",
-        "detailedDesc": "If I detect a hacked or spam account, I will require the user to run this command before being untimeouted. Simply press the buttons to enter the displayed code and press enter."
-    },
-    {
         "name": "chat",
-        "mention": "</chat:1329123809772572673>",
+        "mention": "`chat` Module",
         "helpCategories": [
             "General",
             "Bot",
@@ -384,7 +376,7 @@
         "name": "holiday_avatar",
         "mention": "`holiday_avatar` Module",
         "helpCategories": [
-            "Bot"
+            "Module"
         ],
         "shortDesc": "Keep Stewbot's avatar seasonal",
         "detailedDesc": "This module sets Stewbot's profile picture to various presets on national holidays.",
@@ -620,7 +612,9 @@
         "mention": "`sentiment` Module",
         "helpCategories": [
             "Server Only",
-            "Entertainment"
+            "Entertainment",
+            "Bot",
+            "Module"
         ],
         "shortDesc": "React when Stewbot is mentioned",
         "detailedDesc": "Runs basic sentiment-analysis on messages mentioning Stewbot to determine how to react."
