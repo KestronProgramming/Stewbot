@@ -1,5 +1,7 @@
 //#region Imports
-Object.assign(process.env, require('./env.json'));
+const envs = require('./env.json')
+Object.keys(envs).forEach(key => process.env[key] = envs[key] );
+
 global.config = require("./data/config.json");
 process.env.beta=process.env.beta==='true'?true:false;
 console.beta=function(toLog){
