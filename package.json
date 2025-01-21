@@ -6,6 +6,7 @@
     "@vitalets/google-translate-api": "^9.2.0",
     "canvas": "^2.11.2",
     "cheerio": "^1.0.0",
+    "chrono-node": "^2.7.7",
     "compromise": "^14.14.0",
     "crypto": "^1.0.1",
     "discord.js": "^14.13.0",

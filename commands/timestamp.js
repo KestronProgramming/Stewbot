@@ -7,6 +7,16 @@ function applyContext(context={}) {
 }
 // #endregion Boilerplate
 
+const chrono = require('chrono-node');
+
+function getOffsetDateByUTCOffset(targetOffset) {
+    const now = new Date();
+    const serverOffset = now.getTimezoneOffset();
+    const targetOffsetMinutes = targetOffset * 60;
+    const offsetDiff = -serverOffset - targetOffsetMinutes;
+    return new Date(now.getTime() + (offsetDiff * 60 * 1000));
+}
+
 const components = {
 	timestamp: [
         new ActionRowBuilder().addComponents(
@@ -77,7 +87,9 @@ const components = {
 module.exports = {
 	data: {
 		// Slash command data
-		command: new SlashCommandBuilder().setName("timestamp").setDescription("Generate a timestamp for use in your message"),
+		command: new SlashCommandBuilder().setName("timestamp").setDescription("Generate a timestamp for use in your message").addStringOption(option=>
+			option.setName("quick-input").setDescription("Attempt to parse a sentence into a date.")
+		),
 		
 		// Optional fields
 		
@@ -112,7 +124,17 @@ module.exports = {
 		applyContext(context);
 		
 		if(storage[cmd.user.id].config.hasSetTZ){
-			cmd.followUp({content:`<t:${Math.round((new Date().setUTCSeconds(0))/1000)}:t>`,components:components.timestamp});
+			const quickInput = cmd.options.getString("quick-input");
+			let startingTime;
+			if (quickInput) {
+				const myTimezone = storage[cmd.user.id].config.timeOffset;
+				startingTime = chrono.parseDate(quickInput, getOffsetDateByUTCOffset(myTimezone))
+				if (isNaN(startingTime.getTime())) startingTime = null; // If it didn't parse into a timestamp, ignore it
+			}
+
+			if (!startingTime) startingTime = new Date();
+			
+			cmd.followUp({content:`<t:${Math.round(( startingTime )/1000)}:t>`,components:components.timestamp});
 		}
 		else{
 			cmd.followUp(`This command needs you to set your timezone first! Run ${cmds.personal_config.mention} and specify \`configure_timezone\` to get started,`);
