@@ -10,12 +10,6 @@
         "hasSetTZ":false,
         "beenAIDisclaimered":false
     },
-    "gone":{
-        "active":false,
-        "message":"I'm not available right now",
-        "until":0,
-        "autoOff":false
-    },
     "primedEmbed":{
         "content":"",
         "attachmentURLs":[],
@@ -33,12 +27,5 @@
         },
         "timestamp":"",
         "id":""
-    },
-    "birthday":{
-        "serversPublic":[],
-        "serversYearPublic":[],
-        "month":0,
-        "day":0,
-        "year":null
     }
 }

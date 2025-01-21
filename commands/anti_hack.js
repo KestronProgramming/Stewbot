@@ -91,13 +91,6 @@ module.exports = {
 			storage[msg.guild.id].users[msg.author.id].lastMessages.push(`${msg.channel.id}/${msg.id}`);
 			
 		}
-		if(storage[msg.guild?.id]?.users[msg.author.id].gone?.active&&storage[msg.guild?.id]?.users[msg.author.id].gone?.autoOff){
-			storage[msg.guild.id].users[msg.author.id].gone.active=false;
-			
-		}
-		if(storage[msg.author.id].gone?.active&&storage[msg.author.id].gone?.autoOff){
-			storage[msg.author.id].gone.active=false;
-		}
 	},
 
 	// Only button subscriptions matched will be sent to the handler 

@@ -8,11 +8,5 @@
     "expTimeout":0,
     "lvl":0,
     "beenCountWarned":false,
-    "gone":{
-        "active":false,
-        "message":"I'm not available right now",
-        "until":0,
-        "autoOff":false
-    },
     "warnings":[]
 }

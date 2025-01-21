@@ -101,6 +101,34 @@ function readLatestDatabase() {
     notify(1, `No storage locations could be loaded. Tried: ${sortedLocations.join(", ")}.`);
     process.exit();
 }
+function createDatabaseProxy(databaseJSON) {
+    // Our code in many places assumes that database sub-objects already exist. 
+    // To make that true, we'll use a Proxy object to create them as needed.
+    // This also allows us to delete fields when they are the same as our default objects,
+    //   and send the default value when no value is defined.
+    const defaultGuild = require("./data/defaultGuild.json");
+    const defaultGuildUser = require("./data/defaultGuildUser.json");
+    const defaultUser = require("./data/defaultUser.json");
+
+    const handler = {
+        get(target, prop) {
+            // if the property exists, we can simply return it
+            if (prop in target) {
+                return target[prop];
+            } 
+            // If the property does not exist, we have to determine what type it is, and return the default
+            else {
+                // Return a default value from our default objects
+
+            }
+        },
+        set(target, prop, value) {
+            target[prop] = value;
+            return true;
+        }
+    };
+    return new Proxy(databaseJSON, handler);
+}
 global.storage = readLatestDatabase(); // Storage needs to be global for our submodules
 let lastStorageHash = hash(storage);
 setInterval(() => {
