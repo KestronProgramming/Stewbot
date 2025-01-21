@@ -16,7 +16,7 @@ function chunkArray(array, size) {
 }
 
 function makeHelp(page,categories,filterMode,forWho){
-    const helpCategories = ["General", "Bot", "Information", "Entertainment", "Configuration", "Administration", "Safety", "Context Menu", "Server Only"];
+    const helpCategories = ["General", "Bot", "Information", "Entertainment", "Configuration", "Administration", "Safety", "Context Menu", "Server Only","Modules"];
 
     page=+page;
     if(categories.includes("All")){
@@ -167,7 +167,7 @@ module.exports = {
 				- General -> Generic commands almost every bot has
 				- Information -> A command designed purely to provide information of some kind
 				- Bot -> A command designed specifically for managing the bot itself
-				- Administration -> A command that needs moderator priviledges
+				- Administration -> A command that needs moderator privileges
 				- Configuration -> A command that changes settings of some kind
 				- Entertainment -> A command that is related to a fun feature of some kind
 				- Context Menu -> A command accessed via the context menu

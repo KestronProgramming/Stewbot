@@ -58,10 +58,9 @@ function isUrlBlocked(url, blocklist) {
         "apple.com",
         "amazon.com",
         "linkedin.com",
+        "x.com",
         "twitter.com",
         "facebook.com",
-        "bbc.com",
-        "nytimes.com",
         "openai.com",
         "cloudflare.com",
         "mozilla.org",
@@ -234,12 +233,12 @@ module.exports = {
 		requiredGlobals: [],
 
 		help: {
-			helpCategories: ["Administration", "Server Only", "Safety"],
+			helpCategories: ["Administration", "Server Only", "Safety","Module"],
 			/*
 				- General -> Generic commands almost every bot has
 				- Information -> A command designed purely to provide information of some kind
 				- Bot -> A command designed specifically for managing the bot itself
-				- Administration -> A command that needs moderator priviledges
+				- Administration -> A command that needs moderator privileges
 				- Configuration -> A command that changes settings of some kind
 				- Entertainment -> A command that is related to a fun feature of some kind
 				- Context Menu -> A command accessed via the context menu

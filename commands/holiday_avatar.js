@@ -59,7 +59,7 @@ module.exports = {
 		command: null,
 
 		help: {
-			helpCategories: ["Bot"],
+			helpCategories: ["Module"],
 			/*
 				- General -> Generic commands almost every bot has
 				- Information -> A command designed purely to provide information of some kind

@@ -1,6 +1,6 @@
 # /bin/sh
 
-# Wait for network connection - in the case of a power outtage the router might still be down for a minute
+# Wait for network connection - in the case of a power outage the router might still be down for a minute
 until ping -c 1 1.1.1.1 &> /dev/null
 do
     echo "Waiting for wifi..."

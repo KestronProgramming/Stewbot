@@ -42,7 +42,7 @@ module.exports = {
 		requiredGlobals: [],
 
 		help: {
-			helpCategories: ["Safety"],
+			helpCategories: [],
 			/*
 				- General
 				- Information

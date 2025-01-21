@@ -4,7 +4,12 @@ const envs = require('./env.json')
 Object.keys(envs).forEach(key => process.env[key] = envs[key] );
 
 global.config = require("./data/config.json");
-console.beta = (...args) => process.env.beta && console.log(...args);
+process.env.beta=process.env.beta==='true'?true:false;
+console.beta=function(toLog){
+    if(process.env.beta){
+        console.log(toLog);
+    }
+}
 console.beta("Importing discord")
 const {Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
 console.beta("Importing commands")
@@ -825,9 +830,8 @@ client.on("interactionCreate",async cmd=>{
 
         // Command frequency stats 
         if(!usage.hasOwnProperty(cmd.commandName)) usage[cmd.commandName]=0;
-        usage[cmd.commandName]++;
+        usage[commandPathWithSubcommand]++;
         fs.writeFileSync("./data/usage.json",JSON.stringify(usage));
-
         return;
     }
 

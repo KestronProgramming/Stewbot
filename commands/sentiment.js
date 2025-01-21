@@ -53,7 +53,7 @@ module.exports = {
 
 		// Not all modules will have help commands, but they can in theory to showcase bot features.
 		help: {
-			helpCategories: ["Server Only", "Entertainment"],
+			helpCategories: ["Server Only", "Entertainment","Bot","Module"],
 			/*
 				- General -> Generic commands almost every bot has
 				- Information -> A command designed purely to provide information of some kind

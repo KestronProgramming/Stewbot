@@ -54,6 +54,7 @@ module.exports = {
 				- Server Only -> Commands that can only be run in servers
 				- User Install Only -> Commands that can only be run if Stewbot is installed to your user
 				- Safety -> Anti-hack, anti-spam, etc
+				- Module -> Automatic bot action not triggered or configured by a slash command
 			*/
 			shortDesc: "Jerry Jerry Jerry Jerry Yeah!!!",//Should be the same as the command setDescription field
 			detailedDesc: //Detailed on exactly what the command does and how to use it
