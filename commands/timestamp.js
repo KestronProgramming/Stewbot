@@ -17,6 +17,19 @@ function getOffsetDateByUTCOffset(timestamp, targetOffset) {
 	return new Date(date.getTime() + (offsetDiff * 60 * 1000));
 }
 
+function parseTextDateIfValid(text, timezone) {
+	// returns null if invalid
+	if (!text) return null;
+
+	startingTime = chrono.parseDate(text);
+
+	if (isNaN(startingTime?.getTime())) return null;
+	
+	startingTime = getOffsetDateByUTCOffset(startingTime, myTimezone);
+
+	if (isNaN(startingTime?.getTime())) return null;
+}
+
 const components = {
 	timestamp: [
         new ActionRowBuilder().addComponents(
@@ -124,19 +137,9 @@ module.exports = {
 		applyContext(context);
 		
 		if(storage[cmd.user.id].config.hasSetTZ){
+			const myTimezone = storage[cmd.user.id].config.timeOffset;
 			const quickInput = cmd.options.getString("quick-input");
-			let startingTime;
-			if (quickInput) {
-				const myTimezone = storage[cmd.user.id].config.timeOffset;
-				startingTime = chrono.parseDate(quickInput);
-				
-				if (startingTime) {
-					startingTime = getOffsetDateByUTCOffset(startingTime, myTimezone);
-				}
-
-				if (isNaN(startingTime.getTime())) startingTime = null; // If it didn't parse into a timestamp, ignore it
-			}
-
+			let startingTime = parseTextDateIfValid(quickInput)
 			if (!startingTime) startingTime = new Date();
 			
 			cmd.followUp({content:`<t:${Math.round(( startingTime )/1000)}:t>`,components:components.timestamp});
