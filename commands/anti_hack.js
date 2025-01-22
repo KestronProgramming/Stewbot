@@ -29,7 +29,7 @@ module.exports = {
 			*/
 			shortDesc: "Defend server from hacked accounts.",
 			detailedDesc: //Detailed on exactly what the command does and how to use it
-				`This module watches for spam messages that look like they are from hacked accounts, and times out the user until they complete a ${cmds.captcha.mention}`
+				`This module watches for spam messages that look like they are from hacked accounts, and times out the user until they complete a captcha verification`
 		},
 	},
 
