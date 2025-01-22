@@ -77,7 +77,7 @@ module.exports = {
 			detailedDesc: //Detailed on exactly what the command does and how to use it
 				`This module sets Stewbot's profile picture to various presets on national holidays.`,
 
-			block_module_message: "Discord requires bot avatars to be set globally, so I cannot be blocked this module in this server.",
+			block_module_message: "Discord requires bot avatars to be set globally, so I cannot block this module.",
 		},
 	},
 

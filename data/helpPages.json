@@ -214,6 +214,16 @@
         "detailedDesc": "Deletes the specified message from the context menu. This command exists primarily to remove DMs with Stewbot."
     },
     {
+        "name": "donate",
+        "mention": "</donate:1331438277407801364>",
+        "helpCategories": [
+            "General",
+            "Bot"
+        ],
+        "shortDesc": "Help support the bot's development",
+        "detailedDesc": "Stewbot is a passion project, born out of our desire for the ultimate Discord bot. We never charge for any usage of the bot. We never have advertisements. We never store, or sell your info. We make the source code that the bot runs on public and open source. We provide free features that other bots charge for.\n\n                \n\n                If this is something that speaks to you, that you want to support and to help fund, you can donate here."
+    },
+    {
         "name": "edit_emojiboard",
         "mention": "</edit_emojiboard:1289093271796322394>",
         "helpCategories": [
@@ -380,7 +390,7 @@
         ],
         "shortDesc": "Keep Stewbot's avatar seasonal",
         "detailedDesc": "This module sets Stewbot's profile picture to various presets on national holidays.",
-        "block_module_message": "Discord requires bot avatars to be set globally, so I cannot be blocked this module in this server."
+        "block_module_message": "Discord requires bot avatars to be set globally, so I cannot block this module."
     },
     {
         "name": "kick",
