@@ -53,13 +53,15 @@ console.log("Storage was", JSON.stringify(storage).length, "bytes")
 // Set isGuild on guild objects
 // We'll check references on the objects to determine if they are a guild or a user
 
+let guildCount = 0;
 Object.keys(storage).forEach(key => {
     const obj = storage[key];
     if (obj.filter) {
-        // console.log("Guild found with ID", key)
         obj.isGuild = true;
+        guildCount++
     }
 })
+console.log(guildCount, "guilds marked in DB")
 
 function recursiveNotDefinedPropLogger(obj, defaults, currentPath = '', results = new Set()) {
     // Handle null/undefined objects
@@ -158,6 +160,8 @@ function normalizePath(path) {
     return path;
 }
 
+
+const analyzeProps = false;
 const globalUndefinedProps = new Map();
 
 Object.keys(storage).forEach(key => {
@@ -165,24 +169,25 @@ Object.keys(storage).forEach(key => {
     const defaults = obj.isGuild ? defaultGuild : defaultUser;
     removeDefaults(obj, defaults);
 
-    const undefinedProps = recursiveNotDefinedPropLogger(obj, defaults);
-    undefinedProps.forEach(prop => {
-        const normalizedProp = normalizePath(prop);
-        globalUndefinedProps.set(normalizedProp, (globalUndefinedProps.get(normalizedProp) || 0) + 1);
-    });
+    if (analyzeProps) {
+        const undefinedProps = recursiveNotDefinedPropLogger(obj, defaults);
+        undefinedProps.forEach(prop => {
+            const normalizedProp = normalizePath(prop);
+            globalUndefinedProps.set(normalizedProp, (globalUndefinedProps.get(normalizedProp) || 0) + 1);
+        });
+    }
 });
 
 // Print summary
-console.log("\n=== Undefined Properties Summary ===");
-const sortedProps = Array.from(globalUndefinedProps.entries())
-    .sort((a, b) => b[1] - a[1]);
-
-sortedProps.forEach(([prop, count]) => {
-    console.log(`${prop}: ${count} occurrences`);
-});
-
-console.log("\nTotal unique undefined properties:", globalUndefinedProps.size);
-
+if (analyzeProps) {
+    console.log("\n=== Undefined Properties Summary ===");
+    const sortedProps = Array.from(globalUndefinedProps.entries())
+        .sort((a, b) => b[1] - a[1]);
+    sortedProps.forEach(([prop, count]) => {
+        console.log(`${prop}: ${count} occurrences`);
+    });
+    console.log("\nTotal unique undefined properties:", globalUndefinedProps.size);
+}
 
 
 
