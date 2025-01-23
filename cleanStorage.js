@@ -1,6 +1,8 @@
 const defaultGuild = require("./data/defaultGuild.json");
 const defaultUser = require("./data/defaultUser.json");
 const defaultGuildUser = require("./data/defaultGuildUser.json");
+const env = require("./env.json")
+
 // const { createDatabaseProxy } = require("./test-ITWORKS2.js")
 
 const fs = require("node:fs")
@@ -194,7 +196,7 @@ if (analyzeProps) {
 console.log("Storage is", JSON.stringify(storage).length, "bytes when cleaned");
 
 
-// fs.writeFileSync("storageCleaned.json", JSON.stringify(storage, null, 4))
+if (process.env.beta) fs.writeFileSync("storageCleaned.json", JSON.stringify(storage, null, 4))
 
 debugger;
 
