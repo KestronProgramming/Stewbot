@@ -29,7 +29,7 @@
             "Safety"
         ],
         "shortDesc": "Defend server from hacked accounts.",
-        "detailedDesc": "This module watches for spam messages that look like they are from hacked accounts, and times out the user until they complete a "
+        "detailedDesc": "This module watches for spam messages that look like they are from hacked accounts, and times out the user until they complete a captcha verification"
     },
     {
         "name": "auto-join-message",
@@ -215,7 +215,7 @@
     },
     {
         "name": "donate",
-        "mention": "</donate:1331438277407801364>",
+        "mention": "`donate` Module",
         "helpCategories": [
             "General",
             "Bot"
