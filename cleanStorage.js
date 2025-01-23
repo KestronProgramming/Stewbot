@@ -61,6 +61,51 @@ Object.keys(storage).forEach(key => {
     }
 })
 
+function recursiveNotDefinedPropLogger(obj, defaults, currentPath = '', results = new Set()) {
+    // Handle null/undefined objects
+    if (!obj) return results;
+
+    for (const key in obj) {
+        const newPath = currentPath ? `${currentPath}.${key}` : key;
+
+        // Skip if property doesn't exist in object
+        if (!obj.hasOwnProperty(key)) continue;
+
+        const value = obj[key];
+        const defaultValue = defaults ? defaults[key] : undefined;
+
+        if (defaultValue === undefined) {
+            // Log properties not in defaults
+            results.add(newPath);
+        }
+
+        // Recursively check nested objects
+        if (value && typeof value === 'object' && !Array.isArray(value)) {
+            recursiveNotDefinedPropLogger(
+                value,
+                defaultValue,
+                newPath,
+                results
+            );
+        }
+        
+        // Handle arrays
+        if (Array.isArray(value)) {
+            value.forEach((item, index) => {
+                if (typeof item === 'object') {
+                    recursiveNotDefinedPropLogger(
+                        item,
+                        Array.isArray(defaultValue) ? defaultValue[0] : undefined,
+                        `${newPath}[${index}]`,
+                        results
+                    );
+                }
+            });
+        }
+    }
+
+    return results;
+}
 
 function removeDefaults(obj, defaults, level=0) {
 
@@ -72,7 +117,6 @@ function removeDefaults(obj, defaults, level=0) {
         const value = obj[key];
         
         if (defaults[key] === undefined) continue // If no defaults, ignore
-
 
         // .users trimmer for the defaultGuildUser
         if (key === "users") {
@@ -93,16 +137,62 @@ function removeDefaults(obj, defaults, level=0) {
     }
 }
 
+function normalizePath(path) {
+    // Replace user IDs in paths like "users.123456789" with "users.<userid>"
+    path = path.replace(/users\.\d+(?=\.|$)/, 'users.<userid>');
+    path = path.replace(/persistence\.\d+(?=\.|$)/, 'persistence.<userid>');
+    path = path.replace(/polls\.\d+(?=\.|$)/, 'polls.<userid>');
+    path = path.replace(/options\.\w+(?=\.|$)/, 'options.<poll_option>');
+    path = path.replace(/options\..+$/, 'options.<poll_option>');
+    path = path.replace(/emojiboards\.[<:\w>]+(?=\.|$)/, 'emojiboards.<emoji>');
+    path = path.replace(/posters\.\d+(?=\.|$)/, 'posters.<userid>');
+    path = path.replace(/posted\.\d+(?=\.|$)/, 'posted.<userid>');
+    path = path.replace(/\w+\.url/, '<rss-hash>.url');
+    path = path.replace(/\w+\.lastSent/, '<rss-hash>.lastSent');
+    path = path.replace(/\w+\.fails/, '<rss-hash>.fails');
+    path = path.replace(/\w+\.channels/, '<rss-hash>.channels');
+    path = path.replace(/\w+\.hash/, '<rss-hash>.hash');
+    path = path.replace(/^[\da-f]{32}/, '<rss-hash>');
+    path = path.replace(/warnings\[\d+\]/, 'warnings[#]');
+
+    return path;
+}
+
+const globalUndefinedProps = new Map();
+
 Object.keys(storage).forEach(key => {
     const obj = storage[key];
     const defaults = obj.isGuild ? defaultGuild : defaultUser;
     removeDefaults(obj, defaults);
+
+    const undefinedProps = recursiveNotDefinedPropLogger(obj, defaults);
+    undefinedProps.forEach(prop => {
+        const normalizedProp = normalizePath(prop);
+        globalUndefinedProps.set(normalizedProp, (globalUndefinedProps.get(normalizedProp) || 0) + 1);
+    });
 });
 
+// Print summary
+console.log("\n=== Undefined Properties Summary ===");
+const sortedProps = Array.from(globalUndefinedProps.entries())
+    .sort((a, b) => b[1] - a[1]);
 
-console.log("Storage is", JSON.stringify(storage).length, "bytes")
+sortedProps.forEach(([prop, count]) => {
+    console.log(`${prop}: ${count} occurrences`);
+});
 
-fs.writeFileSync("storageCleaned.json", JSON.stringify(storage, null, 4))
+console.log("\nTotal unique undefined properties:", globalUndefinedProps.size);
+
+
+
+
+console.log("Storage is", JSON.stringify(storage).length, "bytes when cleaned");
+
+
+// fs.writeFileSync("storageCleaned.json", JSON.stringify(storage, null, 4))
+
+debugger;
+
 
 // 
 
