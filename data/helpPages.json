@@ -215,7 +215,7 @@
     },
     {
         "name": "donate",
-        "mention": "</donate:1331438277407801364>",
+        "mention": "`donate` Module",
         "helpCategories": [
             "General",
             "Bot"
