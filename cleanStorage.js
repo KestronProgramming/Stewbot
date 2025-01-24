@@ -196,7 +196,7 @@ if (analyzeProps) {
 console.log("Storage is", JSON.stringify(storage).length, "bytes when cleaned");
 
 
-if (process.env.beta) fs.writeFileSync("storageCleaned.json", JSON.stringify(storage, null, 4))
+fs.writeFileSync("storageCleaned.json", JSON.stringify(storage, null, 4))
 
 debugger;
 

@@ -1,4 +1,4 @@
-const bleedingEdgeDB = true;
+const bleedingEdgeDB = false;
 
 //#region Imports
 const envs = require('./env.json')
@@ -6,7 +6,7 @@ Object.keys(envs).forEach(key => process.env[key] = envs[key] );
 if (process.env.beta == 'false') delete process.env.beta; // ENVs are all strings, so make it falsy if it's "false"
 
 global.config = require("./data/config.json");
-console.beta= (...args) => process.env.beta && console.log(...args)
+console.beta = (...args) => process.env.beta && console.log(...args)
 console.beta("Importing discord")
 const {Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
 console.beta("Importing commands")
@@ -1168,8 +1168,9 @@ client.on("guildMemberAdd",async member=>{
         if(!storage.hasOwnProperty(member.id)){
             storage[member.id]=structuredClone(defaultUser);
         }
-        storage[member.guild.id].users[member.id].inServer=true;
     }
+
+    storage[member.guild.id].users[member.id].inServer=true;
 
     // Auto join messages
     if(storage[member.guild.id].ajm.active){
