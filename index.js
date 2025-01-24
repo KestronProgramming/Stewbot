@@ -1,7 +1,7 @@
 const bleedingEdgeDB = false;
 
 //#region Imports
-const envs = require('./env.json')
+const envs = require('./env.json');
 Object.keys(envs).forEach(key => process.env[key] = envs[key] );
 if (process.env.beta == 'false') delete process.env.beta; // ENVs are all strings, so make it falsy if it's "false"
 
@@ -157,7 +157,7 @@ const client=new Client({
     intents:ints,
     partials:Object.keys(Partials).map(a=>Partials[a])
 });
-global.client = client; // I like my intellisense
+global.client = client;
 
 // Now that setup is done, define data that should be passed to each module - 
 const pseudoGlobals = {
