@@ -74,9 +74,9 @@ module.exports = {
                 // Update commands if requested
                 if (updateCommands) {
                     // Grab the latest version
-                    const cachedLaunchFile = require.resolve('../launchCommands.js')
+                    const cachedLaunchFile = require.resolve('../Scripts/launchCommands.js')
                     if (cachedLaunchFile) delete require.cache[cachedLaunchFile]
-                    const { launchCommands } = require("../launchCommands.js");
+                    const { launchCommands } = require("../Scripts/launchCommands.js");
                     notify(1, launchCommands());
                 }
             } catch (err) {

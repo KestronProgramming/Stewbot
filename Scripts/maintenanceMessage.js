@@ -1,4 +1,4 @@
-const envs = require('./env.json');
+const envs = require('../env.json');
 Object.keys(envs).forEach(key => process.env[key] = envs[key] );
 const {Client}=require("discord.js");
 const client=new Client({

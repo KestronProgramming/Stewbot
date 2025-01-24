@@ -1,7 +1,7 @@
-const defaultGuild = require("./data/defaultGuild.json");
-const defaultUser = require("./data/defaultUser.json");
-const defaultGuildUser = require("./data/defaultGuildUser.json");
-const env = require("./env.json")
+const defaultGuild = require("../data/defaultGuild.json");
+const defaultUser = require("../data/defaultUser.json");
+const defaultGuildUser = require("../data/defaultGuildUser.json");
+const env = require("../env.json")
 
 // const { createDatabaseProxy } = require("./test-ITWORKS2.js")
 

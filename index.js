@@ -1,16 +1,17 @@
-const bleedingEdgeDB = false;
 
 //#region Imports
 const envs = require('./env.json');
 Object.keys(envs).forEach(key => process.env[key] = envs[key] );
 if (process.env.beta == 'false') delete process.env.beta; // ENVs are all strings, so make it falsy if it's "false"
 
+const bleedingEdgeDB = process.env.beta;
+
 global.config = require("./data/config.json");
 console.beta = (...args) => process.env.beta && console.log(...args)
 console.beta("Importing discord")
 const {Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
 console.beta("Importing commands")
-const { getCommands } = require("./launchCommands.js"); // Note: current setup requires this to be before the commands.json import
+const { getCommands } = require("./Scripts/launchCommands.js"); // Note: current setup requires this to be before the commands.json import
 const cmds=require("./data/commands.json"); global.cmds = cmds;
 console.beta("Importing backup.js")
 const startBackupThread = require("./backup.js");
@@ -27,7 +28,7 @@ const { finTempBan } = require("./commands/hat_pull.js")
 const { finTimer } = require("./commands/timer.js")
 const { getStarMsg } = require("./commands/add_emojiboard.js")
 const { processForNumber } = require("./commands/counting.js")
-const { createDatabaseProxy } = require("./dbTests.js")
+const { createDatabaseProxy } = require("./scripts/dbTests.js")
 //#endregion Imports
 
 //#region Setup

@@ -1,9 +1,9 @@
 
 const deleteSignal = Symbol('deleteSignal');
 
-const defaultGuild = require("./data/defaultGuild.json");
-const defaultUser = require("./data/defaultUser.json");
-const defaultGuildUser = require("./data/defaultGuildUser.json");
+const defaultGuild = require("../data/defaultGuild.json");
+const defaultUser = require("../data/defaultUser.json");
+const defaultGuildUser = require("../data/defaultGuildUser.json");
 
 // The idea behind these is if we haven't determined the object type, we'll do our best to assume what it is but in case 
 //   we're wrong this will make most functionality still work.
