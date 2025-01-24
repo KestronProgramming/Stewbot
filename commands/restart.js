@@ -7,8 +7,35 @@ function applyContext(context = {}) {
 }
 // #endregion Boilerplate
 const fs = require("fs");
-const { exec } = require('child_process');
+const { spawn, exec } = require('child_process');
 const config = require("../data/config.json");
+const path = require('path');
+const os = require('os');
+
+const PID_FILE = path.join(os.tmpdir(), 'stewbot-maintenance.pid');
+
+function killMaintenanceBot() {
+    if (fs.existsSync(PID_FILE)) {
+        const pid = parseInt(fs.readFileSync(PID_FILE, 'utf8'));
+        try {
+            process.kill(pid, 'SIGTERM');
+        } catch (err) {
+            if (err.code === 'ESRCH') {
+                console.log('Smaller process already exited');
+            }
+        }
+        fs.unlinkSync(PID_FILE);
+    }
+}
+
+function startMaintenanceHandler() {
+    const small = spawn('node', ['Scripts/maintenanceMessage.js'], {
+        detached: true,
+        stdio: 'ignore'
+    });
+    small.unref();    
+}
+
 
 module.exports = {
     data: {
@@ -84,7 +111,11 @@ module.exports = {
             }
 
             fs.writeFileSync("./storage.json", process.env.beta ? JSON.stringify(storage, null, 4) : JSON.stringify(storage));
-            setTimeout(() => { process.exit(0) }, 5000);
+            
+            // Start the maintenance bot to handle commands during this time
+            startMaintenanceHandler();
+            
+            setTimeout(() => { process.exit(0) }, 2000);
         }
     }
 };
