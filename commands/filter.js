@@ -274,59 +274,66 @@ module.exports = {
         }
         switch(cmd.options.getSubcommand()){
             case "add":
-                if(storage[cmd.guildId].filter.blacklist.includes(word)){
-                    cmd.followUp({"ephemeral":true,"content":`The word ||${word}|| is already in the blacklist.${storage[cmd.guildId].filter.active?"":`To begin filtering in this server, use ${cmds.filter.config.mention}.`}`});
-                }
-                else{
+                if (storage[cmd.guildId].filter.blacklist.includes(word)) {
+                    cmd.followUp({
+                        "ephemeral": true,
+                        "content": `The word ||${word}|| is already in the blacklist.${storage[cmd.guildId].filter.active ? "" : `To begin filtering in this server, use ${cmds.filter.config.mention}.`}`
+                    });
+                } else {
                     storage[cmd.guildId].filter.blacklist.push(word);
-                    cmd.followUp(`Added ||${word}|| to the filter for this server.${storage[cmd.guildId].filter.active?"":`\n\nThe filter for this server is currently disabled. To enable it, use ${cmds.filter.config.mention}.`}`);
-
-                    const existingRules = await cmd.guild.autoModerationRules.fetch();
-                    // let profileRule = existingRules.find(rule => rule.triggerType === 4 && rule.name === 'Stewbot Profile Word Filter');
-                    let profileRule = existingRules.find(rule => rule.triggerType === 6);
-                    
-                    // Try blocking this word from member profiles with AutoMod
-                    if (!profileRule) {
-                        await cmd.guild.autoModerationRules.create({
-                            name: `Stewbot Profile Filter`,
-                            creatorId: client.user.id,
-                            enabled: true,
-                            eventType: 2,
-                            triggerType: 6,
-                            triggerMetadata: {
-                                keywordFilter: [word],
-                            },
-                            actions: [{
-                                type: 4,
-                            }]
-                        })
-                    } else {
-                        // Rebrand the rule to us if they already have one
-                        if (profileRule.name !== 'Stewbot Profile Filter') {
-                            await profileRule.edit({
-                                name: 'Stewbot Profile Filter',
+                    cmd.followUp(`Added ||${word}|| to the filter for this server.${storage[cmd.guildId].filter.active ? "" : `\n\nThe filter for this server is currently disabled. To enable it, use ${cmds.filter.config.mention}.`}`);
+            
+                    try {
+                        const existingRules = await cmd.guild.autoModerationRules.fetch();
+                        let profileRule = existingRules.find(rule => rule.triggerType === 6);
+            
+                        // Try blocking this word from member profiles with AutoMod
+                        if (!profileRule) {
+                            await cmd.guild.autoModerationRules.create({
+                                name: `Stewbot Profile Filter`,
+                                creatorId: client.user.id,
                                 enabled: true,
+                                eventType: 2,
+                                triggerType: 6,
+                                triggerMetadata: {
+                                    keywordFilter: [word],
+                                },
                                 actions: [{
                                     type: 4,
                                 }]
                             });
+                        } else {
+                            // Rebrand the rule to us if they already have one
+                            if (profileRule.name !== 'Stewbot Profile Filter') {
+                                await profileRule.edit({
+                                    name: 'Stewbot Profile Filter',
+                                    enabled: true,
+                                    actions: [{
+                                        type: 4,
+                                    }]
+                                });
+                            }
+            
+                            // Update existing rule
+                            const updatedKeywords = new Set([
+                                ...(profileRule.triggerMetadata.keywordFilter || []),
+                                word,
+                            ]);
+            
+                            await profileRule.edit({
+                                triggerMetadata: {
+                                    keywordFilter: Array.from(updatedKeywords),
+                                },
+                                enabled: true,
+                            });
                         }
-
-                        // Update existing rule
-                        const updatedKeywords = new Set([
-                            ...(profileRule.triggerMetadata.keywordFilter || []),
-                            word,
-                        ]);
-
-                        await profileRule.edit({
-                            triggerMetadata: {
-                                keywordFilter: Array.from(updatedKeywords),
-                            },
-                            enabled: true,
-                        });
-                    }        
+                    } catch (error) {
+                        if (error.code !== 50001) {
+                            throw error;
+                        }
+                    }
                 }
-            break;
+                break;
             case "remove":
                 if(storage[cmd.guildId].filter.blacklist.includes(word)){
                     storage[cmd.guildId].filter.blacklist.splice(storage[cmd.guildId].filter.blacklist.indexOf(word),1);
@@ -337,17 +344,23 @@ module.exports = {
                 }
 
                 // Remove the word from our username profile filter
-                const existingRules = await cmd.guild.autoModerationRules.fetch();
-                let profileRule = existingRules.find(rule => rule.triggerType === 6 && rule.name === 'Stewbot Profile Filter');
-                if (profileRule) {
-                    const updatedKeywords = new Set(profileRule.triggerMetadata.keywordFilter || []);
-                    updatedKeywords.delete(word);
+                try {
+                    const existingRules = await cmd.guild.autoModerationRules.fetch();
+                    let profileRule = existingRules.find(rule => rule.triggerType === 6 && rule.name === 'Stewbot Profile Filter');
+                    if (profileRule) {
+                        const updatedKeywords = new Set(profileRule.triggerMetadata.keywordFilter || []);
+                        updatedKeywords.delete(word);
 
-                    await profileRule.edit({
-                        triggerMetadata: {
-                            keywordFilter: Array.from(updatedKeywords),
-                        }
-                    });
+                        await profileRule.edit({
+                            triggerMetadata: {
+                                keywordFilter: Array.from(updatedKeywords),
+                            }
+                        });
+                    }
+                } catch (error) {
+                    if (error.code !== 50001) {
+                        throw error;
+                    }
                 }
 
             break;

@@ -1,4 +1,4 @@
-const bleedingEdgeDB = false;
+const bleedingEdgeDB = true;
 
 //#region Imports
 const envs = require('./env.json')
