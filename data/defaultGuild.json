@@ -41,14 +41,6 @@
         "channel":"",
         "whitelist":[]
     },
-    "starboard":{
-        "channel":"",
-        "emoji":"⭐",
-        "active":false,
-        "threshold":3,
-        "posted":{},
-        "messType":"0"
-    },
     "emojiboards": {},
     "logs":{
         "channel":"",
