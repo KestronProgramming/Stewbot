@@ -4,7 +4,7 @@ const envs = require('./env.json');
 Object.keys(envs).forEach(key => process.env[key] = envs[key] );
 if (process.env.beta == 'false') delete process.env.beta; // ENVs are all strings, so make it falsy if it's "false"
 
-const bleedingEdgeDB = process.env.beta;
+const bleedingEdgeDB = true;
 
 global.config = require("./data/config.json");
 console.beta = (...args) => process.env.beta && console.log(...args)
