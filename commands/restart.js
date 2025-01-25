@@ -21,7 +21,7 @@ function killMaintenanceBot() {
             process.kill(pid, 'SIGTERM');
         } catch (err) {
             if (err.code === 'ESRCH') {
-                console.log('Smaller process already exited');
+                console.log('Maintenance process already exited');
             }
         }
         fs.unlinkSync(PID_FILE);
@@ -29,15 +29,23 @@ function killMaintenanceBot() {
 }
 
 function startMaintenanceHandler() {
-    const small = spawn('node', ['Scripts/maintenanceMessage.js'], {
+    const nodePath = process.argv[0];
+    const small = spawn(nodePath, [path.join(__dirname, '../Scripts/maintenanceMessage.js')], {
         detached: true,
         stdio: 'ignore'
     });
+    
+    small.on('error', (err) => {
+        console.beta('Failed to start maintenance:', err);
+    });
+
     small.unref();    
 }
 
 
 module.exports = {
+    killMaintenanceBot,
+    
     data: {
         command: null, // TODO: devadmin command globals. Really this is the only one rn
 
@@ -115,7 +123,7 @@ module.exports = {
             // Start the maintenance bot to handle commands during this time
             startMaintenanceHandler();
             
-            setTimeout(() => { process.exit(0) }, 2000);
+            setTimeout(() => { process.exit(0) }, 5000);
         }
     }
 };

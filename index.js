@@ -28,7 +28,8 @@ const { finTempBan } = require("./commands/hat_pull.js")
 const { finTimer } = require("./commands/timer.js")
 const { getStarMsg } = require("./commands/add_emojiboard.js")
 const { processForNumber } = require("./commands/counting.js")
-const { createDatabaseProxy } = require("./scripts/dbTests.js")
+const { createDatabaseProxy } = require("./Scripts/dbTests.js")
+const { killMaintenanceBot } = require("./commands/restart.js")
 //#endregion Imports
 
 //#region Setup
@@ -530,6 +531,8 @@ global.notify = function(urgencyLevel,what,useWebhook=false) {
 //#region Listeners
 //Actionable events
 client.once("ready",async ()=>{
+    killMaintenanceBot();
+    
     // Schedule cloud backups every hour
     startBackupThread("./storage.json", 60*60*1000, error => {
         notify(1, String(error));
