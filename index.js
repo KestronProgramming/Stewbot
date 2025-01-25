@@ -906,87 +906,12 @@ client.on("messageReactionAdd",async (react,user)=>{
         storage[react.message.guild.id].filter.active=false;
     }
 
-    //TODO: Check if any servers didn't get converted to emojiboard in the storage.json, and if there are any stragglers convert the format and remove the following if statement and its contents
-    if(react.message.channel.id!==storage[react.message.guildId]?.starboard.channel&&(storage[react.message.guildId]?.starboard.emoji===react._emoji.name||storage[react.message.guildId]?.starboard.emoji===react._emoji.id)&&storage[react.message.guildId]?.starboard.active&&storage[react.message.guildId]?.starboard.channel&&!storage[react.message.guildId]?.starboard.posted.hasOwnProperty(react.message.id)){
-        var msg=await react.message.channel.messages.fetch(react.message.id);
-        const userReactions = react.message.reactions.cache.filter(reaction => reaction.users.cache.has(react.message.author.id)&&(storage[react.message.guildId].starboard.emoji===reaction._emoji.name||storage[react.message.guildId].starboard.emoji===reaction._emoji.id));
-        if(msg.reactions.cache.get(storage[msg.guildId].starboard.emoji).count>=storage[msg.guildId].starboard.threshold+(userReactions?.size===undefined?0:userReactions.size)){
-            var replyBlip="";
-            if(msg.type===19){
-                try{
-                    var rMsg=await msg.fetchReference();
-                    replyBlip=`_[Reply to **${rMsg.author.username}**: ${rMsg.content.slice(0,22).replace(/(https?\:\/\/|\n)/ig,"")}${rMsg.content.length>22?"...":""}](<https://discord.com/channels/${rMsg.guild.id}/${rMsg.channel.id}/${rMsg.id}>)_`;
-                }catch(e){}
-            }
-            var resp={files:[]};
-            var i=0;
-            react.message.attachments.forEach((attached) => {
-                let url=attached.url.toLowerCase();
-                if(i!==0||(!url.includes(".jpg")&&!url.includes(".png")&&!url.includes(".jpeg")&&!url.includes(".gif"))||storage[react.message.guild.id].starboard.messType==="0"){
-                    resp.files.push(attached.url);
-                }
-                i++;
-            });
-            if(storage[react.message.guild.id].starboard.messType==="0"){
-                resp.content=react.message.content;
-                resp.username=react.message.author.globalName||react.message.author.username;
-                resp.avatarURL=react.message.author.displayAvatarURL();
-                var c=client.channels.cache.get(storage[react.message.guild.id].starboard.channel);
-                if(!c.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageWebhooks)){
-                    storage[react.message.guild.id].starboard.messType="2";
-                    return;
-                }
-                var hook=await c.fetchWebhooks();
-                hook=hook.find(h=>h.token);
-                if(hook){
-                    hook.send(resp).then(h=>{
-                        storage[react.message.guild.id].starboard.posted[react.message.guild.id]=`webhook${h.id}`;
-                    });
-                }
-                else{
-                    client.channels.cache.get(storage[react.message.guild.id].starboard.channel).createWebhook({
-                        name: config.name,
-                        avatar: config.pfp,
-                    }).then(d=>{
-                        d.send(resp).then(h=>{
-                            storage[react.message.guild.id].starboard.posted[react.message.id]=`webhook${h.id}`;
-                        });
-                    });
-                }
-            }
-            else{
-                resp.embeds=[new EmbedBuilder()
-                    .setColor(0x006400)
-                    .setTitle("(Jump to message)")
-                    .setURL(`https://www.discord.com/channels/${react.message.guild.id}/${react.message.channel.id}/${react.message.id}`)
-                    .setAuthor({
-                        name: react.message.author.globalName||react.message.author.username,
-                        iconURL:react.message.author.displayAvatarURL(),
-                        url:`https://discord.com/users/${react.message.author.id}`
-                    })
-                    .setDescription(`${replyBlip?`${replyBlip}\n`:""}${react.message.content?react.message.content:"⠀"}`)
-                    .setTimestamp(new Date(react.message.createdTimestamp))
-                    .setFooter({
-                        text: react.message.channel.name,
-                        iconURL:"https://cdn.discordapp.com/attachments/1052328722860097538/1069496476687945748/141d49436743034a59dec6bd5618675d.png",
-                    })
-                    .setImage(react.message.attachments.first()?react.message.attachments.first().url:null)
-                ];
-                if(storage[react.message.guild.id].starboard.messType==="1"){
-                    resp.content=getStarMsg(react.message);
-                }
-                var c=client.channels.cache.get(storage[react.message.guild.id].starboard.channel)
-                if(!c.permissionsFor(client.user.id).has(PermissionFlagsBits.ManageWebhooks)){
-                    storage[react.message.guild.id].starboard.active=false;
-                    return;
-                }
-                c.send(resp).then(d=>{
-                    storage[react.message.guild.id].starboard.posted[react.message.id]=d.id;
-                });
-            }
-            try{storage[react.message.guild.id].users[react.message.author.id].stars++;}catch(e){}
-            
+    //Check if any server didn't get converted to emojiboard and convert the format. This should be wholly and fully unnecessary but still for safety
+    if(storage[react.message.guildId]?.hasOwnProperty("starboard")){
+        if(!storage[react.message.guildId].emojiboards?.hasOwnProperty(getEmojiFromMessage(storage[react.message.guildId]))&&storage[react.message.guildId]?.starboard?.active){
+            storage[react.message.guildId].emojiboards[getEmojiFromMessage(storage[react.message.guildId].starboard.emoji)]=structuredClone(storage[react.message.guildId].starboard);
         }
+        delete storage[react.message.guildId].starboard;
     }
 
     // Emojiboard reactions
