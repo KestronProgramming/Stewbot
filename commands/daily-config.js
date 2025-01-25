@@ -146,7 +146,7 @@ module.exports = {
                 }
             });
         }).catch(e => {
-            notify(1, "Devo daily: " + e.stack);
+            notify("Devo daily: " + e.stack);
         });
 
         // Verse of the day
@@ -182,7 +182,7 @@ module.exports = {
                 }
             });
         }).catch(e => {
-            notify(1, "Verse Of The Day error: " + e.stack);
+            notify("Verse Of The Day error: " + e.stack);
         });
 
         // Send the daily meme to each server
@@ -213,7 +213,7 @@ module.exports = {
                     }
                 }
             } catch (e) {
-                notify(1, "Daily meme error: " + e.stack);
+                notify("Daily meme error: " + e.stack);
             }
         })
     }

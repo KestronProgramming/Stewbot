@@ -74,7 +74,7 @@ module.exports = {
         applyContext(context);
 
         // TODO: move these IDs here and where the command is registered to be pulled from the config.json file
-        if (cmd.guild?.id === config.homeServer && cmd.channel.id === "986097382267715604") {
+        if (cmd.guild?.id === config.homeServer && cmd.channel.id === config.commandChannel) {
             const updateCode = cmd.options.getBoolean("update")
             const updateCommands = cmd.options.getBoolean("update_commands")
 
@@ -83,7 +83,7 @@ module.exports = {
             if (updateCommands) infoData += " | Running launchCommands.js"
 
             // Notify about restart
-            notify(1, `Bot restarted by <@${cmd.user.id}>` + infoData);
+            notify(`Bot restarted by <@${cmd.user.id}>` + infoData);
             cmd.followUp("Restarting..." + infoData);
 
             try {
@@ -96,11 +96,11 @@ module.exports = {
                                 if (actuallyHasError) {
                                     var errNotif = `Error: ${error?.message || ""}`
                                     errNotif += `\nStderr: ${stderr}`
-                                    notify(1, errNotif);
+                                    notify(errNotif);
                                     reject(0);
                                 }
                             }
-                            stdout && notify(1, stdout);
+                            stdout && notify(stdout);
                             resolve(0);
                         });
                     });
@@ -112,10 +112,10 @@ module.exports = {
                     const cachedLaunchFile = require.resolve('../Scripts/launchCommands.js')
                     if (cachedLaunchFile) delete require.cache[cachedLaunchFile]
                     const { launchCommands } = require("../Scripts/launchCommands.js");
-                    notify(1, launchCommands());
+                    notify(launchCommands());
                 }
             } catch (err) {
-                notify(1, String("Caught error while restarting: " + err.stack))
+                notify(String("Caught error while restarting: " + err.stack))
             }
 
             fs.writeFileSync("./storage.json", process.env.beta ? JSON.stringify(storage, null, 4) : JSON.stringify(storage));

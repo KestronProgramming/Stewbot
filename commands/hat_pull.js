@@ -135,7 +135,7 @@ module.exports = {
                     }
                 }
             } catch (e) {
-                notify(1, "hat_pull timer creating error: " + e.stack);
+                notify("hat_pull timer creating error: " + e.stack);
             }
         });
 

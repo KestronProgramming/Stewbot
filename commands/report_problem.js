@@ -55,7 +55,7 @@ module.exports = {
 	async execute(cmd, context) {
 		applyContext(context);
 		
-		notify(1,`**${cmd.options.getString("type")[0].toUpperCase()}${cmd.options.getString("type").slice(1)} Reported by ${cmd.user.username}** (${cmd.user.id})\n\n\`\`\`\n${escapeBackticks(cmd.options.getString("details"))}\`\`\``);
+		notify(`**${cmd.options.getString("type")[0].toUpperCase()}${cmd.options.getString("type").slice(1)} Reported by ${cmd.user.username}** (${cmd.user.id})\n\n\`\`\`\n${escapeBackticks(cmd.options.getString("details"))}\`\`\``);
         cmd.followUp({content:"I have reported the issue. Thank you.",ephemeral:true});
 	}
 };

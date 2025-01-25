@@ -206,13 +206,13 @@ async function checkRSS() {
 											embeds: [ embed ]
 										})
 									} catch (e) {
-										notify(1, "RSS channel error: " + e.message + "\n" + e.stack);
+										notify("RSS channel error: " + e.message + "\n" + e.stack);
 									}
 								}
 							}
 
 						} catch (e) {
-							notify(1, "RSS feed error: " + e.message + "\n" + e.stack);
+							notify("RSS feed error: " + e.message + "\n" + e.stack);
 						}
 					}
 				};

@@ -44,7 +44,7 @@ function holidayPfpCheck() {
     newPfp = newPfp || "main.jpg";
 
     if (process.env.beta) {
-        notify(1, `A pfp change to \`${newPfp}\` was triggered, which will be ignored in beta.`)
+        notify(`A pfp change to \`${newPfp}\` was triggered, which will be ignored in beta.`)
         newPfp = "beta.png"
     }
     

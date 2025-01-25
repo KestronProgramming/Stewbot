@@ -107,7 +107,7 @@ global.checkDirty = function(guildID, what, filter=false, applyGlobalFilter=fals
             blockedWordRegex = new RegExp(`(\\b|^)${word}(\\b|$)`, "ig")
         } catch (e) {
             // This should only ever be hit on old servers that have invalid regex before the escapeRegex was implemented
-            if (!e?.message?.includes?.("http")) notify(1, "Caught filter error:\n" + JSON.stringify(e.message) + "\n" + e.stack);
+            if (!e?.message?.includes?.("http")) notify("Caught filter error:\n" + JSON.stringify(e.message) + "\n" + e.stack);
             // We can ignore this filter word
             continue
         }

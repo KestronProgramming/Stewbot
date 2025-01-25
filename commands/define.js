@@ -78,7 +78,7 @@ module.exports = {
                 cmd.followUp("I'm sorry, I didn't find a definition for that");
             }
         }).catch(e=>{
-            notify(1, "Dictionary error: " + String(e));
+            notify("Dictionary error: " + String(e));
             cmd.followUp("I'm sorry, I didn't find a definition for that");
         });
     },

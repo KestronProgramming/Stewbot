@@ -171,7 +171,7 @@ module.exports = {
                 }
             }
             catch(e){
-                notify(1, `Error embeding message:\n${e.stack}`)
+                notify(`Error embeding message:\n${e.stack}`)
             }
         }
         var progsDeleted = false;

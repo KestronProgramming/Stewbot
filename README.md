@@ -14,8 +14,7 @@ To run this code with your own keys, make sure you have node installed, and then
 {
     "token": "<Discord Bot Token>",
     "clientId": "<Discord Bot ID>",
-    "noticeChannel": "<Channel for bot updates>",
-    "logWebhook": "<Webhook to log errors, etc>",
+    "logWebhook": "<Webhook to log errors (backup if noticeChannel can't be used)>",
     "wyrKey": "<Rapid-API key for WYRs>",
     "google": {
         "web": {

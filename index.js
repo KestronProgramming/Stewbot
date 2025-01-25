@@ -95,12 +95,12 @@ function readLatestDatabase() {
             return data;
         } catch (e) {
             corruptedFiles.push(location)
-            notify(1, `Storage location ${location} could not be loaded (*${e.message}*), trying the next one.`, true)
+            notify(`Storage location ${location} could not be loaded (*${e.message}*), trying the next one.`, true)
         }
     }
 
     // This case should never be hit - in theory we could try to load from the latest google drive. 
-    notify(1, `No storage locations could be loaded. Tried: ${sortedLocations.join(", ")}.`);
+    notify(`No storage locations could be loaded. Tried: ${sortedLocations.join(", ")}.`);
     process.exit();
 }
 global.storage = readLatestDatabase(); // Storage needs to be global for our submodules
@@ -500,29 +500,23 @@ function sendWelcome(guild) {
         }
     });
 }
-global.notify = function(urgencyLevel,what,useWebhook=false) {
+global.notify = function(what, useWebhook=false) {
     console.beta(what);
-    try{switch(urgencyLevel){
-        default:
-        case 0:
-            client.users.cache.get(process.env.ownerId).send(what);//Notify Kestron06 directly
-        break;
-        case 1:
-            if (useWebhook) {
-                fetch(process.env.logWebhook, {
-                    'method': 'POST',
-                    'headers': {
-                        "Content-Type": "application/json"
-                    },
-                    'body': JSON.stringify({
-                        'username': "Stewbot Notify Webhook", 
-                        "content": limitLength(what)
-                    })
+    try {
+        if (useWebhook) {
+            fetch(process.env.logWebhook, {
+                'method': 'POST',
+                'headers': {
+                    "Content-Type": "application/json"
+                },
+                'body': JSON.stringify({
+                    'username': "Stewbot Notify Webhook", 
+                    "content": limitLength(what)
                 })
-            }
-            else client.channels.cache.get(process.env.noticeChannel).send(limitLength(what));//Notify the staff of the Kestron Support server
-        break;
-    }}catch(e){
+            })
+        }
+        else client.channels.cache.get(config.noticeChannel).send(limitLength(what));//Notify the staff of the Kestron Support server
+    }catch(e){
         console.beta("Couldn't send notify()")
     }
 }
@@ -535,11 +529,11 @@ client.once("ready",async ()=>{
     
     // Schedule cloud backups every hour
     startBackupThread("./storage.json", 60*60*1000, error => {
-        notify(1, String(error));
+        notify(String(error));
     }, true)
 
     uptime=Math.round(Date.now()/1000);
-    notify(1,`Started <t:${uptime}:R>`);
+    notify(`Started <t:${uptime}:R>`);
     console.beta(`Logged into ${client.user.tag}`);
     
     client.user.setActivity("𝐒teward 𝐓o 𝐄xpedite 𝐖ork",{type:ActivityType.Custom},1000*60*60*4);
@@ -606,7 +600,7 @@ client.once("ready",async ()=>{
                 });
             }
         } catch (e) {
-            notify(1, "Error in dailies:\n" + e.stack);
+            notify("Error in dailies:\n" + e.stack);
         }
     });
 });
@@ -664,7 +658,7 @@ client.on("messageCreate",async msg => {
 
     // The sudo handler uses so many globals, it can stay in index.js for now
     if(msg.content.startsWith("~sudo ")&&!process.env.beta||msg.content.startsWith("~betaSudo ")&&process.env.beta){
-        const devadminChannel = await client.channels.fetch("986097382267715604");
+        const devadminChannel = await client.channels.fetch(config.commandChannel);
         await devadminChannel.guild.members.fetch(msg.author.id);
 
         if(devadminChannel?.permissionsFor(msg.author.id)?.has(PermissionFlagsBits.SendMessages)){
@@ -1719,28 +1713,28 @@ client.on("guildMemberUpdate",async (memberO,member)=>{
 
 // Bot events for staff notifications
 client.on("rateLimit",async d=>{
-    notify(1,"Ratelimited -\n\n"+d);
+    notify("Ratelimited -\n\n"+d);
 });
 client.on("error",async e=>{
-    notify(1,"Client emitted error:\n\n"+e.stack);
+    notify("Client emitted error:\n\n"+e.stack);
 });
 client.on("guildCreate",async guild=>{
     if (!bleedingEdgeDB) storage[guild.id]=structuredClone(defaultGuild);
     else storage[guild.id].isGuild = true;
-    notify(1,`Added to **a new server**!`);
+    notify(`Added to **a new server**!`);
     sendWelcome(guild);
 });
 client.on("guildDelete",async guild=>{
     delete storage[guild.id];
-    notify(1,`Removed from **a server**.`);
+    notify(`Removed from **a server**.`);
 });
 //#endregion Listeners
 
 //Error handling
-process.on('unhandledRejection', e=>notify(1, e.stack));
-process.on('unhandledException', e=>notify(1, e.stack));
-process.on('uncaughtException', e=>notify(1, e.stack));
-process.on('uncaughtRejection', e=>notify(1, e.stack));
+process.on('unhandledRejection', e=>notify(e.stack));
+process.on('unhandledException', e=>notify(e.stack));
+process.on('uncaughtException', e=>notify(e.stack));
+process.on('uncaughtRejection', e=>notify(e.stack));
 
 //Begin
 client.login(process.env.token);
