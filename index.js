@@ -905,8 +905,8 @@ client.on("messageReactionAdd",async (react,user)=>{
     }
 
     //TODO: Check if any servers didn't get converted to emojiboard in the storage.json, and if there are any stragglers convert the format and remove the following if statement and its contents
-    if(react.message.channel.id!==storage[react.message.guildId]?.starboard.channel&&(storage[react.message.guildId]?.starboard.emoji===react._emoji.name||storage[react.message.guildId]?.starboard.emoji===react._emoji.id)&&storage[react.message.guildId]?.starboard.active&&storage[react.message.guildId]?.starboard.channel&&!storage[react.message.guildId]?.starboard.posted.hasOwnProperty(react.message.id)){
-        var msg=await react.message.channel.messages.fetch(react.message.id);
+    if(react.message?.channel.id!==storage[react.message.guildId]?.starboard?.channel&&(storage[react.message.guildId]?.starboard.emoji===react._emoji.name||storage[react.message.guildId]?.starboard.emoji===react._emoji.id)&&storage[react.message.guildId]?.starboard.active&&storage[react.message.guildId]?.starboard.channel&&!storage[react.message.guildId]?.starboard.posted.hasOwnProperty(react.message.id)){
+        var msg=await react.message?.channel.messages.fetch(react.message.id);
         const userReactions = react.message.reactions.cache.filter(reaction => reaction.users.cache.has(react.message.author.id)&&(storage[react.message.guildId].starboard.emoji===reaction._emoji.name||storage[react.message.guildId].starboard.emoji===reaction._emoji.id));
         if(msg.reactions.cache.get(storage[msg.guildId].starboard.emoji).count>=storage[msg.guildId].starboard.threshold+(userReactions?.size===undefined?0:userReactions.size)){
             var replyBlip="";
