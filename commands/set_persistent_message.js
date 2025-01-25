@@ -63,7 +63,7 @@ module.exports = {
         if(!storage[cmd.guild.id].persistence.hasOwnProperty(cmd.channel.id)){
             storage[cmd.guild.id].persistence[cmd.channel.id]={
                 "active":   false,
-                "content":  "Jerry",
+                "content":  "<Persistent Message Placeholder>",
                 "lastPost": null
             };
         }
