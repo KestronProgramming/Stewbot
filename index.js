@@ -721,12 +721,18 @@ client.on("messageCreate",async msg => {
                 break;
                 case "fixStorage":
                     client.guilds.cache.forEach(guild=>{
-                        Object.keys(defaultGuild).forEach(key=>{
-                            if(!storage[guild].hasOwnProperty(key)){
-                                storage[guild][key]=structuredClone(defaultGuild[key]);
-                            }
-                        });
+                        if(!storage.hasOwnProperty(guild)){
+                            storage[guild]=structuredClone(defaultGuild);
+                        }
+                        else{
+                            Object.keys(defaultGuild).forEach(key=>{
+                                if(!storage[guild].hasOwnProperty(key)){
+                                    storage[guild][key]=structuredClone(defaultGuild[key]);
+                                }
+                            });
+                        }
                     });
+                    msg.reply(`Attempted to fix`);
                 break;
             }
         }
