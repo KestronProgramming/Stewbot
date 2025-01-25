@@ -720,7 +720,7 @@ client.on("messageCreate",async msg => {
                     undefined.instructed_to_crash = instructed_to_crash
                 break;
                 case "fixStorage":
-                    client.guilds.cache.forEaxch(guild=>{
+                    client.guilds.cache.forEach(guild=>{
                         Object.keys(defaultGuild).forEach(key=>{
                             if(!storage[guild].hasOwnProperty(key)){
                                 storage[guild][key]=structuredClone(defaultGuild[key]);
