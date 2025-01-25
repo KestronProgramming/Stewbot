@@ -906,7 +906,7 @@ client.on("messageReactionAdd",async (react,user)=>{
 
     //Check if any server didn't get converted to emojiboard and convert the format. This should be wholly and fully unnecessary but still for safety
     if(storage[react.message.guildId]?.hasOwnProperty("starboard")){
-        if(!storage[react.message.guildId].emojiboards?.hasOwnProperty(getEmojiFromMessage(storage[react.message.guildId]))&&storage[react.message.guildId]?.starboard?.active){
+        if(!storage[react.message.guildId].emojiboards?.hasOwnProperty(getEmojiFromMessage(storage[react.message.guildId].starboard.emoji))&&storage[react.message.guildId]?.starboard?.active){
             storage[react.message.guildId].emojiboards[getEmojiFromMessage(storage[react.message.guildId].starboard.emoji)]=structuredClone(storage[react.message.guildId].starboard);
         }
         delete storage[react.message.guildId].starboard;
