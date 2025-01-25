@@ -1,0 +1,12 @@
+{
+    "pfp":"https://stewbot.kestron.software/stewbot.jpg",
+    "install":"https://discord.com/oauth2/authorize?client_id=966167746243076136",
+    "themeColor":"0x006400",
+    "name":"Stewbot",
+    "homeServer":"983074750165299250",
+    "commandChannel": "986097382267715604",
+    "noticeChannel": "1049130541863153737",
+    "aiNodeInterfaces": ["eth0"],
+    "aiNodePort": 12345,
+    "aiModel": "qwen2.5:7b"
+}
