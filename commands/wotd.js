@@ -54,7 +54,7 @@ module.exports = {
 		applyContext(context);
 
 		storage.wotd=wotdList[Math.floor(Math.random()*wotdList.length)];
-		notify(1, `WOTD is now ||${storage.wotd}||, use \`~sudo setWord jerry\` to change it.`)
+		notify(`WOTD is now ||${storage.wotd}||, use \`~sudo setWord jerry\` to change it.`)
 	},
 
 	// Only button subscriptions matched will be sent to the handler 

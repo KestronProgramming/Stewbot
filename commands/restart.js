@@ -7,10 +7,45 @@ function applyContext(context = {}) {
 }
 // #endregion Boilerplate
 const fs = require("fs");
-const { exec } = require('child_process');
+const { spawn, exec } = require('child_process');
 const config = require("../data/config.json");
+const path = require('path');
+const os = require('os');
+
+const PID_FILE = path.join(os.tmpdir(), 'stewbot-maintenance.pid');
+
+function killMaintenanceBot() {
+    if (fs.existsSync(PID_FILE)) {
+        const pid = parseInt(fs.readFileSync(PID_FILE, 'utf8'));
+        try {
+            process.kill(pid, 'SIGTERM');
+        } catch (err) {
+            if (err.code === 'ESRCH') {
+                console.log('Maintenance process already exited');
+            }
+        }
+        fs.unlinkSync(PID_FILE);
+    }
+}
+
+function startMaintenanceHandler() {
+    const nodePath = process.argv[0];
+    const small = spawn(nodePath, [path.join(__dirname, '../Scripts/maintenanceMessage.js')], {
+        detached: true,
+        stdio: 'ignore'
+    });
+    
+    small.on('error', (err) => {
+        console.beta('Failed to start maintenance:', err);
+    });
+
+    small.unref();    
+}
+
 
 module.exports = {
+    killMaintenanceBot,
+    
     data: {
         command: null, // TODO: devadmin command globals. Really this is the only one rn
 
@@ -39,7 +74,7 @@ module.exports = {
         applyContext(context);
 
         // TODO: move these IDs here and where the command is registered to be pulled from the config.json file
-        if (cmd.guild?.id === config.homeServer && cmd.channel.id === "986097382267715604") {
+        if (cmd.guild?.id === config.homeServer && cmd.channel.id === config.commandChannel) {
             const updateCode = cmd.options.getBoolean("update")
             const updateCommands = cmd.options.getBoolean("update_commands")
 
@@ -48,7 +83,7 @@ module.exports = {
             if (updateCommands) infoData += " | Running launchCommands.js"
 
             // Notify about restart
-            notify(1, `Bot restarted by <@${cmd.user.id}>` + infoData);
+            notify(`Bot restarted by <@${cmd.user.id}>` + infoData);
             cmd.followUp("Restarting..." + infoData);
 
             try {
@@ -61,11 +96,11 @@ module.exports = {
                                 if (actuallyHasError) {
                                     var errNotif = `Error: ${error?.message || ""}`
                                     errNotif += `\nStderr: ${stderr}`
-                                    notify(1, errNotif);
+                                    notify(errNotif);
                                     reject(0);
                                 }
                             }
-                            stdout && notify(1, stdout);
+                            stdout && notify(stdout);
                             resolve(0);
                         });
                     });
@@ -74,16 +109,20 @@ module.exports = {
                 // Update commands if requested
                 if (updateCommands) {
                     // Grab the latest version
-                    const cachedLaunchFile = require.resolve('../launchCommands.js')
+                    const cachedLaunchFile = require.resolve('../Scripts/launchCommands.js')
                     if (cachedLaunchFile) delete require.cache[cachedLaunchFile]
-                    const { launchCommands } = require("../launchCommands.js");
-                    notify(1, launchCommands());
+                    const { launchCommands } = require("../Scripts/launchCommands.js");
+                    notify(launchCommands());
                 }
             } catch (err) {
-                notify(1, String("Caught error while restarting: " + err.stack))
+                notify(String("Caught error while restarting: " + err.stack))
             }
 
             fs.writeFileSync("./storage.json", process.env.beta ? JSON.stringify(storage, null, 4) : JSON.stringify(storage));
+            
+            // Start the maintenance bot to handle commands during this time
+            startMaintenanceHandler();
+            
             setTimeout(() => { process.exit(0) }, 5000);
         }
     }

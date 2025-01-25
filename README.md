@@ -1,26 +1,38 @@
 # Stewbot
-This is the open source page for Stewbot, an advanced Discord bot with the intention of helping keep your server running smoothly while also providing entertainment.
+This is the open source repository for Stewbot, an advanced Discord bot with the intention of helping keep your server running smoothly while also providing entertainment.
 Stewbot is completely open source and free.
 
 ## Links
-- [App Directory](https://discord.com/application-directory/966167746243076136)
+- [App Directory](https://discord.com/discovery/applications/966167746243076136)
 - [Website](https://stewbot.kestron.software)
 - [Support Server](https://discord.gg/k3yVkrrvez)
 
 ## Running Locally
-To run this code with your own tokens, make sure you have node installed, and then you need to make a file called "env.json" in the same directory, and add the following fields:
+To run this code with your own keys, make sure you have node installed, and then you need to make a file called "env.json" this root directory, and add the following fields:
+
 ```json
 {
-    "token":"DISCORD BOT TOKEN",
-    "ownerId":"YOUR USER ID",
-    "clientId":"THE BOT'S ID",
-    "noticeChannel":"A CHANNEL ID TO POST NOTIFICATIONS TO",
-    "inworldKey": "Inworld AI Key",
-    "inworldSecret": "Inworld AI Secret",
-    "inworldScene":"Inworld AI Character link",
-    "logWebhook":"A webhook for errors to be posted to"
+    "token": "<Discord Bot Token>",
+    "clientId": "<Discord Bot ID>",
+    "logWebhook": "<Webhook to log errors (backup if noticeChannel can't be used)>",
+    "wyrKey": "<Rapid-API key for WYRs>",
+    "google": {
+        "web": {
+            "client_id": "<Google Client-ID>",
+            "project_id": "<Project-ID>",
+            "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+            "token_uri": "https://oauth2.googleapis.com/token",
+            "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+            "client_secret": "<Client-Secret>",
+            "redirect_uris": [
+                "https://developers.google.com/oauthplayground"
+            ]
+        },
+        "folderID": "<Google-Drive folder for backups>"
+    }
 }
 ```
-Make sure to `npm install` @discordjs/builders, @inworld/nodejs-sdk, @vitalets/google-translate-api, canvas, discord.js, and fs.
-You will also need to run `node launchCommands.js` before you start the bot, which will automatically fill commands.json.
-Then simply use either run.bat or run.sh depending on your system, or just node index.js.
+
+The Discord fields allow for the bot to run. The rapid API key is needed for Would You Rather prompts. The Google secrets are needed to backup the database to Google Drive.
+
+Make sure to run `npm install`, and `node launchCommands.js` before you start the bot to register command on discord. Start the bot with `./run.sh` on Linux, or `node index.js` on Windows.

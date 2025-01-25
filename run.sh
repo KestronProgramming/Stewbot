@@ -21,5 +21,5 @@ export PATH=/usr/bin:/bin:/usr/sbin:/sbin:$PATH
 
 while true; do
   /usr/local/bin/node index.js 2>&1 | ./stderrLog.js
-  sleep 1
+  sleep 10
 done

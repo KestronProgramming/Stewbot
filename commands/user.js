@@ -7,6 +7,13 @@ function applyContext(context={}) {
 }
 // #endregion Boilerplate
 
+function getDiscordJoinTimestamp(userId) {
+    const discordEpoch = 1420070400000; // Discord's epoch in milliseconds
+    const binarySnowflake = BigInt(userId).toString(2).padStart(64, "0"); // Convert to 64-bit binary
+    const timestamp = parseInt(binarySnowflake.slice(0, 42), 2) + discordEpoch;
+    return Math.floor(timestamp / 1000);
+}
+
 module.exports = {
 	data: {
 		// Slash command data
@@ -63,9 +70,14 @@ module.exports = {
 				"color": 0x006400,
 				"fields": [
 					{
-						"name": `Joined Discord`,
+						"name": `Joined Server`,
 						"value": `<t:${Math.floor(who.joinedTimestamp / 1000)}:f>, <t:${Math.floor(who.joinedTimestamp / 1000)}:R>`,
 						"inline": true
+					},
+					{
+					"name": `Joined Discord`,
+					"value": `<t:${getDiscordJoinTimestamp(who.id)}:f>, <t:${getDiscordJoinTimestamp(who.id)}:R>`,
+					"inline": true
 					}
 				],
 				"timestamp": new Date(),
@@ -88,7 +100,7 @@ module.exports = {
 					"text": who.user.username,
 					"icon_url": who.user.displayAvatarURL()
 				},
-				"url": `https://discord.com/users/949401296404905995`
+				"url": `https://discord.com/users/${who.id}`
 			}], 
 			allowedMentions: { parse: [] }
 		});

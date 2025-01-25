@@ -207,7 +207,7 @@ module.exports = {
 
 			}
 		} catch (e) {
-			notify(1, "Caught clone_emoji error:\n"+e.stack);
+			notify("Caught clone_emoji error:\n"+e.stack);
 			try{ cmd.followUp(`There seems to have been an error, perhaps the message had an invalid emoji?`); }catch{}
 		}
 	}

@@ -67,7 +67,7 @@ module.exports = {
 			try {
 				await cmd.channel.bulkDelete(numToDelete);
 			} catch(e) {
-				notify(1, `Error bulk deleting: ${e.stack}`)
+				notify(`Error bulk deleting: ${e.stack}`)
 				dateLimited = -1 // idk, this is a good open place to note we had an error
 			}
 		}

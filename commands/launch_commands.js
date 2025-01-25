@@ -44,8 +44,8 @@ module.exports = {
 		applyContext(context);
 		
 		// Code
-        if(cmd.guild?.id===config.homeServer &&cmd.channel.id==="986097382267715604"){
-            await cmd.followUp(`Launching commands...\n${require(`../launchCommands.js`).launchCommands()}`);
+        if(cmd.guild?.id===config.homeServer &&cmd.channel.id===config.commandChannel){
+            await cmd.followUp(`Launching commands...\n${require(`../Scripts/launchCommands.js`).launchCommands()}`);
 			var newCmds=JSON.parse(require("fs").readFileSync(`data/commands.json`,"utf-8"));
 			Object.keys(newCmds).forEach(key=>{
 				cmds[key]=newCmds[key];
@@ -55,7 +55,7 @@ module.exports = {
             cmd.followUp(`Not here.`);
         }
         else{
-            notify(1,`Launch commands was used outside of Kestron Central by <@${cmd.user.id}>.`);
+            notify(`Launch commands was used outside of Kestron Central by <@${cmd.user.id}>.`);
 			cmd.followUp(`No.`);
         }
 	}

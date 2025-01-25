@@ -171,7 +171,7 @@ async function getAiResponse(threadID, message, contextualData={}, notify=null, 
                 delete convoCache[threadID];
                 return getAiResponse(threadID, message, contextualData, notify, retryAttempt+1, ollamaInstances);
             } else {
-                notify && notify(1, `Error with AI API response: \n${JSON.stringify(AIResult)}`);
+                notify && notify(`Error with AI API response: \n${JSON.stringify(AIResult)}`);
                 return [`Sorry, there was an error with the AI response. It has already been reported. Try again later.`, false];
             }
         }
@@ -181,7 +181,7 @@ async function getAiResponse(threadID, message, contextualData={}, notify=null, 
         response = AIResult.message.content;
     }
     catch (e) {
-        notify && notify(1, `AI API response has no content: \n${e.stack}`)
+        notify && notify(`AI API response has no content: \n${e.stack}`)
         console.beta(e);
         response = `Sorry, there was an error with the AI response. It has already been reported. Try again later.`;
     }

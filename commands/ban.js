@@ -224,7 +224,7 @@ module.exports = {
 					});
 				}
 			} catch (e) {
-				notify(1, "Error creating tempBan removing timer: " + e.stack);
+				notify("Error creating tempBan removing timer: " + e.stack);
 			}
 		});
 	}
