@@ -1,5 +1,9 @@
 const {Client}=require("discord.js");
 
+// Make sure only one is running at a time
+const { killMaintenanceBot } = require("../commands/restart");
+killMaintenanceBot()
+
 const client=new Client({
     intents:[],
     partials:[]

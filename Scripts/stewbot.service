@@ -4,7 +4,7 @@
 # sudo systemctl daemon-reload
 
 ## Then manage like a normal systemd task
-# sudo systemctl enable stewbot.service
+# sudo systemctl enable --now stewbot.service
 
 [Unit]
 Description=Stewbot Startup Script
@@ -14,10 +14,13 @@ After=network.target
 Type=simple
 ExecStart=/bin/sh /home/guest/StewbotGit/run.sh
 WorkingDirectory=/home/guest/StewbotGit
-Environment="PATH=/usr/bin:/bin:/usr/sbin:/sbin"
 User=guest
 Group=guest
 Restart=always
+
+Environment="PATH=/usr/bin:/bin:/usr/sbin:/sbin"
+
+ExecStopPost=/bin/sh -c "XDG_RUNTIME_DIR=/run/user/$(id -u guest) DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/$(id -u guest)/bus /usr/bin/systemd-run --user --unit=maintenance-message /usr/local/bin/node /home/guest/StewbotGit/Scripts/maintenanceMessage.js"
 
 [Install]
 WantedBy=default.target
