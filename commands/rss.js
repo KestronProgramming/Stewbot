@@ -319,6 +319,8 @@ module.exports = {
 
 	async execute(cmd, context) {
 		applyContext(context);
+
+		if (!storage.rss) storage.rss = storage.rss || {};
 		
 		switch(cmd.options.getSubcommand()){
 			case 'check':

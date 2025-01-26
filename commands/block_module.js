@@ -172,7 +172,7 @@ module.exports = {
             })
         }
 
-        cmd.respond(autocompletes);
+        await cmd.respond(autocompletes);
 	}
 };
 
