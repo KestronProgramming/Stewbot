@@ -406,7 +406,8 @@ function daily(dontLoop=false){
     // Dispatch daily calls to all listening modules
     Object.values(dailyListenerModules).forEach(module => module.daily(pseudoGlobals))
 }
-function sendWelcome(guild) {
+async function sendWelcome(guild) {
+    guild = await client.guilds.fetch(guild.id);
     guild.channels.cache.forEach(chan=>{
         if(chan.permissionsFor(client.user.id).has(PermissionFlagsBits.ViewChannel)){
             chan?.messages?.fetch({limit:3}).then(messages=>messages.forEach(msg=>{
@@ -545,11 +546,25 @@ client.once("ready",async ()=>{
     setTimeout(daily,((now.getHours()>11?11+24-now.getHours():11-now.getHours())*(60000*60))+((60-now.getMinutes())*60000));
 
     // Check for new servers that got added / removed while we were offline
-    // const guilds = await client.guilds.fetch(); // Fetches all guilds
-    // const serverIds = guilds.map(guild => guild.id);
-    // serverIds.forEach(server => {
+    const guilds = await client.guilds.fetch();
+    guilds.forEach(guild => {
+        const serverInStorage = storage[guild.id]
+        if(!serverInStorage){
+            notify("New server detected on boot ")
+            storage[guild.id] = structuredClone(defaultGuild);
+            sendWelcome(guild)
+        }
+    })
 
-    // })
+    // Check for guilds in storage that are no longer in discord
+    const validGuildIds = new Set(Array.from(guilds.keys()));
+    Object.entries(storage)
+        .filter(([id, data]) => data?.isGuild && !validGuildIds.has(id))
+        .forEach(([id, data]) => {
+            // notify(`Deleting storage for guild ${id} that no longer exists`);
+            console.log(`Deleting storage for guild ${id} that no longer exists`);
+            // delete storage[id];
+        });
 
     // Register time based stuff 
     Object.keys(storage).forEach(key=>{
@@ -1663,7 +1678,7 @@ client.on("guildCreate",async guild=>{
     if (!bleedingEdgeDB) storage[guild.id]=structuredClone(defaultGuild);
     else storage[guild.id].isGuild = true;
     notify(`Added to **a new server**!`);
-    sendWelcome(guild);
+    await sendWelcome(guild);
 });
 client.on("guildDelete",async guild=>{
     delete storage[guild.id];
