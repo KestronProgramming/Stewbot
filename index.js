@@ -550,21 +550,25 @@ client.once("ready",async ()=>{
     guilds.forEach(guild => {
         const serverInStorage = storage[guild.id]
         if(!serverInStorage){
-            notify("New server detected on boot ")
+            notify("Added to **new server** (detected on boot scan)")
             storage[guild.id] = structuredClone(defaultGuild);
-            sendWelcome(guild)
+            sendWelcome(guild);
         }
     })
 
     // Check for guilds in storage that are no longer in discord
     const validGuildIds = new Set(Array.from(guilds.keys()));
+    const serverCount = Object.entries(storage).filter(([id, data]) => data?.isGuild).length;
+    let serversDeleted = 0;
     Object.entries(storage)
         .filter(([id, data]) => data?.isGuild && !validGuildIds.has(id))
         .forEach(([id, data]) => {
-            // notify(`Deleting storage for guild ${id} that no longer exists`);
-            console.log(`Deleting storage for guild ${id} that no longer exists`);
-            // delete storage[id];
+            notify("Removed from **a server** (detected on boot scan)")
+            serversDeleted++;
+            delete storage[id];
         });
+    const newServerCount = Object.entries(storage).filter(([id, data]) => data?.isGuild).length;
+    notify(`Deleted ${serversDeleted}/${serverCount} servers from storage. There are ${newServerCount} servers left.`)
 
     // Register time based stuff 
     Object.keys(storage).forEach(key=>{
