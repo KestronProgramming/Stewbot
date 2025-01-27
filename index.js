@@ -691,6 +691,13 @@ client.on("messageCreate",async msg => {
 
         if(devadminChannel?.permissionsFor(msg.author.id)?.has(PermissionFlagsBits.SendMessages)){
             switch(msg.content.split(" ")[1].replaceAll(".","")){
+                case "setBanner":
+                    const bannerName = msg.content.split(" ")[2];
+                    const bannerPath = `./pfps/${bannerName}`;
+                    const bannerBuffer = fs.readFileSync(bannerPath)
+                    client.user.setBanner(bannerBuffer)
+                    msg.reply("Done")
+                    break;
                 case "permStatus":
                     var missingPerms=[];
                     Object.keys(PermissionFlagsBits).forEach(perm=>{
