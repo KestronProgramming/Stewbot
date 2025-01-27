@@ -536,6 +536,7 @@ client.once("ready",async ()=>{
     notify(`Started <t:${uptime}:R>`);
     console.beta(`Logged into ${client.user.tag}`);
     
+    // Status
     client.user.setActivity("𝐒teward 𝐓o 𝐄xpedite 𝐖ork",{type:ActivityType.Custom},1000*60*60*4);
     setInterval(()=>{
         client.user.setActivity("𝐒teward 𝐓o 𝐄xpedite 𝐖ork",{type:ActivityType.Custom},1000*60*60*4);
@@ -543,6 +544,14 @@ client.once("ready",async ()=>{
     var now=new Date();
     setTimeout(daily,((now.getHours()>11?11+24-now.getHours():11-now.getHours())*(60000*60))+((60-now.getMinutes())*60000));
 
+    // Check for new servers that got added / removed while we were offline
+    // const guilds = await client.guilds.fetch(); // Fetches all guilds
+    // const serverIds = guilds.map(guild => guild.id);
+    // serverIds.forEach(server => {
+
+    // })
+
+    // Register time based stuff 
     Object.keys(storage).forEach(key=>{
         try {
             if(storage[key]?.hasOwnProperty("timer")){
