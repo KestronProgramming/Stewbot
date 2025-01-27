@@ -6,6 +6,7 @@
     "homeServer":"983074750165299250",
     "commandChannel": "986097382267715604",
     "noticeChannel": "1049130541863153737",
+    "betaNoticeChannel": "1221938602397667430",
     "aiNodeInterfaces": ["eth0"],
     "aiNodePort": 12345,
     "aiModel": "qwen2.5:7b"

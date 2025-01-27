@@ -1,4 +1,5 @@
-const { ContextMenuCommandBuilder, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
+const { ContextMenuCommandBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
+
 function applyContext(context={}) {
 	for (key in context) {
 		this[key] = context[key];
@@ -13,23 +14,24 @@ function applyContext(context={}) {
 
 module.exports = {
 	data: {
-		command: new SlashCommandBuilder().setName('jerry').setDescription('Jerry Jerry Jerry Jerry Yeah!!!').addBooleanOption(option=>
+		command: new SlashCommandBuilder()
+			.setContexts(
+				IT.Guild,          // Server command
+				IT.BotDM,          // Bot's DMs
+				IT.PrivateChannel, // User commands
+			)
+			.setIntegrationTypes(
+				AT.GuildInstall,   // Install to servers
+				AT.UserInstall     // Install to users
+			)
+			.setName('jerry').setDescription('Jerry Jerry Jerry Jerry Yeah!!!').addBooleanOption(option=>
                 option.setName("private").setDescription("Make the response ephemeral?")//Do not remove private option unless the command is REQUIRED to be ephemeral or non-ephemeral.
             ),
 		
-		// Optional fields below this point
+		////// Optional fields below this point //////
 
-		extra: {"contexts": [0,1,2], "integration_types": [0,1]},//Where the command can be used and what kind of installs it supports
-        /*
-            Contexts
-             - 0: Server command
-             - 1: Bot's DMs
-             - 2: User command
-
-            Integration Types:
-             - 0: Installed to servers
-             - 1: Installed to users
-        */
+		// For breaking discord API changes, inject extra command metadata here
+		// extra: {},
 
 		// When this command defers, should it be ephemeral? (if the private option is defined, it can override this)
 		// deferEphemeral: false,

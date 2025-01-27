@@ -516,7 +516,7 @@ global.notify = function(what, useWebhook=false) {
                 })
             })
         }
-        else client.channels.cache.get(config.noticeChannel).send(limitLength(what));//Notify the staff of the Kestron Support server
+        else client.channels.cache.get(process.env.beta ? config.betaNoticeChannel : config.noticeChannel).send(limitLength(what));//Notify the staff of the Kestron Support server
     }catch(e){
         console.beta("Couldn't send notify()")
     }

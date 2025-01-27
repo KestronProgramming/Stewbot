@@ -70,7 +70,7 @@ module.exports = {
             });
             i++;
         }
-        await client.channels.cache.get(process.env.noticeChannel).send({ 
+        await client.channels.cache.get(process.env.beta ? config.betaNoticeChannel : config.noticeChannel).send({ 
             content: limitLength(`User ${cmd.user.username} submitted a meme for evaluation.`), 
             files: fs.readdirSync("./tempMemes").map(a => `./tempMemes/${a}`), 
             components: components 
