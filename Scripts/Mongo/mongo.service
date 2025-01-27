@@ -1,0 +1,16 @@
+## To load into systemd, copy this file to /etc/systemd/system/mongo.service
+## Then run:
+# sudo systemctl daemon-reload
+
+[Unit]
+Description=MongoDB Database Server
+Documentation=man:mongod(1)
+After=network.target
+
+[Service]
+User=guest
+Group=guest
+ExecStart=/usr/local/bin/mongod --quiet --config /etc/mongodb.conf
+
+[Install]
+WantedBy=multi-user.target

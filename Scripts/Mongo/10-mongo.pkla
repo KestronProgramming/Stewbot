@@ -1,0 +1,9 @@
+# For polkit version <= v106, copy this file to /etc/polkit-1/localauthority/50-local.d/10-mongo.pkla
+[Allow user full control over mongo.service]
+Identity=unix-user:guest
+Action=org.freedesktop.systemd1.manage-units
+ResultAny=yes
+ResultInactive=yes
+ResultActive=yes
+# Target ONLY mongo.service
+Condition=Systemd.Unit.MayStartAs(mongo.service); Systemd.Unit.MayStopAs(mongo.service); Systemd.Unit.MayRestartAs(mongo.service)
