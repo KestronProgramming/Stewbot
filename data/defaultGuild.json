@@ -1,4 +1,5 @@
 {
+    "isGuild": true,
     "persistence":{},
     "daily":{
         "memes":{

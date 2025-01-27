@@ -406,7 +406,8 @@ function daily(dontLoop=false){
     // Dispatch daily calls to all listening modules
     Object.values(dailyListenerModules).forEach(module => module.daily(pseudoGlobals))
 }
-function sendWelcome(guild) {
+async function sendWelcome(guild) {
+    guild = await client.guilds.fetch(guild.id);
     guild.channels.cache.forEach(chan=>{
         if(chan.permissionsFor(client.user.id).has(PermissionFlagsBits.ViewChannel)){
             chan?.messages?.fetch({limit:3}).then(messages=>messages.forEach(msg=>{
@@ -536,6 +537,7 @@ client.once("ready",async ()=>{
     notify(`Started <t:${uptime}:R>`);
     console.beta(`Logged into ${client.user.tag}`);
     
+    // Status
     client.user.setActivity("𝐒teward 𝐓o 𝐄xpedite 𝐖ork",{type:ActivityType.Custom},1000*60*60*4);
     setInterval(()=>{
         client.user.setActivity("𝐒teward 𝐓o 𝐄xpedite 𝐖ork",{type:ActivityType.Custom},1000*60*60*4);
@@ -543,6 +545,32 @@ client.once("ready",async ()=>{
     var now=new Date();
     setTimeout(daily,((now.getHours()>11?11+24-now.getHours():11-now.getHours())*(60000*60))+((60-now.getMinutes())*60000));
 
+    // Check for new servers that got added / removed while we were offline
+    const guilds = await client.guilds.fetch();
+    guilds.forEach(guild => {
+        const serverInStorage = storage[guild.id]
+        if(!serverInStorage){
+            notify("Added to **new server** (detected on boot scan)")
+            storage[guild.id] = structuredClone(defaultGuild);
+            sendWelcome(guild);
+        }
+    })
+
+    // Check for guilds in storage that are no longer in discord
+    const validGuildIds = new Set(Array.from(guilds.keys()));
+    const serverCount = Object.entries(storage).filter(([id, data]) => data?.isGuild).length;
+    let serversDeleted = 0;
+    Object.entries(storage)
+        .filter(([id, data]) => data?.isGuild && !validGuildIds.has(id))
+        .forEach(([id, data]) => {
+            notify("Removed from **a server** (detected on boot scan)")
+            serversDeleted++;
+            delete storage[id];
+        });
+    const newServerCount = Object.entries(storage).filter(([id, data]) => data?.isGuild).length;
+    notify(`Deleted ${serversDeleted}/${serverCount} servers from storage. There are ${newServerCount} servers left.`)
+
+    // Register time based stuff 
     Object.keys(storage).forEach(key=>{
         try {
             if(storage[key]?.hasOwnProperty("timer")){
@@ -1654,7 +1682,7 @@ client.on("guildCreate",async guild=>{
     if (!bleedingEdgeDB) storage[guild.id]=structuredClone(defaultGuild);
     else storage[guild.id].isGuild = true;
     notify(`Added to **a new server**!`);
-    sendWelcome(guild);
+    await sendWelcome(guild);
 });
 client.on("guildDelete",async guild=>{
     delete storage[guild.id];
