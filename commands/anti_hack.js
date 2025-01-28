@@ -68,7 +68,7 @@ module.exports = {
 									for(var i=0;i<storage[msg.guild.id].users[msg.author.id].lastMessages.length;i++){
 										try{
 											var badMess=await client.channels.cache.get(storage[msg.guild.id].users[msg.author.id].lastMessages[i].split("/")[0]).messages.fetch(storage[msg.guild.id].users[msg.author.id].lastMessages[i].split("/")[1]);
-											badMess.delete().catch(e=>{console.log(e)});
+											badMess.delete().catch(e=>{});
 											// storage[msg.guild.id].users[msg.author.id].lastMessages.splice(i,1);
 											// i--;
 										}
@@ -80,7 +80,7 @@ module.exports = {
 
 								// Warn, then delete the message afterwards so they see it was deleted
 								await msg.reply({content:`I have detected unusual activity from <@${msg.author.id}>. I have temporarily applied a timeout. To remove this timeout, <@${msg.author.id}> can use ${cmds.captcha.mention} in a DM with me, or a moderator can remove this timeout manually.\n\nIf a mod wishes to disable this behavior, designed to protect servers from mass spam, ping, and NSFW hacked or spam accounts, run ${cmds.general_config.mention} and specify to disable Anti Hack Protection.`,components:[new ActionRowBuilder().addComponents(...sendRow)]});
-								setTimeout(_ => { msg.delete() }, 100)
+								setTimeout(_ => { msg.delete().catch(e=>{}) }, 100)
 							}
 						}
 						catch(e){}
