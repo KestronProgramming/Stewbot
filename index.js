@@ -522,6 +522,14 @@ global.notify = function(what, useWebhook=false) {
         console.beta("Couldn't send notify()")
     }
 }
+function checkPersistentDeletion(guild,channel,message){
+    if(storage[guild].persistence[channel].lastPost!==message){
+        return;
+    }
+    storage[guild].persistence[channel].active=false;
+    channel=client.channels.cache.get(channel);
+    if(channel.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)) channel.send(`I have detected that a moderator deleted the persistent message set for this channel, and as such I have deactivated it. To reactivate it, a moderator can run ${cmds.set_persistent_message.mention}.`);
+}
 //#endregion Functions
 
 //#region Listeners
@@ -959,6 +967,10 @@ client.on("messageDelete",async msg=>{
     // Create needed storage objects
     if(!storage.hasOwnProperty(msg.guild.id)){
         storage[msg.guild.id]=structuredClone(defaultGuild);
+    }
+
+    if(storage[msg.guild.id]?.persistence?.[msg.channel.id]?.active&&storage[msg.guild.id]?.persistence?.[msg.channel.id]?.lastPost===msg.id){
+        setTimeout(()=>{checkPersistentDeletion(msg.guild.id,msg.channel.id,msg.id)},1500);
     }
 
     // Emojiboard deleted handlers

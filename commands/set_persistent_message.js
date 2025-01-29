@@ -71,7 +71,7 @@ module.exports = {
         storage[cmd.guild.id].persistence[cmd.channel.id].active=cmd.options.getBoolean("active");
 
         if(cmd.options.getString("content")!==null) storage[cmd.guild.id].persistence[cmd.channel.id].content=cmd.options.getString("content");
-        if(cmd.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.ManageWebhooks)){
+        if(cmd.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.ManageWebhooks)&&cmd.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.ReadMessageHistory)&&cmd.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.ManageMessages)){
             cmd.followUp(`I have set your settings for this channel's persistent messages.`);
 
             var resp={
@@ -106,7 +106,7 @@ module.exports = {
             }
         }
         else{
-            cmd.followUp(`I need to be able to delete messages as well as manage webhooks for this channel. Without these permissions I cannot manage persistent messages here.`);
+            cmd.followUp(`I need to be able to read message history, delete messages, and manage webhooks to use persistent messages. Without these permissions I cannot manage persistent messages here.`);
             storage[cmd.guild.id].persistence[cmd.channel.id].active=false;
         }
 	},
