@@ -3,7 +3,7 @@ const envs = require('./env.json');
 Object.keys(envs).forEach(key => process.env[key] = envs[key] );
 if (process.env.beta == 'false') delete process.env.beta; // ENVs are all strings, so make it falsy if it's "false"
 
-const bleedingEdgeDB = false;
+let mongoDB = false;
 
 global.config = require("./data/config.json");
 console.beta = (...args) => process.env.beta && console.log(...args)
@@ -18,6 +18,7 @@ console.beta("Importing everything else")
 const { getEmojiFromMessage, parseEmoji } = require('./util');
 const fs = require("fs");
 const crypto = require('crypto');
+const mongoose = require("mongoose");
 
 const { updateBlocklists } = require("./commands/badware_scanner.js")
 const { finTempSlow } = require("./commands/slowmode.js")
@@ -102,7 +103,6 @@ function readLatestDatabase() {
     process.exit();
 }
 global.storage = readLatestDatabase(); // Storage needs to be global for our submodules
-if (bleedingEdgeDB) global.storage = createDatabaseProxy(global.storage)
 let lastStorageHash = hash(storage);
 setInterval(() => {
     writeLocation = storageLocations[storageCycleIndex % storageLocations.length];
@@ -640,18 +640,16 @@ client.on("messageCreate",async msg => {
     // Create guild objects if they don't exist should stay up top
     msg.guildId=msg.guildId||"0";
 
-    if (!bleedingEdgeDB) {
-        if(msg.guildId!=="0"){
-            if(!storage.hasOwnProperty(msg.guildId)){
-                storage[msg.guildId]=structuredClone(defaultGuild);
-            }
-            if(!storage[msg.guildId].users.hasOwnProperty(msg.author.id)){
-                storage[msg.guildId].users[msg.author.id]=structuredClone(defaultGuildUser);
-            }
+    if(msg.guildId!=="0"){
+        if(!storage.hasOwnProperty(msg.guildId)){
+            storage[msg.guildId]=structuredClone(defaultGuild);
         }
-        if(!storage.hasOwnProperty(msg.author.id)){
-            storage[msg.author.id]=structuredClone(defaultUser);
+        if(!storage[msg.guildId].users.hasOwnProperty(msg.author.id)){
+            storage[msg.guildId].users[msg.author.id]=structuredClone(defaultGuildUser);
         }
+    }
+    if(!storage.hasOwnProperty(msg.author.id)){
+        storage[msg.author.id]=structuredClone(defaultUser);
     }
 
     if(msg.guild){
@@ -805,25 +803,24 @@ client.on("interactionCreate",async cmd=>{
         }
     }catch(e){}
 
-    if (!bleedingEdgeDB) {
-        try{
-            // NOTE: this is probably what is adding that null object to our DB
-            if(cmd.guildId!==0){
-                if(!storage.hasOwnProperty(cmd.guildId)){
-                    storage[cmd.guildId]=structuredClone(defaultGuild);
-                }
-                if(!storage[cmd.guildId].users.hasOwnProperty(cmd.user.id)){
-                    storage[cmd.guildId].users[cmd.user.id]=structuredClone(defaultGuildUser);
-                }
+    try{
+        // NOTE: this is probably what is adding that null object to our DB
+        if(cmd.guildId!==0){
+            if(!storage.hasOwnProperty(cmd.guildId)){
+                storage[cmd.guildId]=structuredClone(defaultGuild);
+            }
+            if(!storage[cmd.guildId].users.hasOwnProperty(cmd.user.id)){
+                storage[cmd.guildId].users[cmd.user.id]=structuredClone(defaultGuildUser);
             }
         }
-        catch(e){
-            cmd.guild={"id":"0"};
-        }
-        if(!storage.hasOwnProperty(cmd.user.id)){
-            storage[cmd.user.id]=structuredClone(defaultUser);
-        }
     }
+    catch(e){
+        cmd.guild={"id":"0"};
+    }
+    if(!storage.hasOwnProperty(cmd.user.id)){
+        storage[cmd.user.id]=structuredClone(defaultUser);
+    }
+
 
     // Autocomplete
     if (cmd.isAutocomplete()) {
@@ -914,21 +911,19 @@ client.on("interactionCreate",async cmd=>{
 client.on("messageReactionAdd",async (react,user)=>{
     if(react.message.guildId===null) return;
 
-    if (!bleedingEdgeDB) {
-        // Create storage objects if needed
-        if(react.message.guildId!=="0"){
-            if(!storage.hasOwnProperty(react.message.guildId)){
-                storage[react.message.guildId]=structuredClone(defaultGuild);
-                
-            }
-            if(!storage[react.message.guildId].users.hasOwnProperty(user.id)){
-                storage[react.message.guildId].users[user.id]=structuredClone(defaultGuildUser);
-                
-            }
+    // Create storage objects if needed
+    if(react.message.guildId!=="0"){
+        if(!storage.hasOwnProperty(react.message.guildId)){
+            storage[react.message.guildId]=structuredClone(defaultGuild);
+            
         }
-        if(!storage.hasOwnProperty(user.id)){
-            storage[user.id]=structuredClone(defaultUser);
+        if(!storage[react.message.guildId].users.hasOwnProperty(user.id)){
+            storage[react.message.guildId].users[user.id]=structuredClone(defaultGuildUser);
+            
         }
+    }
+    if(!storage.hasOwnProperty(user.id)){
+        storage[user.id]=structuredClone(defaultUser);
     }
 
     // Reaction filters
@@ -962,7 +957,7 @@ client.on("messageDelete",async msg=>{
     if(msg.guild?.id===undefined) return;
 
     // Create needed storage objects
-    if(!bleedingEdgeDB && !storage.hasOwnProperty(msg.guild.id)){
+    if(!storage.hasOwnProperty(msg.guild.id)){
         storage[msg.guild.id]=structuredClone(defaultGuild);
     }
 
@@ -1035,17 +1030,15 @@ client.on("messageDelete",async msg=>{
 client.on("messageUpdate",async (msgO,msg)=>{
     if(msg.guild?.id===undefined||client.user.id===msg.author?.id) return;//Currently there's no use for messageUpdate in DMs, only in servers. If this ever changes, remove the guildId check and add more further down
     
-    if (!bleedingEdgeDB) {
-        // Manage storage
-        if(!storage.hasOwnProperty(msg.author.id)){
-            storage[msg.author.id]=structuredClone(defaultUser);   
-        }
-        if(!storage.hasOwnProperty(msg.guildId)){
-            storage[msg.guildId]=structuredClone(defaultGuild);
-        }
-        if(!storage[msg.guildId].users.hasOwnProperty(msg.author.id)){
-            storage[msg.guildId].users[msg.author.id]=structuredClone(defaultGuildUser);
-        }
+    // Manage storage
+    if(!storage.hasOwnProperty(msg.author.id)){
+        storage[msg.author.id]=structuredClone(defaultUser);   
+    }
+    if(!storage.hasOwnProperty(msg.guildId)){
+        storage[msg.guildId]=structuredClone(defaultGuild);
+    }
+    if(!storage[msg.guildId].users.hasOwnProperty(msg.author.id)){
+        storage[msg.guildId].users[msg.author.id]=structuredClone(defaultGuildUser);
     }
 
     // Filter edit handler
@@ -1127,17 +1120,15 @@ client.on("messageUpdate",async (msgO,msg)=>{
 });
 
 client.on("guildMemberAdd",async member=>{
-    if (!bleedingEdgeDB) {
-        // Storage creators for new members... - TODO: can we handle this better? This is probably the most space in stewbot's database
-        if(!storage.hasOwnProperty(member.guild.id)){
-            storage[member.guild.id]=structuredClone(defaultGuild);
-        }
-        if(!storage[member.guild.id].users.hasOwnProperty(member.id)){
-            storage[member.guild.id].users[member.id]=structuredClone(defaultGuildUser);
-        }
-        if(!storage.hasOwnProperty(member.id)){
-            storage[member.id]=structuredClone(defaultUser);
-        }
+    // Storage creators for new members... - TODO: can we handle this better? This is probably the most space in stewbot's database
+    if(!storage.hasOwnProperty(member.guild.id)){
+        storage[member.guild.id]=structuredClone(defaultGuild);
+    }
+    if(!storage[member.guild.id].users.hasOwnProperty(member.id)){
+        storage[member.guild.id].users[member.id]=structuredClone(defaultGuildUser);
+    }
+    if(!storage.hasOwnProperty(member.id)){
+        storage[member.id]=structuredClone(defaultUser);
     }
 
     storage[member.guild.id].users[member.id].inServer=true;
@@ -1231,17 +1222,15 @@ client.on("guildMemberAdd",async member=>{
 });
 
 client.on("guildMemberRemove",async member=>{
-    if (!bleedingEdgeDB) {
-        // Manage storage
-        if(!storage.hasOwnProperty(member.guild.id)){
-            storage[member.guild.id]=structuredClone(defaultGuild);
-        }
-        if(!storage[member.guild.id].users.hasOwnProperty(member.id)){
-            storage[member.guild.id].users[member.id]=structuredClone(defaultGuildUser);
-        }
-        if(!storage.hasOwnProperty(member.id)){
-            storage[member.id]=structuredClone(defaultUser);
-        }
+    // Manage storage
+    if(!storage.hasOwnProperty(member.guild.id)){
+        storage[member.guild.id]=structuredClone(defaultGuild);
+    }
+    if(!storage[member.guild.id].users.hasOwnProperty(member.id)){
+        storage[member.guild.id].users[member.id]=structuredClone(defaultGuildUser);
+    }
+    if(!storage.hasOwnProperty(member.id)){
+        storage[member.id]=structuredClone(defaultUser);
     }
 
     // TODO - this can mess up logs if a user left while stewbot was offline... hmm... there's gotta be a better place we can put it
@@ -1290,7 +1279,7 @@ client.on("guildMemberRemove",async member=>{
 
 //Strictly log-based events
 client.on("channelDelete",async channel=>{
-    if(!bleedingEdgeDB && !storage.hasOwnProperty(channel.guild.id)){
+    if(!storage.hasOwnProperty(channel.guild.id)){
         storage[channel.guild.id]=structuredClone(defaultGuild);
     }
 
@@ -1305,7 +1294,7 @@ client.on("channelDelete",async channel=>{
     }
 });
 client.on("channelUpdate",async (channelO,channel)=>{
-    if (!bleedingEdgeDB && !storage.hasOwnProperty(channel.guild.id)){
+    if (!storage.hasOwnProperty(channel.guild.id)){
         storage[channel.guild.id]=structuredClone(defaultGuild);
     }
 
@@ -1383,7 +1372,7 @@ client.on("channelUpdate",async (channelO,channel)=>{
     }
 });
 client.on("emojiCreate",async emoji=>{
-    if(!bleedingEdgeDB && !storage.hasOwnProperty(emoji.guild.id)){
+    if(!storage.hasOwnProperty(emoji.guild.id)){
         storage[emoji.guild.id]=structuredClone(defaultGuild);
     }
 
@@ -1398,7 +1387,7 @@ client.on("emojiCreate",async emoji=>{
     }
 });
 client.on("emojiDelete",async emoji=>{
-    if(!bleedingEdgeDB && !storage.hasOwnProperty(emoji.guild.id)){
+    if(!storage.hasOwnProperty(emoji.guild.id)){
         storage[emoji.guild.id]=structuredClone(defaultGuild);
     }
 
@@ -1413,7 +1402,7 @@ client.on("emojiDelete",async emoji=>{
     }
 });
 client.on("emojiUpdate",async (emojiO,emoji)=>{
-    if(!bleedingEdgeDB && !storage.hasOwnProperty(emoji.guild.id)){
+    if(!storage.hasOwnProperty(emoji.guild.id)){
         storage[emoji.guild.id]=structuredClone(defaultGuild);
     }
 
@@ -1428,7 +1417,7 @@ client.on("emojiUpdate",async (emojiO,emoji)=>{
     }
 });
 client.on("stickerCreate",async sticker=>{
-    if(!bleedingEdgeDB && !storage.hasOwnProperty(sticker.guild.id)){
+    if(!storage.hasOwnProperty(sticker.guild.id)){
         storage[sticker.guild.id]=structuredClone(defaultGuild);
     }
 
@@ -1443,7 +1432,7 @@ client.on("stickerCreate",async sticker=>{
     }
 });
 client.on("stickerDelete",async sticker=>{
-    if(!bleedingEdgeDB && !storage.hasOwnProperty(sticker.guild.id)){
+    if(!storage.hasOwnProperty(sticker.guild.id)){
         storage[sticker.guild.id]=structuredClone(defaultGuild);
     }
 
@@ -1458,7 +1447,7 @@ client.on("stickerDelete",async sticker=>{
     }
 });
 client.on("stickerUpdate",async (stickerO,sticker)=>{
-    if(!bleedingEdgeDB && !storage.hasOwnProperty(sticker.guild.id)){
+    if(!storage.hasOwnProperty(sticker.guild.id)){
         storage[sticker.guild.id]=structuredClone(defaultGuild);
     }
 
@@ -1481,7 +1470,7 @@ client.on("stickerUpdate",async (stickerO,sticker)=>{
     }
 });
 client.on("inviteCreate",async invite=>{
-    if(!bleedingEdgeDB && !storage.hasOwnProperty(invite.guild.id)){
+    if(!storage.hasOwnProperty(invite.guild.id)){
         storage[invite.guild.id]=structuredClone(defaultGuild);
     }
 
@@ -1496,7 +1485,7 @@ client.on("inviteCreate",async invite=>{
     }
 });
 client.on("inviteDelete",async invite=>{
-    if(!bleedingEdgeDB && !storage.hasOwnProperty(invite.guild.id)){
+    if(!storage.hasOwnProperty(invite.guild.id)){
         storage[invite.guild.id]=structuredClone(defaultGuild);
     }
 
@@ -1511,7 +1500,7 @@ client.on("inviteDelete",async invite=>{
     }
 });
 client.on("roleCreate",async role=>{
-    if(!bleedingEdgeDB && !storage.hasOwnProperty(role.guild.id)){
+    if(!storage.hasOwnProperty(role.guild.id)){
         storage[role.guild.id]=structuredClone(defaultGuild);
     }
 
@@ -1526,7 +1515,7 @@ client.on("roleCreate",async role=>{
     }
 });
 client.on("roleDelete",async role=>{
-    if(!bleedingEdgeDB && !storage.hasOwnProperty(role.guild.id)){
+    if(!storage.hasOwnProperty(role.guild.id)){
         storage[role.guild.id]=structuredClone(defaultGuild);
     }
 
@@ -1541,7 +1530,7 @@ client.on("roleDelete",async role=>{
     }
 });
 client.on("roleUpdate",async (roleO,role)=>{
-    if(!bleedingEdgeDB && !storage.hasOwnProperty(role.guild.id)){
+    if(!storage.hasOwnProperty(role.guild.id)){
         storage[role.guild.id]=structuredClone(defaultGuild);
     }
 
@@ -1691,8 +1680,7 @@ client.on("error",async e=>{
     notify("Client emitted error:\n\n"+e.stack);
 });
 client.on("guildCreate",async guild=>{
-    if (!bleedingEdgeDB) storage[guild.id]=structuredClone(defaultGuild);
-    else storage[guild.id].isGuild = true;
+    storage[guild.id]=structuredClone(defaultGuild);
     notify(`Added to **a new server**!`);
     await sendWelcome(guild);
 });
@@ -1709,4 +1697,14 @@ process.on('uncaughtException', e=>notify(e.stack));
 process.on('uncaughtRejection', e=>notify(e.stack));
 
 //Begin
-client.login(process.env.token);
+if (mongoDB) {
+    // If using Mongo, we'll async wait for it to connect before logging in
+    (async () => {
+        // The database module sets up everything as needed
+        await import('./database.mjs');
+        
+        
+        // client.login(process.env.token);
+    })();
+}
+else client.login(process.env.token);
