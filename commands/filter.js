@@ -328,7 +328,7 @@ module.exports = {
                             });
                         }
                     } catch (error) {
-                        if (error.code !== 50001) {
+                        if (error.code !== 50013) {
                             throw error;
                         }
                     }

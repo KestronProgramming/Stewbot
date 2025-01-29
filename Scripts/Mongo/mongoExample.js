@@ -178,23 +178,60 @@ async function getGuild(guildId) {
     );
 }
 
+async function getUser(userId) {
+    return await User.findOneAndUpdate(
+        { _id: userId },
+        { $setOnInsert: new User({ _id: userId }) },
+        { upsert: true, new: true }
+    );
+}
 
+async function getGuildUser(guildId, userId) {
+    return await Guild.findOneAndUpdate(
+        { _id: guildId },
+        { $setOnInsert: { [`users.${userId}`]: {} } },
+        { upsert: true, new: true }
+    ).then(guild => guild.users.get(userId));
+}
 
+async function getGuildUser(guildIdentifier, userId) {
+    // Handle both Guild documents and raw Discord guild IDs
+    const guild = typeof guildIdentifier === 'string' 
+        ? await getGuild(guildIdentifier) 
+        : guildIdentifier;
+
+    // Atomic operation to initialize user if missing
+    const updatedGuild = await Guild.findOneAndUpdate(
+        { 
+            _id: guild._id,
+            [`users.${userId}`]: { $exists: false }
+        },
+        { $set: { [`users.${userId}`]: {} } },
+        { new: true }
+    );
+
+    // Return user with schema defaults applied
+    return updatedGuild.users.get(userId);
+}
 
 (async () => {
     await mongoose.connect("mongodb://localhost:27017/stewbeta");
 
     let guild = await getGuild("1234");
 
-    guild.daily.memes.active = true
+    let user = await getGuildUser("1234", "5678")
 
-    await guild.save()
+    console.log(user.stars)
 
-    console.log(guild.daily.memes.active);
+    // guild.daily.memes.active = true
 
-    guild = await getGuild("1234");
+    // await guild.save()
 
-    console.log(guild.daily.memes.active);
+    // console.log(guild.daily.memes.active);
+
+    // guild = await getGuild("1234");
+
+    // console.log(guild.daily.memes.active);
 })();
 
 
@@ -207,15 +244,6 @@ async function getGuild(guildId) {
 /**************************
  Example Interaction Code *
 **************************/
-
-// Get or create a user
-async function getUser(userId) {
-    return await User.findOneAndUpdate(
-        { _id: userId },
-        { $setOnInsert: new User({ _id: userId }) },
-        { upsert: true, new: true }
-    );
-}
 
 // Update user offenses
 async function addOffense(userId) {
@@ -241,15 +269,6 @@ async function updatePrimedEmbed(userId, embedData) {
         { _id: userId },
         { $set: { primedEmbed: embedData } },
         { new: true }
-    );
-}
-
-// Get or create a guild
-async function getGuild(guildId) {
-    return await Guild.findOneAndUpdate(
-        { _id: guildId },
-        { $setOnInsert: new Guild({ _id: guildId }) },
-        { upsert: true, new: true }
     );
 }
 

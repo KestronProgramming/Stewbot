@@ -3,6 +3,8 @@ const envs = require('./env.json');
 Object.keys(envs).forEach(key => process.env[key] = envs[key] );
 if (process.env.beta == 'false') delete process.env.beta; // ENVs are all strings, so make it falsy if it's "false"
 
+let mongoDB = false;
+
 global.config = require("./data/config.json");
 console.beta = (...args) => process.env.beta && console.log(...args)
 console.beta("Importing discord")
@@ -16,6 +18,7 @@ console.beta("Importing everything else")
 const { getEmojiFromMessage, parseEmoji } = require('./util');
 const fs = require("fs");
 const crypto = require('crypto');
+const mongoose = require("mongoose");
 
 const { updateBlocklists } = require("./commands/badware_scanner.js")
 const { finTempSlow } = require("./commands/slowmode.js")
@@ -1689,4 +1692,14 @@ process.on('uncaughtException', e=>notify(e.stack));
 process.on('uncaughtRejection', e=>notify(e.stack));
 
 //Begin
-client.login(process.env.token);
+if (mongoDB) {
+    // If using Mongo, we'll async wait for it to connect before logging in
+    (async () => {
+        // The database module sets up everything as needed
+        await import('./database.mjs');
+        
+        
+        // client.login(process.env.token);
+    })();
+}
+else client.login(process.env.token);
