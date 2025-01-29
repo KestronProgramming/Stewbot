@@ -121,7 +121,7 @@ module.exports = {
                     if(storage[msg.guild.id].persistence[msg.channel.id].lastPost!==null){
                         try{
                             var mes=await msg.channel.messages.fetch(storage[msg.guild.id].persistence[msg.channel.id].lastPost).catch(e=>{});
-                            if(!mes?.hasOwnProperty("content")) mes.delete().catch(e=>{});
+                            if(mes?.hasOwnProperty("content")) mes.delete().catch(e=>{});
                         }
                         catch(e){}
                     }
