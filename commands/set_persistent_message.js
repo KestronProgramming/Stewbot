@@ -117,11 +117,11 @@ module.exports = {
         // Persistent messages, if the server has them enabled
         if ((!msg.webhookId) && storage[msg.guildId]?.hasOwnProperty("persistence")){
             if(storage[msg.guild.id].persistence?.[msg.channel.id]?.active) {
-                if(msg.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.ManageWebhooks) && msg.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.ManageMessages)){
+                if(msg.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.ManageWebhooks) && msg.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.ManageMessages) && msg.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.ReadMessageHistory)){
                     if(storage[msg.guild.id].persistence[msg.channel.id].lastPost!==null){
                         try{
-                            var mes=await msg.channel.messages.fetch(storage[msg.guild.id].persistence[msg.channel.id].lastPost).catch(e=>{notify(`No messages found for persistent to delete`)});
-                            if(mes) mes.delete().catch(e=>{notify(`Crashed on deleting persistent message`)});
+                            var mes=await msg.channel.messages.fetch(storage[msg.guild.id].persistence[msg.channel.id].lastPost).catch(e=>{});
+                            if(!mes?.hasOwnProperty("content")) mes.delete().catch(e=>{});
                         }
                         catch(e){}
                     }
@@ -150,7 +150,7 @@ module.exports = {
                 }
                 else {
                     if(msg.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
-                        msg.channel.send(`I do not have sufficient permissions to manage persistent messages for this channel. Please make sure I can both manage webhooks and delete messages and then run ${cmds.set_persistent_message.mention}.`);
+                        msg.channel.send(`I do not have sufficient permissions to manage persistent messages for this channel. Please make sure I can manage webhooks, read message history, and delete messages and then run ${cmds.set_persistent_message.mention}.`);
                     }
                     storage[msg.guild.id].persistence[msg.channel.id].active=false;
                 }
