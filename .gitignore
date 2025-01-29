@@ -7,6 +7,7 @@ env.json
 node_modules
 tempDne.jpg
 tempPoll.png
+Database
 storage.json
 storage*.json
 commands.json
