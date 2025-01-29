@@ -961,6 +961,11 @@ client.on("messageDelete",async msg=>{
         storage[msg.guild.id]=structuredClone(defaultGuild);
     }
 
+    if(storage[msg.guild.id].persistence?.[msg.channel.id]?.active&&msg?.webhookId&&msg.content===storage[msg.guild.id].persistence?.[msg.channel.id].content){
+        storage[msg.guild.id].persistence[msg.channel.id].active=false;
+        if(msg.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)) msg.channel.send(`I have detected that a moderator has deleted the persistent message, and thus I have disabled it for this channel. A moderator can reactivate it with ${cmds.set_persistent_message.mention}`);
+    }
+
     // Emojiboard deleted handlers
     if(Object.keys(storage[msg.guild.id].emojiboards).length>0){
         Object.keys(storage[msg.guild.id].emojiboards).forEach(async emoji=>{
