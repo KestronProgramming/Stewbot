@@ -120,8 +120,8 @@ module.exports = {
                 if(msg.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.ManageWebhooks) && msg.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.ManageMessages)){
                     if(storage[msg.guild.id].persistence[msg.channel.id].lastPost!==null){
                         try{
-                            var mes=await msg.channel.messages.fetch(storage[msg.guild.id].persistence[msg.channel.id].lastPost).catch(e=>{});
-                            if(mes) mes.delete();
+                            var mes=await msg.channel.messages.fetch(storage[msg.guild.id].persistence[msg.channel.id].lastPost).catch(e=>{notify(`No messages found for persistent to delete`)});
+                            if(mes) mes.delete().catch(e=>{notify(`Crashed on deleting persistent message`)});
                         }
                         catch(e){}
                     }

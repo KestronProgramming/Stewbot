@@ -116,7 +116,7 @@ setInterval(() => {
         storageCycleIndex++; 
         console.beta(`Just wrote DB to ${writeLocation}`)
     }
-}, process.env.beta ? 5 * 1000 : 10 * 1000);
+}, 10 * 1000);
 
 // Other data
 var uptime=0;
@@ -637,8 +637,10 @@ client.on("messageCreate",async msg => {
     if(msg.author.id===client.user.id) return;
 
     // Create guild objects if they don't exist should stay up top
+    msg.guildId=msg.guildId||"0";
+
     if (!bleedingEdgeDB) {
-        if(msg.guildId){
+        if(msg.guildId!=="0"){
             if(!storage.hasOwnProperty(msg.guildId)){
                 storage[msg.guildId]=structuredClone(defaultGuild);
             }
@@ -777,7 +779,6 @@ client.on("messageCreate",async msg => {
 });
 
 client.on("interactionCreate",async cmd=>{
-
     const commandScript = commands[cmd.commandName];
     if (!commandScript && (cmd.isCommand() || cmd.isAutocomplete())) return; // Ignore any potential cache issues 
 
@@ -804,9 +805,9 @@ client.on("interactionCreate",async cmd=>{
     }catch(e){}
 
     if (!bleedingEdgeDB) {
-        if (cmd.context == 2) cmd.guildId = null; // Treat group DMs like the non-servers that they are
         try{
-            if(cmd.guildId){
+            // NOTE: this is probably what is adding that null object to our DB
+            if(cmd.guildId!==0){
                 if(!storage.hasOwnProperty(cmd.guildId)){
                     storage[cmd.guildId]=structuredClone(defaultGuild);
                 }
