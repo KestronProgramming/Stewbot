@@ -1,4 +1,3 @@
-
 //#region Imports
 const envs = require('./env.json');
 Object.keys(envs).forEach(key => process.env[key] = envs[key] );
@@ -28,7 +27,6 @@ const { finTempBan } = require("./commands/hat_pull.js")
 const { finTimer } = require("./commands/timer.js")
 const { getStarMsg } = require("./commands/add_emojiboard.js")
 const { processForNumber } = require("./commands/counting.js")
-const { createDatabaseProxy } = require("./Scripts/dbTests.js")
 const { killMaintenanceBot } = require("./commands/restart.js")
 //#endregion Imports
 
@@ -115,6 +113,9 @@ setInterval(() => {
         lastStorageHash = thisWriteHash;
         storageCycleIndex++; 
         console.beta(`Just wrote DB to ${writeLocation}`)
+        
+        // Doing this here could be lossy but doesn't matter since we have good uptime
+        fs.writeFileSync("./data/usage.json", JSON.stringify(usage));
     }
 }, 10 * 1000);
 
@@ -886,9 +887,8 @@ client.on("interactionCreate",async cmd=>{
         }
 
         // Command frequency stats 
-        if(!usage.hasOwnProperty(cmd.commandName)) usage[cmd.commandName]=0;
+        if(!(usage[commandPathWithSubcommand] ?? false)) usage[commandPathWithSubcommand] = 0;
         usage[commandPathWithSubcommand]++;
-        fs.writeFileSync("./data/usage.json",JSON.stringify(usage));
         return;
     }
 

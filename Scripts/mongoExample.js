@@ -186,7 +186,7 @@ async function getGuild(guildId) {
 
     let guild = await getGuild("1234");
 
-    // guild.daily.memes.active = true
+    guild.daily.memes.active = true
 
     await guild.save()
 
