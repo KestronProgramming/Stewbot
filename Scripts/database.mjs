@@ -2,11 +2,13 @@
 //// This file connects to the DB, registers global utility functions, etc
 ////////
 
-const mongoose = require("mongoose");
+import { Schema, model, connect } from "mongoose";
+import beta from '../env.json' assert { type: 'json' };
+if (beta) process.env.beta = true;
 
 //#region Schemas
 // User Config Schema
-const ConfigSchema = new mongoose.Schema({
+const ConfigSchema = new Schema({
     dmOffenses: { type: Boolean, default: true },
     returnFiltered: { type: Boolean, default: true },
     embedPreviews: { type: Boolean, default: true },
@@ -18,7 +20,7 @@ const ConfigSchema = new mongoose.Schema({
 });
 
 // Primed Embed Server Schema
-const PrimedEmbedServerSchema = new mongoose.Schema({
+const PrimedEmbedServerSchema = new Schema({
     id: { type: String, default: "" },
     name: { type: String, default: "" },
     channelId: { type: String, default: "" },
@@ -27,14 +29,14 @@ const PrimedEmbedServerSchema = new mongoose.Schema({
 });
 
 // Primed Embed Author Schema
-const PrimedEmbedAuthorSchema = new mongoose.Schema({
+const PrimedEmbedAuthorSchema = new Schema({
     icon: { type: String, default: "" },
     name: { type: String, default: "" },
     id: { type: String, default: "" },
 });
 
 // Primed Embed Schema
-const PrimedEmbedSchema = new mongoose.Schema({
+const PrimedEmbedSchema = new Schema({
     content: { type: String, default: "" },
     attachmentURLs: { type: [String], default: [] },
     server: { type: PrimedEmbedServerSchema, default: () => ({}) },
@@ -44,7 +46,7 @@ const PrimedEmbedSchema = new mongoose.Schema({
 });
 
 // User Schema
-const UserSchema = new mongoose.Schema({
+const UserSchema = new Schema({
     _id: { type: String, required: true }, // userID
     offenses: { type: Number, default: 0 },
     config: { type: ConfigSchema, default: () => ({}) },
@@ -53,7 +55,7 @@ const UserSchema = new mongoose.Schema({
 });
 
 // Guild User Schema
-const GuildUserSchema = new mongoose.Schema({
+const GuildUserSchema = new Schema({
     infractions: { type: Number, default: 0 },
     stars: { type: Number, default: 0 },
     roles: { type: [String], default: [] },
@@ -66,13 +68,13 @@ const GuildUserSchema = new mongoose.Schema({
 });
 
 // Daily Item Schema (reused for memes, wyrs, etc.)
-const DailyItemSchema = new mongoose.Schema({
+const DailyItemSchema = new Schema({
     active: { type: Boolean, default: false },
     channel: { type: String, default: "" },
 });
 
 // Levels Schema
-const LevelsSchema = new mongoose.Schema({
+const LevelsSchema = new Schema({
     active: { type: Boolean, default: false },
     channel: { type: String, default: "" },
     msg: {
@@ -84,7 +86,7 @@ const LevelsSchema = new mongoose.Schema({
 });
 
 // Filter Schema
-const FilterSchema = new mongoose.Schema({
+const FilterSchema = new Schema({
     blacklist: { type: [String], default: [] },
     active: { type: Boolean, default: false },
     censor: { type: Boolean, default: true },
@@ -94,7 +96,7 @@ const FilterSchema = new mongoose.Schema({
 });
 
 // Logs Schema
-const LogsSchema = new mongoose.Schema({
+const LogsSchema = new Schema({
     channel: { type: String, default: "" },
     active: { type: Boolean, default: false },
     channel_events: { type: Boolean, default: false },
@@ -107,7 +109,7 @@ const LogsSchema = new mongoose.Schema({
 });
 
 // Counting Schema
-const CountingSchema = new mongoose.Schema({
+const CountingSchema = new Schema({
     active: { type: Boolean, default: false },
     channel: { type: String, default: "" },
     nextNum: { type: Number, default: 1 },
@@ -123,7 +125,7 @@ const CountingSchema = new mongoose.Schema({
 });
 
 // AJM/ALM Schema
-const JoinLeaveSchema = new mongoose.Schema({
+const JoinLeaveSchema = new Schema({
     message: { type: String, default: "" },
     dm: { type: Boolean, default: false },
     channel: { type: String, default: "" },
@@ -131,11 +133,11 @@ const JoinLeaveSchema = new mongoose.Schema({
 });
 
 // Guild Schema
-const GuildSchema = new mongoose.Schema({
+const GuildSchema = new Schema({
     _id: { type: String, required: true }, // guildID
     persistence: {
         type: Map,
-        of: mongoose.Schema.Types.Mixed,
+        of: Schema.Types.Mixed,
         default: new Map(),
     },
     daily: {
@@ -151,7 +153,7 @@ const GuildSchema = new mongoose.Schema({
     filter: { type: FilterSchema, default: () => ({}) },
     emojiboards: {
         type: Map,
-        of: mongoose.Schema.Types.Mixed,
+        of: Schema.Types.Mixed,
         default: new Map(),
     },
     logs: { type: LogsSchema, default: () => ({}) },
@@ -159,7 +161,7 @@ const GuildSchema = new mongoose.Schema({
     users: { type: Map, of: GuildUserSchema, default: new Map() },
     reactionRoles: { type: [String], default: [] },
     invites: { type: [String], default: [] },
-    polls: { type: Map, of: mongoose.Schema.Types.Mixed, default: new Map() },
+    polls: { type: Map, of: Schema.Types.Mixed, default: new Map() },
     config: {
         embedPreviews: { type: Boolean, default: true },
         ai: { type: Boolean, default: true },
@@ -170,8 +172,8 @@ const GuildSchema = new mongoose.Schema({
 //#endregion Schemas
 
 // Register models
-global.User = mongoose.model("User", UserSchema);
-global.Guild = mongoose.model("Guild", GuildSchema);
+global.User = model("User", UserSchema);
+global.Guild = model("Guild", GuildSchema);
 
 //#region Utility functions
 global.getGuild = async function(guildId) {
@@ -188,10 +190,23 @@ global.getUser = async function(userId) {
         { upsert: true, new: true }
     );
 }
+global.getGuildUser = async function(guildIdentifier, userId) {
+    const guild = typeof guildIdentifier === 'string' 
+        ? await getGuild(guildIdentifier) 
+        : guildIdentifier;
 
+    if (!guild.users.has(userId)) {
+        guild.users.set(userId, {});
+        await guild.save();
+    }
+
+    const user = guild.users.get(userId);
+    user._parentGuild = guild; // Attach parent reference
+    return user;
+}
 //#endregion Utility functions
 
 
 
 // Finally, connect to the DB
-await mongoose.connect(`mongodb://localhost:27017/${process.env.beta ? "stewbeta" : "stewbot"}`);
+await connect(`mongodb://localhost:27017/${process.env.beta ? "stewbeta" : "stewbot"}`);

@@ -60,6 +60,11 @@ const GuildUserSchema = new mongoose.Schema({
     beenCountWarned: { type: Boolean, default: false },
     warnings: { type: [String], default: [] },
 });
+GuildUserSchema.methods.saveParent = async function() { // Make it easier to save without a guild reference
+    if (this._parentGuild) {
+        await this._parentGuild.save();
+    }
+};
 
 // Daily Item Schema (reused for memes, wyrs, etc.)
 const DailyItemSchema = new mongoose.Schema({
@@ -195,42 +200,37 @@ async function getGuildUser(guildId, userId) {
 }
 
 async function getGuildUser(guildIdentifier, userId) {
-    // Handle both Guild documents and raw Discord guild IDs
     const guild = typeof guildIdentifier === 'string' 
         ? await getGuild(guildIdentifier) 
         : guildIdentifier;
 
-    // Atomic operation to initialize user if missing
-    const updatedGuild = await Guild.findOneAndUpdate(
-        { 
-            _id: guild._id,
-            [`users.${userId}`]: { $exists: false }
-        },
-        { $set: { [`users.${userId}`]: {} } },
-        { new: true }
-    );
+    if (!guild.users.has(userId)) {
+        guild.users.set(userId, {});
+        await guild.save();
+    }
 
-    // Return user with schema defaults applied
-    return updatedGuild.users.get(userId);
+    const user = guild.users.get(userId);
+    user._parentGuild = guild; // Attach parent reference
+    return user;
 }
+
 
 (async () => {
     await mongoose.connect("mongodb://localhost:27017/stewbeta");
 
-    let guild = await getGuild("1234");
-
     let user = await getGuildUser("1234", "5678")
+
+    user.stars = user.stars + 1;
+    user.undefinedProp = true;
 
     console.log(user.stars)
 
+    user.saveParent()
+
     // guild.daily.memes.active = true
-
     // await guild.save()
-
     // console.log(guild.daily.memes.active);
-
     // guild = await getGuild("1234");
-
     // console.log(guild.daily.memes.active);
 })();
 

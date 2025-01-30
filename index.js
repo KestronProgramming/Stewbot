@@ -3,7 +3,7 @@ const envs = require('./env.json');
 Object.keys(envs).forEach(key => process.env[key] = envs[key] );
 if (process.env.beta == 'false') delete process.env.beta; // ENVs are all strings, so make it falsy if it's "false"
 
-let mongoDB = true;
+let mongoDB = false;
 
 global.config = require("./data/config.json");
 console.beta = (...args) => process.env.beta && console.log(...args)
