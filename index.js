@@ -3,7 +3,7 @@ const envs = require('./env.json');
 Object.keys(envs).forEach(key => process.env[key] = envs[key] );
 if (process.env.beta == 'false') delete process.env.beta; // ENVs are all strings, so make it falsy if it's "false"
 
-let mongoDB = false;
+let mongoDB = true;
 
 global.config = require("./data/config.json");
 console.beta = (...args) => process.env.beta && console.log(...args)
@@ -522,10 +522,12 @@ global.notify = function(what, useWebhook=false) {
         console.beta("Couldn't send notify()")
     }
 }
-function checkPersistentDeletion(guild,channel,message){
-    if(storage[guild].persistence[channel].lastPost!==message){
+function checkPersistentDeletion(guild, channel, message){
+    // If persistence is not active, or a new persistence message was posted, it was stewbot who deleted it.
+    if(!storage[guild].persistence[channel].active || storage[guild].persistence[channel].lastPost!==message){
         return;
     }
+    // If stewbot did not delete it, deactive it.
     storage[guild].persistence[channel].active=false;
     channel=client.channels.cache.get(channel);
     if(channel.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)) channel.send(`I have detected that a moderator deleted the persistent message set for this channel, and as such I have deactivated it. To reactivate it, a moderator can run ${cmds.set_persistent_message.mention}.`);
@@ -1708,10 +1710,11 @@ if (mongoDB) {
     // If using Mongo, we'll async wait for it to connect before logging in
     (async () => {
         // The database module sets up everything as needed
-        await import('./database.mjs');
+        console.beta("Connecting to database")
+        await import('./Scripts/database.mjs');
         
-        
-        // client.login(process.env.token);
+        console.beta("Logging in")
+        client.login(process.env.token);
     })();
 }
 else client.login(process.env.token);
