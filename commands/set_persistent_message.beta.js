@@ -109,6 +109,7 @@ module.exports = {
             guild.persistence[cmd.channel.id].active=false;
         }
 
+        guild.markModified("persistence"); // Objects are a little weird when not schema'd
         guild.save();
 	},
 
@@ -118,7 +119,7 @@ module.exports = {
         const guild = await getGuild(msg.guild.id);
 
         // Persistent messages, if the server has them enabled
-        if ((!msg.webhookId) && storage[msg.guildId]?.hasOwnProperty("persistence")){
+        if ((!msg.webhookId) && ("persistence" in guild)){
             if(guild.persistence?.[msg.channel.id]?.active) {
                 if(msg.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.ManageWebhooks) && msg.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.ManageMessages) && msg.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.ReadMessageHistory)){
                     if(guild.persistence[msg.channel.id].lastPost!==null){
@@ -138,6 +139,8 @@ module.exports = {
                     if(hook){
                         hook.send(resp).then(d=>{
                             guild.persistence[msg.channel.id].lastPost=d.id;
+                            guild.markModified("persistence");
+                            guild.save()
                         });
                     }
                     else{

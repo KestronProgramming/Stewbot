@@ -214,18 +214,21 @@ async function getGuildUser(guildIdentifier, userId) {
     return user;
 }
 
+global.deleteGuild = async function(guildId) {
+    return await Guild.deleteOne({ _id: guildId });
+};
+
 
 (async () => {
     await mongoose.connect("mongodb://localhost:27017/stewbeta");
 
-    let user = await getGuildUser("1234", "5678")
+    await deleteGuild("1221938601944809593");
 
-    user.stars = user.stars + 1;
-    user.undefinedProp = true;
-
-    console.log(user.stars)
-
-    user.saveParent()
+    // let user = await getGuildUser("1234", "5678")
+    // user.stars = user.stars + 1;
+    // user.undefinedProp = true;
+    // console.log(user.stars)
+    // user.saveParent()
 
     // guild.daily.memes.active = true
     // await guild.save()

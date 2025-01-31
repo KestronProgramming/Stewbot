@@ -136,9 +136,8 @@ const JoinLeaveSchema = new Schema({
 const GuildSchema = new Schema({
     _id: { type: String, required: true }, // guildID
     persistence: {
-        type: Map,
-        of: Schema.Types.Mixed,
-        default: new Map(),
+        type: Object,
+        default: {},
     },
     daily: {
         memes: { type: DailyItemSchema, default: () => ({}) },
@@ -182,6 +181,9 @@ global.getGuild = async function(guildId) {
         { $setOnInsert: new Guild({ _id: guildId }) },
         { upsert: true, new: true }
     );
+}
+global.deleteGuild = async function(guildId) {
+    return await Guild.deleteOne({ _id: guildId });
 }
 global.getUser = async function(userId) {
     return await User.findOneAndUpdate(
