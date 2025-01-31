@@ -29,6 +29,7 @@ const { finTimer } = require("./commands/timer.js")
 const { getStarMsg } = require("./commands/add_emojiboard.js")
 const { processForNumber } = require("./commands/counting.js")
 const { killMaintenanceBot } = require("./commands/restart.js")
+const { resetAIRequests } = require("./commands/chat.js")
 //#endregion Imports
 
 //#region Setup
@@ -700,6 +701,9 @@ client.on("messageCreate",async msg => {
 
         if(devadminChannel?.permissionsFor(msg.author.id)?.has(PermissionFlagsBits.SendMessages)){
             switch(msg.content.split(" ")[1].replaceAll(".","")){
+                case "resetAI":
+                    resetAIRequests();
+                    break;
                 case "setBanner":
                     const bannerName = msg.content.split(" ")[2];
                     const bannerPath = `./pfps/${bannerName}`;

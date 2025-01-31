@@ -18,6 +18,11 @@ const BROADCAST_PORT = config.aiNodePort;
 let activeAIRequests = {};
 let convoCache = {}; // Stored here instead of storage, since it does not need persistance
 
+function resetAIRequests() { 
+    // Sometimes this can get off - TODO: use ollama.ps to reset when the model is unloaded
+    activeAIRequests = { }
+}
+
 // Function to get IP and broadcast address for specified interfaces
 function getInterfaceDetails(interfaceName) {
     const interfaces = os.networkInterfaces();
@@ -230,6 +235,8 @@ async function postprocessAIMessage(message, guild) {
 }
 
 module.exports = {
+    resetAIRequests,
+    
 	data: {
 		command: new SlashCommandBuilder().setName('chat').setDescription('Chat with Stewbot')
             .addStringOption(option=>
