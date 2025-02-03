@@ -9,5 +9,6 @@
     "betaNoticeChannel": "1221938602397667430",
     "aiNodeInterfaces": ["eth0"],
     "aiNodePort": 12345,
-    "aiModel": "qwen2.5:7b"
+    "aiModel": "qwen2.5:7b",
+    "aiTemp": 1.2
 }

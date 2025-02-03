@@ -168,6 +168,9 @@ async function getAiResponse(threadID, message, contextualData={}, notify=null, 
         const AIResult = await ollamaInstances[0].chat({
             model: config.aiModel,
             messages: convoCache[threadID].context,
+            options: {
+                temperature: config.aiTemp
+            },
         })
 
         // Check for an error
