@@ -10,5 +10,5 @@
     "aiNodeInterfaces": ["eth0"],
     "aiNodePort": 12345,
     "aiModel": "qwen2.5:7b",
-    "aiTemp": 1.2
+    "aiTemp": 2
 }
