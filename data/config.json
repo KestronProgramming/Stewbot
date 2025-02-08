@@ -9,6 +9,6 @@
     "betaNoticeChannel": "1221938602397667430",
     "aiNodeInterfaces": ["eth0"],
     "aiNodePort": 12345,
-    "aiModel": "qwen2.5:7b",
-    "aiTemp": 2
+    "aiModel": "hf.co/arcee-ai/Virtuoso-Lite-GGUF:Q4_K_L",
+    "aiTemp": 1.5
 }
