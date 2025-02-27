@@ -78,7 +78,7 @@
     },
     {
         "name": "badware_scanner",
-        "mention": "</badware_scanner:1329994967044718684>",
+        "mention": "</badware_scanner:1330279306454368288>",
         "helpCategories": [
             "Administration",
             "Server Only",
@@ -111,7 +111,7 @@
     },
     {
         "name": "block_module",
-        "mention": "`block_module` Module",
+        "mention": "</block_module:1330391745871220736>",
         "helpCategories": [
             "Bot",
             "Administration",
@@ -215,7 +215,7 @@
     },
     {
         "name": "donate",
-        "mention": "`donate` Module",
+        "mention": "</donate:1331438277407801364>",
         "helpCategories": [
             "General",
             "Bot"
