@@ -118,7 +118,7 @@ async function getAvailableOllamaServers() {
     return ollamaInstances;
 }
 
-async function getAiResponse(threadID, message, contextualData={}, notify=null, retryAttempt=0, ollamaInstances=null) {
+async function getAiResponse(threadID, message, thinking=null, contextualData={}, notify=null, retryAttempt=0, ollamaInstances=null) {
     // returns: [response, success]
 
     // First, find all currently available servers if they have not already been provided in the command input
@@ -151,7 +151,7 @@ async function getAiResponse(threadID, message, contextualData={}, notify=null, 
             const context = [];
 
             let systemPrompt = fs.readFileSync("./data/system.prompt").toString();
-            if (process.env.beta) systemPrompt = systemPrompt.replace("Stewbot", "Stewbeta");
+            if (process.env.beta) systemPrompt = systemPrompt.replaceAll("Stewbot", "Stewbeta");
             Object.keys(contextualData).forEach((key) => {
                 systemPrompt = systemPrompt.replaceAll(`{${key}}`, contextualData[key]);
             })
@@ -163,6 +163,37 @@ async function getAiResponse(threadID, message, contextualData={}, notify=null, 
                 lastMessage: Date.now()
             };
         }
+
+        // Enable / disable models
+        // NOTE 1: Works best on models like granite3.2 that have been trained to enable thinking on the fly
+        // NOTE 2: To make it actually hot swappable it might be best to put the thinkingPrompt right above the message they turned it on for...
+        //          But idk if that would override this system prompt
+        let thinkingDefined = thinking !== null;
+        if (thinkingDefined) {
+            const thinkingFlag = {"role": "control", "content": "thinking"}; // This makes the model think
+            const thinkingPrompt = `\n\nYou can write down your thought process *before* responding. Write your thoughts after 'Here is my thought process:' and aftwards, write your response after 'Here is my response:' for each user query.`;
+            if (thinking) {
+                // Add the thinking switch
+                if (!convoCache[threadID].context.some(item => item.role === 'control' && item.content === 'thinking')) {
+                    convoCache[threadID].context.unshift(thinkingFlag);
+                    
+                    let systemIndex = convoCache[threadID].context.findIndex(item => item.role === 'system');
+                    if (systemIndex !== -1) {
+                        convoCache[threadID].context[systemIndex].content += thinkingPrompt;
+                    }
+                }
+            } else {
+                // Filter out the thinking switch
+                convoCache[threadID].context = convoCache[threadID].context
+                    .filter(item => !(item.role === 'control' && item.content === 'thinking'));
+                
+                let systemIndex = convoCache[threadID].context.findIndex(item => item.role === 'system');
+                if (systemIndex !== -1) {
+                    convoCache[threadID].context[systemIndex].content = convoCache[threadID].context[systemIndex].content.replace(thinkingPrompt, '');
+                }
+            }
+        }
+
         convoCache[threadID].context.push({"role": "user", "content": message})
 
         const AIResult = await ollamaInstances[0].chat({
@@ -177,7 +208,7 @@ async function getAiResponse(threadID, message, contextualData={}, notify=null, 
         if (!AIResult?.message?.content) {
             if (retryAttempt === 0) {
                 delete convoCache[threadID];
-                return getAiResponse(threadID, message, contextualData, notify, retryAttempt+1, ollamaInstances);
+                return getAiResponse(threadID, message, thinking, contextualData, notify, retryAttempt+1, ollamaInstances);
             } else {
                 notify && notify(`Error with AI API response: \n${JSON.stringify(AIResult)}`);
                 return [`Sorry, there was an error with the AI response. It has already been reported. Try again later.`, false];
@@ -234,6 +265,36 @@ async function postprocessAIMessage(message, guild) {
     message = message.replaceAll(/⭐/g, "");
     message = message.replaceAll(/😊/g, "");
 
+    //// Post process AI thinking block
+    // Require newlines after thought process
+    let thinkingRegexNewline = /^Here is my thought process:[^\w]*/m;
+    let responseRegexNewline = /^Here is my response:[^\w]*/m;
+    if (thinkingRegexNewline.test(message)) {
+        message = message.replace(thinkingRegexNewline, '$&\n');
+    }
+    if (responseRegexNewline.test(message)) {
+        message = message.replace(responseRegexNewline, '$&\n');
+    }
+
+    // Make thought process smaller text
+    let thinkingRegex = /^Here is my thought process:\s*$/m;
+    let responseRegex = /^Here is my response:\s*$/m;
+    if (thinkingRegex.test(message) && responseRegex.test(message)) {
+        let thinkingStart = message.match(thinkingRegex).index;
+        const responseMatch = message.match(responseRegex);
+        let responseStart = responseMatch.index + responseMatch[0].length;
+        let thinkingBlock = message.substring(thinkingStart, responseStart);
+        let processedThinkingBlock = thinkingBlock
+            .split('\n')
+            .map(line => {
+                if (line.length === 0) return line;
+                return '-# ' + line;
+            }).join('\n');
+    
+        message = message.substring(0, thinkingStart) + processedThinkingBlock + message.substring(responseStart);
+    }
+
+
     return message
 }
 
@@ -250,6 +311,9 @@ module.exports = {
             )
             .addBooleanOption(option=>
                 option.setName("clear").setDescription("Clear history?")
+            )
+            .addBooleanOption(option=>
+                option.setName("thinking").setDescription("Enable thinking before responding?")
             )
             .addBooleanOption(option=>
                 option.setName("private").setDescription("Make the response ephemeral?")//Do not remove private option unless the command is REQUIRED to be ephemeral or non-ephemeral.
@@ -294,6 +358,8 @@ module.exports = {
 		applyContext(globalsContext);
 
         let message = cmd.options.getString("message");
+        let thinking = cmd.options.getBoolean("thinking");
+
         const clearHistory = cmd.options.getBoolean("clear");
         const threadID = cmd.user.id;
 
@@ -303,7 +369,7 @@ module.exports = {
             delete convoCache[threadID];
         }
 
-        let [ response, success ] = await getAiResponse(threadID, message, {
+        let [ response, success ] = await getAiResponse(threadID, message, thinking, {
             name: cmd.user.username,
             server: cmd.guild ? cmd.guild.name : "Dirrect Messages",
         }, notify);
@@ -334,7 +400,7 @@ module.exports = {
 
             let message = await postprocessUserMessage(msg.content, msg.guild);
             let threadID = msg.author.id;
-            let [ response, success ] = await getAiResponse(threadID, message, {
+            let [ response, success ] = await getAiResponse(threadID, message, false, { // Disable thinking on replies for now. Consider setting to null later to default to last 
                 name: msg.author.username,
                 server: msg.guild ? msg.guild.name : "Direct Messages",
             }, notify, 0, ollamaInstances);
