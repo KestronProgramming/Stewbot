@@ -86,5 +86,18 @@
         "message":"Farewell ${@USER}. We'll miss you.",
         "channel":"",
         "active":false
+    },
+    "birthday":{
+        "channel":{
+            "id":"",
+            "active":false,
+            "messageWithoutYear":"Happy birthday ${@USER}!",
+            "messageWithYear":"Happy ${YEAR} birthday ${@USER}!",
+            "role":"",
+            "holidays":false,
+            "historical":false,
+            "florida":false
+        },
+        "roles":{}
     }
 }

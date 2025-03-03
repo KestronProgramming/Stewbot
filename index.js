@@ -1721,4 +1721,4 @@ if (mongoDB) {
         client.login(process.env.token);
     })();
 }
-else client.login(process.env.token);
+else client.login(process.env.beta?process.env.betaToken:process.env.token);
