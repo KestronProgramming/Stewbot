@@ -575,6 +575,17 @@
         "detailedDesc": "Choose an emojiboard that you would no longer like to have Stewbot manage and post for."
     },
     {
+        "name": "jerry",
+        "mention": "`replacements` Module",
+        "helpCategories": [
+            "General",
+            "Information",
+            "Bot"
+        ],
+        "shortDesc": "A list of replacements for text inputs",
+        "detailedDesc": "View a list of replacements you can type into Stewbot's text inputs that will be dynamically replaced - such as \n for a line break, or ${@USER} to ping the user in some commands."
+    },
+    {
         "name": "report_problem",
         "mention": "</report_problem:1289093272656154692>",
         "helpCategories": [

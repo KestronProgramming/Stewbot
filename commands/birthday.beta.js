@@ -139,7 +139,7 @@ module.exports = {
                     storage[cmd.user.id].defaultDayPublic=cmd.options.getBooleanOption("birthday");
                     storage[cmd.user.id].defaultYearPublic=cmd.options.getBooleanOption("birthyear");
                     Object.keys(storage).forEach(key=>{
-                        if(storage[key].hasOwnProperty("users")&&storage[key].users.hasOwnProperty(cmd.user.id)){
+                        if(storage[key].hasOwnProperty("users")&&storage[key]?.users?.hasOwnProperty(cmd.user.id)){
                             storage[key].users[cmd.user.id].publicDay=cmd.options.getBooleanOption("birthday");
                             storage[key].users[cmd.user.id].publicYear=cmd.options.getBooleanOption("birthyear");
                         }
