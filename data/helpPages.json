@@ -110,6 +110,17 @@
         "detailedDesc": "Search for up to five verses in the King James Bible. If you were to look up verses four through eight in the thirteenth chapter of the book of 1 Corinthians, you would enter \"1 Corinthians 13:4-8\".\n\n                Other versions may come later."
     },
     {
+        "name": "birthday",
+        "mention": "`birthday` Module",
+        "helpCategories": [
+            "Information",
+            "Entertainment",
+            "Configuration"
+        ],
+        "shortDesc": "Upload an emoji from another server to use in this one",
+        "detailedDesc": "This command will copy an emoji from another server here. Use Prime Emoji in another server to start the process, and then use clone from primed emoji to bring it here. Use clone from emoji ID to find the emoji using the emoji ID, clone from a Nitro emoji to enter the emoji using Nitro directly, etc."
+    },
+    {
         "name": "block_module",
         "mention": "</block_module:1330391745871220736>",
         "helpCategories": [
