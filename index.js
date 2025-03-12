@@ -3,7 +3,7 @@ const envs = require('./env.json');
 Object.keys(envs).forEach(key => process.env[key] = envs[key] );
 if (process.env.beta == 'false') delete process.env.beta; // ENVs are all strings, so make it falsy if it's "false"
 
-let mongoDB = process.env.beta && true;
+let mongoDB = process.env.beta && false;
 
 global.config = require("./data/config.json");
 console.beta = (...args) => process.env.beta && console.log(...args)
@@ -138,7 +138,7 @@ Object.keys(commands).forEach(commandName=>{
         },cmd.data?.help));
     }
     else if(cmd.data?.help?.shortDesc!==`Stewbot's Admins Only`){
-        Object.keys(cmd.data?.help).forEach(subcommand=>{
+        Object.keys(cmd.data?.help || []).forEach(subcommand=>{
             var subcommandHelp=cmd.data?.help[subcommand];
             const subcommandMention = cmds[cmd.data?.command?.name]?.[subcommand]?.mention || `\`${commandName}\` Module` // No case for this rn but might have one in the future
             if(subcommandHelp.helpCategories?.length>0){
@@ -1718,7 +1718,7 @@ if (mongoDB) {
         await import('./Scripts/database.mjs');
         
         console.beta("Logging in")
-        client.login(process.env.token);
+        client.login(process.env.beta ? process.env.betaToken : process.env.token);
     })();
 }
-else client.login(process.env.beta?process.env.betaToken:process.env.token);
+else client.login(process.env.beta ? process.env.betaToken : process.env.token);
