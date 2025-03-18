@@ -78,7 +78,7 @@ for (let commandName in migratedCommands) {
 commands = commands.map(command => Object.assign(command.toJSON(),extraInfo[command.toJSON().name]));
 function launchCommands(){
 	// Register
-	const rest = new REST({ version: '9' }).setToken(process.env.token);
+	const rest = new REST({ version: '9' }).setToken(process.env.beta ? process.env.betaToken : process.env.token );
 	var comms={};
 	rest.put(Routes.applicationCommands(process.env.clientId),{body:commands}).then(d=>{
 		d.forEach(c=>{

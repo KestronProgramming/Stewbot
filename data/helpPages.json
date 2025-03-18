@@ -111,7 +111,7 @@
     },
     {
         "name": "birthday",
-        "mention": "`birthday` Module",
+        "mention": "</birthday:1351368206907998239>",
         "helpCategories": [
             "Information",
             "Entertainment",
@@ -587,7 +587,7 @@
     },
     {
         "name": "jerry",
-        "mention": "`replacements` Module",
+        "mention": "</jerry:1351368206907998240>",
         "helpCategories": [
             "General",
             "Information",
