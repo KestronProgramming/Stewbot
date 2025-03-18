@@ -1,8 +1,8 @@
-const { ContextMenuCommandBuilder, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
-function applyContext(context={}) {
-	for (key in context) {
-		this[key] = context[key];
-	}
+const { ContextMenuCommandBuilder, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType, AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType } = require("discord.js");
+function applyContext(context = {}) {
+    for (key in context) {
+        this[key] = context[key];
+    }
 }
 
 const dgram = require('dgram');
@@ -18,9 +18,13 @@ const BROADCAST_PORT = config.aiNodePort;
 let activeAIRequests = {};
 let convoCache = {}; // Stored here instead of storage, since it does not need persistance
 
-function resetAIRequests() { 
+// Setup Gemini
+const { GoogleGenerativeAI } = require("@google/generative-ai");
+const genAI = new GoogleGenerativeAI(process.env.geminiAPIKey);
+
+function resetAIRequests() {
     // Sometimes this can get off - TODO: use ollama.ps to reset when the model is unloaded
-    activeAIRequests = { }
+    activeAIRequests = {}
 }
 
 // Function to get IP and broadcast address for specified interfaces
@@ -86,7 +90,7 @@ async function multicastRequest(message, waitTimeMs) {
                 // Close the server after the wait time
                 setTimeout(() => {
                     server.close(() => {
-                        console.beta(`Stopped listening on ${iface}`); 
+                        console.beta(`Stopped listening on ${iface}`);
                         resolve(discovered);
                     });
                 }, waitTimeMs);
@@ -118,7 +122,60 @@ async function getAvailableOllamaServers() {
     return ollamaInstances;
 }
 
-async function getAiResponse(threadID, message, thinking=null, contextualData={}, notify=null, retryAttempt=0, ollamaInstances=null) {
+async function getAiResponseGemini(threadID, message, thinking = null, contextualData = {}, notify = null, retryAttempt = 0) {
+    // returns: [response, success]
+
+    if (
+        !convoCache[threadID] ||
+        !convoCache[threadID].geminiChat ||
+        Date.now() - convoCache[threadID].lastMessage > 1000 * 60 * 60 ||
+        JSON.stringify(contextualData) !== JSON.stringify(convoCache[threadID].contextualData)
+    ) {
+        let systemPrompt = fs.readFileSync("./data/system.prompt").toString();
+        if (process.env.beta) systemPrompt = systemPrompt.replaceAll("Stewbot", "Stewbeta");
+        Object.keys(contextualData).forEach((key) => {
+            systemPrompt = systemPrompt.replaceAll(`{${key}}`, contextualData[key]);
+        });
+
+        convoCache[threadID] = {
+            geminiChat:
+                genAI.getGenerativeModel({
+                    model: "gemini-2.0-flash",
+                    systemInstruction: systemPrompt
+                }).startChat(),
+            contextualData,
+            lastMessage: Date.now(),
+        };
+    }
+
+    let response = null;
+
+    try {
+        const geminiResult = await convoCache[threadID].geminiChat.sendMessage(message);
+
+        if (!geminiResult?.response?.text()) {
+            if (retryAttempt === 0) {
+                delete convoCache[threadID];
+                return getAiResponseGemini(threadID, message, thinking, contextualData, notify, retryAttempt + 1);
+            } else {
+                notify && notify(`Error with Gemini API response: \n${JSON.stringify(geminiResult)}`);
+                return [`Sorry, there was an error with the AI response. It has already been reported. Try again later.`, false];
+            }
+        }
+
+        response = geminiResult.response.text();
+    } catch (e) {
+        notify && notify(`Gemini API error: \n${e.stack}`);
+        console.error("Gemini API error:", e);
+        response = `Sorry, there was an error with the AI response. It has already been reported. Try again later.`;
+    } finally {
+        convoCache[threadID].lastMessage = Date.now();
+    }
+
+    return [response, true];
+}
+
+async function getAiResponseOllama(threadID, message, thinking = null, contextualData = {}, notify = null, retryAttempt = 0, ollamaInstances = null) {
     // returns: [response, success]
 
     // First, find all currently available servers if they have not already been provided in the command input
@@ -126,9 +183,9 @@ async function getAiResponse(threadID, message, thinking=null, contextualData={}
     if (!ollamaInstances) ollamaInstances = await getAvailableOllamaServers();
 
     if (ollamaInstances.length === 0) {
-        return [`Sorry, there are no available AI servers. Try again later.\n\n` + 
-                `We host our own AI servers. If you would like to support this project, feel free to join the [Support Server](<https://discord.gg/jFCVtHJFTY>) and see how you can help!`,
-                false ];
+        return [`Sorry, there are no available AI servers. Try again later.\n\n` +
+            `We host our own AI servers. If you would like to support this project, feel free to join the [Support Server](<https://discord.gg/jFCVtHJFTY>) and see how you can help!`,
+            false];
     }
 
     // Choose a random server
@@ -144,8 +201,9 @@ async function getAiResponse(threadID, message, thinking=null, contextualData={}
         // Build context
         const oneHour = 1000 * 60 * 60;
         if (
-            !convoCache[threadID] || 
-            Date.now() - convoCache[threadID].lastMessage > oneHour || 
+            !convoCache[threadID] ||
+            !convoCache[threadID].context || // Add check for context existence
+            Date.now() - convoCache[threadID].lastMessage > oneHour ||
             JSON.stringify(contextualData) !== JSON.stringify(convoCache[threadID].contextualData)
         ) {
             const context = [];
@@ -155,7 +213,7 @@ async function getAiResponse(threadID, message, thinking=null, contextualData={}
             Object.keys(contextualData).forEach((key) => {
                 systemPrompt = systemPrompt.replaceAll(`{${key}}`, contextualData[key]);
             })
-            context.push({"role": "system", "content": systemPrompt})
+            context.push({ "role": "system", "content": systemPrompt })
 
             convoCache[threadID] = {
                 context,
@@ -170,13 +228,13 @@ async function getAiResponse(threadID, message, thinking=null, contextualData={}
         //          But idk if that would override this system prompt
         let thinkingDefined = thinking !== null;
         if (thinkingDefined) {
-            const thinkingFlag = {"role": "control", "content": "thinking"}; // This makes the model think
+            const thinkingFlag = { "role": "control", "content": "thinking" }; // This makes the model think
             const thinkingPrompt = `\n\nYou can write down your thought process *before* responding. Write your thoughts after 'Here is my thought process:' and aftwards, write your response after 'Here is my response:' for each user query.`;
             if (thinking) {
                 // Add the thinking switch
                 if (!convoCache[threadID].context.some(item => item.role === 'control' && item.content === 'thinking')) {
                     convoCache[threadID].context.unshift(thinkingFlag);
-                    
+
                     let systemIndex = convoCache[threadID].context.findIndex(item => item.role === 'system');
                     if (systemIndex !== -1) {
                         convoCache[threadID].context[systemIndex].content += thinkingPrompt;
@@ -186,7 +244,7 @@ async function getAiResponse(threadID, message, thinking=null, contextualData={}
                 // Filter out the thinking switch
                 convoCache[threadID].context = convoCache[threadID].context
                     .filter(item => !(item.role === 'control' && item.content === 'thinking'));
-                
+
                 let systemIndex = convoCache[threadID].context.findIndex(item => item.role === 'system');
                 if (systemIndex !== -1) {
                     convoCache[threadID].context[systemIndex].content = convoCache[threadID].context[systemIndex].content.replace(thinkingPrompt, '');
@@ -194,7 +252,7 @@ async function getAiResponse(threadID, message, thinking=null, contextualData={}
             }
         }
 
-        convoCache[threadID].context.push({"role": "user", "content": message})
+        convoCache[threadID].context.push({ "role": "user", "content": message })
 
         const AIResult = await ollamaInstances[0].chat({
             model: config.aiModel,
@@ -208,7 +266,7 @@ async function getAiResponse(threadID, message, thinking=null, contextualData={}
         if (!AIResult?.message?.content) {
             if (retryAttempt === 0) {
                 delete convoCache[threadID];
-                return getAiResponse(threadID, message, thinking, contextualData, notify, retryAttempt+1, ollamaInstances);
+                return getAiResponseOllama(threadID, message, thinking, contextualData, notify, retryAttempt + 1, ollamaInstances);
             } else {
                 notify && notify(`Error with AI API response: \n${JSON.stringify(AIResult)}`);
                 return [`Sorry, there was an error with the AI response. It has already been reported. Try again later.`, false];
@@ -216,7 +274,7 @@ async function getAiResponse(threadID, message, thinking=null, contextualData={}
         }
 
         convoCache[threadID].context.push(AIResult.message);
-        
+
         response = AIResult.message.content;
     }
     catch (e) {
@@ -290,7 +348,7 @@ async function postprocessAIMessage(message, guild) {
                 if (line.length === 0) return line;
                 return '-# ' + line;
             }).join('\n');
-    
+
         message = message.substring(0, thinkingStart) + processedThinkingBlock + message.substring(responseStart);
     }
 
@@ -300,27 +358,30 @@ async function postprocessAIMessage(message, guild) {
 
 module.exports = {
     resetAIRequests,
-    
-	data: {
-		command: new SlashCommandBuilder().setName('chat').setDescription('Chat with Stewbot')
-            .addStringOption(option=>
+
+    data: {
+        command: new SlashCommandBuilder().setName('chat').setDescription('Chat with Stewbot')
+            .addStringOption(option =>
                 option
                     .setName("message")
                     .setDescription("Message to stewbot")
                     .setRequired(true)
             )
-            .addBooleanOption(option=>
+            .addBooleanOption(option =>
                 option.setName("clear").setDescription("Clear history?")
             )
-            .addBooleanOption(option=>
+            .addBooleanOption(option =>
                 option.setName("thinking").setDescription("Enable thinking before responding?")
             )
-            .addBooleanOption(option=>
+            .addBooleanOption(option =>
+                option.setName("gemini").setDescription("Use Google's Gemini instead of our local AI?")
+            )
+            .addBooleanOption(option =>
                 option.setName("private").setDescription("Make the response ephemeral?")//Do not remove private option unless the command is REQUIRED to be ephemeral or non-ephemeral.
             ),
-		
-		// Optional fields
-		extra: {"contexts": [0,1,2], "integration_types": [0,1]},//Where the command can be used and what kind of installs it supports
+
+        // Optional fields
+        extra: { "contexts": [0, 1, 2], "integration_types": [0, 1] },//Where the command can be used and what kind of installs it supports
         /*
             Contexts
              - 0: Server command
@@ -332,33 +393,34 @@ module.exports = {
              - 1: Installed to users
         */
 
-		// Allow variables from the global index file to be accessed here - requiredGlobals["helpPages"]
-		requiredGlobals: [],
+        // Allow variables from the global index file to be accessed here - requiredGlobals["helpPages"]
+        requiredGlobals: [],
 
-		help: {
-			helpCategories: ["General","Bot","Information","Entertainment"],
-			/*
-				- General -> Generic commands almost every bot has
-				- Information -> A command designed purely to provide information of some kind
-				- Bot -> A command designed specifically for managing the bot itself
-				- Administration -> A command that needs moderator privileges
-				- Configuration -> A command that changes settings of some kind
-				- Entertainment -> A command that is related to a fun feature of some kind
-				- Context Menu -> A command accessed via the context menu
-				- Other/Misc -> Commands without another good category
-				- Server Only -> Commands that can only be run in servers
-				- User Install Only -> Commands that can only be run if Stewbot is installed to your user
-			*/
-			shortDesc: "Ask Stewbot's AI something",
-			detailedDesc: "Have a fun chat with Stewbot's self-hosted AI"
-		},
-	},
+        help: {
+            helpCategories: ["General", "Bot", "Information", "Entertainment"],
+            /*
+                - General -> Generic commands almost every bot has
+                - Information -> A command designed purely to provide information of some kind
+                - Bot -> A command designed specifically for managing the bot itself
+                - Administration -> A command that needs moderator privileges
+                - Configuration -> A command that changes settings of some kind
+                - Entertainment -> A command that is related to a fun feature of some kind
+                - Context Menu -> A command accessed via the context menu
+                - Other/Misc -> Commands without another good category
+                - Server Only -> Commands that can only be run in servers
+                - User Install Only -> Commands that can only be run if Stewbot is installed to your user
+            */
+            shortDesc: "Ask Stewbot's AI something",
+            detailedDesc: "Have a fun chat with Stewbot's self-hosted AI"
+        },
+    },
 
-	async execute(cmd, globalsContext) {
-		applyContext(globalsContext);
+    async execute(cmd, globalsContext) {
+        applyContext(globalsContext);
 
         let message = cmd.options.getString("message");
         let thinking = cmd.options.getBoolean("thinking");
+        let gemini = cmd.options.getBoolean("gemini");
 
         const clearHistory = cmd.options.getBoolean("clear");
         const threadID = cmd.user.id;
@@ -369,10 +431,19 @@ module.exports = {
             delete convoCache[threadID];
         }
 
-        let [ response, success ] = await getAiResponse(threadID, message, thinking, {
-            name: cmd.user.username,
-            server: cmd.guild ? cmd.guild.name : "Dirrect Messages",
-        }, notify);
+        let response, success;
+        if (gemini) {
+            [response, success] = await getAiResponseGemini(threadID, message, thinking, {
+                name: cmd.user.username,
+                server: cmd.guild ? cmd.guild.name : "Direct Messages",
+            }, notify);
+        } else {
+            [response, success] = await getAiResponseOllama(threadID, message, thinking, {
+                name: cmd.user.username,
+                server: cmd.guild ? cmd.guild.name : "Direct Messages",
+            }, notify);
+        }
+
 
         response = await postprocessAIMessage(limitLength(response))
         response = checkDirty(cmd.guild?.id, response, true, true)[1];
@@ -393,17 +464,30 @@ module.exports = {
             && !(msg.guild && storage[msg.guild.id]?.config?.ai === false) // And as long as the guild has not explicitly disabled it
         ) {
 
-            // Check for available servers before sending typing indicator
-            const ollamaInstances = await getAvailableOllamaServers();
-            if (ollamaInstances.length > 0) msg.channel.sendTyping();
-            else return;
+            // Check for available servers before sending typing indicator (only for Ollama)
+            let ollamaInstances = null;
+            if (!storage.useGlobalGemini) ollamaInstances = await getAvailableOllamaServers();
+            if (!storage.useGlobalGemini && ollamaInstances?.length === 0) return; // Don't send typing if no ollama servers and not using gemini
+            
+            msg.channel.sendTyping();
+
 
             let message = await postprocessUserMessage(msg.content, msg.guild);
             let threadID = msg.author.id;
-            let [ response, success ] = await getAiResponse(threadID, message, false, { // Disable thinking on replies for now. Consider setting to null later to default to last 
-                name: msg.author.username,
-                server: msg.guild ? msg.guild.name : "Direct Messages",
-            }, notify, 0, ollamaInstances);
+            let response, success;
+
+            if (storage.useGlobalGemini) {
+                [response, success] = await getAiResponseGemini(threadID, message, false, {
+                    name: msg.author.username,
+                    server: msg.guild ? msg.guild.name : "Direct Messages",
+                }, notify, 0);
+            } else {
+                [response, success] = await getAiResponseOllama(threadID, message, false, { // Disable thinking on replies for now. Consider setting to null later to default to last
+                    name: msg.author.username,
+                    server: msg.guild ? msg.guild.name : "Direct Messages",
+                }, notify, 0, ollamaInstances);
+            }
+
 
             if (success) { // Only reply if it worked, don't send error codes in reply to replies
                 let stillExists = true; // Message could have been deleted/filtered since sending
@@ -417,7 +501,7 @@ module.exports = {
                 response = checkDirty(msg.guild?.id, response, true, true)[1];
 
                 // Let's trim emojis as reactions
-                var emojiEnding = /[\p{Emoji}\uFE0F]$/u; 
+                var emojiEnding = /[\p{Emoji}\uFE0F]$/u;
                 var emoji = null;
                 if (stillExists && emojiEnding.test(response)) {
                     emoji = response.match(emojiEnding)[0]
@@ -432,17 +516,17 @@ module.exports = {
                     response += emoji;
                 }
 
-                if(!storage[msg.author.id].config.beenAIDisclaimered){
-                    storage[msg.author.id].config.beenAIDisclaimered=true;
-                    response+=`\n-# This is part of a Stewbot feature. If you wish to disable it, a user can run /personal_config to disable it for them personally, or a moderator can run /general_config.`;
+                if (!storage[msg.author.id].config.beenAIDisclaimered) {
+                    storage[msg.author.id].config.beenAIDisclaimered = true;
+                    response += `\n-# This is part of a Stewbot feature. If you wish to disable it, a user can run /personal_config to disable it for them personally, or a moderator can run /general_config.`;
                 }
 
                 // If response is > 2000 chars, split it up.
                 while (response.length > 0) {
-                    let chunk = response.slice(0, 2000-3);
-                    response = response.slice(2000-3);
+                    let chunk = response.slice(0, 2000 - 3);
+                    response = response.slice(2000 - 3);
                     if (response.length > 0) chunk += "...";
-                    
+
                     // await ((stillExists ? msg.reply : msg.channel.send)({
                     //     content: chunk,
                     //     allowedMentions: { parse: [] }
@@ -458,14 +542,14 @@ module.exports = {
                             allowedMentions: { parse: [] },
                         });
                     }
-                
+
                 }
 
                 // if (response) msg.reply({
                 //     content: await postprocessAIMessage(response, msg.guild),
                 //     allowedMentions: { parse: [] }
                 // });
-            
+
             }
         }
     }

@@ -701,6 +701,14 @@ client.on("messageCreate",async msg => {
 
         if(devadminChannel?.permissionsFor(msg.author.id)?.has(PermissionFlagsBits.SendMessages)){
             switch(msg.content.split(" ")[1].replaceAll(".","")){
+                case "gemini":
+                    storage.useGlobalGemini = true;
+                    msg.reply("Using Google Gemini globally")
+                    break;
+                case "ollama":
+                    msg.reply("Using Ollama AI globally")
+                    storage.useGlobalGemini = false;
+                    break;
                 case "resetAI":
                     resetAIRequests();
                     break;
