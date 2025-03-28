@@ -1,6 +1,6 @@
 // #region CommandBoilerplate
 const Categories = require("./modules/Categories");
-const { SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
+const { ContextMenuCommandBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
 function applyContext(context={}) {
 	for (key in context) {
 		this[key] = context[key];
@@ -98,13 +98,13 @@ module.exports = {
 
 		help: {
 			config:{
-				helpCategories: ["General","Entertainment","Administration","Server Only"],
+				helpCategories: [Categories.General, Categories.Entertainment, Categories.Administration, Categories.Server_Only],
 				shortDesc: "Configure counting for this server",
 				detailedDesc: 
 					`Configure the counting game here. To play, simply enter the next number in the sequence without messing up. You can configure that users need to wait a specific number of turns. The goal is to become the highest on the leaderboard.`
 			},
 			set_number:{
-				helpCategories: ["General","Entertainment","Administration","Server Only"],
+				helpCategories: [Categories.General, Categories.Entertainment, Categories.Administration, Categories.Server_Only],
 				shortDesc: "Set the next number to count at",
 				detailedDesc: 
 					`Sets the next number for you to count at. If the number you choose is greater than one, this will disqualify the server from the leaderboard until a reset.`

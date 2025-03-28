@@ -1,6 +1,6 @@
 // #region CommandBoilerplate
 const Categories = require("./modules/Categories");
-const { SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
+const { ContextMenuCommandBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
 function applyContext(context={}) {
 	for (key in context) {
 		this[key] = context[key];
@@ -70,22 +70,26 @@ module.exports = {
 
 		help: {
 			rng:{
-				helpCategories: ["Entertainment"],				shortDesc: "Generate a random number",//Should be the same as the command setDescription field
+				helpCategories: [Categories.Entertainment],
+				shortDesc: "Generate a random number",//Should be the same as the command setDescription field
 				detailedDesc: //Detailed on exactly what the command does and how to use it
 					`Generate a random number between boundaries you can choose.`
 			},
 			"coin-flip":{
-				helpCategories: ["Entertainment"],				shortDesc: "Flip a number of coins",//Should be the same as the command setDescription field
+				helpCategories: [Categories.Entertainment],
+				shortDesc: "Flip a number of coins",//Should be the same as the command setDescription field
 				detailedDesc: //Detailed on exactly what the command does and how to use it
 					`Flip up to ten coins and view the results`
 			},
 			"8-ball":{
-				helpCategories: ["Entertainment"],				shortDesc: "Ask a question and receive an entirely random response",//Should be the same as the command setDescription field
+				helpCategories: [Categories.Entertainment],
+				shortDesc: "Ask a question and receive an entirely random response",//Should be the same as the command setDescription field
 				detailedDesc: //Detailed on exactly what the command does and how to use it
 					`Enter a question and let the "magic" of preprogrammed responses selected by a random number generator give you a completely random answer`
 			},
 			"dice-roll":{
-				helpCategories: ["Entertainment"],				shortDesc: "Roll a number of dice",//Should be the same as the command setDescription field
+				helpCategories: [Categories.Entertainment],
+				shortDesc: "Roll a number of dice",//Should be the same as the command setDescription field
 				detailedDesc: //Detailed on exactly what the command does and how to use it
 					`Roll up to ten dice and view the results`
 			}

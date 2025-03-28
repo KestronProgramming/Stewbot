@@ -26,7 +26,8 @@ module.exports = {
 		requiredGlobals: [],
 
 		help: {
-			helpCategories: ["Entertainment"],			shortDesc: "Play a word of the game reminiscent of Wordle",//Should be the same as the command setDescription field
+			helpCategories: [Categories.Entertainment],
+			shortDesc: "Play a word of the game reminiscent of Wordle",//Should be the same as the command setDescription field
 			detailedDesc: //Detailed on exactly what the command does and how to use it
 				`Play a game reminiscent of Wordle but with our own word of the day and from within Discord. A new word is chosen every day at 12 UTC.`
 		},

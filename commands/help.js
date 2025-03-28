@@ -1,6 +1,6 @@
 // #region CommandBoilerplate
 const Categories = require("./modules/Categories");
-const { SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
+const { ContextMenuCommandBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
 function applyContext(context={}) {
 	for (key in context) {
 		this[key] = context[key];
@@ -16,46 +16,46 @@ function chunkArray(array, size) {
     return result;
 }
 
-function makeHelp(page,categories,filterMode,forWho){
-    const helpCategories = ["General", "Bot", "Information", "Entertainment", "Configuration", "Administration", "Safety", "Context Menu", "Server Only","Module"];
+function makeHelp(page, categories, filterMode, forWho) {
+    const helpCategories = Object.keys(Categories);
 
-    page=+page;
-    if(categories.includes("All")){
-        categories=structuredClone(helpCategories);
+    page = +page;
+    if (categories.includes("All")) {
+        categories = structuredClone(helpCategories);
     }
-    if(categories.includes("None")){
-        categories=[];
+    else if (categories.includes("None")) {
+        categories = [];
     }
-    const buttonRows=[];
-    var totalPages=[...chunkArray(helpCommands.filter(command=>{
-        switch(filterMode){
+    const buttonRows = [];
+    var totalPages = [...chunkArray(helpCommands.filter(command => {
+        switch (filterMode) {
             case 'And':
-                var ret=true;
-                categories.forEach(category=>{
-                    if(!command.helpCategories.includes(category)){
-                        ret=false;
+                var ret = true;
+                categories.forEach(category => {
+                    if (!command.helpCategories.includes(category)) {
+                        ret = false;
                     }
                 });
                 return ret;
-            break;
+                break;
             case 'Or':
-                var ret=false;
-                categories.forEach(category=>{
-                    if(command.helpCategories.includes(category)){
-                        ret=true;
+                var ret = false;
+                categories.forEach(category => {
+                    if (command.helpCategories.includes(category)) {
+                        ret = true;
                     }
                 });
                 return ret;
-            break;
+                break;
             case 'Not':
-                var ret=true;
-                categories.forEach(category=>{
-                    if(command.helpCategories.includes(category)){
-                        ret=false;
+                var ret = true;
+                categories.forEach(category => {
+                    if (command.helpCategories.includes(category)) {
+                        ret = false;
                     }
                 });
                 return ret;
-            break;
+                break;
         }
     }), 9)].length;
     var pagesArray=[
@@ -163,7 +163,8 @@ module.exports = {
 		requiredGlobals: ["helpCommands", "commands"],
 
 		help: {
-			helpCategories: ["General","Bot","Information"],			shortDesc: "View this help menu",//Should be the same as the command setDescription field
+			helpCategories: [Categories.General, Categories.Bot, Categories.Information],
+			shortDesc: "View this help menu",//Should be the same as the command setDescription field
 			detailedDesc: //Detailed on exactly what the command does and how to use it
 				`Open this help menu and descriptions.`
 		},

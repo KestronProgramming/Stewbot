@@ -22,7 +22,8 @@ module.exports = {
 		requiredGlobals: [],
 
 		help: {
-			helpCategories: [],//Don't show in any automatic help pages			shortDesc: "Stewbot's Admins Only",//Should be the same as the command setDescription field
+			helpCategories: [""],//Don't show in any automatic help pages
+			shortDesc: "Stewbot's Admins Only",//Should be the same as the command setDescription field
 			detailedDesc: //Detailed on exactly what the command does and how to use it
 				`Stewbot's Admins Only`
 		},

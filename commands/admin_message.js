@@ -27,7 +27,7 @@ module.exports = {
         deferEphemeral: true,
 
         help: {
-			helpCategories: ["Administration","Server Only"],
+			helpCategories: [Categories.Administration, Categories.Server_Only],
 			shortDesc: "Post anonymously in the server's name",
 			detailedDesc: 
 				`Moderators can use this command to make a post in the server's name. If you specify a user, Stewbot will DM the selected user with the message of choice. If no user is selected, the bot will use webhooks to post your message in the server's name in the same channel this command is used in.`

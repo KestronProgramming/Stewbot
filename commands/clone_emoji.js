@@ -80,7 +80,7 @@ module.exports = {
 		requiredGlobals: [],
 
 		help: {
-			helpCategories: ["General","Entertainment","Configuration"],
+			helpCategories: [Categories.General, Categories.Entertainment, Categories.Configuration],
 			shortDesc: "Upload an emoji from another server to use in this one",
 			detailedDesc: 
 				`This command will copy an emoji from another server here. Use Prime Emoji in another server to start the process, and then use clone from primed emoji to bring it here. Use clone from emoji ID to find the emoji using the emoji ID, clone from a Nitro emoji to enter the emoji using Nitro directly, etc.`
