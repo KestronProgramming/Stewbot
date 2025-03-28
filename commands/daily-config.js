@@ -38,18 +38,6 @@ module.exports = {
 
 		help: {
 			helpCategories: ["Information","Entertainment","Administration","Configuration","Server Only"],
-			/*
-				- General
-				- Information
-				- Bot
-				- Administration
-				- Configuration
-				- Entertainment
-				- Context Menu
-				- Other/Misc
-				- Server Only
-				- User Install Only
-			*/
 			shortDesc: "Configure daily postings",
 			detailedDesc: 
 				`Configure daily devotions, a daily verse of the day, and/or a daily meme to be posted to any channel you'd like every day at noon UTC.`

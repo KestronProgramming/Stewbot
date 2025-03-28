@@ -34,18 +34,6 @@ module.exports = {
 
 		help: {
 			helpCategories: ["Configuration","Entertainment","Server Only"],
-			/*
-				- General
-				- Information
-				- Bot
-				- Administration
-				- Configuration
-				- Entertainment
-				- Context Menu
-				- Other/Misc
-				- Server Only
-				- User Install Only
-			*/
 			shortDesc: "Configure an emojiboard for this server",
 			detailedDesc: 
 				`Change settings for a previously added emojiboard in this server`

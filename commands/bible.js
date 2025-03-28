@@ -60,18 +60,6 @@ module.exports = {
 
 		help: {
 			helpCategories: ["General","Information"],
-			/*
-				- General
-				- Information
-				- Bot
-				- Administration
-				- Configuration
-				- Entertainment
-				- Context Menu
-				- Other/Misc
-				- Server Only
-				- User Install Only
-			*/
 			shortDesc: "Look up one or more verses in the King James Bible",
 			detailedDesc: 
 				`Search for up to five verses in the King James Bible. If you were to look up verses four through eight in the thirteenth chapter of the book of 1 Corinthians, you would enter "1 Corinthians 13:4-8".\n

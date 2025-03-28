@@ -74,18 +74,6 @@ module.exports = {
 
 		help: {
 			helpCategories: ["General","Administration","Server Only"],
-			/*
-				- General
-				- Information
-				- Bot
-				- Administration
-				- Configuration
-				- Entertainment
-				- Context Menu
-				- Other/Misc
-				- Server Only
-				- User Install Only
-			*/
 			shortDesc: "Ban a user, temporarily if desired",
 			detailedDesc: 
 				`This command will ban a user. If you specify an amount of days or hours, this ban will automatically revert after that many days and hours. If you do not specify either of those, this ban will be permanent until manually removed.`

@@ -31,20 +31,7 @@ module.exports = {
         deferEphemeral: true,
 
         help: {
-            helpCategories: ["Bot","Entertainment","Context Menu"],
-			/*
-				- General -> Generic commands almost every bot has
-				- Information -> A command designed purely to provide information of some kind
-				- Bot -> A command designed specifically for managing the bot itself
-				- Administration -> A command that needs moderator privileges
-				- Configuration -> A command that changes settings of some kind
-				- Entertainment -> A command that is related to a fun feature of some kind
-				- Context Menu -> A command accessed via the context menu
-				- Other/Misc -> Commands without another good category
-				- Server Only -> Commands that can only be run in servers
-				- User Install Only -> Commands that can only be run if Stewbot is installed to your user
-			*/
-			shortDesc: "Submit a meme to the Stewbot moderators for verification to show up in `/fun meme`",//Should be the same as the command setDescription field
+            helpCategories: ["Bot","Entertainment","Context Menu"],			shortDesc: "Submit a meme to the Stewbot moderators for verification to show up in `/fun meme`",//Should be the same as the command setDescription field
 			detailedDesc: //Detailed on exactly what the command does and how to use it
 				`Using this command on a message with an image or video will submit it to the Stewbot moderators to verify to begin showing up in the ${cmds.fun.meme.mention} command. This is a context menu command, and is accessed by holding down on a message on mobile, or right clicking on desktop, and then selecting "Apps".`
         },

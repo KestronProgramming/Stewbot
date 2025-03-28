@@ -26,18 +26,6 @@ module.exports = {
 
 		help: {
 			helpCategories: ["General","Administration","Server Only"],
-			/*
-				- General
-				- Information
-				- Bot
-				- Administration
-				- Configuration
-				- Entertainment
-				- Context Menu
-				- Other/Misc
-				- Server Only
-				- User Install Only
-			*/
 			shortDesc: "Delete any number of messages",
 			detailedDesc: 
 				`Delete the specified number of messages in bulk. Must be less than a hundred for each time this command is used.`

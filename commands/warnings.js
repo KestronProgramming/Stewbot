@@ -30,20 +30,7 @@ module.exports = {
 		requiredGlobals: ["defaultGuildUser"],
 
 		help: {
-			helpCategories: ["Administration","Information","Server Only"],
-			/*
-				- General -> Generic commands almost every bot has
-				- Information -> A command designed purely to provide information of some kind
-				- Bot -> A command designed specifically for managing the bot itself
-				- Administration -> A command that needs moderator privileges
-				- Configuration -> A command that changes settings of some kind
-				- Entertainment -> A command that is related to a fun feature of some kind
-				- Context Menu -> A command accessed via the context menu
-				- Other/Misc -> Commands without another good category
-				- Server Only -> Commands that can only be run in servers
-				- User Install Only -> Commands that can only be run if Stewbot is installed to your user
-			*/
-			shortDesc: "See the warnings that have been dealt in the server",//Should be the same as the command setDescription field
+			helpCategories: ["Administration","Information","Server Only"],			shortDesc: "See the warnings that have been dealt in the server",//Should be the same as the command setDescription field
 			detailedDesc: //Detailed on exactly what the command does and how to use it
 				`Moderators can use this command to view a list of warnings dealt, specifying a user will show only the warnings affecting that user, and not specifying a user will list users that have received warnings and a sum of the severities.`
 		},

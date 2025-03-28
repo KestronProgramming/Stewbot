@@ -44,20 +44,7 @@ module.exports = {
 		deferEphemeral: true,
 
 		help: {
-			helpCategories: ["General","Bot","Configuration"],
-			/*
-				- General -> Generic commands almost every bot has
-				- Information -> A command designed purely to provide information of some kind
-				- Bot -> A command designed specifically for managing the bot itself
-				- Administration -> A command that needs moderator privileges
-				- Configuration -> A command that changes settings of some kind
-				- Entertainment -> A command that is related to a fun feature of some kind
-				- Context Menu -> A command accessed via the context menu
-				- Other/Misc -> Commands without another good category
-				- Server Only -> Commands that can only be run in servers
-				- User Install Only -> Commands that can only be run if Stewbot is installed to your user
-			*/
-			shortDesc: "Configure the bot for you personally",//Should be the same as the command setDescription field
+			helpCategories: ["General","Bot","Configuration"],			shortDesc: "Configure the bot for you personally",//Should be the same as the command setDescription field
 			detailedDesc: //Detailed on exactly what the command does and how to use it
 				`Configure options for your personal interactions with the bot. This includes options such as if the bot tells you when you're filtered, if it automatically embeds certain links you post, or if you want it to not ping you whenb you level up in a server. You can also set your timezone for use with ${cmds.timestamp.mention}`
 		},

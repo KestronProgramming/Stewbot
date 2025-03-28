@@ -23,18 +23,6 @@ module.exports = {
 
 		help: {
 			helpCategories: ["Information","General"],
-			/*
-				- General
-				- Information
-				- Bot
-				- Administration
-				- Configuration
-				- Entertainment
-				- Context Menu
-				- Other/Misc
-				- Server Only
-				- User Install Only
-			*/
 			shortDesc: "Get the definition for a word",
 			detailedDesc: 
 				`Look up the specified word in the dictionary and view the definitions.`

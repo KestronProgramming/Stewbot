@@ -57,20 +57,7 @@ module.exports = {
 		deferEphemeral: true,
 		
 		help:{
-			helpCategories: ["Information","General","Entertainment","Context Menu"],
-			/*
-				- General -> Generic commands almost every bot has
-				- Information -> A command designed purely to provide information of some kind
-				- Bot -> A command designed specifically for managing the bot itself
-				- Administration -> A command that needs moderator privileges
-				- Configuration -> A command that changes settings of some kind
-				- Entertainment -> A command that is related to a fun feature of some kind
-				- Context Menu -> A command accessed via the context menu
-				- Other/Misc -> Commands without another good category
-				- Server Only -> Commands that can only be run in servers
-				- User Install Only -> Commands that can only be run if Stewbot is installed to your user
-			*/
-			shortDesc: "Get a message ready to be embedded with /embed_message",//Should be the same as the command setDescription field
+			helpCategories: ["Information","General","Entertainment","Context Menu"],			shortDesc: "Get a message ready to be embedded with /embed_message",//Should be the same as the command setDescription field
 			detailedDesc: //Detailed on exactly what the command does and how to use it
 				`After using this command on a message, you can type PRIMED into ${cmds.embed_message.mention} to have the bot embed it. This can be used for DMs, or servers the bot doesn't share with you if you install it to use anywhere. (Press the bot's PFP, then select "Add App", and then "Use it Everywhere"). This is a context menu command, which can be accessed by holding down on a message on mobile, or right clicking on desktop, and then selecting "Apps".`
 		}

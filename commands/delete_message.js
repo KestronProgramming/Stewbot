@@ -23,18 +23,6 @@ module.exports = {
 
 		help: {
 			helpCategories: ["Bot","Administration"],
-			/*
-				- General
-				- Information
-				- Bot
-				- Administration
-				- Configuration
-				- Entertainment
-				- Context Menu
-				- Other/Misc
-				- Server Only
-				- User Install Only
-			*/
 			shortDesc: "Delete the message, useful for Stewbot DMs",
 			detailedDesc: 
 				`Deletes the specified message from the context menu. This command exists primarily to remove DMs with Stewbot.`
