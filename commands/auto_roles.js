@@ -94,14 +94,14 @@ module.exports = {
 		}
 
 		if(cmd.customId?.startsWith("autoRole-")){
-			let myRole=cmd.guild.members.cache.get(client.user.id).roles.highest.position;
+			let myRole = (await cmd.guild.members.fetch(client.user.id)).roles.highest;
 			let id=cmd.customId.split("autoRole-")[1];
 			let role=cmd.guild.roles.cache.get(id);
 			if(role===undefined||role===null){
 				cmd.reply({content:`That role doesn't seem to exist anymore.`,ephemeral:true});
 				return;
 			}
-			if(myRole<=role.rawPosition){
+			if(myRole.position<=role.position){
 				cmd.reply({content:`I cannot help with that role at the moment. Please let a moderator know that for me to help with the **${cmd.roles?.get(role)?.name}**, it needs to be dragged below my highest role in the Server Settings role list.`,ephemeral:true,allowedMentions:{parse:[]}});
 			}
 			else{
