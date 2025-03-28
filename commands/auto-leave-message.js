@@ -30,18 +30,6 @@ module.exports = {
 
 		help: {
 			helpCategories: ["Configuration","Administration","Server Only"],
-			/*
-				- General
-				- Information
-				- Bot
-				- Administration
-				- Configuration
-				- Entertainment
-				- Context Menu
-				- Other/Misc
-				- Server Only
-				- User Install Only
-			*/
 			shortDesc: "Set up a message to be sent automatically when a user leaves",
 			detailedDesc: 
 				`Configures a template message Stewbot will post to a designated channel in the server's name every time a user leaves`

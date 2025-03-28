@@ -30,18 +30,6 @@ module.exports = {
 
 		help: {
 			helpCategories: ["General","Information","Entertainment"],
-			/*
-				- General
-				- Information
-				- Bot
-				- Administration
-				- Configuration
-				- Entertainment
-				- Context Menu
-				- Other/Misc
-				- Server Only
-				- User Install Only
-			*/
 			shortDesc: "Embed a message link from another channel or server",
 			detailedDesc: 
 				`This command allows you to enter a message link from any channel or server you are in and have Stewbot to display it. If Stewbot does not share the server with you, you can still embed it by installing Stewbot to use everywhere (click his PFP and then "Add App" to do so) and then using the "prime_embed" context menu command (right click on desktop, hold down on mobile, then press Apps) on the message you'd like to embed, and then using this command and entering "PRIMED".`

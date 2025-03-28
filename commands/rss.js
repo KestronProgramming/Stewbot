@@ -262,56 +262,17 @@ module.exports = {
 
 		help: {
 			follow:{
-				helpCategories: ["Information","Configuration","Administration","Server Only"],
-				/*
-					- General -> Generic commands almost every bot has
-					- Information -> A command designed purely to provide information of some kind
-					- Bot -> A command designed specifically for managing the bot itself
-					- Administration -> A command that needs moderator privileges
-					- Configuration -> A command that changes settings of some kind
-					- Entertainment -> A command that is related to a fun feature of some kind
-					- Context Menu -> A command accessed via the context menu
-					- Other/Misc -> Commands without another good category
-					- Server Only -> Commands that can only be run in servers
-					- User Install Only -> Commands that can only be run if Stewbot is installed to your user
-				*/
-				shortDesc: "Follow an RSS feed",//Should be the same as the command setDescription field
+				helpCategories: ["Information","Configuration","Administration","Server Only"],				shortDesc: "Follow an RSS feed",//Should be the same as the command setDescription field
 				detailedDesc: //Detailed on exactly what the command does and how to use it
 					`Specify a channel and an RSS feed, and every day at noon UTC, Stewbot will post any updated from that feed into the channel.`
 			},
 			unfollow:{
-				helpCategories: ["Configuration","Administration","Server Only"],
-				/*
-					- General -> Generic commands almost every bot has
-					- Information -> A command designed purely to provide information of some kind
-					- Bot -> A command designed specifically for managing the bot itself
-					- Administration -> A command that needs moderator privileges
-					- Configuration -> A command that changes settings of some kind
-					- Entertainment -> A command that is related to a fun feature of some kind
-					- Context Menu -> A command accessed via the context menu
-					- Other/Misc -> Commands without another good category
-					- Server Only -> Commands that can only be run in servers
-					- User Install Only -> Commands that can only be run if Stewbot is installed to your user
-				*/
-				shortDesc: "Unfollow an RSS feed",//Should be the same as the command setDescription field
+				helpCategories: ["Configuration","Administration","Server Only"],				shortDesc: "Unfollow an RSS feed",//Should be the same as the command setDescription field
 				detailedDesc: //Detailed on exactly what the command does and how to use it
 					`Specify the channel the feed is followed in, and the URL of the feed to unfollow, and Stewbot will no longer post RSS updates for that feed there. You can use ${cmds.rss.check.mention} to get the URL needed for this command.`
 			},
 			check:{
-				helpCategories: ["Information","Administration","Server Only"],
-				/*
-					- General -> Generic commands almost every bot has
-					- Information -> A command designed purely to provide information of some kind
-					- Bot -> A command designed specifically for managing the bot itself
-					- Administration -> A command that needs moderator privileges
-					- Configuration -> A command that changes settings of some kind
-					- Entertainment -> A command that is related to a fun feature of some kind
-					- Context Menu -> A command accessed via the context menu
-					- Other/Misc -> Commands without another good category
-					- Server Only -> Commands that can only be run in servers
-					- User Install Only -> Commands that can only be run if Stewbot is installed to your user
-				*/
-				shortDesc: "Check the RSS feeds a channel follows",//Should be the same as the command setDescription field
+				helpCategories: ["Information","Administration","Server Only"],				shortDesc: "Check the RSS feeds a channel follows",//Should be the same as the command setDescription field
 				detailedDesc: //Detailed on exactly what the command does and how to use it
 					`Run this command to check which RSS URLs Stewbot is posting from in the specified channel.`
 			}

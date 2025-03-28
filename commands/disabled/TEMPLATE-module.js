@@ -22,22 +22,7 @@ module.exports = {
 
 		// Not all modules will have help commands, but they can in theory to showcase bot features.
 		help: {
-			helpCategories: ["Module"],
-			/*
-				- General -> Generic commands almost every bot has
-				- Information -> A command designed purely to provide information of some kind
-				- Bot -> A command designed specifically for managing the bot itself
-				- Administration -> A command that needs moderator privileges
-				- Configuration -> A command that changes settings of some kind
-				- Entertainment -> A command that is related to a fun feature of some kind
-				- Context Menu -> A command accessed via the context menu
-				- Other/Misc -> Commands without another good category
-				- Server Only -> Commands that can only be run in servers
-				- User Install Only -> Commands that can only be run if Stewbot is installed to your user
-				- Safety -> Anti-hack, anti-spam, etc
-				- Module -> Automatic bot action not triggered or configured by a slash command
-			*/
-			shortDesc: "Jerry Jerry Jerry Jerry Yeah!!!",
+			helpCategories: ["Module"],			shortDesc: "Jerry Jerry Jerry Jerry Yeah!!!",
 			detailedDesc: //Detailed on exactly what the command does and how to use it
 				`Jerry the Rope!\n
 				Jerry brings hope.\n

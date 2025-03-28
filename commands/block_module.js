@@ -87,18 +87,6 @@ module.exports = {
 
 		help: {
 			helpCategories: ["Bot","Administration","Configuration","Server Only"],
-			/*
-				- General
-				- Information
-				- Bot
-				- Administration
-				- Configuration
-				- Entertainment
-				- Context Menu
-				- Other/Misc
-				- Server Only
-				- User Install Only
-			*/
 			shortDesc: "Block bot commands and features from being used in this server",
 			detailedDesc: 
 				`Enter a command that you want to disable users from ever using in this server. If you set unblock to true, this command will unblock a command so that users may use it again.`,

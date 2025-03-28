@@ -49,18 +49,6 @@ export default {
 
 		help: {
 			helpCategories: ["General","Configuration","Entertainment","Server Only"],
-			/*
-				- General
-				- Information
-				- Bot
-				- Administration
-				- Configuration
-				- Entertainment
-				- Context Menu
-				- Other/Misc
-				- Server Only
-				- User Install Only
-			*/
 			shortDesc: "Create a new emojiboard",
 			detailedDesc: 
 				`Adds an emojiboard for Stewbot to run. If the emoji you choose is reacted enough times on a message (configurable threshold), then it will be posted to a highlights reel channel of your choosing.\n

@@ -66,20 +66,7 @@ module.exports = {
 		requiredGlobals: [],
 
 		help: {
-			helpCategories: ["Entertainment","Server Only"],
-			/*
-				- General -> Generic commands almost every bot has
-				- Information -> A command designed purely to provide information of some kind
-				- Bot -> A command designed specifically for managing the bot itself
-				- Administration -> A command that needs moderator privileges
-				- Configuration -> A command that changes settings of some kind
-				- Entertainment -> A command that is related to a fun feature of some kind
-				- Context Menu -> A command accessed via the context menu
-				- Other/Misc -> Commands without another good category
-				- Server Only -> Commands that can only be run in servers
-				- User Install Only -> Commands that can only be run if Stewbot is installed to your user
-			*/
-			shortDesc: "Draw (a) name(s) from a hat, like a raffle or giveaway",//Should be the same as the command setDescription field
+			helpCategories: ["Entertainment","Server Only"],			shortDesc: "Draw (a) name(s) from a hat, like a raffle or giveaway",//Should be the same as the command setDescription field
 			detailedDesc: //Detailed on exactly what the command does and how to use it
 				`Have Stewbot help manage a raffle or giveaway like event, including automatic handling of entering and picking the winner(s) after a set amount of time.`
 		},
