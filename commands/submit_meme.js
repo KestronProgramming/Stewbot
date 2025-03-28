@@ -1,11 +1,12 @@
-// #region Boilerplate
+// #region CommandBoilerplate
+const Categories = require("./modules/Categories");
 const { ContextMenuCommandBuilder, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType, AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType } = require("discord.js");
 function applyContext(context = {}) {
     for (key in context) {
         this[key] = context[key];
     }
 }
-// #endregion Boilerplate
+// #endregion CommandBoilerplate
 const fs = require("fs")
 
 const components = [new ActionRowBuilder().addComponents(
