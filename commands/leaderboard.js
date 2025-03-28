@@ -37,7 +37,8 @@ module.exports = {
         requiredGlobals: ["getEmojiFromMessage"],
 
         help: {
-            helpCategories: ["Information","Entertainment"],			shortDesc: "View a leaderboard",//Should be the same as the command setDescription field
+            helpCategories: [Categories.Information, Categories.Entertainment],
+			shortDesc: "View a leaderboard",//Should be the same as the command setDescription field
 			detailedDesc: //Detailed on exactly what the command does and how to use it
 				`View one of the leaderboards. See what server has globally counted the highest, how many people in this server have been on the emojiboard the most times, who has broken the filter rules the least, who has broken them the most (if you're an admin), or who's gotten the highest amount of server XP`
         },

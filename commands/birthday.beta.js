@@ -1,6 +1,6 @@
 // #region CommandBoilerplate
 const Categories = require("./modules/Categories");
-const { SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
+const { ContextMenuCommandBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
 function applyContext(context={}) {
 	for (key in context) {
 		this[key] = context[key];
@@ -65,7 +65,7 @@ module.exports = {
 		requiredGlobals: ["defaultUser"],
 
 		help: {
-			helpCategories: ["Information","Entertainment","Configuration"],
+			helpCategories: [Categories.Information, Categories.Entertainment, Categories.Configuration],
 			shortDesc: "Upload an emoji from another server to use in this one",
 			detailedDesc: 
 				`This command will copy an emoji from another server here. Use Prime Emoji in another server to start the process, and then use clone from primed emoji to bring it here. Use clone from emoji ID to find the emoji using the emoji ID, clone from a Nitro emoji to enter the emoji using Nitro directly, etc.`

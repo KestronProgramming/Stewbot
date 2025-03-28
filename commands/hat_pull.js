@@ -66,7 +66,8 @@ module.exports = {
 		requiredGlobals: [],
 
 		help: {
-			helpCategories: ["Entertainment","Server Only"],			shortDesc: "Draw (a) name(s) from a hat, like a raffle or giveaway",//Should be the same as the command setDescription field
+			helpCategories: [Categories.Entertainment, Categories.Server_Only],
+			shortDesc: "Draw (a) name(s) from a hat, like a raffle or giveaway",//Should be the same as the command setDescription field
 			detailedDesc: //Detailed on exactly what the command does and how to use it
 				`Have Stewbot help manage a raffle or giveaway like event, including automatic handling of entering and picking the winner(s) after a set amount of time.`
 		},

@@ -79,7 +79,8 @@ module.exports = {
 		requiredGlobals: [],
 
 		help: {
-			helpCategories: ["Configuration","Administration","Server Only"],			shortDesc: "Set a slowmode for this channel, temporarily if desired",//Should be the same as the command setDescription field
+			helpCategories: [Categories.Configuration, Categories.Administration, Categories.Server_Only],
+			shortDesc: "Set a slowmode for this channel, temporarily if desired",//Should be the same as the command setDescription field
 			detailedDesc: //Detailed on exactly what the command does and how to use it
 				`Configure or remove a slowmode on the channel this command is used in, if you set hours or minutes until reverted, Stewbot will automatically repeal the slowmode change after the time is up.`
 		},

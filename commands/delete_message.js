@@ -22,7 +22,7 @@ module.exports = {
 		deferEphemeral: true,
 
 		help: {
-			helpCategories: ["Bot","Administration"],
+			helpCategories: [Categories.Bot, Categories.Administration],
 			shortDesc: "Delete the message, useful for Stewbot DMs",
 			detailedDesc: 
 				`Deletes the specified message from the context menu. This command exists primarily to remove DMs with Stewbot.`

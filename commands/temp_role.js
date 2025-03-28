@@ -48,7 +48,8 @@ module.exports = {
 		requiredGlobals: [],
 
 		help: {
-			helpCategories: ["Administration","Server Only"],			shortDesc: "Temporarily add or remove a role from someone",//Should be the same as the command setDescription field
+			helpCategories: [Categories.Administration, Categories.Server_Only],
+			shortDesc: "Temporarily add or remove a role from someone",//Should be the same as the command setDescription field
 			detailedDesc: //Detailed on exactly what the command does and how to use it
 				`Specify a role to add or remove temporarily from a specified user, and how long you want it to be added or removed for. At the end of the timer, the role changes will be automatically reverted.`
 		},

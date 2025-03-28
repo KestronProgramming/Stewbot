@@ -1,6 +1,6 @@
 // #region CommandBoilerplate
 const Categories = require("./modules/Categories");
-const { SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
+const { ContextMenuCommandBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
 function applyContext(context={}) {
 	for (key in context) {
 		this[key] = context[key];
@@ -29,7 +29,7 @@ module.exports = {
 		requiredGlobals: [],
 
 		help: {
-			helpCategories: ["General","Information","Entertainment"],
+			helpCategories: [Categories.General, Categories.Information, Categories.Entertainment],
 			shortDesc: "Embed a message link from another channel or server",
 			detailedDesc: 
 				`This command allows you to enter a message link from any channel or server you are in and have Stewbot to display it. If Stewbot does not share the server with you, you can still embed it by installing Stewbot to use everywhere (click his PFP and then "Add App" to do so) and then using the "prime_embed" context menu command (right click on desktop, hold down on mobile, then press Apps) on the message you'd like to embed, and then using this command and entering "PRIMED".`

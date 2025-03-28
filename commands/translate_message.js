@@ -25,7 +25,8 @@ module.exports = {
 		requiredGlobals: [],
 
 		help: {
-			helpCategories: ["Information","Context Menu"],			shortDesc: "Attempt to autodetect the language of the message and translate it",//Should be the same as the command setDescription field
+			helpCategories: [Categories.Information, Categories.Context_Menu],
+			shortDesc: "Attempt to autodetect the language of the message and translate it",//Should be the same as the command setDescription field
 			detailedDesc: //Detailed on exactly what the command does and how to use it
 				`Tries to autodetect the language of a message, and translate it into English. This is a context menu command, accessed by holding down on a message on mobile or right clicking on desktop, and pressing "Apps".`
 		},

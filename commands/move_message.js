@@ -27,7 +27,8 @@ module.exports = {
 		deferEphemeral: true,
 
 		help: {
-			helpCategories: ["Administration","Server Only","Context Menu"],			shortDesc: "Move a message from one channel into another",//Should be the same as the command setDescription field
+			helpCategories: [Categories.Administration, Categories.Server_Only, Categories.Context_Menu],
+			shortDesc: "Move a message from one channel into another",//Should be the same as the command setDescription field
 			detailedDesc: //Detailed on exactly what the command does and how to use it
 				`This command will have Stewbot take a message and move it to a different channel. This command is accessed from the context menu, which on mobile is accessed by holding down on a message or on desktop by right clicking, and then pressing "Apps".`
 		},

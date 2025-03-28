@@ -29,7 +29,7 @@ module.exports = {
 		requiredGlobals: [],
 
 		help: {
-			helpCategories: ["General", "Bot", "Administration", "Configuration", "Server Only"], shortDesc: "Configure general behaviours for the bot",//Should be the same as the command setDescription field
+			helpCategories: [Categories.General, Categories.Bot, Categories.Administration, Categories.Configuration, Categories.Server_Only], shortDesc: "Configure general behaviours for the bot",//Should be the same as the command setDescription field
 			detailedDesc: //Detailed on exactly what the command does and how to use it
 				`Configure automatic actions the bot will take server wide, including whether Stewbot will automatically post embeds when it sees a message link, or if you want to disable Stewbot's automatic hacked/spam account protection.`
 		},
