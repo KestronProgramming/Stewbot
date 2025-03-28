@@ -1,11 +1,12 @@
-// #region Boilerplate
+// #region CommandBoilerplate
+const Categories = require("./modules/Categories");
 const { SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
 function applyContext(context={}) {
 	for (key in context) {
 		this[key] = context[key];
 	}
 }
-// #endregion Boilerplate
+// #endregion CommandBoilerplate
 
 function getStarMsg(msg){
 	var starboardHeaders = [
@@ -21,7 +22,7 @@ function getStarMsg(msg){
 	return `**${starboardHeaders[Math.floor(Math.random()*starboardHeaders.length)].replaceAll("@",msg.member?.nickname||msg.author?.globalName||msg.author?.username||"this person")}**`;
 }
 
-module.exports = {
+export default {
 	getStarMsg,
 	
 	data: {

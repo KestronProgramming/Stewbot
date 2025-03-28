@@ -1,4 +1,5 @@
-// #region Boilerplate
+// #region CommandBoilerplate
+const Categories = require("./modules/Categories");
 const { SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
 const { chmodSync } = require("fs");
 function applyContext(context={}) {
@@ -6,7 +7,7 @@ function applyContext(context={}) {
 		this[key] = context[key];
 	}
 }
-// #endregion Boilerplate
+// #endregion CommandBoilerplate
 
 
 const tzConfig = [new ActionRowBuilder().addComponents(
