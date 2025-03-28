@@ -211,14 +211,14 @@ module.exports = {
 
 	data: {
 		command: new SlashCommandBuilder().setName("badware_scanner").setDescription("Configure the Badware Scanner for this server")
-        .addBooleanOption(option=>
-            option.setName("domain_scanning").setDescription("Check domains against uBlock's Badware list?")
-        ).addBooleanOption(option=>
-            option.setName("fake_link_check").setDescription("Check if a link uses markdown to look like it leads somewhere else?")
-        ).addBooleanOption(option=>
-            option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
-        ).setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers),
-		
+            .addBooleanOption(option=>
+                option.setName("domain_scanning").setDescription("Check domains against uBlock's Badware list?")
+            ).addBooleanOption(option=>
+                option.setName("fake_link_check").setDescription("Check if a link uses markdown to look like it leads somewhere else?")
+            ).addBooleanOption(option=>
+                option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
+            ).setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers),
+            
 		// Optional fields
 		extra: {"contexts": [0], "integration_types": [0]},
         /*
