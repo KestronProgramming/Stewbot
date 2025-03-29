@@ -17,8 +17,6 @@ module.exports = {
 			).addBooleanOption(option =>
 				option.setName("embeds").setDescription("If a message link is posted, should I post a preview?")
 			).addBooleanOption(option =>
-				option.setName("disable_anti_hack").setDescription("Do you want to disable the anti hack/spam account protection for this server?")
-			).addBooleanOption(option =>
 				option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 			).setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers),
 
