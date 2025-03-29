@@ -11,6 +11,7 @@ console.beta("Importing discord")
 const {Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
 console.beta("Importing commands")
 const { getCommands } = require("./Scripts/launchCommands.js"); // Note: current setup requires this to be before the commands.json import (the cmd.globals setting)
+const commandsLoadedPromise = getCommands();
 const cmds = require("./data/commands.json"); global.cmds = cmds;
 
 console.beta("Importing backup.js")
@@ -53,7 +54,7 @@ let commands = { }
 let messageListenerModules = [ ];
 let dailyListenerModules   = [ ];
 let buttonListenerModules  = [ ];
-getCommands().then( commandsLoaded => {
+commandsLoadedPromise.then( commandsLoaded => {
     commands = commandsLoaded;
     messageListenerModules = getSubscribedCommands(commands, "onmessage");
     dailyListenerModules = getSubscribedCommands(commands, "daily");
@@ -135,31 +136,34 @@ const defaultUser=require("./data/defaultUser.json");
 
 // Build dynamic help pages
 var helpCommands=[];
-Object.keys(commands).forEach(commandName=>{
-    var cmd=commands[commandName];
-    if(cmd.data?.help?.shortDesc!==undefined&&cmd.data?.help?.shortDesc!==`Stewbot's Admins Only`&&cmd.data?.help?.helpCategories.length>0){
-        const commandMention = cmds[cmd.data?.command?.name]?.mention || `\`${commandName}\` Module`; // non-command modules don't have a mention
-        helpCommands.push(Object.assign({
-            name: cmd.data?.command?.name || commandName,
-            mention: commandMention
-        },cmd.data?.help));
-    }
-    else if(cmd.data?.help?.shortDesc!==`Stewbot's Admins Only`){
-        Object.keys(cmd.data?.help || []).forEach(subcommand=>{
-            var subcommandHelp=cmd.data?.help[subcommand];
-            const subcommandMention = cmds[cmd.data?.command?.name]?.[subcommand]?.mention || `\`${commandName}\` Module` // No case for this rn but might have one in the future
-            if(subcommandHelp.helpCategories?.length>0){
-                helpCommands.push(Object.assign({
-                    name: `${commandName} ${subcommand}`,
-                    mention: subcommandMention
-                },subcommandHelp));
-            }
-        });
-    }
-});
+commandsLoadedPromise.finally( _ => {
+    // Once commands are loaded
+    Object.keys(commands).forEach(commandName=>{
+        var cmd=commands[commandName];
+        if(cmd.data?.help?.shortDesc!==undefined&&cmd.data?.help?.shortDesc!==`Stewbot's Admins Only`&&cmd.data?.help?.helpCategories.length>0){
+            const commandMention = cmds[cmd.data?.command?.name]?.mention || `\`${commandName}\` Module`; // non-command modules don't have a mention
+            helpCommands.push(Object.assign({
+                name: cmd.data?.command?.name || commandName,
+                mention: commandMention
+            },cmd.data?.help));
+        }
+        else if(cmd.data?.help?.shortDesc!==`Stewbot's Admins Only`){
+            Object.keys(cmd.data?.help || []).forEach(subcommand=>{
+                var subcommandHelp=cmd.data?.help[subcommand];
+                const subcommandMention = cmds[cmd.data?.command?.name]?.[subcommand]?.mention || `\`${commandName}\` Module` // No case for this rn but might have one in the future
+                if(subcommandHelp.helpCategories?.length>0){
+                    helpCommands.push(Object.assign({
+                        name: `${commandName} ${subcommand}`,
+                        mention: subcommandMention
+                    },subcommandHelp));
+                }
+            });
+        }
+    });
 
-// Dump the help pages so we can import on websites and stuff
-fs.writeFileSync("./data/helpPages.json", JSON.stringify(helpCommands, null, 4))
+    // Dump the help pages so we can import on websites and stuff
+    fs.writeFileSync("./data/helpPages.json", JSON.stringify(helpCommands, null, 4))
+})
 
 var ints=Object.keys(GatewayIntentBits).map(a=>GatewayIntentBits[a]);
 ints.splice(ints.indexOf(GatewayIntentBits.GuildPresences),1);
