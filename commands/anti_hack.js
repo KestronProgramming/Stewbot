@@ -58,6 +58,9 @@ module.exports = {
 		if (storage[msg.guild.id].config.disable_anti_hack) return;
 		applyContext(context);
 
+		// Don't run in DMs
+		if (!msg.member) return
+
 		// Config
 		let toLog = storage[msg.guild.id].config.antihack_to_log || false;
 		const logChannelId = toLog 
@@ -66,7 +69,7 @@ module.exports = {
 		let autoDelete = storage[msg.guild.id].config.antihack_auto_delete;
 		if (autoDelete == null) autoDelete = true; // Default to true 
 
-		const userIsAdmin = Boolean(msg.member.permissions & PermissionFlagsBits.Administrator);
+		const userIsAdmin = msg.member.permissions.has(PermissionFlagsBits.Administrator);
 		const timeoutable = msg.member.manageable && !userIsAdmin;
 
 		// Anti-hack message
@@ -90,7 +93,7 @@ module.exports = {
 
 				if(storage[msg.author.id].hashStreak >= spamThreshold) {
 					// NOTE: To avoid spam when we only have delete perms, we only warn when this user hits a hash streak of 3. 
-					const toNotify = storage[msg.author.id].hashStreak == spamThreshold;
+					const toNotify = storage[msg.author.id].hashStreak == 3;
 
 					// Handle this user
 					storage[msg.author.id].captcha=true;
