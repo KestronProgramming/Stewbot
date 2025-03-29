@@ -41,7 +41,7 @@ module.exports = {
 			storage[cmd.guildId].config.antihack_auto_delete = cmd.options.getBoolean("auto_delete");
 
 		if (cmd.options.getBoolean("disable_anti_hack") !== null) 
-			storage[cmd.guildId].config.disable_anti_hack = cmd.options.getBoolean("disable_anti_hack");
+			storage[cmd.guildId].disableAntiHack = cmd.options.getBoolean("disable_anti_hack");
 
 		if (cmd.options.getChannel("log_channel") !== null) {
 			storage[cmd.guildId].config.antihack_log_channel = cmd.options.getChannel("log_channel").id;
@@ -55,7 +55,7 @@ module.exports = {
 	},
 
 	async onmessage(msg, context) {
-		if (storage[msg.guild.id].config.disable_anti_hack) return;
+		if (storage[msg.guild.id].disableAntiHack) return;
 		applyContext(context);
 
 		// Don't run in DMs
@@ -220,7 +220,7 @@ module.exports = {
 	// Only button subscriptions matched will be sent to the handler 
 	subscribedButtons: [/ban-.*/, /kick-.*/, /untimeout-.*/, /del-.*/],
 	async onbutton(cmd, context) {
-		if (storage[cmd.guildId].config.disable_anti_hack) return cmd.reply({content:`AntiHack protection has been disabled for this servers.`, ephemeral:true});
+		if (storage[cmd.guildId].disableAntiHack) return cmd.reply({content:`AntiHack protection has been disabled for this servers.`, ephemeral:true});
 		applyContext(context);
 
 		if(cmd.customId?.startsWith("ban-")) {
