@@ -10,8 +10,9 @@ console.beta = (...args) => process.env.beta && console.log(...args)
 console.beta("Importing discord")
 const {Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
 console.beta("Importing commands")
-const { getCommands } = require("./Scripts/launchCommands.js"); // Note: current setup requires this to be before the commands.json import
-const cmds=require("./data/commands.json"); global.cmds = cmds;
+const { getCommands } = require("./Scripts/launchCommands.js"); // Note: current setup requires this to be before the commands.json import (the cmd.globals setting)
+const cmds = require("./data/commands.json"); global.cmds = cmds;
+
 console.beta("Importing backup.js")
 const startBackupThread = require("./backup.js");
 console.beta("Importing everything else")
@@ -47,11 +48,17 @@ function getSubscribedCommands(commands, subscription) {
         ).sort((a, b) => (a[1].data?.priority ?? 100) - (b[1].data?.priority ?? 100))
     )
 }
-console.beta("Loading commands")
-const commands = getCommands();
-const messageListenerModules = getSubscribedCommands(commands, "onmessage");
-const dailyListenerModules = getSubscribedCommands(commands, "daily");
-const buttonListenerModules = getSubscribedCommands(commands, "onbutton");
+console.beta("Started loading commands (in background)")
+let commands = { }
+let messageListenerModules = [ ];
+let dailyListenerModules   = [ ];
+let buttonListenerModules  = [ ];
+getCommands().then( commandsLoaded => {
+    commands = commandsLoaded;
+    messageListenerModules = getSubscribedCommands(commands, "onmessage");
+    dailyListenerModules = getSubscribedCommands(commands, "daily");
+    buttonListenerModules = getSubscribedCommands(commands, "onbutton");
+});
 
 // Utility functions needed for processing some data blocks 
 function hash(obj) {

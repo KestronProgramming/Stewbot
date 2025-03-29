@@ -12,6 +12,7 @@ const { spawn, exec } = require('child_process');
 const config = require("../data/config.json");
 const path = require('path');
 const os = require('os');
+const { launchCommands } = require("../Scripts/launchCommands.js");
 
 const PID_FILE = path.join(os.tmpdir(), 'stewbot-maintenance.pid');
 
@@ -97,11 +98,7 @@ module.exports = {
 
                 // Update commands if requested
                 if (updateCommands) {
-                    // Grab the latest version
-                    const cachedLaunchFile = require.resolve('../Scripts/launchCommands.js')
-                    if (cachedLaunchFile) delete require.cache[cachedLaunchFile]
-                    const { launchCommands } = require("../Scripts/launchCommands.js");
-                    notify(launchCommands());
+                    notify(await launchCommands());
                 }
             } catch (err) {
                 notify(String("Caught error while restarting: " + err.stack))
