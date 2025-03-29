@@ -1,82 +1,119 @@
-process.env=require("../env.json");
-const { REST,Routes,PermissionFlagsBits,SlashCommandBuilder,ContextMenuCommandBuilder,ApplicationCommandType,ChannelType} = require('discord.js');
-const fs=require("fs");
+process.env = require("../env.json");
+const { REST, Routes, PermissionFlagsBits, SlashCommandBuilder, ContextMenuCommandBuilder, ApplicationCommandType, ChannelType } = require('discord.js');
+const fs = require("fs");
+const fsPromises = require("fs/promises");
 const path = require("path")
 const config = require("../data/config.json");
 
-//Command permissions should be set to the level you would need to do it manually (so if the bot is deleting messages, the permission to set it up would be the permission to delete messages)
-//Don't enable anything in DMs that is unusable in DMs (server configurations, multiplayer reliant commands, etc)
+// Command permissions should be set to the level you would need to do it manually (so if the bot is deleting messages, the permission to set it up would be the permission to delete messages)
 
-//This is a temporary way of specifying what contexts and where the command should appear while we await Discord.js' official implementation
-/*
-Contexts
-0: Normal server usage
-1: DMs with the Bot directly
-2: User command from anywhere
+// Function to build command files, handle beta/production
+async function getCommands() {
+	const returnCommands = {};
+	try {
+		const files = await fsPromises.readdir("./commands");
 
-Integration Types
-0: Only as a server command
-1: Only as a user command
-*/
+		// Process files concurrently
+		await Promise.all(
+			files.map(async (filename) => {
+				if (path.extname(filename) === ".js") {
+					try {
+						let commandName = path.parse(filename).name;
+						let command;
 
-// Dummy proxy object to allow importing commands that reference unregistered commands without crashing
-global.cmds = new Proxy({}, {
-	get: function(target, prop) {
-		if (prop === 'mention') {
-			return '';
+						// Beta command handling logic
+						if (commandName.includes(".beta")) {
+							if (process.env.beta) {
+								// Load command before we strip the .beta out of the filename
+								command = await import(`../commands/${commandName}.js`);
+
+								// Store this command under the normal name/location
+								commandName = commandName.replaceAll(".beta", "");
+								
+								console.log(`Loading beta command "${commandName}"`);
+							} else {
+								// If production, ignore beta commands
+								return; // Use return to skip the current file
+							}
+						} else if (process.env.beta) {
+							// If this is a non-beta file, check that there isn't a beta version before loading this one
+							if (files.includes(`${commandName}.beta.js`)) {
+								return; // Use return to skip the current file
+							}
+							// Load this normal command
+							command = await import(`../commands/${commandName}.js`);
+						}
+
+						returnCommands[commandName] = command.default || command; // `import` throws the module under the `default` tag
+					} catch (importError) {
+						console.error(`Error importing command "${commandName}":`, importError);
+					}
+				}
+			})
+		);
+
+		return returnCommands;
+	} catch (err) {
+		console.error("Error reading directory:", err);
+		return {}; // Or throw the error, depending on how you want to handle it
+	}
+}
+
+// Fetch command data for API
+function getCommandAndExtraData() {
+	// Save original commands
+	const oldCmds = global.cmds;
+
+	// Command imports rely on `global.cmds` being defined.
+	// Because an unregistered command is not already defined, to load it we need to have a dummy proxy that still lets it load the .mention fields without crashing
+	global.cmds = new Proxy({}, {
+		get: function(target, prop) {
+			if (prop === 'mention') {
+				return '';
+			}
+			return global.cmds;
 		}
-		return global.cmds;
-	}
-});
+	});
 
-// Function to build commands, handling beta/production versions
-function getCommands() {
-    const returnCommands = {}
-    const files = fs.readdirSync("./commands")
-    for (let file of files) {
-        if (path.extname(file) === ".js") {
-            let commandName = path.parse(file).name;
-            const command = require("../commands/"+commandName)
-            // Load .beta.js versions of files on beta, normal version on production
-            if (commandName.includes(".beta")) {
-                if (process.env.beta) {
-                    commandName = commandName.replaceAll(".beta", "")
-					console.log(`Loading beta command "${commandName}"`)
-                } else {
-                    // If production, ignore beta commands
-                    continue
-                }
-            } else if (process.env.beta) {
-                // If no beta, and this is a beta instance, check if there is a beta version (if so, don't load this version)
-                if (files.includes(`${commandName}.beta.js`)) {
-                    continue
-                }
-            }
-            returnCommands[commandName] = command;
-        }
-    }
-    return returnCommands;
+	// Build commands for API in a promise
+	let commands = []
+	const commandsPromise = new Promise(async (resolve, reject) =>{
+		try {
+			// Build command info from slash commands
+			const extraInfo = {};
+			const migratedCommands = await getCommands();   // commands
+			let commands = [];                        // list we're gonna build into data needed for discord API
+			for (let commandName in migratedCommands) {
+				const command = migratedCommands[commandName];
+				if (command?.data?.command) {
+					commands.push(command.data.command);
+				}
+				if (command?.data?.extra) {
+					extraInfo[commandName] = command.data.extra;
+				}
+			}
+
+			// Inject any extra data that discord.js doesn't support natively
+			commands = commands.map(command => Object.assign(command.toJSON(),extraInfo[command.toJSON().name]));
+
+			resolve(commands);
+		} catch (e) {
+			reject(e);
+		}
+	});
+
+	// Once we're done, set global.cmds back to what it was before.
+	// Ideally, after calling launchCommands, the code will also set global.cmds to the new outputted file.
+	commandsPromise.then( _ => 
+		global.cmds = oldCmds
+	)
+
+	return commandsPromise;
 }
 
+async function launchCommands() {
+	const commands = await getCommandAndExtraData();
 
-// Build command info from slash commands
-const extraInfo = {};
-const migratedCommands = getCommands();   // commands
-let commands = [];                        // list we're gonna build into data needed for discord API
-for (let commandName in migratedCommands) {
-	const command = migratedCommands[commandName];
-	if (command?.data?.command) {
-		commands.push(command.data.command);
-	}
-	if (command?.data?.extra) {
-		extraInfo[commandName] = command.data.extra;
-	}
-}
-
-
-// Inject extra data that discord.js doesn't/didn't support natively
-commands = commands.map(command => Object.assign(command.toJSON(),extraInfo[command.toJSON().name]));
-function launchCommands(){
 	// Register
 	const rest = new REST({ version: '9' }).setToken(process.env.beta ? process.env.betaToken : process.env.token );
 	var comms={};
@@ -137,8 +174,10 @@ function launchCommands(){
 
 // Run if being run directly
 if (require.main == module) {
-	console.log(launchCommands());
+	launchCommands().then( re => 
+		console.log(re)
+	)
 }
 else {
-	module.exports = {launchCommands, getCommands};
+	module.exports = { launchCommands, getCommands };
 }

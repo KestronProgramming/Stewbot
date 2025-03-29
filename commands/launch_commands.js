@@ -9,6 +9,8 @@ function applyContext(context={}) {
 // #endregion CommandBoilerplate
 
 const config = require("../data/config.json");
+const { launchCommands } = require(`../Scripts/launchCommands.js`);
+const fs = require("fs/promises");
 
 module.exports = {
 	data: {
@@ -34,10 +36,15 @@ module.exports = {
 		
 		// Code
         if(cmd.guild?.id===config.homeServer &&cmd.channel.id===config.commandChannel){
-            await cmd.followUp(`Launching commands...\n${require(`../Scripts/launchCommands.js`).launchCommands()}`);
-			var newCmds=JSON.parse(require("fs").readFileSync(`data/commands.json`,"utf-8"));
+			// Update commands
+			const result = await launchCommands();
+            await cmd.followUp(`Launching commands...\n${result}`);
+
+			// Update the live bot commands
+			const commandsText = await fs.readFile(`data/commands.json`, "utf-8");
+			var newCmds = JSON.parse( commandsText );
 			Object.keys(newCmds).forEach(key=>{
-				cmds[key]=newCmds[key];
+				global.cmds[key] = newCmds[key];
 			});
         }
         else if(cmd.guild?.id===config.homeServer){
