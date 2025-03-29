@@ -44,7 +44,7 @@ module.exports = {
 			storage[cmd.guildId].config.disable_anti_hack = cmd.options.getBoolean("disable_anti_hack");
 
 		if (cmd.options.getChannel("log_channel") !== null) {
-			storage[cmd.guildId].config.antihack_log_channel = cmd.options.getChannel("log_channel");
+			storage[cmd.guildId].config.antihack_log_channel = cmd.options.getChannel("log_channel").id;
 			storage[cmd.guildId].config.antihack_to_log = true; // Unless overridden, changing the log channel means enable logging
 		}
 
@@ -59,8 +59,8 @@ module.exports = {
 		applyContext(context);
 
 		// Config
-		const toLog = storage[msg.guild.id].config.antihack_to_log || false;
-		const logChannel = toLog 
+		let toLog = storage[msg.guild.id].config.antihack_to_log || false;
+		const logChannelId = toLog 
 			? storage[msg.guild.id].config.antihack_log_channel || false 
 			: false;
 		let autoDelete = storage[msg.guild.id].config.antihack_auto_delete;
@@ -86,7 +86,12 @@ module.exports = {
                     msg.content.toLowerCase().includes("http")
                 ) storage[msg.author.id].hashStreak++;
 
-				if(storage[msg.author.id].hashStreak>=3){
+				const spamThreshold = 3;
+
+				if(storage[msg.author.id].hashStreak >= spamThreshold) {
+					// NOTE: To avoid spam when we only have delete perms, we only warn when this user hits a hash streak of 3. 
+					const toNotify = storage[msg.author.id].hashStreak == spamThreshold;
+
 					// Handle this user
 					storage[msg.author.id].captcha=true;
 					var botInServer=msg.guild?.members.cache.get(client.user.id);
@@ -101,8 +106,17 @@ module.exports = {
 							storage[msg.author.id].timedOutIn.push(msg.guild.id);
 						}
 
+						const logChannel = logChannelId 
+							? await msg.guild.channels.fetch(logChannelId).catch(() => {
+								// If this channel was deleted
+								delete storage[msg.guild.id].config.antihack_log_channel;
+								toLog = false;
+								return msg.channel;
+							})
+							: msg.channel;
+
 						// Post about this user in this channel
-						if (msg.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)) {
+						if (logChannel.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)) {
 
 							// Build buttons based on what permissions the bot has over the user.
 							const sendRow = [ ];
@@ -134,15 +148,18 @@ module.exports = {
 												).messages.fetch(
 													storage[msg.guild.id].users[msg.author.id].lastMessages[i].split("/")[1]
 												);
-											badMess.delete().catch(e=>{}); // TODO: make one bulk-delete request
+											badMess.delete().catch(e=>{}); // TODO: make one bulk-delete request instead of 4
 										}
 										catch(e){ console.log(e) }
 									}
+
+									// Finally, delete this current trigger message
+									msg.delete()
+
 									// Since they are deleted, now ignore them
 									storage[msg.guild.id].users[msg.author.id].lastMessages = []
 								} else {
 									sendRow.push(new ButtonBuilder().setCustomId("del-"+msg.author.id).setLabel(`Delete the Messages in Question`).setStyle(ButtonStyle.Primary));
-
 								}
 							} else missingPermissions.push("Manage Messages")
 
@@ -158,10 +175,14 @@ module.exports = {
 								? `I temporarily applied a timeout. To remove this timeout, <@${msg.author.id}> can use ${cmds.captcha.mention} in a DM with me, or a moderator can remove this timeout manually.`
 								: `I tried to apply a timeout to this account, but either I lack the \`Timeout Members\` permission, my role needs to be dragged above theirs, or they are an administrator. It is advisable to grant me these permissions to defend against spam and hacked accounts.`
 
+							let autoDeleteNotice = autoDelete
+								? " which has since been automatically deleted"
+								: ""
+
 							// Warn, then delete the message afterwards so they see it was deleted
-							await msg.reply({
+							if (toNotify) await logChannel.send({
 								content: 
-									`I have detected unusual activity from <@${msg.author.id}>. ${timeoutAttemptMessage}\n` +
+									`I have detected unusual activity from <@${msg.author.id}>${autoDeleteNotice}. ${timeoutAttemptMessage}\n` +
 									`\n` +
 									`If a mod wishes to change settings related to this behavior designed to protect servers from mass spam and hacked accounts, run ${cmds.anti_hack.mention}.` +
 									missingPermissionsMessage,
@@ -172,8 +193,13 @@ module.exports = {
 								],
 							});
 
-							// This last one is deleted after replying to it so that it shows we replied to a deleted message
-							if (autoDelete) setTimeout(_ => { msg.delete().catch(e=>{}) }, 300)
+							// Finally, DM This user if the message was set to go to a log channel
+							if (toNotify && toLog) {
+								msg.author.send(
+									`I have detected unusual activity from your account, you have been given a timeout in one or more servers.\n`+
+									`To remove this timeout, you can use can use ${cmds.captcha.mention} in a DM with me.`
+								)
+							}
 						}
 					}
 				}
