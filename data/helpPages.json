@@ -32,17 +32,6 @@
         "detailedDesc": "This module watches for spam messages that look like they are from hacked accounts, and times out the user until they complete a captcha verification"
     },
     {
-        "name": "auto-join-roles",
-        "mention": "</auto-join-roles:1289093272823795808>",
-        "helpCategories": [
-            "Administration",
-            "Configuration",
-            "Server_Only"
-        ],
-        "shortDesc": "Automatically add roles to a user when they join the server",
-        "detailedDesc": "Configures a set of roles added to every user whenever they join the server. If you have sticky roles enabled, and the user has been in the server before, sticky roles will override any auto join roles."
-    },
-    {
         "name": "auto-join-message",
         "mention": "</auto-join-message:1289093272656154689>",
         "helpCategories": [
@@ -54,6 +43,17 @@
         "detailedDesc": "Configures a template message Stewbot will post to a designated channel or the user's DMs in the server's name every time a user joins"
     },
     {
+        "name": "auto-join-roles",
+        "mention": "</auto-join-roles:1289093272823795808>",
+        "helpCategories": [
+            "Administration",
+            "Configuration",
+            "Server_Only"
+        ],
+        "shortDesc": "Automatically add roles to a user when they join the server",
+        "detailedDesc": "Configures a set of roles added to every user whenever they join the server. If you have sticky roles enabled, and the user has been in the server before, sticky roles will override any auto join roles."
+    },
+    {
         "name": "auto-leave-message",
         "mention": "</auto-leave-message:1289093272656154690>",
         "helpCategories": [
@@ -63,6 +63,30 @@
         ],
         "shortDesc": "Set up a message to be sent automatically when a user leaves",
         "detailedDesc": "Configures a template message Stewbot will post to a designated channel in the server's name every time a user leaves"
+    },
+    {
+        "name": "auto_roles",
+        "mention": "</auto_roles:1289093272656154691>",
+        "helpCategories": [
+            "General",
+            "Administration",
+            "Configuration",
+            "Server_Only"
+        ],
+        "shortDesc": "Setup a message with auto roles",
+        "detailedDesc": "In the channel this command is used in, Stewbot will post a configurable message with buttons to add and remove the selected roles from themselves. Start by using the command with the message, and then Stewbot will prompt for the roles."
+    },
+    {
+        "name": "badware_scanner",
+        "mention": "</badware_scanner:1330279306454368288>",
+        "helpCategories": [
+            "Administration",
+            "Server_Only",
+            "Safety",
+            "Module"
+        ],
+        "shortDesc": "A module that scans links for malicious content.",
+        "detailedDesc": "This is a developing command using public lists and other methods to identify malicious links."
     },
     {
         "name": "ban",
@@ -84,30 +108,6 @@
         ],
         "shortDesc": "Look up one or more verses in the King James Bible",
         "detailedDesc": "Search for up to five verses in the King James Bible. If you were to look up verses four through eight in the thirteenth chapter of the book of 1 Corinthians, you would enter \"1 Corinthians 13:4-8\".\n\n                Other versions may come later."
-    },
-    {
-        "name": "badware_scanner",
-        "mention": "</badware_scanner:1330279306454368288>",
-        "helpCategories": [
-            "Administration",
-            "Server_Only",
-            "Safety",
-            "Module"
-        ],
-        "shortDesc": "A module that scans links for malicious content.",
-        "detailedDesc": "This is a developing command using public lists and other methods to identify malicious links."
-    },
-    {
-        "name": "auto_roles",
-        "mention": "</auto_roles:1289093272656154691>",
-        "helpCategories": [
-            "General",
-            "Administration",
-            "Configuration",
-            "Server_Only"
-        ],
-        "shortDesc": "Setup a message with auto roles",
-        "detailedDesc": "In the channel this command is used in, Stewbot will post a configurable message with buttons to add and remove the selected roles from themselves. Start by using the command with the message, and then Stewbot will prompt for the roles."
     },
     {
         "name": "birthday",
@@ -143,30 +143,6 @@
         "detailedDesc": "If I detect a hacked or spam account, I will require the user to run this command before being untimeouted. Simply press the buttons to enter the displayed code and press enter."
     },
     {
-        "name": "clone_emoji",
-        "mention": "</clone_emoji:1297009195433988229>",
-        "helpCategories": [
-            "General",
-            "Entertainment",
-            "Configuration"
-        ],
-        "shortDesc": "Upload an emoji from another server to use in this one",
-        "detailedDesc": "This command will copy an emoji from another server here. Use Prime Emoji in another server to start the process, and then use clone from primed emoji to bring it here. Use clone from emoji ID to find the emoji using the emoji ID, clone from a Nitro emoji to enter the emoji using Nitro directly, etc."
-    },
-    {
-        "name": "daily-config",
-        "mention": "</daily-config:1289093272823795816>",
-        "helpCategories": [
-            "Information",
-            "Entertainment",
-            "Administration",
-            "Configuration",
-            "Server_Only"
-        ],
-        "shortDesc": "Configure daily postings",
-        "detailedDesc": "Configure daily devotions, a daily verse of the day, and/or a daily meme to be posted to any channel you'd like every day at noon UTC."
-    },
-    {
         "name": "chat",
         "mention": "</chat:1329123809772572673>",
         "helpCategories": [
@@ -177,6 +153,17 @@
         ],
         "shortDesc": "Ask Stewbot's AI something",
         "detailedDesc": "Have a fun chat with Stewbot's self-hosted AI"
+    },
+    {
+        "name": "clone_emoji",
+        "mention": "</clone_emoji:1297009195433988229>",
+        "helpCategories": [
+            "General",
+            "Entertainment",
+            "Configuration"
+        ],
+        "shortDesc": "Upload an emoji from another server to use in this one",
+        "detailedDesc": "This command will copy an emoji from another server here. Use Prime Emoji in another server to start the process, and then use clone from primed emoji to bring it here. Use clone from emoji ID to find the emoji using the emoji ID, clone from a Nitro emoji to enter the emoji using Nitro directly, etc."
     },
     {
         "name": "counting config",
@@ -201,6 +188,19 @@
         ],
         "shortDesc": "Set the next number to count at",
         "detailedDesc": "Sets the next number for you to count at. If the number you choose is greater than one, this will disqualify the server from the leaderboard until a reset."
+    },
+    {
+        "name": "daily-config",
+        "mention": "</daily-config:1289093272823795816>",
+        "helpCategories": [
+            "Information",
+            "Entertainment",
+            "Administration",
+            "Configuration",
+            "Server_Only"
+        ],
+        "shortDesc": "Configure daily postings",
+        "detailedDesc": "Configure daily devotions, a daily verse of the day, and/or a daily meme to be posted to any channel you'd like every day at noon UTC."
     },
     {
         "name": "define",
@@ -264,19 +264,6 @@
         ],
         "shortDesc": "Embed a message link from another channel or server",
         "detailedDesc": "This command allows you to enter a message link from any channel or server you are in and have Stewbot to display it. If Stewbot does not share the server with you, you can still embed it by installing Stewbot to use everywhere (click his PFP and then \"Add App\" to do so) and then using the \"prime_embed\" context menu command (right click on desktop, hold down on mobile, then press Apps) on the message you'd like to embed, and then using this command and entering \"PRIMED\"."
-    },
-    {
-        "name": "general_config",
-        "mention": "</general_config:1289093272375132188>",
-        "helpCategories": [
-            "General",
-            "Bot",
-            "Administration",
-            "Configuration",
-            "Server_Only"
-        ],
-        "shortDesc": "Configure general behaviours for the bot",
-        "detailedDesc": "Configure automatic actions the bot will take server wide, including whether Stewbot will automatically post embeds when it sees a message link, or if you want to disable Stewbot's automatic hacked/spam account protection."
     },
     {
         "name": "filter config",
@@ -370,6 +357,19 @@
         "detailedDesc": "Posts one of the memes Stewbot's staff have approved for the bot to display. You can use the /submit_meme context menu command (holding down the message on mobile, right clicking on desktop, and then pressing Apps) to submit a meme for the Stewbot staff to review."
     },
     {
+        "name": "general_config",
+        "mention": "</general_config:1289093272375132188>",
+        "helpCategories": [
+            "General",
+            "Bot",
+            "Administration",
+            "Configuration",
+            "Server_Only"
+        ],
+        "shortDesc": "Configure general behaviours for the bot",
+        "detailedDesc": "Configure automatic actions the bot will take server wide, including whether Stewbot will automatically post embeds when it sees a message link, or if you want to disable Stewbot's automatic hacked/spam account protection."
+    },
+    {
         "name": "groupmute_config",
         "mention": "</groupmute_config:1294424519410454631>",
         "helpCategories": [
@@ -382,6 +382,16 @@
         "detailedDesc": "Configure an emoji that users can react to a message, and once it reaches a configured threshold the user will be timeouted for the configured amount of time."
     },
     {
+        "name": "hat_pull",
+        "mention": "</hat_pull:1294112933256892436>",
+        "helpCategories": [
+            "Entertainment",
+            "Server_Only"
+        ],
+        "shortDesc": "Draw (a) name(s) from a hat, like a raffle or giveaway",
+        "detailedDesc": "Have Stewbot help manage a raffle or giveaway like event, including automatic handling of entering and picking the winner(s) after a set amount of time."
+    },
+    {
         "name": "help",
         "mention": "</help:1289775603792347158>",
         "helpCategories": [
@@ -391,16 +401,6 @@
         ],
         "shortDesc": "View this help menu",
         "detailedDesc": "Open this help menu and descriptions."
-    },
-    {
-        "name": "hat_pull",
-        "mention": "</hat_pull:1294112933256892436>",
-        "helpCategories": [
-            "Entertainment",
-            "Server_Only"
-        ],
-        "shortDesc": "Draw (a) name(s) from a hat, like a raffle or giveaway",
-        "detailedDesc": "Have Stewbot help manage a raffle or giveaway like event, including automatic handling of entering and picking the winner(s) after a set amount of time."
     },
     {
         "name": "holiday_avatar",
@@ -434,17 +434,6 @@
         "detailedDesc": "View one of the leaderboards. See what server has globally counted the highest, how many people in this server have been on the emojiboard the most times, who has broken the filter rules the least, who has broken them the most (if you're an admin), or who's gotten the highest amount of server XP"
     },
     {
-        "name": "links",
-        "mention": "</links:1289093272823795813>",
-        "helpCategories": [
-            "General",
-            "Bot",
-            "Information"
-        ],
-        "shortDesc": "Get a list of links relevant for the bot",
-        "detailedDesc": "This command provides a list of different links that you may find useful for learning more about the bot."
-    },
-    {
         "name": "levels_config",
         "mention": "</levels_config:1289093272823795810>",
         "helpCategories": [
@@ -456,6 +445,17 @@
         ],
         "shortDesc": "Configure level ups",
         "detailedDesc": "Configure a server leveling system where posting gets you an amount of experience points that allow you to level up. Exp points are granted with a cooldown to discourage spamming."
+    },
+    {
+        "name": "links",
+        "mention": "</links:1289093272823795813>",
+        "helpCategories": [
+            "General",
+            "Bot",
+            "Information"
+        ],
+        "shortDesc": "Get a list of links relevant for the bot",
+        "detailedDesc": "This command provides a list of different links that you may find useful for learning more about the bot."
     },
     {
         "name": "log_config",
@@ -604,18 +604,6 @@
         "detailedDesc": "If some kind of issue appears with the bot of any kind and in any form, plesase run this command to report it to developers."
     },
     {
-        "name": "sentiment",
-        "mention": "`sentiment` Module",
-        "helpCategories": [
-            "Server_Only",
-            "Entertainment",
-            "Bot",
-            "Module"
-        ],
-        "shortDesc": "React when Stewbot is mentioned",
-        "detailedDesc": "Runs basic sentiment-analysis on messages mentioning Stewbot to determine how to react."
-    },
-    {
         "name": "rss follow",
         "mention": "</rss follow:1289093272932974654>",
         "helpCategories": [
@@ -648,6 +636,18 @@
         ],
         "shortDesc": "Check the RSS feeds a channel follows",
         "detailedDesc": "Run this command to check which RSS URLs Stewbot is posting from in the specified channel."
+    },
+    {
+        "name": "sentiment",
+        "mention": "`sentiment` Module",
+        "helpCategories": [
+            "Server_Only",
+            "Entertainment",
+            "Bot",
+            "Module"
+        ],
+        "shortDesc": "React when Stewbot is mentioned",
+        "detailedDesc": "Runs basic sentiment-analysis on messages mentioning Stewbot to determine how to react."
     },
     {
         "name": "set_persistent_message",
@@ -698,6 +698,16 @@
         "detailedDesc": "Using this command on a message with an image or video will submit it to the Stewbot moderators to verify to begin showing up in the </fun meme:1289093271796322395> command. This is a context menu command, and is accessed by holding down on a message on mobile, or right clicking on desktop, and then selecting \"Apps\"."
     },
     {
+        "name": "temp_role",
+        "mention": "</temp_role:1294231691765743677>",
+        "helpCategories": [
+            "Administration",
+            "Server_Only"
+        ],
+        "shortDesc": "Temporarily add or remove a role from someone",
+        "detailedDesc": "Specify a role to add or remove temporarily from a specified user, and how long you want it to be added or removed for. At the end of the timer, the role changes will be automatically reverted."
+    },
+    {
         "name": "ticket",
         "mention": "</ticket:1289093272656154688>",
         "helpCategories": [
@@ -707,16 +717,6 @@
         ],
         "shortDesc": "Set up a ticket system here for users to contact mods",
         "detailedDesc": "Use this command in the channel you would like Stewbot to post the ticket message in. This message will contain a button that will connect the user's DMs with Stewbot to a thread in the channel specified during command setup."
-    },
-    {
-        "name": "temp_role",
-        "mention": "</temp_role:1294231691765743677>",
-        "helpCategories": [
-            "Administration",
-            "Server_Only"
-        ],
-        "shortDesc": "Temporarily add or remove a role from someone",
-        "detailedDesc": "Specify a role to add or remove temporarily from a specified user, and how long you want it to be added or removed for. At the end of the timer, the role changes will be automatically reverted."
     },
     {
         "name": "timeout",
@@ -730,17 +730,6 @@
         "detailedDesc": "Timeout a specified user for a configurable amount of time"
     },
     {
-        "name": "timestamp",
-        "mention": "</timestamp:1289093272823795815>",
-        "helpCategories": [
-            "General",
-            "Information",
-            "Entertainment"
-        ],
-        "shortDesc": "Generate a timestamp for use in your message",
-        "detailedDesc": "Generates a timestamp string. Pasting the output will automatically correct the time set to show the correct time for any user regardless of timezone.\n\n\t\t\t\tFor example, if there was a timestamp for 4 EST, a user in PST would see 1."
-    },
-    {
         "name": "timer",
         "mention": "</timer:1291932660226199704>",
         "helpCategories": [
@@ -750,6 +739,17 @@
         ],
         "shortDesc": "Set a timer/reminder",
         "detailedDesc": "Set a timer that will notify you after the specified amount of time in a configurable location."
+    },
+    {
+        "name": "timestamp",
+        "mention": "</timestamp:1289093272823795815>",
+        "helpCategories": [
+            "General",
+            "Information",
+            "Entertainment"
+        ],
+        "shortDesc": "Generate a timestamp for use in your message",
+        "detailedDesc": "Generates a timestamp string. Pasting the output will automatically correct the time set to show the correct time for any user regardless of timezone.\n\n\t\t\t\tFor example, if there was a timestamp for 4 EST, a user in PST would see 1."
     },
     {
         "name": "translate",
@@ -783,6 +783,16 @@
         "detailedDesc": "Choose a user and expand their profile information into the embed. If specified, you can also enlarge the profile picture which makes it easier to save which can be useful for various purposes."
     },
     {
+        "name": "view_filter",
+        "mention": "</view_filter:1289093271796322391>",
+        "helpCategories": [
+            "Information",
+            "Server_Only"
+        ],
+        "shortDesc": "View the list of blacklisted words for this server",
+        "detailedDesc": "Using this command will add a button that allows those who press it to view a spoilered list of all words this server has configured to block. This command, due to the nature of it, can have some very colorful language contained within the DM after pressing the button."
+    },
+    {
         "name": "warn",
         "mention": "</warn:1289093272932974657>",
         "helpCategories": [
@@ -803,16 +813,6 @@
         ],
         "shortDesc": "See the warnings that have been dealt in the server",
         "detailedDesc": "Moderators can use this command to view a list of warnings dealt, specifying a user will show only the warnings affecting that user, and not specifying a user will list users that have received warnings and a sum of the severities."
-    },
-    {
-        "name": "view_filter",
-        "mention": "</view_filter:1289093271796322391>",
-        "helpCategories": [
-            "Information",
-            "Server_Only"
-        ],
-        "shortDesc": "View the list of blacklisted words for this server",
-        "detailedDesc": "Using this command will add a button that allows those who press it to view a spoilered list of all words this server has configured to block. This command, due to the nature of it, can have some very colorful language contained within the DM after pressing the button."
     },
     {
         "name": "wotd",

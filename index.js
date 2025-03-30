@@ -15,7 +15,7 @@ const commandsLoadedPromise = getCommands();
 const cmds = require("./data/commands.json"); global.cmds = cmds;
 
 console.beta("Importing backup.js")
-const startBackupThread = require("./backup.js");
+const startBackupThreadPromise = require("./backup.js");
 console.beta("Importing everything else")
 const { getEmojiFromMessage, parseEmoji } = require('./util');
 const fs = require("fs");
@@ -551,10 +551,12 @@ function checkPersistentDeletion(guild, channel, message){
 client.once("ready",async ()=>{
     killMaintenanceBot();
     
-    // Schedule cloud backups every hour
-    startBackupThread("./storage.json", 60*60*1000, error => {
-        notify(String(error));
-    }, true)
+    // (Later) Once backup.js fully imports, start the backup thread
+    startBackupThreadPromise.then( startBackupThread => {
+        startBackupThread("./storage.json", 60*60*1000, error => {
+            notify(String(error));
+        }, true)
+    })
 
     uptime=Math.round(Date.now()/1000);
     notify(`Started <t:${uptime}:R>`);
