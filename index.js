@@ -1,45 +1,121 @@
-//#region Imports
+// Stewbot main file.
+// This file imports everything, dispatches events to the files they need to go to, and handles overall bot logic.
+
+const bootedAt = Date.now();
+
+//#region Startup
+// Load envs and prepare for benchmarked boot.
 const envs = require('./env.json');
 Object.keys(envs).forEach(key => process.env[key] = envs[key] );
 if (process.env.beta == 'false') delete process.env.beta; // ENVs are all strings, so make it falsy if it's "false"
 
+console.beta = (...args) => process.env.beta && console.log(...args)
+
+// Utility function for logging time difference
+let lastLogTime = Date.now();
+const logTime = (label = "") => {
+    if (!process.env.beta) return;
+    const now = Date.now();
+    const diff = now - lastLogTime;
+    console.log(`+${diff}ms ${label}`);
+    lastLogTime = now;
+};
+
+
 let mongoDB = process.env.beta && false;
+logTime("Set mongoDB flag");
 
 global.config = require("./data/config.json");
-console.beta = (...args) => process.env.beta && console.log(...args)
-console.beta("Importing discord")
-const {Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
-console.beta("Importing commands")
-const { getCommands } = require("./Scripts/launchCommands.js"); // Note: current setup requires this to be before the commands.json import (the cmd.globals setting)
-const commandsLoadedPromise = getCommands();
-const cmds = require("./data/commands.json"); global.cmds = cmds;
+logTime("require('./data/config.json')");
 
-console.beta("Importing backup.js")
+console.beta("Importing discord");
+logTime("console.beta log"); // Note: This logs the time since the *previous* log, not the execution of console.beta itself
+
+const {Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
+logTime("require('discord.js')");
+
+console.beta("Importing commands");
+logTime("console.beta log");
+
+const { getCommands } = require("./Scripts/launchCommands.js"); // Note: current setup requires this to be before the commands.json import (the cmd.globals setting)
+logTime("require('./Scripts/launchCommands.js')");
+
+const commandsLoadedPromise = getCommands();
+logTime("Called getCommands()");
+
+const cmds = require("./data/commands.json"); global.cmds = cmds;
+logTime("require('./data/commands.json') and set global.cmds");
+
+console.beta("Importing backup.js");
+logTime("console.beta log");
+
 const startBackupThreadPromise = require("./backup.js");
-console.beta("Importing everything else")
+logTime("require('./backup.js')");
+
+console.beta("Importing everything else");
+logTime("console.beta log");
+
 const { getEmojiFromMessage, parseEmoji } = require('./util');
+logTime("require('./util')");
+
 const fs = require("fs");
+logTime("require('fs')");
+
 const crypto = require('crypto');
+logTime("require('crypto')");
+
 const mongoose = require("mongoose");
+logTime("require('mongoose')");
+
 
 const { updateBlocklists } = require("./commands/badware_scanner.js")
+logTime("require('./commands/badware_scanner.js')");
+
 const { finTempSlow } = require("./commands/slowmode.js")
+logTime("require('./commands/slowmode.js')");
+
 const { finTempRole } = require("./commands/temp_role.js")
+logTime("require('./commands/temp_role.js')");
+
 const { finHatPull } = require("./commands/hat_pull.js")
+logTime("require('./commands/hat_pull.js')");
+
 const { finTempBan } = require("./commands/ban.js")
+logTime("require('./commands/ban.js')");
+
 const { finTimer } = require("./commands/timer.js")
+logTime("require('./commands/timer.js')");
+
 const { getStarMsg } = require("./commands/add_emojiboard.js")
+logTime("require('./commands/add_emojiboard.js')");
+
 const { processForNumber } = require("./commands/counting.js")
+logTime("require('./commands/counting.js')");
+
 const { killMaintenanceBot } = require("./commands/restart.js")
+logTime("require('./commands/restart.js')");
+
 const { resetAIRequests } = require("./commands/chat.js")
+logTime("require('./commands/chat.js')");
+
+logTime("Finished Imports Region");
 //#endregion Imports
 
 //#region Setup
+logTime("Starting Setup Region");
 // Preliminary setup (TODO: move to a setup.sh?)
 if (!fs.existsSync("tempMove")) fs.mkdirSync('tempMove');
+logTime("Checked/created tempMove dir");
+
 if (!fs.existsSync("tempMemes")) fs.mkdirSync('tempMemes');
+logTime("Checked/created tempMemes dir");
+
 if (!fs.existsSync("./data/usage.json")) fs.writeFileSync('./data/usage.json', '{}');
+logTime("Checked/created usage.json");
+
 const usage=require("./data/usage.json");
+logTime("require('./data/usage.json')");
+
 
 // Load commands modules
 function getSubscribedCommands(commands, subscription) {
@@ -49,17 +125,45 @@ function getSubscribedCommands(commands, subscription) {
         ).sort((a, b) => (a[1].data?.priority ?? 100) - (b[1].data?.priority ?? 100))
     )
 }
-console.beta("Started loading commands (in background)")
+logTime("Defined getSubscribedCommands function");
+
+console.beta("Started loading commands (in background)");
+logTime("console.beta log");
+
 let commands = { }
+logTime("Initialized commands object");
+
 let messageListenerModules = [ ];
+logTime("Initialized messageListenerModules array");
+
 let dailyListenerModules   = [ ];
+logTime("Initialized dailyListenerModules array");
+
 let buttonListenerModules  = [ ];
+logTime("Initialized buttonListenerModules array");
+
 commandsLoadedPromise.then( commandsLoaded => {
+    // Note: Code inside .then() runs asynchronously later.
+    // Logging here only measures the time to *attach* the .then handler.
+    const promiseAttachTime = Date.now();
+    console.log(`Attaching .then handler for commandsLoadedPromise (will run later)`);
+
     commands = commandsLoaded;
+    console.log(`+${Date.now() - promiseAttachTime}ms (Inside .then: assigned commands)`); // Time since .then started
+
     messageListenerModules = getSubscribedCommands(commands, "onmessage");
+    console.log(`+${Date.now() - promiseAttachTime}ms (Inside .then: got messageListenerModules)`);
+
     dailyListenerModules = getSubscribedCommands(commands, "daily");
+    console.log(`+${Date.now() - promiseAttachTime}ms (Inside .then: got dailyListenerModules)`);
+
     buttonListenerModules = getSubscribedCommands(commands, "onbutton");
+    console.log(`+${Date.now() - promiseAttachTime}ms (Inside .then: got buttonListenerModules)`);
+    console.log("Finished async command loading setup inside .then");
 });
+logTime("Attached .then handler to commandsLoadedPromise");
+
+logTime("Finished Benchmarked Boot Area");
 
 // Utility functions needed for processing some data blocks 
 function hash(obj) {
@@ -559,7 +663,7 @@ client.once("ready",async ()=>{
     })
 
     uptime=Math.round(Date.now()/1000);
-    notify(`Started <t:${uptime}:R>`);
+    notify(`Started <t:${uptime}:R> | Booting took ${Date.now()-bootedAt}ms`);
     console.beta(`Logged into ${client.user.tag}`);
     
     // Status
