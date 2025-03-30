@@ -17,8 +17,9 @@ async function getCommands() {
 		await Promise.all(
 			files.map(async (filename) => {
 				if (path.extname(filename) === ".js") {
+					let commandName = "<unloaded>";
 					try {
-						let commandName = path.parse(filename).name;
+						commandName = path.parse(filename).name;
 						let command;
 
 						// Beta command handling logic
@@ -35,7 +36,7 @@ async function getCommands() {
 								// If production, ignore beta commands
 								return; // Use return to skip the current file
 							}
-						} else if (process.env.beta) {
+						} else {
 							// If this is a non-beta file, check that there isn't a beta version before loading this one
 							if (files.includes(`${commandName}.beta.js`)) {
 								return; // Use return to skip the current file
@@ -44,7 +45,7 @@ async function getCommands() {
 							command = await import(`../commands/${commandName}.js`);
 						}
 
-						returnCommands[commandName] = command.default || command; // `import` throws the module under the `default` tag
+						returnCommands[commandName] = command?.default || command; // `import` throws the module under the `default` tag
 					} catch (importError) {
 						console.error(`Error importing command "${commandName}":`, importError);
 					}

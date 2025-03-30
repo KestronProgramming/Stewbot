@@ -23,7 +23,7 @@
     },
     {
         "name": "anti_hack",
-        "mention": "</anti_hack:1355372206716223710>",
+        "mention": "`anti_hack` Module",
         "helpCategories": [
             "Server_Only",
             "Safety"
@@ -111,7 +111,7 @@
     },
     {
         "name": "birthday",
-        "mention": "</birthday:1351368206907998239>",
+        "mention": "`birthday` Module",
         "helpCategories": [
             "Information",
             "Entertainment",
