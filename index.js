@@ -64,7 +64,8 @@ logTime("require('fs')");
 const crypto = require('crypto');
 logTime("require('crypto')");
 
-const mongoose = require("mongoose");
+let mongoose;
+if (mongoDB) mongoose = require("mongoose");
 logTime("require('mongoose')");
 
 
@@ -692,12 +693,12 @@ client.once("ready",async ()=>{
     Object.entries(storage)
         .filter(([id, data]) => data?.isGuild && !validGuildIds.has(id))
         .forEach(([id, data]) => {
-            notify("Removed from **a server** (detected on boot scan)")
             serversDeleted++;
             delete storage[id];
         });
+    
     const newServerCount = Object.entries(storage).filter(([id, data]) => data?.isGuild).length;
-    notify(`Deleted ${serversDeleted}/${serverCount} servers from storage. There are ${newServerCount} servers left.`)
+    if (serversDeleted.length > 0) notify(`Deleted ${serversDeleted}/${serverCount} servers from storage. There are ${newServerCount} servers left.`)
 
     // Register time based stuff 
     Object.keys(storage).forEach(key=>{
