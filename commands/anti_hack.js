@@ -182,18 +182,24 @@ module.exports = {
 								? " which has since been automatically deleted"
 								: ""
 
+							const components = [ ]
+
+							if (sendRow.length > 0) {
+								components.push(
+									new ActionRowBuilder().addComponents(
+										...sendRow
+									)
+								)
+							}
+
 							// Warn, then delete the message afterwards so they see it was deleted
 							if (toNotify) await logChannel.send({
 								content: 
 									`I have detected unusual activity from <@${msg.author.id}>${autoDeleteNotice}. ${timeoutAttemptMessage}\n` +
 									`\n` +
-									`If a mod wishes to change settings related to this behavior designed to protect servers from mass spam and hacked accounts, run ${cmds.anti_hack.mention}.` +
+									`If a mod wishes to change settings related to this behavior designed to protect servers from mass spam and hacked accounts, run ${cmds.anti_hack?.mention || "/anti_hack"}.` + // TODO: fix
 									missingPermissionsMessage,
-								components: [
-									new ActionRowBuilder().addComponents(
-										...sendRow
-									),
-								],
+								components
 							});
 
 							// Finally, DM This user if the message was set to go to a log channel

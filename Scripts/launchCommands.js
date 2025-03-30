@@ -118,7 +118,7 @@ async function launchCommands() {
 	// Register
 	const rest = new REST({ version: '9' }).setToken(process.env.beta ? process.env.betaToken : process.env.token );
 	var comms={};
-	rest.put(Routes.applicationCommands(process.env.clientId),{body:commands}).then(d=>{
+	await rest.put(Routes.applicationCommands(process.env.clientId),{body:commands}).then(d=>{
 		d.forEach(c=>{
 			comms[c.name]={
 				mention:`</${c.name}:${c.id}>`,
