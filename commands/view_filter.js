@@ -43,7 +43,9 @@ module.exports = {
     },
 
 	subscribedButtons: ["view_filter", "export", /delete-.*/],
-	async onbutton(cmd, context) {
+	
+    /** @param {import('discord.js').ButtonInteraction} cmd */
+    async onbutton(cmd, context) {
 		applyContext(context);
 
 		switch (cmd.customId) {

@@ -328,7 +328,9 @@ module.exports = {
 	},
 
 	subscribedButtons: ["racMove", "racJoin", "moveModal"],
-	async onbutton(cmd, context) {
+	
+    /** @param {import('discord.js').ButtonInteraction} cmd */
+    async onbutton(cmd, context) {
 		applyContext(context);
 
 		switch(cmd.customId) {

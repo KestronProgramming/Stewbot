@@ -58,7 +58,9 @@ module.exports = {
 
 	// Only button subscriptions matched will be sent to the handler 
 	subscribedButtons: ["join-roleOption"],
-	async onbutton(cmd, context) {
+	
+    /** @param {import('discord.js').ButtonInteraction} cmd */
+    async onbutton(cmd, context) {
 		applyContext(context);
 
 		let myHighestRole=cmd.guild.members.cache.get(client.user.id).roles.highest.position;

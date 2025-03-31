@@ -12,5 +12,8 @@
         "emitDeclarationOnly": true,
         "outDir": "./types",
     },
-    "include": ["commands/**/*.js", "modules/**/*.js", "scripts/**/*.js", "index.js"]
+    "include": [
+        "commands/**/*.js", "modules/**/*.js", "scripts/**/*.js", "index.js",
+        "commands/modules/**/*.js"
+    ]
 }

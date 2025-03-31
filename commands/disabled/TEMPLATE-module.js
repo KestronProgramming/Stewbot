@@ -38,7 +38,8 @@ module.exports = {
 		},
 	},
 
-	async onmessage(msg, context) {
+	/** @param {import('discord.js').Message} msg */
+    async onmessage(msg, context) {
 		applyContext(context);
 		// `context` currently does not respect requested globals
 	},

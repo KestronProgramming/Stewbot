@@ -63,7 +63,8 @@ module.exports = {
 		},
 	},
 
-	async onmessage(msg, context) {
+	/** @param {import('discord.js').Message} msg */
+    async onmessage(msg, context) {
         // Sentiment Analysis reactions
         if (!msg.filtered && !msg.author.bot && /\bstewbot\'?s?\b/i.test(msg.content)) {
             var [emoji, toReact] = textToEmojiSentiment(msg.content);

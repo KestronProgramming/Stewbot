@@ -64,7 +64,8 @@ module.exports = {
 		cmd.followUp(`Level ups configured.${disclaimers.map(d=>`\n\n${d}`).join("")}`);
 	},
 
-	async onmessage(msg, context) {
+	/** @param {import('discord.js').Message} msg */
+    async onmessage(msg, context) {
 		applyContext(context);
 
 		// Level-up XP

@@ -74,7 +74,9 @@ module.exports = {
 	},
 
 	subscribedButtons: [/poll-.+/, /voted.*/],
-	async onbutton(cmd, context) {
+	
+    /** @param {import('discord.js').ButtonInteraction} cmd */
+    async onbutton(cmd, context) {
 		applyContext(context);
 
 		switch (cmd.customId) {

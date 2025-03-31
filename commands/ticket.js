@@ -58,7 +58,8 @@ module.exports = {
 		});
 	},
 
-	async onmessage(msg, context) {
+	/** @param {import('discord.js').Message} msg */
+    async onmessage(msg, context) {
 		applyContext(context);
 
 		// Ticket system
@@ -131,7 +132,9 @@ module.exports = {
 
 	// Only button subscriptions matched will be sent to the handler 
 	subscribedButtons: [/ticket-.*/],
-	async onbutton(cmd, context) {
+	
+    /** @param {import('discord.js').ButtonInteraction} cmd */
+    async onbutton(cmd, context) {
 		applyContext(context);
 
 		if(cmd.customId?.startsWith("ticket-")){

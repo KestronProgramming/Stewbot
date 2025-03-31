@@ -77,11 +77,10 @@ async function guildByID(id) {
     return guild;
 }
 
-
+/** @returns {Promise<import("mongoose").HydratedDocument<import("mongoose").InferSchemaType<typeof guildSchema>>>} */
 async function guildByObj(obj) {
     // Grab the DB object associated to this guild object, but with cache
     if (obj._dbObject) {
-        /** @type {import('../../types/commands/modules/database').Guilds} */
         const cachedGuild = obj._dbObject;
         return cachedGuild;
     }
@@ -102,10 +101,10 @@ async function userByID(id) {
     return user;
 }
 
+/** @returns {Promise<import("mongoose").HydratedDocument<import("mongoose").InferSchemaType<typeof userSchema>>>} */
 async function userByObj(obj) {
     // Grab the DB object associated to this user object, but with cache
     if (obj._dbObject) {
-        /** @type {import('../../types/commands/modules/database').Users} */
         const cachedUser = obj._dbObject;
         return cachedUser;
     }

@@ -207,7 +207,8 @@ module.exports = {
 		}
 	},
 
-	async onmessage(msg, context) {
+	/** @param {import('discord.js').Message} msg */
+    async onmessage(msg, context) {
 		applyContext(context);
 
 		// If the server uses counting, but Stewbot cannot add reactions or send messages, don't do counting

@@ -100,6 +100,7 @@ module.exports = {
 	},
 
     // Watch for discord message embeds
+    /** @param {import('discord.js').Message} msg */
     async onmessage(msg, context) {
 		applyContext(context);
         

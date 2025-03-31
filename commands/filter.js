@@ -357,6 +357,7 @@ module.exports = {
         }
     },
 
+    /** @param {import('discord.js').Message} msg */
     async onmessage(msg, context) {
 		applyContext(context);
 
