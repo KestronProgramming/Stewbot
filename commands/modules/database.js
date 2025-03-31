@@ -5,7 +5,13 @@ const mongoose = require("mongoose")
 
 
 let emojiboardSchema = new mongoose.Schema({
-    emoji: { type: String, unique: true, trim: true }
+    emoji: { type: String, unique: true, trim: true },
+    messType: String,
+    threshold: Number,
+    active: Boolean,
+    channel: String,
+    posted: Schema.Types.Mixed,  // TODO: Figure out format / type
+    posters: Schema.Types.Mixed, // TODO: Figure out format / type
 })
 
 let guildSchema = new mongoose.Schema({
@@ -21,8 +27,6 @@ let guildSchema = new mongoose.Schema({
     groupmute: { type: String },
 });
 const Guilds = mongoose.model("guilds", guildSchema);
-
-
 
 
 // Utility functions

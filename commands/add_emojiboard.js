@@ -60,7 +60,7 @@ module.exports = {
 	async execute(cmd, context) {
 		applyContext(context);
 
-		const guild = guildByID(cmd.guildId);
+		const guild = await guildByID(cmd.guildId);
 		
 		var emoji = getEmojiFromMessage(cmd.options.getString("emoji"));
 		if(!emoji) {
@@ -84,6 +84,8 @@ module.exports = {
 			posted: {},
 			posters: {}
 		});
+		await guild.save();
+
 		cmd.followUp("Emojiboard for " + parseEmoji(emoji) + " emoji added.");
     }
 };
