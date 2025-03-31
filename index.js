@@ -144,23 +144,11 @@ let buttonListenerModules  = [ ];
 logTime("Initialized buttonListenerModules array");
 
 commandsLoadedPromise.then( commandsLoaded => {
-    // Note: Code inside .then() runs asynchronously later.
-    // Logging here only measures the time to *attach* the .then handler.
     const promiseAttachTime = Date.now();
-    console.log(`Attaching .then handler for commandsLoadedPromise (will run later)`);
-
     commands = commandsLoaded;
-    console.log(`+${Date.now() - promiseAttachTime}ms (Inside .then: assigned commands)`); // Time since .then started
-
     messageListenerModules = getSubscribedCommands(commands, "onmessage");
-    console.log(`+${Date.now() - promiseAttachTime}ms (Inside .then: got messageListenerModules)`);
-
     dailyListenerModules = getSubscribedCommands(commands, "daily");
-    console.log(`+${Date.now() - promiseAttachTime}ms (Inside .then: got dailyListenerModules)`);
-
     buttonListenerModules = getSubscribedCommands(commands, "onbutton");
-    console.log(`+${Date.now() - promiseAttachTime}ms (Inside .then: got buttonListenerModules)`);
-    console.log("Finished async command loading setup inside .then");
 });
 logTime("Attached .then handler to commandsLoadedPromise");
 
