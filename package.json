@@ -21,5 +21,8 @@
     "safe-regex": "^2.1.1",
     "sentiment": "^5.0.2",
     "turndown": "^7.2.0"
+  },
+  "devDependencies": {
+    "mongoose-tsgen": "^9.5.2"
   }
 }
