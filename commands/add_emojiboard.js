@@ -1,5 +1,6 @@
 // #region CommandBoilerplate
 const Categories = require("./modules/Categories");
+const { Guilds, Users, guildByID } = require("./modules/database.js")
 const { SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType, AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType } = require("discord.js");
 function applyContext(context={}) {
 	for (key in context) {
@@ -58,28 +59,31 @@ module.exports = {
 
 	async execute(cmd, context) {
 		applyContext(context);
+
+		const guild = guildByID(cmd.guildId);
 		
-		if(!cmd.guild?.id){
-			cmd.followUp("Something is wrong");
-			return;
-		}
 		var emoji = getEmojiFromMessage(cmd.options.getString("emoji"));
 		if(!emoji) {
 			cmd.followUp("That emoji is not valid.");
 			return;
 		}
-		if(storage[cmd.guildId].groupmute===emoji){
+		if(guild.groupmute===emoji) {
 			cmd.followUp(`That emoji is in use for groupmute.`);
 			return;
 		}
-		storage[cmd.guildId].emojiboards[emoji] = {
+		if(guild.emojiboards.some(e=>e.emoji===emoji)) {
+			cmd.followUp(`That emoji already has an emojiboard.`);
+			return;
+		}
+		guild.emojiboards.push({
+			emoji,
 			channel: cmd.options.getChannel("channel").id,
 			active: true,
 			threshold: cmd.options.getInteger("threshold") || 3,
 			messType: cmd.options.getString("message_type"),
 			posted: {},
-			posters:{}
-		};
+			posters: {}
+		});
 		cmd.followUp("Emojiboard for " + parseEmoji(emoji) + " emoji added.");
     }
 };

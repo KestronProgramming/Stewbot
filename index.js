@@ -21,10 +21,6 @@ const logTime = (label = "") => {
     lastLogTime = now;
 };
 
-
-let mongoDB = process.env.beta && false;
-logTime("Set mongoDB flag");
-
 global.config = require("./data/config.json");
 logTime("require('./data/config.json')");
 
@@ -64,8 +60,8 @@ logTime("require('fs')");
 const crypto = require('crypto');
 logTime("require('crypto')");
 
-let mongoose;
-if (mongoDB) mongoose = require("mongoose");
+const mongoose = require("mongoose");
+const DBConnectPromise = mongoose.connect(`${process.env.databaseURI}/${process.env.beta ? "stewbeta" : "stewbot"}`) // start the to the DB connection now, so it runs in the background and is ready later
 logTime("require('mongoose')");
 
 
@@ -1823,16 +1819,9 @@ process.on('unhandledException', e=>notify(e.stack));
 process.on('uncaughtException', e=>notify(e.stack));
 process.on('uncaughtRejection', e=>notify(e.stack));
 
-//Begin
-if (mongoDB) {
-    // If using Mongo, we'll async wait for it to connect before logging in
-    (async () => {
-        // The database module sets up everything as needed
-        console.beta("Connecting to database")
-        await import('./Scripts/database.mjs');
-        
-        console.beta("Logging in")
-        client.login(process.env.beta ? process.env.betaToken : process.env.token);
-    })();
-}
-else client.login(process.env.beta ? process.env.betaToken : process.env.token);
+// Connect to the DB before logging in
+console.beta("Connecting to database")
+DBConnectPromise.then(_ => {
+    console.beta("Logging in")
+    client.login(process.env.beta ? process.env.betaToken : process.env.token);
+});
