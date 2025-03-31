@@ -63,7 +63,9 @@ module.exports = {
 	},
 
 	subscribedButtons: [/captcha-.*/],
-	async onbutton(cmd, context) {
+	
+    /** @param {import('discord.js').ButtonInteraction} cmd */
+    async onbutton(cmd, context) {
 		applyContext(context);
 
 		if(cmd.customId?.startsWith("captcha-")){

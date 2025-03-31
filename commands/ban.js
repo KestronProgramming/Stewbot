@@ -172,7 +172,9 @@ module.exports = {
 
 	// Only button subscriptions matched will be sent to the handler 
 	subscribedButtons: [/unban-.*/],
-	async onbutton(cmd, context) {
+	
+    /** @param {import('discord.js').ButtonInteraction} cmd */
+    async onbutton(cmd, context) {
 		applyContext(context);
 
 		if(cmd.customId?.startsWith("unban-")){

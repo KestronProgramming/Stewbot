@@ -67,7 +67,8 @@ module.exports = {
 		cmd.followUp(`Jerry the rope!`);
 	},
 
-	async onmessage(msg, context) {
+	/** @param {import('discord.js').Message} msg */
+    async onmessage(msg, context) {
 		applyContext(context);
 		// `context` currently does not respect requested globals
 	},
@@ -83,7 +84,9 @@ module.exports = {
 
 	// Only button subscriptions matched will be sent to the handler 
 	subscribedButtons: ["example", /example/],
-	async onbutton(cmd, context) {
+	
+    /** @param {import('discord.js').ButtonInteraction} cmd */
+    async onbutton(cmd, context) {
 		applyContext(context);
 
 		

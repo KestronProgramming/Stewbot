@@ -10,7 +10,6 @@ function applyContext(context={}) {
 // #endregion CommandBoilerplate
 
 const crypto = require('crypto');
-const { guildByID } = require("./modules/database");
 
 module.exports = {
     data: {
@@ -40,38 +39,43 @@ module.exports = {
     async execute(cmd, context) {
         applyContext(context);
         
-        const guild = await guildByObj(cmd.guild);
-        
+        const guild = await guildByObj(cmd.guildId);
+
         if (cmd.options.getBoolean("auto_delete") !== null) 
-            storage[cmd.guildId].config.antihack_auto_delete = cmd.options.getBoolean("auto_delete");
+            guild.config.antihack_auto_delete = cmd.options.getBoolean("auto_delete");
         
         if (cmd.options.getBoolean("disable_anti_hack") !== null) 
-            storage[cmd.guildId].disableAntiHack = cmd.options.getBoolean("disable_anti_hack");
+            guild.disableAntiHack = cmd.options.getBoolean("disable_anti_hack");
         
         if (cmd.options.getChannel("log_channel") !== null) {
-            storage[cmd.guildId].config.antihack_log_channel = cmd.options.getChannel("log_channel").id;
-            storage[cmd.guildId].config.antihack_to_log = true; // Unless overridden, changing the log channel means enable logging
+            guild.config.antihack_log_channel = cmd.options.getChannel("log_channel").id;
+            guild.config.antihack_to_log = true; // Unless overridden, changing the log channel means enable logging
         }
         
         if (cmd.options.getBoolean("log") !== null) 
-            storage[cmd.guildId].config.antihack_to_log = cmd.options.getBoolean("log");
+            guild.config.antihack_to_log = cmd.options.getBoolean("log");
         
+        await guild.save();
+
         cmd.followUp("Anti-Hack response configured.");
     },
     
+    /** @param {import('discord.js').Message} msg */
     async onmessage(msg, context) {
-        if (storage[msg.guild.id].disableAntiHack) return;
+        const guild = await guildByObj(msg.guild);
+
+        if (guild.disableAntiHack) return;
         applyContext(context);
         
         // Don't run in DMs
         if (!msg.member) return
         
         // Config
-        let toLog = storage[msg.guild.id].config.antihack_to_log || false;
-        const logChannelId = toLog 
-        ? storage[msg.guild.id].config.antihack_log_channel || false 
-        : false;
-        let autoDelete = storage[msg.guild.id].config.antihack_auto_delete;
+        let toLog = guild.config.antihack_to_log || false;
+        const logChannelId = toLog
+            ? guild.config.antihack_log_channel || false 
+            : false;
+        let autoDelete = guild.config.antihack_auto_delete;
         if (autoDelete == null) autoDelete = true; // Default to true 
         
         const userIsAdmin = msg.member.permissions.has(PermissionFlagsBits.Administrator);
@@ -108,8 +112,8 @@ module.exports = {
                     storage[msg.author.id].captcha=true;
                     var botInServer=msg.guild?.members.cache.get(client.user.id);
                     if (
-                        !storage[msg.guild.id].disableAntiHack && 
-                        new Date() - (storage[msg.guild.id].users[msg.author.id].safeTimestamp || 0) > 60000 * 60 * 24 * 7
+                        !guild.disableAntiHack && 
+                        new Date() - (guild.users[msg.author.id].safeTimestamp || 0) > 60000 * 60 * 24 * 7
                     ) {
                         // Timeout if we have perms
                         if (timeoutable) {
@@ -121,7 +125,7 @@ module.exports = {
                         const logChannel = logChannelId 
                         ? await msg.guild.channels.fetch(logChannelId).catch(() => {
                             // If this channel was deleted
-                            delete storage[msg.guild.id].config.antihack_log_channel;
+                            delete guild.config.antihack_log_channel;
                             toLog = false;
                             return msg.channel;
                         })
@@ -234,7 +238,12 @@ module.exports = {
     
     // Only button subscriptions matched will be sent to the handler 
     subscribedButtons: [/ban-.*/, /kick-.*/, /untimeout-.*/, /del-.*/],
+    
+    /** @param {import('discord.js').ButtonInteraction} cmd */
     async onbutton(cmd, context) {
+
+        const guild = await guildByObj(cmd.guild);
+
         if (storage[cmd.guildId].disableAntiHack) return cmd.reply({content:`AntiHack protection has been disabled for this servers.`, ephemeral:true});
         applyContext(context);
         

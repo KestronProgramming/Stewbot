@@ -73,7 +73,9 @@ module.exports = {
     },
 
     subscribedButtons: ["save_meme"],
-	async onbutton(cmd, context) {
+	
+    /** @param {import('discord.js').ButtonInteraction} cmd */
+    async onbutton(cmd, context) {
 		applyContext(context);
 
         cmd.message.attachments.forEach(a=>{

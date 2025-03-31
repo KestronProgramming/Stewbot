@@ -94,7 +94,9 @@ module.exports = {
 	},
 
 	subscribedButtons: ["tzUp", "tzDown", "tzSave"],
-	async onbutton(cmd, context) {
+	
+    /** @param {import('discord.js').ButtonInteraction} cmd */
+    async onbutton(cmd, context) {
 		applyContext(context);
 
 		const cur = new Date();
