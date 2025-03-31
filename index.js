@@ -62,6 +62,7 @@ logTime("require('crypto')");
 
 const mongoose = require("mongoose");
 const DBConnectPromise = mongoose.connect(`${process.env.databaseURI}/${process.env.beta ? "stewbeta" : "stewbot"}`) // start the to the DB connection now, so it runs in the background and is ready later
+const cache = global.cache = {}; // This is used for things like antihack hashes that need to be stored, but not persistent 
 logTime("require('mongoose')");
 
 
@@ -901,7 +902,7 @@ client.on("messageCreate",async msg => {
     }
 });
 
-client.on("interactionCreate",async cmd=>{
+client.on("interactionCreate", async cmd=>{
     const commandScript = commands[cmd.commandName];
     if (!commandScript && (cmd.isCommand() || cmd.isAutocomplete())) return; // Ignore any potential cache issues 
 

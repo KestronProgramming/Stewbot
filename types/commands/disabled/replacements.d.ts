@@ -7,6 +7,7 @@ export namespace data {
         let detailedDesc: string;
     }
 }
-export function execute(cmd: any, context: any): Promise<void>;
+/** @param {import('discord.js').Interaction} cmd */
+export function execute(cmd: import("discord.js").Interaction, context: any): Promise<void>;
 export function onmessage(msg: any, context: any): Promise<void>;
 export function replacements(inp: any, options?: {}, disabled?: any[]): any;

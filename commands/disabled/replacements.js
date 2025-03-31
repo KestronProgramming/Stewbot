@@ -37,7 +37,8 @@ module.exports = {
 		},
 	},
 
-	async execute(cmd, context) {
+	/** @param {import('discord.js').Interaction} cmd */
+    async execute(cmd, context) {
 		applyContext(context);
 		
 	},

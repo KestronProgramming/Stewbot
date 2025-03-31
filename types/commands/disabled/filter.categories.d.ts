@@ -12,5 +12,6 @@ export namespace data {
         let helpSortPriority: number;
     }
 }
-export function execute(cmd: any, context: any): Promise<any>;
+/** @param {import('discord.js').Interaction} cmd */
+export function execute(cmd: import("discord.js").Interaction, context: any): Promise<any>;
 export function autocomplete(cmd: any): Promise<void>;
