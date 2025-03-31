@@ -1,5 +1,6 @@
 // #region CommandBoilerplate
 const Categories = require("./modules/Categories");
+const { Guilds, Users, guildByID, userByID, guildByObj, userByObj } = require("./modules/database.js")
 const { ContextMenuCommandBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
 function applyContext(context={}) {
 	for (key in context) {
@@ -71,7 +72,8 @@ module.exports = {
 		// 	"-# This is a detailed help message, and is primarily meant as a code example."
 	},
 
-	async execute(cmd, context) {
+	/** @param {import('discord.js').Interaction} cmd */
+    async execute(cmd, context) {
 		applyContext(context);
 		
         if(!storage[cmd.guild.id].hasOwnProperty("birthday")){

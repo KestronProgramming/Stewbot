@@ -8,4 +8,5 @@ export namespace data {
         let detailedDesc: string;
     }
 }
-export function execute(cmd: any, context: any): Promise<any>;
+/** @param {import('discord.js').Interaction} cmd */
+export function execute(cmd: import("discord.js").Interaction, context: any): Promise<any>;

@@ -1,5 +1,6 @@
 // #region CommandBoilerplate
 const Categories = require("./modules/Categories");
+const { Guilds, Users, guildByID, userByID, guildByObj, userByObj } = require("./modules/database.js")
 const { ContextMenuCommandBuilder, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
 function applyContext(context={}) {
 	for (key in context) {
@@ -80,7 +81,8 @@ module.exports = {
 		},
 	},
 
-	async execute(cmd, context) {
+	/** @param {import('discord.js').Interaction} cmd */
+    async execute(cmd, context) {
 		applyContext(context);
 		if(storage[cmd.user.id].hasOwnProperty("timer")){
             cmd.followUp({content:`You already have a timer registered. This timer must be cleared before setting another. Would you like to clear it now?`,components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setLabel("Clear Timer").setCustomId(`clearTimer-${cmd.user.id}`).setStyle(ButtonStyle.Danger))]});

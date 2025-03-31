@@ -1,6 +1,6 @@
 // #region CommandBoilerplate
 const Categories = require("./modules/Categories");
-const { Guilds, Users, guildByID } = require("./modules/database.js")
+const { Guilds, Users, guildByID, userByID, guildByObj, userByObj } = require("./modules/database.js")
 const { SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType, AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType } = require("discord.js");
 function applyContext(context={}) {
 	for (key in context) {
@@ -57,10 +57,11 @@ module.exports = {
 		},
 	},
 
-	async execute(cmd, context) {
+	/** @param {import('discord.js').Interaction} cmd */
+    async execute(cmd, context) {
 		applyContext(context);
 
-		const guild = await guildByID(cmd.guildId);		
+		const guild = await guildByObj(cmd.guild);		
 		
 		var emoji = getEmojiFromMessage(cmd.options.getString("emoji"));
 		if(!emoji) {
