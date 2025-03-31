@@ -60,7 +60,7 @@ module.exports = {
 	async execute(cmd, context) {
 		applyContext(context);
 
-		const guild = await guildByID(cmd.guildId);
+		const guild = await guildByID(cmd.guildId);		
 		
 		var emoji = getEmojiFromMessage(cmd.options.getString("emoji"));
 		if(!emoji) {

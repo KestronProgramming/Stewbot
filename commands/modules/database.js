@@ -1,5 +1,6 @@
 ////////
-//// This file connects to the DB, registers global utility functions, etc
+/// This file connects to the DB, registers global utility functions, etc
+/// It is heavily annotated, as mongoose has lots of methods and I prefer to use intellisense.
 ////////
 const mongoose = require("mongoose")
 
@@ -10,13 +11,13 @@ let emojiboardSchema = new mongoose.Schema({
     threshold: Number,
     active: Boolean,
     channel: String,
-    posted: Schema.Types.Mixed,  // TODO: Figure out format / type
-    posters: Schema.Types.Mixed, // TODO: Figure out format / type
+    posted: mongoose.Schema.Types.Mixed,  // TODO: Figure out format / type
+    posters: mongoose.Schema.Types.Mixed, // TODO: Figure out format / type
 })
 
 let guildSchema = new mongoose.Schema({
     id: {
-        type: String, 
+        type: String,
         required: true,
         unique: true,
         index: true,
@@ -26,6 +27,7 @@ let guildSchema = new mongoose.Schema({
     emojiboards: [ emojiboardSchema ],
     groupmute: { type: String },
 });
+
 const Guilds = mongoose.model("guilds", guildSchema);
 
 
