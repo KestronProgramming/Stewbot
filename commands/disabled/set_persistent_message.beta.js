@@ -98,7 +98,7 @@ module.exports = {
             guild.persistence[cmd.channel.id].active=false;
         }
 
-        guild.markModified("persistence"); // Objects are a little weird when not schema'd
+        guild.markModified("persistence"); // This is only necessary because of an AI schema. I would rewrite the schema myself to avoid this line being required
         guild.save();
 	},
 
@@ -128,7 +128,7 @@ module.exports = {
                     if(hook){
                         hook.send(resp).then(d=>{
                             guild.persistence[msg.channel.id].lastPost=d.id;
-                            guild.markModified("persistence");
+                            guild.markModified("persistence"); // See comment under the other one of these
                             guild.save()
                         });
                     }
