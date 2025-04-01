@@ -45,21 +45,26 @@ module.exports = {
 	/** @param {import('discord.js').Interaction} cmd */
     async execute(cmd, context) {
 		applyContext(context);
+
+		const guild = await guildByObj(cmd.guild);
 		
-		storage[cmd.guildId].ajm.active=cmd.options.getBoolean("active");
-		if(cmd.options.getChannel("channel")!==null) storage[cmd.guildId].ajm.channel=cmd.options.getChannel("channel").id;
-		if(cmd.options.getString("channel_or_dm")!==null) storage[cmd.guildId].ajm.dm=cmd.options.getString("channel_or_dm")==="dm";
-		if(cmd.options.getString("message")!==null) storage[cmd.guildId].ajm.message=checkDirty(config.homeServer,cmd.options.getString("message"),true)[1];
-		var disclaimers=[];
-		if(!storage[cmd.guildId].ajm.dm&&storage[cmd.guildId].ajm.channel===""){
-			storage[cmd.guildId].ajm.dm=true;
-			disclaimers.push(`No channel was specified to post auto join messages in, so I have set it to DMs instead.`);
+		guild.ajm.active = cmd.options.getBoolean("active");
+		if (cmd.options.getChannel("channel") !== null) guild.ajm.channel = cmd.options.getChannel("channel").id;
+		if (cmd.options.getString("channel_or_dm") !== null) guild.ajm.dm = cmd.options.getString("channel_or_dm") === "dm";
+		if (cmd.options.getString("message") !== null) guild.ajm.message = checkDirty(config.homeServer, cmd.options.getString("message"), true)[1];
+		
+		var disclaimers = [];
+		if (!guild.ajm.dm && guild.ajm.channel === "") {
+			guild.ajm.dm = true;
+			disclaimers.push(`-# No channel was specified to post auto join messages in, so I have set it to DMs instead.`);
 		}
-		if(!storage[cmd.guildId].ajm.dm&&!client.channels.cache.get(storage[cmd.guildId].ajm.channel)?.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
-			storage[cmd.guildId].ajm.dm=true;
-			disclaimers.push(`I can't post in the specified channel, so I have set the location to DMs instead.`);
+		if (!guild.ajm.dm && !client.channels.cache.get(guild.ajm.channel)?.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)) {
+			guild.ajm.dm = true;
+			disclaimers.push(`-# I can't post in the specified channel, so I have set the location to DMs instead.`);
 		}
-		if(storage[cmd.guildId].ajm.message==="") storage[cmd.guildId].ajm.message=defaultGuild.ajm.message;
-		cmd.followUp(`Auto join messages configured.${disclaimers.map(d=>`\n\n${d}`).join("")}`);
+
+		await guild.save();
+
+		cmd.followUp(`Auto join messages configured.${disclaimers.map(d => `\n\n${d}`).join("")}`);
 	}
 };

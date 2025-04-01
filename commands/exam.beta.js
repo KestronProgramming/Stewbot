@@ -64,21 +64,20 @@ module.exports = {
 
         if (!cmd.user.id === "724416180097384498") return cmd.deferUpdate();
 
-        const input = cmd.options.getString("input");
+        // const input = cmd.options.getString("input");
+        // try {
+        //     await eval(
+        //         `(async () => { 
+        //             const result = (${input});
+        //             await cmd.followUp(result);
+        //         })()`
+        //     );
+        // } catch (e) {
+        //     cmd.followUp(e.stack);
+        // }
 
-        try {
-            await eval(
-                `(async () => { 
-                    const result = (${input});
-                    await cmd.followUp(result);
-                })()`
-            );
-        } catch (e) {
-            cmd.followUp(e.stack);
-        }
-
-        // const guild = await guildByObj(cmd.guild);
-        // cmd.followUp(JSON.stringify(guild.toObject(), null, 4));
+        const guild = await guildByObj(cmd.guild);
+        cmd.followUp(JSON.stringify(guild.toObject(), null, 4));
     },
 
     /** @param {import('discord.js').Message} msg */
