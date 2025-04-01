@@ -1,114 +1,153 @@
 export const Guilds: mongoose.Model<{
     id: string;
     emojiboards: mongoose.Types.DocumentArray<{
-        messType?: string | null | undefined;
-        threshold?: number | null | undefined;
-        active?: boolean | null | undefined;
-        channel?: string | null | undefined;
-        posted?: any;
-        posters?: any;
-        emoji?: string | null | undefined;
+        type?: {
+            messType?: string | null | undefined;
+            threshold?: number | null | undefined;
+            active?: boolean | null | undefined;
+            channel?: string | null | undefined;
+            posted?: any;
+            posters?: any;
+            emoji?: string | null | undefined;
+        } | null | undefined;
+        required?: unknown;
     }, mongoose.Types.Subdocument<mongoose.Types.ObjectId, any, {
-        messType?: string | null | undefined;
-        threshold?: number | null | undefined;
-        active?: boolean | null | undefined;
-        channel?: string | null | undefined;
-        posted?: any;
-        posters?: any;
-        emoji?: string | null | undefined;
+        type?: {
+            messType?: string | null | undefined;
+            threshold?: number | null | undefined;
+            active?: boolean | null | undefined;
+            channel?: string | null | undefined;
+            posted?: any;
+            posters?: any;
+            emoji?: string | null | undefined;
+        } | null | undefined;
+        required?: unknown;
     }> & {
-        messType?: string | null | undefined;
-        threshold?: number | null | undefined;
-        active?: boolean | null | undefined;
-        channel?: string | null | undefined;
-        posted?: any;
-        posters?: any;
-        emoji?: string | null | undefined;
+        type?: {
+            messType?: string | null | undefined;
+            threshold?: number | null | undefined;
+            active?: boolean | null | undefined;
+            channel?: string | null | undefined;
+            posted?: any;
+            posters?: any;
+            emoji?: string | null | undefined;
+        } | null | undefined;
+        required?: unknown;
     }>;
-    config?: {
-        antihack_log_channel?: string | null | undefined;
-        antihack_to_log?: boolean | null | undefined;
-        antihack_auto_delete?: boolean | null | undefined;
-    } | null | undefined;
-    disableAntiHack?: boolean | null | undefined;
-    user?: Map<string, {
-        safeTimestamp?: number | null | undefined;
-    }> | null | undefined;
+    ajm: {
+        active: boolean;
+        channel: string;
+        dm: boolean;
+        message: string;
+    };
+    config: {
+        antihack_log_channel: string;
+        antihack_to_log: boolean;
+        antihack_auto_delete: boolean;
+    };
+    autoJoinRoles: string[];
     groupmute?: string | null | undefined;
+    disableAntiHack?: boolean | null | undefined;
 }, {}, {}, {}, mongoose.Document<unknown, {}, {
     id: string;
     emojiboards: mongoose.Types.DocumentArray<{
-        messType?: string | null | undefined;
-        threshold?: number | null | undefined;
-        active?: boolean | null | undefined;
-        channel?: string | null | undefined;
-        posted?: any;
-        posters?: any;
-        emoji?: string | null | undefined;
+        type?: {
+            messType?: string | null | undefined;
+            threshold?: number | null | undefined;
+            active?: boolean | null | undefined;
+            channel?: string | null | undefined;
+            posted?: any;
+            posters?: any;
+            emoji?: string | null | undefined;
+        } | null | undefined;
+        required?: unknown;
     }, mongoose.Types.Subdocument<mongoose.Types.ObjectId, any, {
-        messType?: string | null | undefined;
-        threshold?: number | null | undefined;
-        active?: boolean | null | undefined;
-        channel?: string | null | undefined;
-        posted?: any;
-        posters?: any;
-        emoji?: string | null | undefined;
+        type?: {
+            messType?: string | null | undefined;
+            threshold?: number | null | undefined;
+            active?: boolean | null | undefined;
+            channel?: string | null | undefined;
+            posted?: any;
+            posters?: any;
+            emoji?: string | null | undefined;
+        } | null | undefined;
+        required?: unknown;
     }> & {
-        messType?: string | null | undefined;
-        threshold?: number | null | undefined;
-        active?: boolean | null | undefined;
-        channel?: string | null | undefined;
-        posted?: any;
-        posters?: any;
-        emoji?: string | null | undefined;
+        type?: {
+            messType?: string | null | undefined;
+            threshold?: number | null | undefined;
+            active?: boolean | null | undefined;
+            channel?: string | null | undefined;
+            posted?: any;
+            posters?: any;
+            emoji?: string | null | undefined;
+        } | null | undefined;
+        required?: unknown;
     }>;
-    config?: {
-        antihack_log_channel?: string | null | undefined;
-        antihack_to_log?: boolean | null | undefined;
-        antihack_auto_delete?: boolean | null | undefined;
-    } | null | undefined;
-    disableAntiHack?: boolean | null | undefined;
-    user?: Map<string, {
-        safeTimestamp?: number | null | undefined;
-    }> | null | undefined;
+    ajm: {
+        active: boolean;
+        channel: string;
+        dm: boolean;
+        message: string;
+    };
+    config: {
+        antihack_log_channel: string;
+        antihack_to_log: boolean;
+        antihack_auto_delete: boolean;
+    };
+    autoJoinRoles: string[];
     groupmute?: string | null | undefined;
+    disableAntiHack?: boolean | null | undefined;
 }> & {
     id: string;
     emojiboards: mongoose.Types.DocumentArray<{
-        messType?: string | null | undefined;
-        threshold?: number | null | undefined;
-        active?: boolean | null | undefined;
-        channel?: string | null | undefined;
-        posted?: any;
-        posters?: any;
-        emoji?: string | null | undefined;
+        type?: {
+            messType?: string | null | undefined;
+            threshold?: number | null | undefined;
+            active?: boolean | null | undefined;
+            channel?: string | null | undefined;
+            posted?: any;
+            posters?: any;
+            emoji?: string | null | undefined;
+        } | null | undefined;
+        required?: unknown;
     }, mongoose.Types.Subdocument<mongoose.Types.ObjectId, any, {
-        messType?: string | null | undefined;
-        threshold?: number | null | undefined;
-        active?: boolean | null | undefined;
-        channel?: string | null | undefined;
-        posted?: any;
-        posters?: any;
-        emoji?: string | null | undefined;
+        type?: {
+            messType?: string | null | undefined;
+            threshold?: number | null | undefined;
+            active?: boolean | null | undefined;
+            channel?: string | null | undefined;
+            posted?: any;
+            posters?: any;
+            emoji?: string | null | undefined;
+        } | null | undefined;
+        required?: unknown;
     }> & {
-        messType?: string | null | undefined;
-        threshold?: number | null | undefined;
-        active?: boolean | null | undefined;
-        channel?: string | null | undefined;
-        posted?: any;
-        posters?: any;
-        emoji?: string | null | undefined;
+        type?: {
+            messType?: string | null | undefined;
+            threshold?: number | null | undefined;
+            active?: boolean | null | undefined;
+            channel?: string | null | undefined;
+            posted?: any;
+            posters?: any;
+            emoji?: string | null | undefined;
+        } | null | undefined;
+        required?: unknown;
     }>;
-    config?: {
-        antihack_log_channel?: string | null | undefined;
-        antihack_to_log?: boolean | null | undefined;
-        antihack_auto_delete?: boolean | null | undefined;
-    } | null | undefined;
-    disableAntiHack?: boolean | null | undefined;
-    user?: Map<string, {
-        safeTimestamp?: number | null | undefined;
-    }> | null | undefined;
+    ajm: {
+        active: boolean;
+        channel: string;
+        dm: boolean;
+        message: string;
+    };
+    config: {
+        antihack_log_channel: string;
+        antihack_to_log: boolean;
+        antihack_auto_delete: boolean;
+    };
+    autoJoinRoles: string[];
     groupmute?: string | null | undefined;
+    disableAntiHack?: boolean | null | undefined;
 } & {
     _id: mongoose.Types.ObjectId;
 } & {
@@ -116,200 +155,265 @@ export const Guilds: mongoose.Model<{
 }, mongoose.Schema<any, mongoose.Model<any, any, any, any, any, any>, {}, {}, {}, {}, mongoose.DefaultSchemaOptions, {
     id: string;
     emojiboards: mongoose.Types.DocumentArray<{
-        messType?: string | null | undefined;
-        threshold?: number | null | undefined;
-        active?: boolean | null | undefined;
-        channel?: string | null | undefined;
-        posted?: any;
-        posters?: any;
-        emoji?: string | null | undefined;
+        type?: {
+            messType?: string | null | undefined;
+            threshold?: number | null | undefined;
+            active?: boolean | null | undefined;
+            channel?: string | null | undefined;
+            posted?: any;
+            posters?: any;
+            emoji?: string | null | undefined;
+        } | null | undefined;
+        required?: unknown;
     }, mongoose.Types.Subdocument<mongoose.Types.ObjectId, any, {
-        messType?: string | null | undefined;
-        threshold?: number | null | undefined;
-        active?: boolean | null | undefined;
-        channel?: string | null | undefined;
-        posted?: any;
-        posters?: any;
-        emoji?: string | null | undefined;
+        type?: {
+            messType?: string | null | undefined;
+            threshold?: number | null | undefined;
+            active?: boolean | null | undefined;
+            channel?: string | null | undefined;
+            posted?: any;
+            posters?: any;
+            emoji?: string | null | undefined;
+        } | null | undefined;
+        required?: unknown;
     }> & {
-        messType?: string | null | undefined;
-        threshold?: number | null | undefined;
-        active?: boolean | null | undefined;
-        channel?: string | null | undefined;
-        posted?: any;
-        posters?: any;
-        emoji?: string | null | undefined;
+        type?: {
+            messType?: string | null | undefined;
+            threshold?: number | null | undefined;
+            active?: boolean | null | undefined;
+            channel?: string | null | undefined;
+            posted?: any;
+            posters?: any;
+            emoji?: string | null | undefined;
+        } | null | undefined;
+        required?: unknown;
     }>;
-    config?: {
-        antihack_log_channel?: string | null | undefined;
-        antihack_to_log?: boolean | null | undefined;
-        antihack_auto_delete?: boolean | null | undefined;
-    } | null | undefined;
-    disableAntiHack?: boolean | null | undefined;
-    user?: Map<string, {
-        safeTimestamp?: number | null | undefined;
-    }> | null | undefined;
+    ajm: {
+        active: boolean;
+        channel: string;
+        dm: boolean;
+        message: string;
+    };
+    config: {
+        antihack_log_channel: string;
+        antihack_to_log: boolean;
+        antihack_auto_delete: boolean;
+    };
+    autoJoinRoles: string[];
     groupmute?: string | null | undefined;
+    disableAntiHack?: boolean | null | undefined;
 }, mongoose.Document<unknown, {}, mongoose.FlatRecord<{
     id: string;
     emojiboards: mongoose.Types.DocumentArray<{
-        messType?: string | null | undefined;
-        threshold?: number | null | undefined;
-        active?: boolean | null | undefined;
-        channel?: string | null | undefined;
-        posted?: any;
-        posters?: any;
-        emoji?: string | null | undefined;
+        type?: {
+            messType?: string | null | undefined;
+            threshold?: number | null | undefined;
+            active?: boolean | null | undefined;
+            channel?: string | null | undefined;
+            posted?: any;
+            posters?: any;
+            emoji?: string | null | undefined;
+        } | null | undefined;
+        required?: unknown;
     }, mongoose.Types.Subdocument<mongoose.Types.ObjectId, any, {
-        messType?: string | null | undefined;
-        threshold?: number | null | undefined;
-        active?: boolean | null | undefined;
-        channel?: string | null | undefined;
-        posted?: any;
-        posters?: any;
-        emoji?: string | null | undefined;
+        type?: {
+            messType?: string | null | undefined;
+            threshold?: number | null | undefined;
+            active?: boolean | null | undefined;
+            channel?: string | null | undefined;
+            posted?: any;
+            posters?: any;
+            emoji?: string | null | undefined;
+        } | null | undefined;
+        required?: unknown;
     }> & {
-        messType?: string | null | undefined;
-        threshold?: number | null | undefined;
-        active?: boolean | null | undefined;
-        channel?: string | null | undefined;
-        posted?: any;
-        posters?: any;
-        emoji?: string | null | undefined;
+        type?: {
+            messType?: string | null | undefined;
+            threshold?: number | null | undefined;
+            active?: boolean | null | undefined;
+            channel?: string | null | undefined;
+            posted?: any;
+            posters?: any;
+            emoji?: string | null | undefined;
+        } | null | undefined;
+        required?: unknown;
     }>;
-    config?: {
-        antihack_log_channel?: string | null | undefined;
-        antihack_to_log?: boolean | null | undefined;
-        antihack_auto_delete?: boolean | null | undefined;
-    } | null | undefined;
-    disableAntiHack?: boolean | null | undefined;
-    user?: Map<string, {
-        safeTimestamp?: number | null | undefined;
-    }> | null | undefined;
+    ajm: {
+        active: boolean;
+        channel: string;
+        dm: boolean;
+        message: string;
+    };
+    config: {
+        antihack_log_channel: string;
+        antihack_to_log: boolean;
+        antihack_auto_delete: boolean;
+    };
+    autoJoinRoles: string[];
     groupmute?: string | null | undefined;
+    disableAntiHack?: boolean | null | undefined;
 }>> & mongoose.FlatRecord<{
     id: string;
     emojiboards: mongoose.Types.DocumentArray<{
-        messType?: string | null | undefined;
-        threshold?: number | null | undefined;
-        active?: boolean | null | undefined;
-        channel?: string | null | undefined;
-        posted?: any;
-        posters?: any;
-        emoji?: string | null | undefined;
+        type?: {
+            messType?: string | null | undefined;
+            threshold?: number | null | undefined;
+            active?: boolean | null | undefined;
+            channel?: string | null | undefined;
+            posted?: any;
+            posters?: any;
+            emoji?: string | null | undefined;
+        } | null | undefined;
+        required?: unknown;
     }, mongoose.Types.Subdocument<mongoose.Types.ObjectId, any, {
-        messType?: string | null | undefined;
-        threshold?: number | null | undefined;
-        active?: boolean | null | undefined;
-        channel?: string | null | undefined;
-        posted?: any;
-        posters?: any;
-        emoji?: string | null | undefined;
+        type?: {
+            messType?: string | null | undefined;
+            threshold?: number | null | undefined;
+            active?: boolean | null | undefined;
+            channel?: string | null | undefined;
+            posted?: any;
+            posters?: any;
+            emoji?: string | null | undefined;
+        } | null | undefined;
+        required?: unknown;
     }> & {
-        messType?: string | null | undefined;
-        threshold?: number | null | undefined;
-        active?: boolean | null | undefined;
-        channel?: string | null | undefined;
-        posted?: any;
-        posters?: any;
-        emoji?: string | null | undefined;
+        type?: {
+            messType?: string | null | undefined;
+            threshold?: number | null | undefined;
+            active?: boolean | null | undefined;
+            channel?: string | null | undefined;
+            posted?: any;
+            posters?: any;
+            emoji?: string | null | undefined;
+        } | null | undefined;
+        required?: unknown;
     }>;
-    config?: {
-        antihack_log_channel?: string | null | undefined;
-        antihack_to_log?: boolean | null | undefined;
-        antihack_auto_delete?: boolean | null | undefined;
-    } | null | undefined;
-    disableAntiHack?: boolean | null | undefined;
-    user?: Map<string, {
-        safeTimestamp?: number | null | undefined;
-    }> | null | undefined;
+    ajm: {
+        active: boolean;
+        channel: string;
+        dm: boolean;
+        message: string;
+    };
+    config: {
+        antihack_log_channel: string;
+        antihack_to_log: boolean;
+        antihack_auto_delete: boolean;
+    };
+    autoJoinRoles: string[];
     groupmute?: string | null | undefined;
+    disableAntiHack?: boolean | null | undefined;
 }> & {
     _id: mongoose.Types.ObjectId;
 } & {
     __v: number;
 }>>;
-export function guildByID(id: any): Promise<mongoose.Document<unknown, {}, {
+export function guildByID(id: any, updates?: {}): Promise<mongoose.Document<unknown, {}, {
     id: string;
     emojiboards: mongoose.Types.DocumentArray<{
-        messType?: string | null | undefined;
-        threshold?: number | null | undefined;
-        active?: boolean | null | undefined;
-        channel?: string | null | undefined;
-        posted?: any;
-        posters?: any;
-        emoji?: string | null | undefined;
+        type?: {
+            messType?: string | null | undefined;
+            threshold?: number | null | undefined;
+            active?: boolean | null | undefined;
+            channel?: string | null | undefined;
+            posted?: any;
+            posters?: any;
+            emoji?: string | null | undefined;
+        } | null | undefined;
+        required?: unknown;
     }, mongoose.Types.Subdocument<mongoose.Types.ObjectId, any, {
-        messType?: string | null | undefined;
-        threshold?: number | null | undefined;
-        active?: boolean | null | undefined;
-        channel?: string | null | undefined;
-        posted?: any;
-        posters?: any;
-        emoji?: string | null | undefined;
+        type?: {
+            messType?: string | null | undefined;
+            threshold?: number | null | undefined;
+            active?: boolean | null | undefined;
+            channel?: string | null | undefined;
+            posted?: any;
+            posters?: any;
+            emoji?: string | null | undefined;
+        } | null | undefined;
+        required?: unknown;
     }> & {
-        messType?: string | null | undefined;
-        threshold?: number | null | undefined;
-        active?: boolean | null | undefined;
-        channel?: string | null | undefined;
-        posted?: any;
-        posters?: any;
-        emoji?: string | null | undefined;
+        type?: {
+            messType?: string | null | undefined;
+            threshold?: number | null | undefined;
+            active?: boolean | null | undefined;
+            channel?: string | null | undefined;
+            posted?: any;
+            posters?: any;
+            emoji?: string | null | undefined;
+        } | null | undefined;
+        required?: unknown;
     }>;
-    config?: {
-        antihack_log_channel?: string | null | undefined;
-        antihack_to_log?: boolean | null | undefined;
-        antihack_auto_delete?: boolean | null | undefined;
-    } | null | undefined;
-    disableAntiHack?: boolean | null | undefined;
-    user?: Map<string, {
-        safeTimestamp?: number | null | undefined;
-    }> | null | undefined;
+    ajm: {
+        active: boolean;
+        channel: string;
+        dm: boolean;
+        message: string;
+    };
+    config: {
+        antihack_log_channel: string;
+        antihack_to_log: boolean;
+        antihack_auto_delete: boolean;
+    };
+    autoJoinRoles: string[];
     groupmute?: string | null | undefined;
+    disableAntiHack?: boolean | null | undefined;
 }> & {
     id: string;
     emojiboards: mongoose.Types.DocumentArray<{
-        messType?: string | null | undefined;
-        threshold?: number | null | undefined;
-        active?: boolean | null | undefined;
-        channel?: string | null | undefined;
-        posted?: any;
-        posters?: any;
-        emoji?: string | null | undefined;
+        type?: {
+            messType?: string | null | undefined;
+            threshold?: number | null | undefined;
+            active?: boolean | null | undefined;
+            channel?: string | null | undefined;
+            posted?: any;
+            posters?: any;
+            emoji?: string | null | undefined;
+        } | null | undefined;
+        required?: unknown;
     }, mongoose.Types.Subdocument<mongoose.Types.ObjectId, any, {
-        messType?: string | null | undefined;
-        threshold?: number | null | undefined;
-        active?: boolean | null | undefined;
-        channel?: string | null | undefined;
-        posted?: any;
-        posters?: any;
-        emoji?: string | null | undefined;
+        type?: {
+            messType?: string | null | undefined;
+            threshold?: number | null | undefined;
+            active?: boolean | null | undefined;
+            channel?: string | null | undefined;
+            posted?: any;
+            posters?: any;
+            emoji?: string | null | undefined;
+        } | null | undefined;
+        required?: unknown;
     }> & {
-        messType?: string | null | undefined;
-        threshold?: number | null | undefined;
-        active?: boolean | null | undefined;
-        channel?: string | null | undefined;
-        posted?: any;
-        posters?: any;
-        emoji?: string | null | undefined;
+        type?: {
+            messType?: string | null | undefined;
+            threshold?: number | null | undefined;
+            active?: boolean | null | undefined;
+            channel?: string | null | undefined;
+            posted?: any;
+            posters?: any;
+            emoji?: string | null | undefined;
+        } | null | undefined;
+        required?: unknown;
     }>;
-    config?: {
-        antihack_log_channel?: string | null | undefined;
-        antihack_to_log?: boolean | null | undefined;
-        antihack_auto_delete?: boolean | null | undefined;
-    } | null | undefined;
-    disableAntiHack?: boolean | null | undefined;
-    user?: Map<string, {
-        safeTimestamp?: number | null | undefined;
-    }> | null | undefined;
+    ajm: {
+        active: boolean;
+        channel: string;
+        dm: boolean;
+        message: string;
+    };
+    config: {
+        antihack_log_channel: string;
+        antihack_to_log: boolean;
+        antihack_auto_delete: boolean;
+    };
+    autoJoinRoles: string[];
     groupmute?: string | null | undefined;
+    disableAntiHack?: boolean | null | undefined;
 } & {
     _id: mongoose.Types.ObjectId;
 } & {
     __v: number;
 }>;
 /** @returns {Promise<import("mongoose").HydratedDocument<import("mongoose").InferSchemaType<typeof guildSchema>>>} */
-export function guildByObj(obj: any): Promise<import("mongoose").HydratedDocument<import("mongoose").InferSchemaType<typeof guildSchema>>>;
+export function guildByObj(obj: any, updates?: {}): Promise<import("mongoose").HydratedDocument<import("mongoose").InferSchemaType<typeof guildSchema>>>;
 export const Users: mongoose.Model<{
     id: string;
     timedOutIn: string[];
@@ -358,118 +462,192 @@ export function userByID(id: any): Promise<mongoose.Document<unknown, {}, {
 }>;
 /** @returns {Promise<import("mongoose").HydratedDocument<import("mongoose").InferSchemaType<typeof userSchema>>>} */
 export function userByObj(obj: any): Promise<import("mongoose").HydratedDocument<import("mongoose").InferSchemaType<typeof userSchema>>>;
+export const GuildUsers: mongoose.Model<{
+    userId: string;
+    guildId: string;
+    safeTimestamp: number;
+}, {}, {}, {}, mongoose.Document<unknown, {}, {
+    userId: string;
+    guildId: string;
+    safeTimestamp: number;
+}> & {
+    userId: string;
+    guildId: string;
+    safeTimestamp: number;
+} & {
+    _id: mongoose.Types.ObjectId;
+} & {
+    __v: number;
+}, mongoose.Schema<any, mongoose.Model<any, any, any, any, any, any>, {}, {}, {}, {}, mongoose.DefaultSchemaOptions, {
+    userId: string;
+    guildId: string;
+    safeTimestamp: number;
+}, mongoose.Document<unknown, {}, mongoose.FlatRecord<{
+    userId: string;
+    guildId: string;
+    safeTimestamp: number;
+}>> & mongoose.FlatRecord<{
+    userId: string;
+    guildId: string;
+    safeTimestamp: number;
+}> & {
+    _id: mongoose.Types.ObjectId;
+} & {
+    __v: number;
+}>>;
+/** @returns {Promise<import("mongoose").HydratedDocument<import("mongoose").InferSchemaType<typeof guildUserSchema>>>} */
+export function guildUserByObj(guild: any, userID: any, updateData?: {}): Promise<import("mongoose").HydratedDocument<import("mongoose").InferSchemaType<typeof guildUserSchema>>>;
 import mongoose = require("mongoose");
 declare let guildSchema: mongoose.Schema<any, mongoose.Model<any, any, any, any, any, any>, {}, {}, {}, {}, mongoose.DefaultSchemaOptions, {
     id: string;
     emojiboards: mongoose.Types.DocumentArray<{
-        messType?: string | null | undefined;
-        threshold?: number | null | undefined;
-        active?: boolean | null | undefined;
-        channel?: string | null | undefined;
-        posted?: any;
-        posters?: any;
-        emoji?: string | null | undefined;
+        type?: {
+            messType?: string | null | undefined;
+            threshold?: number | null | undefined;
+            active?: boolean | null | undefined;
+            channel?: string | null | undefined;
+            posted?: any;
+            posters?: any;
+            emoji?: string | null | undefined;
+        } | null | undefined;
+        required?: unknown;
     }, mongoose.Types.Subdocument<mongoose.Types.ObjectId, any, {
-        messType?: string | null | undefined;
-        threshold?: number | null | undefined;
-        active?: boolean | null | undefined;
-        channel?: string | null | undefined;
-        posted?: any;
-        posters?: any;
-        emoji?: string | null | undefined;
+        type?: {
+            messType?: string | null | undefined;
+            threshold?: number | null | undefined;
+            active?: boolean | null | undefined;
+            channel?: string | null | undefined;
+            posted?: any;
+            posters?: any;
+            emoji?: string | null | undefined;
+        } | null | undefined;
+        required?: unknown;
     }> & {
-        messType?: string | null | undefined;
-        threshold?: number | null | undefined;
-        active?: boolean | null | undefined;
-        channel?: string | null | undefined;
-        posted?: any;
-        posters?: any;
-        emoji?: string | null | undefined;
+        type?: {
+            messType?: string | null | undefined;
+            threshold?: number | null | undefined;
+            active?: boolean | null | undefined;
+            channel?: string | null | undefined;
+            posted?: any;
+            posters?: any;
+            emoji?: string | null | undefined;
+        } | null | undefined;
+        required?: unknown;
     }>;
-    config?: {
-        antihack_log_channel?: string | null | undefined;
-        antihack_to_log?: boolean | null | undefined;
-        antihack_auto_delete?: boolean | null | undefined;
-    } | null | undefined;
-    disableAntiHack?: boolean | null | undefined;
-    user?: Map<string, {
-        safeTimestamp?: number | null | undefined;
-    }> | null | undefined;
+    ajm: {
+        active: boolean;
+        channel: string;
+        dm: boolean;
+        message: string;
+    };
+    config: {
+        antihack_log_channel: string;
+        antihack_to_log: boolean;
+        antihack_auto_delete: boolean;
+    };
+    autoJoinRoles: string[];
     groupmute?: string | null | undefined;
+    disableAntiHack?: boolean | null | undefined;
 }, mongoose.Document<unknown, {}, mongoose.FlatRecord<{
     id: string;
     emojiboards: mongoose.Types.DocumentArray<{
-        messType?: string | null | undefined;
-        threshold?: number | null | undefined;
-        active?: boolean | null | undefined;
-        channel?: string | null | undefined;
-        posted?: any;
-        posters?: any;
-        emoji?: string | null | undefined;
+        type?: {
+            messType?: string | null | undefined;
+            threshold?: number | null | undefined;
+            active?: boolean | null | undefined;
+            channel?: string | null | undefined;
+            posted?: any;
+            posters?: any;
+            emoji?: string | null | undefined;
+        } | null | undefined;
+        required?: unknown;
     }, mongoose.Types.Subdocument<mongoose.Types.ObjectId, any, {
-        messType?: string | null | undefined;
-        threshold?: number | null | undefined;
-        active?: boolean | null | undefined;
-        channel?: string | null | undefined;
-        posted?: any;
-        posters?: any;
-        emoji?: string | null | undefined;
+        type?: {
+            messType?: string | null | undefined;
+            threshold?: number | null | undefined;
+            active?: boolean | null | undefined;
+            channel?: string | null | undefined;
+            posted?: any;
+            posters?: any;
+            emoji?: string | null | undefined;
+        } | null | undefined;
+        required?: unknown;
     }> & {
-        messType?: string | null | undefined;
-        threshold?: number | null | undefined;
-        active?: boolean | null | undefined;
-        channel?: string | null | undefined;
-        posted?: any;
-        posters?: any;
-        emoji?: string | null | undefined;
+        type?: {
+            messType?: string | null | undefined;
+            threshold?: number | null | undefined;
+            active?: boolean | null | undefined;
+            channel?: string | null | undefined;
+            posted?: any;
+            posters?: any;
+            emoji?: string | null | undefined;
+        } | null | undefined;
+        required?: unknown;
     }>;
-    config?: {
-        antihack_log_channel?: string | null | undefined;
-        antihack_to_log?: boolean | null | undefined;
-        antihack_auto_delete?: boolean | null | undefined;
-    } | null | undefined;
-    disableAntiHack?: boolean | null | undefined;
-    user?: Map<string, {
-        safeTimestamp?: number | null | undefined;
-    }> | null | undefined;
+    ajm: {
+        active: boolean;
+        channel: string;
+        dm: boolean;
+        message: string;
+    };
+    config: {
+        antihack_log_channel: string;
+        antihack_to_log: boolean;
+        antihack_auto_delete: boolean;
+    };
+    autoJoinRoles: string[];
     groupmute?: string | null | undefined;
+    disableAntiHack?: boolean | null | undefined;
 }>> & mongoose.FlatRecord<{
     id: string;
     emojiboards: mongoose.Types.DocumentArray<{
-        messType?: string | null | undefined;
-        threshold?: number | null | undefined;
-        active?: boolean | null | undefined;
-        channel?: string | null | undefined;
-        posted?: any;
-        posters?: any;
-        emoji?: string | null | undefined;
+        type?: {
+            messType?: string | null | undefined;
+            threshold?: number | null | undefined;
+            active?: boolean | null | undefined;
+            channel?: string | null | undefined;
+            posted?: any;
+            posters?: any;
+            emoji?: string | null | undefined;
+        } | null | undefined;
+        required?: unknown;
     }, mongoose.Types.Subdocument<mongoose.Types.ObjectId, any, {
-        messType?: string | null | undefined;
-        threshold?: number | null | undefined;
-        active?: boolean | null | undefined;
-        channel?: string | null | undefined;
-        posted?: any;
-        posters?: any;
-        emoji?: string | null | undefined;
+        type?: {
+            messType?: string | null | undefined;
+            threshold?: number | null | undefined;
+            active?: boolean | null | undefined;
+            channel?: string | null | undefined;
+            posted?: any;
+            posters?: any;
+            emoji?: string | null | undefined;
+        } | null | undefined;
+        required?: unknown;
     }> & {
-        messType?: string | null | undefined;
-        threshold?: number | null | undefined;
-        active?: boolean | null | undefined;
-        channel?: string | null | undefined;
-        posted?: any;
-        posters?: any;
-        emoji?: string | null | undefined;
+        type?: {
+            messType?: string | null | undefined;
+            threshold?: number | null | undefined;
+            active?: boolean | null | undefined;
+            channel?: string | null | undefined;
+            posted?: any;
+            posters?: any;
+            emoji?: string | null | undefined;
+        } | null | undefined;
+        required?: unknown;
     }>;
-    config?: {
-        antihack_log_channel?: string | null | undefined;
-        antihack_to_log?: boolean | null | undefined;
-        antihack_auto_delete?: boolean | null | undefined;
-    } | null | undefined;
-    disableAntiHack?: boolean | null | undefined;
-    user?: Map<string, {
-        safeTimestamp?: number | null | undefined;
-    }> | null | undefined;
+    ajm: {
+        active: boolean;
+        channel: string;
+        dm: boolean;
+        message: string;
+    };
+    config: {
+        antihack_log_channel: string;
+        antihack_to_log: boolean;
+        antihack_auto_delete: boolean;
+    };
+    autoJoinRoles: string[];
     groupmute?: string | null | undefined;
+    disableAntiHack?: boolean | null | undefined;
 }> & {
     _id: mongoose.Types.ObjectId;
 } & {
@@ -487,6 +665,23 @@ declare let userSchema: mongoose.Schema<any, mongoose.Model<any, any, any, any, 
     id: string;
     timedOutIn: string[];
     captcha?: boolean | null | undefined;
+}> & {
+    _id: mongoose.Types.ObjectId;
+} & {
+    __v: number;
+}>;
+declare let guildUserSchema: mongoose.Schema<any, mongoose.Model<any, any, any, any, any, any>, {}, {}, {}, {}, mongoose.DefaultSchemaOptions, {
+    userId: string;
+    guildId: string;
+    safeTimestamp: number;
+}, mongoose.Document<unknown, {}, mongoose.FlatRecord<{
+    userId: string;
+    guildId: string;
+    safeTimestamp: number;
+}>> & mongoose.FlatRecord<{
+    userId: string;
+    guildId: string;
+    safeTimestamp: number;
 }> & {
     _id: mongoose.Types.ObjectId;
 } & {
