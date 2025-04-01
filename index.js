@@ -1269,7 +1269,7 @@ client.on("guildMemberAdd",async member=>{
                 member.send({embeds:[{
                     type: "rich",
                     title: member.guild.name,
-                    description: storage[member.guild.id].ajm.message.replaceAll("${@USER}", `<@${member.id}> ${member.user.username ? `(**${member.user.username}**)` : '' }`),
+                    description: storage[member.guild.id].ajm.message.replaceAll("${@USER}", `<@${member.id}> ${member.user.username ? `(**${member.user.username}**)` : '' }`).replaceAll("\\n","\n"),
                     color: 0x006400,
                     thumbnail: {
                         url: member.guild.iconURL(),
@@ -1282,7 +1282,7 @@ client.on("guildMemberAdd",async member=>{
         }
         else{
             var resp={
-                content:storage[member.guild.id].ajm.message.replaceAll("${@USER}",`<@${member.id}> ${member.user.username ? `(**${member.user.username}**)` : '' }`),
+                content:storage[member.guild.id].ajm.message.replaceAll("${@USER}",`<@${member.id}> ${member.user.username ? `(**${member.user.username}**)` : '' }`).replaceAll("\\n","\n"),
                 username:member.guild.name,
                 avatarURL:member.guild.iconURL()
             };
