@@ -15,6 +15,11 @@
 
 const mongoose = require("mongoose");
 
+let autoLeaveMessageSchema  = new mongoose.Schema({
+    active: { type: Boolean, default: false },
+    channel: { type: String, default: "" },
+    message: { type: String, default: "Farewell ${@USER}. We'll miss you." },
+})
 
 let autoJoinMessageSchema  = new mongoose.Schema({
     active: { type: Boolean, default: false },
@@ -72,8 +77,9 @@ let guildSchema = new mongoose.Schema({
     emojiboards: [ 
         { type: emojiboardSchema, required: true }
     ],
-    ajm: { type: autoJoinMessageSchema, required: true },
-    config: { type: guildConfigSchema, required: true },
+    alm: { type: autoLeaveMessageSchema },
+    ajm: { type: autoJoinMessageSchema },
+    config: { type: guildConfigSchema },
     autoJoinRoles: [ String ],
     groupmute: String,
     disableAntiHack: Boolean,
@@ -93,6 +99,7 @@ guildSchema.post('findOneAndUpdate', async function (doc) {
 
         ensureField(doc, needsUpdate, "config", {});
         ensureField(doc, needsUpdate, "ajm", {});
+        ensureField(doc, needsUpdate, "alm", {});
         ensureField(doc, needsUpdate, "emojiboards", []);
 
         if (needsUpdate.length > 0) {
