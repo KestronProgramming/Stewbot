@@ -1,6 +1,6 @@
 // #region CommandBoilerplate
 const Categories = require("./modules/Categories");
-const { Guilds, Users, guildByID, userByID, guildByObj, userByObj } = require("./modules/database.js")
+const { Guilds, Users, GuildUsers, guildByID, userByID, guildUserByID, guildByObj, userByObj, guildUserByObj } = require("./modules/database.js")
 const { ContextMenuCommandBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
 function applyContext(context={}) {
     for (key in context) {
@@ -39,7 +39,7 @@ module.exports = {
     async execute(cmd, context) {
         applyContext(context);
         
-        const guild = await guildByObj(cmd.guildId);
+        const guild = await guildByObj(cmd.guild);
 
         if (cmd.options.getBoolean("auto_delete") !== null) 
             guild.config.antihack_auto_delete = cmd.options.getBoolean("auto_delete");
@@ -108,29 +108,34 @@ module.exports = {
                     // NOTE: To avoid spam when we only have delete perms, we only warn when this user hits a hash streak of 3. 
                     const toNotify = cache[msg.author.id].hashStreak == 3;
                     
+                    const user = await userByObj(msg.author);
+                    const userInGuild = await guildUserByObj(msg.guild, msg.author.id);
+
                     // Handle this user
-                    storage[msg.author.id].captcha=true;
+                    user.captcha=true;
                     var botInServer=msg.guild?.members.cache.get(client.user.id);
                     if (
                         !guild.disableAntiHack && 
-                        new Date() - (guild.users[msg.author.id].safeTimestamp || 0) > 60000 * 60 * 24 * 7
+                        new Date() - (userInGuild.safeTimestamp || 0) > 60000 * 60 * 24 * 7
                     ) {
                         // Timeout if we have perms
                         if (timeoutable) {
-                            msg.member.timeout(60000*60*24,`Detected spam activity of high profile pings and/or a URL of some kind. Automatically applied for safety.`);//One day, by then any automated hacks should've run their course
-                            if(!storage[msg.author.id].hasOwnProperty("timedOutIn")) storage[msg.author.id].timedOutIn=[];
-                            storage[msg.author.id].timedOutIn.push(msg.guild.id);
+                            msg.member.timeout(60000*60*24,`Detected spam activity of high profile pings and/or a URL of some kind. Automatically applied for safety.`); //One day, by then any automated hacks should've run their course
+                            user.timedOutIn.push(msg.guild.id);
                         }
-                        
-                        const logChannel = logChannelId 
-                        ? await msg.guild.channels.fetch(logChannelId).catch(() => {
-                            // If this channel was deleted
-                            delete guild.config.antihack_log_channel;
-                            toLog = false;
-                            return msg.channel;
-                        })
-                        : msg.channel;
-                        
+
+                        const logChannel = logChannelId
+                            ? await msg.guild.channels.fetch(logChannelId).catch(() => {
+                                // If this channel doesn't exist (was deleted), disable logging to it
+                                guild.config.antihack_log_channel = "";
+                                guild.config.antihack_to_log = false;
+                                guild.save();
+
+                                toLog = false;
+                                return msg.channel;
+                            })
+                            : msg.channel;
+
                         // Post about this user in this channel
                         if (logChannel.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)) {
                             
@@ -186,14 +191,14 @@ module.exports = {
                                 missingPermissionsMessage = missingPermissions.join("\n-# - ")
                                 missingPermissionsMessage += "\n\n-# Note: this could also be due to my role being below the triggering user, or the triggering user being an administrator."
                             }
-                            
+
                             let timeoutAttemptMessage = timeoutable
-                            ? `I temporarily applied a timeout. To remove this timeout, <@${msg.author.id}> can use ${cmds.captcha.mention} in a DM with me, or a moderator can remove this timeout manually.`
-                            : `I tried to apply a timeout to this account, but either I lack the \`Timeout Members\` permission, my role needs to be dragged above theirs, or they are an administrator. It is advisable to grant me these permissions to defend against spam and hacked accounts.`
-                            
+                                ? `I temporarily applied a timeout. To remove this timeout, <@${msg.author.id}> can use ${cmds.captcha.mention} in a DM with me, or a moderator can remove this timeout manually.`
+                                : `I tried to apply a timeout to this account, but either I lack the \`Timeout Members\` permission, my role needs to be dragged above theirs, or they are an administrator. It is advisable to grant me these permissions to defend against spam and hacked accounts.`
+
                             let autoDeleteNotice = autoDelete
-                            ? " which has since been automatically deleted"
-                            : ""
+                                ? " which has since been automatically deleted"
+                                : ""
                             
                             const components = [ ]
                             
@@ -244,7 +249,7 @@ module.exports = {
 
         const guild = await guildByObj(cmd.guild);
 
-        if (storage[cmd.guildId].disableAntiHack) return cmd.reply({content:`AntiHack protection has been disabled for this servers.`, ephemeral:true});
+        if (guild.disableAntiHack) return cmd.reply({content:`AntiHack protection has been disabled for this servers.`, ephemeral:true});
         applyContext(context);
         
         if(cmd.customId?.startsWith("ban-")) {
@@ -279,16 +284,20 @@ module.exports = {
                     }
                 }
             }
-            else{
+            else {
                 cmd.reply({content:`You do not have sufficient permissions to ban members.`,ephemeral:true});
             }
         }
         
         if(cmd.customId?.startsWith("untimeout-")){
-            if(cmd.member.permissions.has(PermissionFlagsBits.ModerateMembers)){
-                storage[cmd.guild.id].users[cmd.customId.split("-")[1]].safeTimestamp=new Date();
-                var target=cmd.guild.members.cache.get(cmd.customId.split("-")[1]);
-                if(target){
+            if(cmd.member.permissions.has(PermissionFlagsBits.ModerateMembers)) {
+
+                var target = await cmd.guild.members.fetch(cmd.customId.split("-")[1]).catch(_ => null);
+                if (target) {
+                    await guildUserByObj(cmd.guild, cmd.customId.split("-")[1], {
+                        safeTimestamp: new Date()
+                    });
+
                     target.timeout(null);
                     cmd.message.delete();
                 }

@@ -2,6 +2,17 @@
 /// This file connects to the DB, registers global utility functions, etc
 /// This file is heavily annotated for intellisense
 ////////
+/// Notes:
+/// 
+/// - guildUserSchema:
+///   This is the per-guild per-user object for user specific storage in-guild. 
+///   This is not stored under the guild directly because each document can only have 16MB
+///   On top of that, it's just easier to store users on their own and index by the userID
+///   because then it can auto-populate on fetch.
+///
+///
+
+
 const mongoose = require("mongoose");
 
 let emojiboardSchema = new mongoose.Schema({
@@ -14,15 +25,31 @@ let emojiboardSchema = new mongoose.Schema({
     posters: mongoose.Schema.Types.Mixed, // TODO: Figure out format / type
 })
 
+// See notes at the top
 let guildUserSchema = new mongoose.Schema({
-    safeTimestamp: Number,
-
+    userId: {
+        type: String,
+        required: true,
+        unique: true,
+        index: true,
+        trim: true,
+        match: [/\d+/, "Error: ServerID must be digits only"]
+    },
+    guildId: {
+        type: String,
+        required: true,
+        unique: true,
+        index: true,
+        trim: true,
+        match: [/\d+/, "Error: UserID must be digits only"]
+    },
+    safeTimestamp: { type: Number, default: 0},
 })
 
 let guildConfigSchema = new mongoose.Schema({
-    antihack_log_channel: String,
-    antihack_to_log: Boolean,
-    antihack_auto_delete: Boolean,
+    antihack_log_channel: { type: String, default: "" },
+    antihack_to_log: { type: Boolean, default: false},
+    antihack_auto_delete: { type: Boolean, default: true},
 });
 
 let guildSchema = new mongoose.Schema({
@@ -34,15 +61,49 @@ let guildSchema = new mongoose.Schema({
         trim: true,
         match: [/\d+/, "Error: ServerID must be digits only"]
     },
-    user: {
-        type: Map,
-        of: guildUserSchema
+    emojiboards: [ 
+        { type: emojiboardSchema, required: true }
+    ],
+    groupmute: String,
+    config: { 
+        type: guildConfigSchema, 
+        required: true,
+        default: () => ({})
     },
-    emojiboards: [ emojiboardSchema ],
-    groupmute: { type: String },
-    config: guildConfigSchema,
     disableAntiHack: Boolean,
 });
+
+// Create default objects when we fetch them with findOneAndUpdate and upserting
+guildSchema.pre('findOneAndUpdate', function (next) {
+    const options = this.getOptions();
+
+    if (options.upsert) {
+        const update = this.getUpdate();
+
+        options.setDefaultsOnInsert = true;
+
+        // Initialize $setOnInsert if it doesn't exist
+        if (!update.$setOnInsert) {
+            update.$setOnInsert = {};
+        }
+
+        // Ensure props are initialized, if not explicitly set in update
+        if (!update.config && !update.$set?.config) {
+            update.$setOnInsert.config = {};
+        }
+
+        if (!update.users && !update.$set?.users) {
+            update.$setOnInsert.users = {};
+        }
+
+        if (!update.emojiboards && !update.$set?.emojiboards) {
+            update.$setOnInsert.emojiboards = [];
+        }
+    }
+
+    next();
+});
+
 
 let userSchema = new mongoose.Schema({
     id: {
@@ -59,6 +120,7 @@ let userSchema = new mongoose.Schema({
 
 
 const Guilds = mongoose.model("guilds", guildSchema);
+const GuildUsers = mongoose.model("guildusers", guildUserSchema);
 const Users = mongoose.model("users", userSchema)
 
 
@@ -84,7 +146,7 @@ async function guildByObj(obj) {
         const cachedGuild = obj._dbObject;
         return cachedGuild;
     }
-    const guild = guildByID(obj.id);
+    const guild = await guildByID(obj.id);
     obj._dbObject = guild;
     return guild;
 }
@@ -108,16 +170,59 @@ async function userByObj(obj) {
         const cachedUser = obj._dbObject;
         return cachedUser;
     }
-    const user = userByID(obj.id);
+    const user = await userByID(obj.id);
     obj._dbObject = user;
     return user;
 }
+
+async function guildUserByID(guildId, userId) {
+    // Fetch a guild from the DB, and create it if it does not already exist
+
+    const guild = await GuildUsers.findOneAndUpdate({ guildId, userId }, {}, {
+        new: true,
+        upsert: true,
+        setDefaultsOnInsert: true
+    });
+    
+    return guild;
+}
+
+/** @returns {Promise<import("mongoose").HydratedDocument<import("mongoose").InferSchemaType<typeof guildUserSchema>>>} */
+async function guildUserByObj(guild, userID, updateData={}) {
+    // updateData is json of fields that should be set to specific data.
+
+    if (guild[`_db${userID}`]) {
+        Object.assign(guild[`_db${userID}`], updateData);
+        return guild[`_db${userID}`].save();
+    }
+
+    // Ensure the user exists in the server first
+    const serverUser = await guild.members.fetch(userID).catch(() => null);
+    if (!serverUser) return null;
+
+    // Fetch and update in one query
+    const user = await GuildUsers.findOneAndUpdate(
+        { guildId: guild.id, userId: userID },
+        { $set: updateData },
+        { new: true, upsert: true, setDefaultsOnInsert: true }
+    );
+
+    guild[`_db${userID}`] = user;
+    return user;
+}
+
+
 
 module.exports = {
     Guilds,
     guildByID,
     guildByObj,
+
     Users,
     userByID,
     userByObj,
+
+    GuildUsers,
+    // guildUserByID, // This function is less preferred, as it does not internally cache or check for guild member existence first 
+    guildUserByObj
 }
