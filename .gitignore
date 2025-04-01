@@ -5,6 +5,7 @@ errorLogs/*
 data/filterCache
 env.json
 node_modules
+checkmate.js
 tempDne.jpg
 tempPoll.png
 Database
