@@ -308,8 +308,8 @@ export function guildByID(id: any): Promise<mongoose.Document<unknown, {}, {
 } & {
     __v: number;
 }>;
-/** @returns {Promise<import("mongoose").InferSchemaType<typeof guildSchema>>} */
-export function guildByObj(obj: any): Promise<import("mongoose").InferSchemaType<typeof guildSchema>>;
+/** @returns {Promise<import("mongoose").HydratedDocument<import("mongoose").InferSchemaType<typeof guildSchema>>>} */
+export function guildByObj(obj: any): Promise<import("mongoose").HydratedDocument<import("mongoose").InferSchemaType<typeof guildSchema>>>;
 export const Users: mongoose.Model<{
     id: string;
     timedOutIn: string[];
@@ -356,25 +356,8 @@ export function userByID(id: any): Promise<mongoose.Document<unknown, {}, {
 } & {
     __v: number;
 }>;
-/** @returns {Promise<import("mongoose").InferSchemaType<typeof userSchema>>} */
-export function userByObj(obj: any): Promise<import("mongoose").InferSchemaType<typeof userSchema>>;
-export let guildConfigSchema: mongoose.Schema<any, mongoose.Model<any, any, any, any, any, any>, {}, {}, {}, {}, mongoose.DefaultSchemaOptions, {
-    antihack_log_channel?: string | null | undefined;
-    antihack_to_log?: boolean | null | undefined;
-    antihack_auto_delete?: boolean | null | undefined;
-}, mongoose.Document<unknown, {}, mongoose.FlatRecord<{
-    antihack_log_channel?: string | null | undefined;
-    antihack_to_log?: boolean | null | undefined;
-    antihack_auto_delete?: boolean | null | undefined;
-}>> & mongoose.FlatRecord<{
-    antihack_log_channel?: string | null | undefined;
-    antihack_to_log?: boolean | null | undefined;
-    antihack_auto_delete?: boolean | null | undefined;
-}> & {
-    _id: mongoose.Types.ObjectId;
-} & {
-    __v: number;
-}>;
+/** @returns {Promise<import("mongoose").HydratedDocument<import("mongoose").InferSchemaType<typeof userSchema>>>} */
+export function userByObj(obj: any): Promise<import("mongoose").HydratedDocument<import("mongoose").InferSchemaType<typeof userSchema>>>;
 import mongoose = require("mongoose");
 declare let guildSchema: mongoose.Schema<any, mongoose.Model<any, any, any, any, any, any>, {}, {}, {}, {}, mongoose.DefaultSchemaOptions, {
     id: string;

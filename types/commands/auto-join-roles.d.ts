@@ -16,4 +16,5 @@ export namespace data {
 /** @param {import('discord.js').Interaction} cmd */
 export function execute(cmd: import("discord.js").Interaction, context: any): Promise<void>;
 export let subscribedButtons: string[];
-export function onbutton(cmd: any, context: any): Promise<void>;
+/** @param {import('discord.js').ButtonInteraction} cmd */
+export function onbutton(cmd: import("discord.js").ButtonInteraction, context: any): Promise<void>;

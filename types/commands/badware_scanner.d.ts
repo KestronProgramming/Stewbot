@@ -1,4 +1,5 @@
 export function updateBlocklists(): void;
+import { MessageReaction } from "discord.js";
 export declare namespace data {
     let command: import("discord.js").SlashCommandOptionsOnlyBuilder;
     namespace extra {
@@ -14,5 +15,6 @@ export declare namespace data {
 }
 /** @param {import('discord.js').Interaction} cmd */
 export declare function execute(cmd: import("discord.js").Interaction, context: any): Promise<void>;
-export declare function onmessage(msg: any, context: any): Promise<any>;
+/** @param {import('discord.js').Message} msg */
+export declare function onmessage(msg: import("discord.js").Message, context: any): Promise<MessageReaction | import("discord.js").OmitPartialGroupDMChannel<import("discord.js").Message<boolean>> | undefined>;
 export declare function daily(context: any): Promise<void>;

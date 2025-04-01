@@ -13,4 +13,5 @@ export namespace data {
 }
 /** @param {import('discord.js').Interaction} cmd */
 export function execute(cmd: import("discord.js").Interaction, context: any): Promise<void>;
-export function onmessage(msg: any, context: any): Promise<void>;
+/** @param {import('discord.js').Message} msg */
+export function onmessage(msg: import("discord.js").Message, context: any): Promise<void>;
