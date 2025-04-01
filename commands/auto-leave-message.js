@@ -40,18 +40,22 @@ module.exports = {
 	/** @param {import('discord.js').Interaction} cmd */
     async execute(cmd, context) {
 		applyContext(context);
+
+		const guild = await guildByObj(cmd.guild);
 		
-		if(!storage[cmd.guildId].hasOwnProperty("alm")){
-			storage[cmd.guild.id].alm=structuredClone(defaultGuild.alm);
-		}
-		storage[cmd.guildId].alm.active=cmd.options.getBoolean("active");
-		storage[cmd.guildId].alm.channel=cmd.options.getChannel("channel").id;
+		guild.alm.active=cmd.options.getBoolean("active");
+		guild.alm.channel=cmd.options.getChannel("channel").id;
+
 		var disclaimers=[];
-		if(!client.channels.cache.get(storage[cmd.guildId].alm.channel).permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
-			storage[cmd.guildId].alm.active=false;
+		if(!client.channels.cache.get(guild.alm.channel).permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
+			guild.alm.active=false;
 			disclaimers.push(`I can't post in the specified channel, so I cannot run auto leave messages.`);
 		}
-		if(cmd.options.getString("message")!==null) storage[cmd.guildId].alm.message=checkDirty(config.homeServer,cmd.options.getString("message"),true)[1];
+
+		if (cmd.options.getString("message") !== null) 
+			guild.alm.message = checkDirty(config.homeServer, cmd.options.getString("message"), true)[1];
+		
+		await guild.save();
 		cmd.followUp(`Auto leave messages configured.${disclaimers.map(d=>`\n\n${d}`).join("")}`);
 	}
 };
