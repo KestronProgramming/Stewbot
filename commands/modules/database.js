@@ -72,10 +72,10 @@ let guildSchema = new mongoose.Schema({
     emojiboards: [ 
         { type: emojiboardSchema, required: true }
     ],
-    groupmute: String,
-    config: { type: guildConfigSchema, required: true },
     ajm: { type: autoJoinMessageSchema, required: true },
-
+    config: { type: guildConfigSchema, required: true },
+    autoJoinRoles: [ String ],
+    groupmute: String,
     disableAntiHack: Boolean,
 });
 
@@ -126,27 +126,29 @@ const Users = mongoose.model("users", userSchema)
 
 // Utility functions
 
-
-async function guildByID(id) {
+async function guildByID(id, updates={}) {
     // Fetch a guild from the DB, and create it if it does not already exist
-
-    const guild = await Guilds.findOneAndUpdate({ id }, {}, {
-        new: true,
-        upsert: true,
-        setDefaultsOnInsert: true
-    });
+    const guild = await Guilds.findOneAndUpdate(
+        { id }, 
+        { $set: updates },
+        {
+            new: true,
+            upsert: true,
+            setDefaultsOnInsert: true
+        }
+    );
     
     return guild;
 }
 
 /** @returns {Promise<import("mongoose").HydratedDocument<import("mongoose").InferSchemaType<typeof guildSchema>>>} */
-async function guildByObj(obj) {
-    // Grab the DB object associated to this guild object, but with cache
-    if (obj._dbObject) {
-        const cachedGuild = obj._dbObject;
-        return cachedGuild;
+async function guildByObj(obj, updates={}) {
+    // Grab the DB object associated with this guild object, but with cache
+    if (obj._dbObject && Object.keys(updates).length === 0) {
+        return obj._dbObject;
     }
-    const guild = await guildByID(obj.id);
+    
+    const guild = await guildByID(obj.id, updates);
     obj._dbObject = guild;
     return guild;
 }
