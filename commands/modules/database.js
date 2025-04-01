@@ -15,6 +15,14 @@
 
 const mongoose = require("mongoose");
 
+
+let autoJoinMessageSchema  = new mongoose.Schema({
+    active: { type: Boolean, default: false },
+    channel: { type: String, default: "" },
+    dm: { type: Boolean, default: true },
+    message: { type: String, default: "Greetings ${@USER}! Welcome to the server!" },
+})
+
 let emojiboardSchema = new mongoose.Schema({
     emoji: { type: String, unique: true, trim: true },
     messType: String,
@@ -65,44 +73,36 @@ let guildSchema = new mongoose.Schema({
         { type: emojiboardSchema, required: true }
     ],
     groupmute: String,
-    config: { 
-        type: guildConfigSchema, 
-        required: true,
-        default: () => ({})
-    },
+    config: { type: guildConfigSchema, required: true },
+    ajm: { type: autoJoinMessageSchema, required: true },
+
     disableAntiHack: Boolean,
 });
 
-// Create default objects when we fetch them with findOneAndUpdate and upserting
-guildSchema.pre('findOneAndUpdate', function (next) {
-    const options = this.getOptions();
+// Make sure each doc subfield exists
+function ensureField(doc, needsUpdate, field, defaultValue) {
+    if (!doc[field]) {
+        doc[field] = defaultValue;
+        needsUpdate.push(field);
+    }
+}
+guildSchema.post('findOneAndUpdate', async function (doc) {
+    // This middlware only runs on findOneAndUpdate calls.
+    if (doc) {
+        const needsUpdate = [];
 
-    if (options.upsert) {
-        const update = this.getUpdate();
+        ensureField(doc, needsUpdate, "config", {});
+        ensureField(doc, needsUpdate, "ajm", {});
+        ensureField(doc, needsUpdate, "emojiboards", []);
 
-        options.setDefaultsOnInsert = true;
-
-        // Initialize $setOnInsert if it doesn't exist
-        if (!update.$setOnInsert) {
-            update.$setOnInsert = {};
-        }
-
-        // Ensure props are initialized, if not explicitly set in update
-        if (!update.config && !update.$set?.config) {
-            update.$setOnInsert.config = {};
-        }
-
-        if (!update.users && !update.$set?.users) {
-            update.$setOnInsert.users = {};
-        }
-
-        if (!update.emojiboards && !update.$set?.emojiboards) {
-            update.$setOnInsert.emojiboards = [];
+        if (needsUpdate.length > 0) {
+            await doc.updateOne({ 
+                $set: needsUpdate.reduce((acc, field) => ({ ...acc, [field]: doc[field] }), {}) 
+            });
         }
     }
-
-    next();
 });
+
 
 
 let userSchema = new mongoose.Schema({
