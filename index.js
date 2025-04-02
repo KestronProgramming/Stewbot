@@ -1,6 +1,8 @@
 // Stewbot main file.
 // This file imports everything, dispatches events to the files they need to go to, and handles overall bot logic.
 
+// TODO: remember to reenable storage backups as soon as I am on solid wifi again.
+
 const bootedAt = Date.now();
 
 //#region Startup
@@ -643,9 +645,9 @@ client.once("ready",async ()=>{
     
     // (Later) Once backup.js fully imports, start the backup thread
     startBackupThreadPromise.then( startBackupThread => {
-        startBackupThread("./storage.json", 60*60*1000, error => {
-            notify(String(error));
-        }, true)
+        // startBackupThread("./storage.json", 60*60*1000, error => {
+        //     notify(String(error));
+        // }, true)
     })
 
     uptime=Math.round(Date.now()/1000);

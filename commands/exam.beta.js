@@ -77,7 +77,10 @@ module.exports = {
         // }
 
         const guild = await guildByObj(cmd.guild);
-        cmd.followUp(JSON.stringify(guild.toObject(), null, 4));
+        
+        const guild2 = await guildByObj(cmd.guild);
+
+        cmd.followUp(JSON.stringify(guild.toJSON(), null, 4));
     },
 
     /** @param {import('discord.js').Message} msg */

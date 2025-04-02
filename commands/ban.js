@@ -9,44 +9,65 @@ function applyContext(context={}) {
 }
 // #endregion CommandBoilerplate
 
-async function finTempBan(guild,who,force){
-    if(!storage[guild].tempBans.hasOwnProperty(who)){
-        return;
-    }
-    if(storage[guild].tempBans[who].ends>Date.now()+10000&&!force){
-        if(storage[guild].tempBans[who].ends-Date.now()<60000*60*24){
-            setTimeout(()=>{finTempBan(guild,who)},storage[guild].tempBans[who].ends-Date.now());
-        }
-        return;
-    }
-    var g=client.guilds.cache.get(guild);
-    if(g===null||g===undefined){
-        try{
-            client.users.cache.get(storage[guild].tempBans[who].invoker).send(`I was unable to unban <@${who}>.`).catch(e=>{});
-        }
-        catch(e){}
-        delete storage[guild].tempBans[who];
-        return;
-    }
-    if(!g.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.BanMembers)){
-        try{
-            client.users.cache.get(storage[guild].tempBans[who].invoker).send(`I no longer have permission to unban <@${who}>.`).catch(e=>{});
-        }
-        catch(e){}
-        delete storage[guild].tempBans[who];
-        return;
-    }
-    try{
-        g.members.unban(who).catch(e=>{});
-    }
-    catch(e){}
-    if(!storage[guild].tempBans[who].private){
-        try{
-            client.users.cache.get(who).send(`You have been unbanned in ${g.name}.`).catch(e=>{});
-        }
-        catch(e){}
-    }
-    delete storage[guild].tempBans[who];
+async function finTempBan(guildId, who, force) {
+	const guildDB = await guildByID(guildId);
+
+	const bannedUser = guildDB.tempBans.get(who);
+
+	if (!guildDB.tempBans.get(who)) {
+		return;
+	}
+
+	if (bannedUser.ends > Date.now() + 10000 && !force) {
+		if (bannedUser.ends - Date.now() < 60000 * 60 * 24) {
+			setTimeout(() => { finTempBan(guildId, who) }, bannedUser.ends - Date.now());
+		}
+		return;
+	}
+
+	var guild = await client.guilds.fetch(guildId);
+	if (guild === null || guild === undefined) {
+		try {
+			client.users.fetch(bannedUser.invoker).then(user=>user.send(`I was unable to unban <@${who}>.`)).catch(e => { });
+		} catch (e) { }
+
+		guildDB.tempBans.delete(who);
+		guildDB.markModified("tempBans");
+
+		await guildDB.save();
+		return;
+	}
+	if (!guild.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.BanMembers)) {
+		try {
+			client.users.fetch(bannedUser.invoker)
+				.then(user => user.send(`I no longer have permission to unban <@${who}>.`))
+				.catch(e => { });
+		} catch (e) { }
+
+
+		guildDB.tempBans.delete(who);
+		guildDB.markModified("tempBans");
+
+		await guildDB.save();
+		return;
+	}
+
+	try {
+		guild.members.unban(who).catch(e => { });
+	} catch (e) { }
+
+	if (!bannedUser.private) {
+		try {
+			client.users.cache.get(who).send(`You have been unbanned in ${guild.name}.`).catch(e => { });
+		} catch (e) { }
+	}
+
+	guildDB.tempBans.delete(who);
+	guildDB.markModified("tempBans");
+
+	// guildDB.tempBans.set(who, undefined);
+
+	await guildDB.save();
 }
 
 module.exports = {
@@ -85,10 +106,6 @@ module.exports = {
     async execute(cmd, context) {
 		applyContext(context);
 
-		// OPTIMIZE: the following .fetch is needed so that a cached user can't 
-		//   just use mod commands right after being demoted, as I understand it.
-		//  In theory we could possible watch for changes and invalidate cache? 
-		//  The same goes for /kick
 		cmd.guild.members.fetch(cmd.user.id);
 
 		const targetMember = cmd.guild.members.cache.get(cmd.options.getUser("target").id);
@@ -115,8 +132,8 @@ module.exports = {
 			cmd.followUp(`I cannot ban you as the one invoking the command. If you feel the need to ban yourself, consider changing your actions and mindset instead.`);
 			return;
 		}
-		var b=cmd.guild.members.cache.get(targetMember.id);
-		if(b===null||b===undefined){
+		var targetInServer=cmd.guild.members.cache.get(targetMember.id);
+		if(targetInServer===null||targetInServer===undefined){
 			cmd.followUp({content:`I couldn't find <@${targetMember.id}>.`,allowedMentions:{parse:[]}});
 			return;
 		}
@@ -127,11 +144,13 @@ module.exports = {
 		if(timer>0){
 			temp=true;
 		}
-		if(!b.bannable){
+		if(!targetInServer.bannable){
 			cmd.followUp(`I cannot ban this person. Make sure that I have a role higher than their highest role in the server settings before running this command.`);
 			return;
 		}
-		b.ban({reason:`Instructed to ${temp?`temporarily `:``}ban by ${cmd.user.username}${reason ? ": "+reason: "."}`});
+		
+		// targetInServer.ban({reason:`Instructed to ${temp?`temporarily `:``}ban by ${cmd.user.username}${reason ? ": "+reason: "."}`});
+		
 		if(cmd.options.getBoolean("private")===null||!cmd.options.getBoolean("private")){
 			try{
 				cmd.options.getUser("target").send({content:`## ${temp?`Temporarily b`:`B`}anned in ${cmd.guild.name}.${temp?`\n\nThis ban will expire <t:${Math.round((Date.now()+timer)/1000)}:R>, at <t:${Math.round((Date.now()+timer)/1000)}:f>.`:``}`,embeds:[{
@@ -147,25 +166,32 @@ module.exports = {
 					footer: {
 						text: `Banned in ${cmd.guild.name}`
 					}
-				}]});
+				}]}).catch(_ => {});
 			}
 			catch(e){}
 		}
+
 		if(temp){
-			if(!storage[cmd.guild.id].hasOwnProperty("tempBans")) storage[cmd.guild.id].tempBans={};
-			storage[cmd.guild.id].tempBans[b.id]={
-				ends:Date.now()+timer,
-				reason:reason?checkDirty(config.homeServer,reason,true)[1]:`Unspecified reason.`,
-				invoker:cmd.user.id,//If we can't unban the person at the end of the time, try to DM the one who banned them
-				private:cmd.options.getBoolean("private")!==null?cmd.options.getBoolean("private"):false
+			const tempBanData = {
+				ends: Date.now() + timer,
+				reason: reason ? checkDirty(config.homeServer, reason, true)[1] : `Unspecified reason.`,
+				invoker: cmd.user.id, //If we can't unban the person at the end of the time, try to DM the one who banned them
+				private: cmd.options.getBoolean("private") !== null ? cmd.options.getBoolean("private") : false ?? false
 			};
-			if(timer<=60000*60*24){
-				setTimeout(()=>{finTempBan(cmd.guild.id,b.id)},timer);
+
+			const guildDoc = await guildByObj(cmd.guild);
+			guildDoc.tempBans.set(targetInServer.id, tempBanData);
+			guildDoc.markModified("tempBans");
+			await guildDoc.save();			
+		
+			if (timer <= 60000 * 60 * 24) {
+				setTimeout(() => { finTempBan(cmd.guild.id, targetInServer.id) }, timer);
 			}
 		}
 		var comps=[];
+
 		if(temp){
-			comps=[new ActionRowBuilder().addComponents(new ButtonBuilder().setStyle(ButtonStyle.Danger).setLabel("Unban Now").setCustomId(`unban-${b.id}`))];
+			comps=[new ActionRowBuilder().addComponents(new ButtonBuilder().setStyle(ButtonStyle.Danger).setLabel("Unban Now").setCustomId(`unban-${targetInServer.id}`))];
 		}
 		cmd.followUp({content:`I have ${temp?`temporarily `:``}banned <@${cmd.options.getUser("target").id}>${temp?` until <t:${Math.round((Date.now()+timer)/1000)}:f> <t:${Math.round((Date.now()+timer)/1000)}:R>`:``}.`,components:comps});
 	},
