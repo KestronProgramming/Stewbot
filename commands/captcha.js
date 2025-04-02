@@ -73,24 +73,30 @@ module.exports = {
 			if(action==="done"){
 				if(cmd.message.content.split("Entered: ")[1].replaceAll("`","")===cmd.message.content.split("`")[1]){
 					cmd.update({content:`Thank you.`,components:[]});
-					storage[cmd.user.id].captcha=false;
-					storage[cmd.user.id].lastHash="";
-					storage[cmd.user.id].hashStreak=0;
-					if(!storage[cmd.user.id].hasOwnProperty("timedOutIn")) storage[cmd.user.id].timedOutIn=[];
-					for(var to=0;to<storage[cmd.user.id].timedOutIn.length;to++){
+					
+					const user = await userByObj(cmd.user);
+
+					user.captcha=false;
+					user.lastHash="";
+					user.hashStreak=0;
+					for(var to=0;to<user.timedOutIn.length;to++){
 						try{
-							client.guilds.cache.get(storage[cmd.user.id].timedOutIn[to]).members.fetch().then(members=>{
-								members.forEach(m=>{
-									if(m.id===cmd.user.id){
-										m.timeout(null);
-										storage[m.guild.id].users[m.id].safeTimestamp=new Date();
-									}
+							client.guilds.fetch(user.timedOutIn[to]).then(guild=>{
+								guild.members.fetch().then(members=>{
+									members.forEach(m=>{
+										if(m.id===cmd.user.id){
+											m.timeout(null);
+											storage[m.guild.id].users[m.id].safeTimestamp=new Date();
+										}
+									});
 								});
 							});
 						}catch(e){console.log(e)}
-						storage[cmd.user.id].timedOutIn.splice(to,1);
+						user.timedOutIn.splice(to,1);
 						to--;
 					}
+
+					user.save();
 				}
 				else{
 					cmd.message.delete();
