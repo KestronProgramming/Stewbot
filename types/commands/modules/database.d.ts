@@ -34,20 +34,34 @@ export const Guilds: mongoose.Model<{
         } | null | undefined;
         required?: unknown;
     }>;
-    ajm: {
+    autoJoinRoles: string[];
+    blockedCommands: string[];
+    groupmute?: string | null | undefined;
+    disableAntiHack?: boolean | null | undefined;
+    tempBans?: Map<string, {
+        private: boolean;
+        invoker?: string | null | undefined;
+        ends?: number | null | undefined;
+        reason?: string | null | undefined;
+    }> | null | undefined;
+    alm?: {
         active: boolean;
         channel: string;
-        dm: boolean;
         message: string;
-    };
-    config: {
+    } | null | undefined;
+    ajm?: {
+        active: boolean;
+        channel: string;
+        message: string;
+        dm: boolean;
+    } | null | undefined;
+    config?: {
         antihack_log_channel: string;
         antihack_to_log: boolean;
         antihack_auto_delete: boolean;
-    };
-    autoJoinRoles: string[];
-    groupmute?: string | null | undefined;
-    disableAntiHack?: boolean | null | undefined;
+        domain_scanning: boolean;
+        fake_link_check: boolean;
+    } | null | undefined;
 }, {}, {}, {}, mongoose.Document<unknown, {}, {
     id: string;
     emojiboards: mongoose.Types.DocumentArray<{
@@ -84,20 +98,34 @@ export const Guilds: mongoose.Model<{
         } | null | undefined;
         required?: unknown;
     }>;
-    ajm: {
+    autoJoinRoles: string[];
+    blockedCommands: string[];
+    groupmute?: string | null | undefined;
+    disableAntiHack?: boolean | null | undefined;
+    tempBans?: Map<string, {
+        private: boolean;
+        invoker?: string | null | undefined;
+        ends?: number | null | undefined;
+        reason?: string | null | undefined;
+    }> | null | undefined;
+    alm?: {
         active: boolean;
         channel: string;
-        dm: boolean;
         message: string;
-    };
-    config: {
+    } | null | undefined;
+    ajm?: {
+        active: boolean;
+        channel: string;
+        message: string;
+        dm: boolean;
+    } | null | undefined;
+    config?: {
         antihack_log_channel: string;
         antihack_to_log: boolean;
         antihack_auto_delete: boolean;
-    };
-    autoJoinRoles: string[];
-    groupmute?: string | null | undefined;
-    disableAntiHack?: boolean | null | undefined;
+        domain_scanning: boolean;
+        fake_link_check: boolean;
+    } | null | undefined;
 }> & {
     id: string;
     emojiboards: mongoose.Types.DocumentArray<{
@@ -134,20 +162,34 @@ export const Guilds: mongoose.Model<{
         } | null | undefined;
         required?: unknown;
     }>;
-    ajm: {
+    autoJoinRoles: string[];
+    blockedCommands: string[];
+    groupmute?: string | null | undefined;
+    disableAntiHack?: boolean | null | undefined;
+    tempBans?: Map<string, {
+        private: boolean;
+        invoker?: string | null | undefined;
+        ends?: number | null | undefined;
+        reason?: string | null | undefined;
+    }> | null | undefined;
+    alm?: {
         active: boolean;
         channel: string;
-        dm: boolean;
         message: string;
-    };
-    config: {
+    } | null | undefined;
+    ajm?: {
+        active: boolean;
+        channel: string;
+        message: string;
+        dm: boolean;
+    } | null | undefined;
+    config?: {
         antihack_log_channel: string;
         antihack_to_log: boolean;
         antihack_auto_delete: boolean;
-    };
-    autoJoinRoles: string[];
-    groupmute?: string | null | undefined;
-    disableAntiHack?: boolean | null | undefined;
+        domain_scanning: boolean;
+        fake_link_check: boolean;
+    } | null | undefined;
 } & {
     _id: mongoose.Types.ObjectId;
 } & {
@@ -188,20 +230,34 @@ export const Guilds: mongoose.Model<{
         } | null | undefined;
         required?: unknown;
     }>;
-    ajm: {
+    autoJoinRoles: string[];
+    blockedCommands: string[];
+    groupmute?: string | null | undefined;
+    disableAntiHack?: boolean | null | undefined;
+    tempBans?: Map<string, {
+        private: boolean;
+        invoker?: string | null | undefined;
+        ends?: number | null | undefined;
+        reason?: string | null | undefined;
+    }> | null | undefined;
+    alm?: {
         active: boolean;
         channel: string;
-        dm: boolean;
         message: string;
-    };
-    config: {
+    } | null | undefined;
+    ajm?: {
+        active: boolean;
+        channel: string;
+        message: string;
+        dm: boolean;
+    } | null | undefined;
+    config?: {
         antihack_log_channel: string;
         antihack_to_log: boolean;
         antihack_auto_delete: boolean;
-    };
-    autoJoinRoles: string[];
-    groupmute?: string | null | undefined;
-    disableAntiHack?: boolean | null | undefined;
+        domain_scanning: boolean;
+        fake_link_check: boolean;
+    } | null | undefined;
 }, mongoose.Document<unknown, {}, mongoose.FlatRecord<{
     id: string;
     emojiboards: mongoose.Types.DocumentArray<{
@@ -238,20 +294,34 @@ export const Guilds: mongoose.Model<{
         } | null | undefined;
         required?: unknown;
     }>;
-    ajm: {
+    autoJoinRoles: string[];
+    blockedCommands: string[];
+    groupmute?: string | null | undefined;
+    disableAntiHack?: boolean | null | undefined;
+    tempBans?: Map<string, {
+        private: boolean;
+        invoker?: string | null | undefined;
+        ends?: number | null | undefined;
+        reason?: string | null | undefined;
+    }> | null | undefined;
+    alm?: {
         active: boolean;
         channel: string;
-        dm: boolean;
         message: string;
-    };
-    config: {
+    } | null | undefined;
+    ajm?: {
+        active: boolean;
+        channel: string;
+        message: string;
+        dm: boolean;
+    } | null | undefined;
+    config?: {
         antihack_log_channel: string;
         antihack_to_log: boolean;
         antihack_auto_delete: boolean;
-    };
-    autoJoinRoles: string[];
-    groupmute?: string | null | undefined;
-    disableAntiHack?: boolean | null | undefined;
+        domain_scanning: boolean;
+        fake_link_check: boolean;
+    } | null | undefined;
 }>> & mongoose.FlatRecord<{
     id: string;
     emojiboards: mongoose.Types.DocumentArray<{
@@ -288,20 +358,34 @@ export const Guilds: mongoose.Model<{
         } | null | undefined;
         required?: unknown;
     }>;
-    ajm: {
+    autoJoinRoles: string[];
+    blockedCommands: string[];
+    groupmute?: string | null | undefined;
+    disableAntiHack?: boolean | null | undefined;
+    tempBans?: Map<string, {
+        private: boolean;
+        invoker?: string | null | undefined;
+        ends?: number | null | undefined;
+        reason?: string | null | undefined;
+    }> | null | undefined;
+    alm?: {
         active: boolean;
         channel: string;
-        dm: boolean;
         message: string;
-    };
-    config: {
+    } | null | undefined;
+    ajm?: {
+        active: boolean;
+        channel: string;
+        message: string;
+        dm: boolean;
+    } | null | undefined;
+    config?: {
         antihack_log_channel: string;
         antihack_to_log: boolean;
         antihack_auto_delete: boolean;
-    };
-    autoJoinRoles: string[];
-    groupmute?: string | null | undefined;
-    disableAntiHack?: boolean | null | undefined;
+        domain_scanning: boolean;
+        fake_link_check: boolean;
+    } | null | undefined;
 }> & {
     _id: mongoose.Types.ObjectId;
 } & {
@@ -343,20 +427,34 @@ export function guildByID(id: any, updates?: {}): Promise<mongoose.Document<unkn
         } | null | undefined;
         required?: unknown;
     }>;
-    ajm: {
+    autoJoinRoles: string[];
+    blockedCommands: string[];
+    groupmute?: string | null | undefined;
+    disableAntiHack?: boolean | null | undefined;
+    tempBans?: Map<string, {
+        private: boolean;
+        invoker?: string | null | undefined;
+        ends?: number | null | undefined;
+        reason?: string | null | undefined;
+    }> | null | undefined;
+    alm?: {
         active: boolean;
         channel: string;
-        dm: boolean;
         message: string;
-    };
-    config: {
+    } | null | undefined;
+    ajm?: {
+        active: boolean;
+        channel: string;
+        message: string;
+        dm: boolean;
+    } | null | undefined;
+    config?: {
         antihack_log_channel: string;
         antihack_to_log: boolean;
         antihack_auto_delete: boolean;
-    };
-    autoJoinRoles: string[];
-    groupmute?: string | null | undefined;
-    disableAntiHack?: boolean | null | undefined;
+        domain_scanning: boolean;
+        fake_link_check: boolean;
+    } | null | undefined;
 }> & {
     id: string;
     emojiboards: mongoose.Types.DocumentArray<{
@@ -393,20 +491,34 @@ export function guildByID(id: any, updates?: {}): Promise<mongoose.Document<unkn
         } | null | undefined;
         required?: unknown;
     }>;
-    ajm: {
+    autoJoinRoles: string[];
+    blockedCommands: string[];
+    groupmute?: string | null | undefined;
+    disableAntiHack?: boolean | null | undefined;
+    tempBans?: Map<string, {
+        private: boolean;
+        invoker?: string | null | undefined;
+        ends?: number | null | undefined;
+        reason?: string | null | undefined;
+    }> | null | undefined;
+    alm?: {
         active: boolean;
         channel: string;
-        dm: boolean;
         message: string;
-    };
-    config: {
+    } | null | undefined;
+    ajm?: {
+        active: boolean;
+        channel: string;
+        message: string;
+        dm: boolean;
+    } | null | undefined;
+    config?: {
         antihack_log_channel: string;
         antihack_to_log: boolean;
         antihack_auto_delete: boolean;
-    };
-    autoJoinRoles: string[];
-    groupmute?: string | null | undefined;
-    disableAntiHack?: boolean | null | undefined;
+        domain_scanning: boolean;
+        fake_link_check: boolean;
+    } | null | undefined;
 } & {
     _id: mongoose.Types.ObjectId;
 } & {
@@ -497,6 +609,27 @@ export const GuildUsers: mongoose.Model<{
 }>>;
 /** @returns {Promise<import("mongoose").HydratedDocument<import("mongoose").InferSchemaType<typeof guildUserSchema>>>} */
 export function guildUserByObj(guild: any, userID: any, updateData?: {}): Promise<import("mongoose").HydratedDocument<import("mongoose").InferSchemaType<typeof guildUserSchema>>>;
+export const ConfigDB: mongoose.Model<{
+    useGlobalGemini: boolean;
+}, {}, {}, {}, mongoose.Document<unknown, {}, {
+    useGlobalGemini: boolean;
+}> & {
+    useGlobalGemini: boolean;
+} & {
+    _id: mongoose.Types.ObjectId;
+} & {
+    __v: number;
+}, mongoose.Schema<any, mongoose.Model<any, any, any, any, any, any>, {}, {}, {}, {}, mongoose.DefaultSchemaOptions, {
+    useGlobalGemini: boolean;
+}, mongoose.Document<unknown, {}, mongoose.FlatRecord<{
+    useGlobalGemini: boolean;
+}>> & mongoose.FlatRecord<{
+    useGlobalGemini: boolean;
+}> & {
+    _id: mongoose.Types.ObjectId;
+} & {
+    __v: number;
+}>>;
 import mongoose = require("mongoose");
 declare let guildSchema: mongoose.Schema<any, mongoose.Model<any, any, any, any, any, any>, {}, {}, {}, {}, mongoose.DefaultSchemaOptions, {
     id: string;
@@ -534,20 +667,34 @@ declare let guildSchema: mongoose.Schema<any, mongoose.Model<any, any, any, any,
         } | null | undefined;
         required?: unknown;
     }>;
-    ajm: {
+    autoJoinRoles: string[];
+    blockedCommands: string[];
+    groupmute?: string | null | undefined;
+    disableAntiHack?: boolean | null | undefined;
+    tempBans?: Map<string, {
+        private: boolean;
+        invoker?: string | null | undefined;
+        ends?: number | null | undefined;
+        reason?: string | null | undefined;
+    }> | null | undefined;
+    alm?: {
         active: boolean;
         channel: string;
-        dm: boolean;
         message: string;
-    };
-    config: {
+    } | null | undefined;
+    ajm?: {
+        active: boolean;
+        channel: string;
+        message: string;
+        dm: boolean;
+    } | null | undefined;
+    config?: {
         antihack_log_channel: string;
         antihack_to_log: boolean;
         antihack_auto_delete: boolean;
-    };
-    autoJoinRoles: string[];
-    groupmute?: string | null | undefined;
-    disableAntiHack?: boolean | null | undefined;
+        domain_scanning: boolean;
+        fake_link_check: boolean;
+    } | null | undefined;
 }, mongoose.Document<unknown, {}, mongoose.FlatRecord<{
     id: string;
     emojiboards: mongoose.Types.DocumentArray<{
@@ -584,20 +731,34 @@ declare let guildSchema: mongoose.Schema<any, mongoose.Model<any, any, any, any,
         } | null | undefined;
         required?: unknown;
     }>;
-    ajm: {
+    autoJoinRoles: string[];
+    blockedCommands: string[];
+    groupmute?: string | null | undefined;
+    disableAntiHack?: boolean | null | undefined;
+    tempBans?: Map<string, {
+        private: boolean;
+        invoker?: string | null | undefined;
+        ends?: number | null | undefined;
+        reason?: string | null | undefined;
+    }> | null | undefined;
+    alm?: {
         active: boolean;
         channel: string;
-        dm: boolean;
         message: string;
-    };
-    config: {
+    } | null | undefined;
+    ajm?: {
+        active: boolean;
+        channel: string;
+        message: string;
+        dm: boolean;
+    } | null | undefined;
+    config?: {
         antihack_log_channel: string;
         antihack_to_log: boolean;
         antihack_auto_delete: boolean;
-    };
-    autoJoinRoles: string[];
-    groupmute?: string | null | undefined;
-    disableAntiHack?: boolean | null | undefined;
+        domain_scanning: boolean;
+        fake_link_check: boolean;
+    } | null | undefined;
 }>> & mongoose.FlatRecord<{
     id: string;
     emojiboards: mongoose.Types.DocumentArray<{
@@ -634,20 +795,34 @@ declare let guildSchema: mongoose.Schema<any, mongoose.Model<any, any, any, any,
         } | null | undefined;
         required?: unknown;
     }>;
-    ajm: {
+    autoJoinRoles: string[];
+    blockedCommands: string[];
+    groupmute?: string | null | undefined;
+    disableAntiHack?: boolean | null | undefined;
+    tempBans?: Map<string, {
+        private: boolean;
+        invoker?: string | null | undefined;
+        ends?: number | null | undefined;
+        reason?: string | null | undefined;
+    }> | null | undefined;
+    alm?: {
         active: boolean;
         channel: string;
-        dm: boolean;
         message: string;
-    };
-    config: {
+    } | null | undefined;
+    ajm?: {
+        active: boolean;
+        channel: string;
+        message: string;
+        dm: boolean;
+    } | null | undefined;
+    config?: {
         antihack_log_channel: string;
         antihack_to_log: boolean;
         antihack_auto_delete: boolean;
-    };
-    autoJoinRoles: string[];
-    groupmute?: string | null | undefined;
-    disableAntiHack?: boolean | null | undefined;
+        domain_scanning: boolean;
+        fake_link_check: boolean;
+    } | null | undefined;
 }> & {
     _id: mongoose.Types.ObjectId;
 } & {

@@ -1,4 +1,4 @@
-export function finTempBan(guild: any, who: any, force: any): Promise<void>;
+export function finTempBan(guildId: any, who: any, force: any): Promise<void>;
 export declare namespace data {
     let command: import("discord.js").SlashCommandOptionsOnlyBuilder;
     namespace extra {

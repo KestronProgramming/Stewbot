@@ -15,6 +15,14 @@
 
 const mongoose = require("mongoose");
 
+function ensureField(doc, needsUpdate, field, defaultValue) {
+    if (!doc[field]) {
+        doc[field] = defaultValue;
+        needsUpdate.push(field);
+    }
+}
+
+//#region Guild
 let autoLeaveMessageSchema  = new mongoose.Schema({
     active: { type: Boolean, default: false },
     channel: { type: String, default: "" },
@@ -72,6 +80,7 @@ let guildConfigSchema = new mongoose.Schema({
     antihack_auto_delete: { type: Boolean, default: true},
     domain_scanning: { type: Boolean, default: true},
     fake_link_check: { type: Boolean, default: true},
+    ai: { type: Boolean, default: true}
 });
 
 let guildSchema = new mongoose.Schema({
@@ -97,14 +106,8 @@ let guildSchema = new mongoose.Schema({
 });
 
 // Make sure each doc subfield exists
-function ensureField(doc, needsUpdate, field, defaultValue) {
-    if (!doc[field]) {
-        doc[field] = defaultValue;
-        needsUpdate.push(field);
-    }
-}
 guildSchema.post('findOneAndUpdate', async function (doc) {
-    // This middlware only runs on findOneAndUpdate calls.
+    // This middleware only runs on findOneAndUpdate calls.
     if (doc) {
         const needsUpdate = [];
 
@@ -121,9 +124,13 @@ guildSchema.post('findOneAndUpdate', async function (doc) {
         }
     }
 });
+//#endregion
 
-
-
+//#region Users
+let userConfigSchema = mongoose.Schema({
+    beenAIDisclaimered: { type: Boolean, default: false },
+    aiPings: { type: Boolean, default: true },
+})
 let userSchema = new mongoose.Schema({
     id: {
         type: String,
@@ -133,9 +140,44 @@ let userSchema = new mongoose.Schema({
         trim: true,
         match: [/\d+/, "Error: UserID must be digits only"]
     },
+    timedOutIn: [ String ],
+    config: userConfigSchema,
     captcha: Boolean,
-    timedOutIn: [ String ]
 });
+userSchema.post('findOneAndUpdate', async function (doc) {
+    // This middleware only runs on findOneAndUpdate calls.
+    if (doc) {
+        const needsUpdate = [];
+
+        ensureField(doc, needsUpdate, "config", {});
+
+        if (needsUpdate.length > 0) {
+            await doc.updateOne({ 
+                $set: needsUpdate.reduce((acc, field) => ({ ...acc, [field]: doc[field] }), {}) 
+            });
+        }
+    }
+});
+//#endregion
+
+//#region Config
+// Global bot config - everything from the top level storage.json goes here
+const configSchema = new mongoose.Schema({
+    useGlobalGemini: { type: Boolean, default: true },
+})
+
+const ConfigDB = mongoose.model("settings", configSchema)
+
+// Make sure ConfigDB is initialized
+ConfigDB.findOne().then(async (config) => {
+    if (!config) {
+        // If no config exists, create one
+        const newConfig = new ConfigDB({});
+        await newConfig.save();
+    }
+});
+
+//#endregion
 
 
 const Guilds = mongoose.model("guilds", guildSchema);
@@ -143,7 +185,7 @@ const GuildUsers = mongoose.model("guildusers", guildUserSchema);
 const Users = mongoose.model("users", userSchema)
 
 
-// Utility functions
+//#region Functions
 
 async function guildByID(id, updates={}) {
     // Fetch a guild from the DB, and create it if it does not already exist
@@ -162,6 +204,8 @@ async function guildByID(id, updates={}) {
 
 /** @returns {Promise<import("mongoose").HydratedDocument<import("mongoose").InferSchemaType<typeof guildSchema>>>} */
 async function guildByObj(obj, updates = {}) {
+    if (!obj) return null;
+
     const cachePeriod = 1500;
 
     if (obj._dbObject && Object.keys(updates).length === 0 && Date.now() - obj._dbObjectCachedAt < cachePeriod ) {
@@ -256,6 +300,7 @@ async function guildUserByObj(guild, userID, updateData={}) {
 
     return user;
 }
+//#endregion
 
 
 
@@ -270,5 +315,7 @@ module.exports = {
 
     GuildUsers,
     // guildUserByID, // This function is less preferred, as it does not internally cache or check for guild member existence first 
-    guildUserByObj
+    guildUserByObj,
+
+    ConfigDB
 }
