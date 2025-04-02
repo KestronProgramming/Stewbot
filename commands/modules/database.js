@@ -51,7 +51,7 @@ let autoJoinMessageSchema = new mongoose.Schema({
 })
 
 let emojiboardSchema = new mongoose.Schema({
-    emoji: { type: String, unique: true, trim: true },
+    emoji: { type: String, trim: true },
     messType: String,
     threshold: Number,
     active: Boolean,
