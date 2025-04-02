@@ -36,6 +36,17 @@ export const Guilds: mongoose.Model<{
     }>;
     autoJoinRoles: string[];
     blockedCommands: string[];
+    counting?: {
+        channel: string;
+        public: boolean;
+        takeTurns: number;
+        failRoleActive: boolean;
+        warnRoleActive: boolean;
+        failRole: string;
+        warnRole: string;
+        legit: boolean;
+        reset: boolean;
+    } | null | undefined;
     groupmute?: string | null | undefined;
     disableAntiHack?: boolean | null | undefined;
     tempBans?: Map<string, {
@@ -61,6 +72,7 @@ export const Guilds: mongoose.Model<{
         antihack_auto_delete: boolean;
         domain_scanning: boolean;
         fake_link_check: boolean;
+        ai: boolean;
     } | null | undefined;
 }, {}, {}, {}, mongoose.Document<unknown, {}, {
     id: string;
@@ -100,6 +112,17 @@ export const Guilds: mongoose.Model<{
     }>;
     autoJoinRoles: string[];
     blockedCommands: string[];
+    counting?: {
+        channel: string;
+        public: boolean;
+        takeTurns: number;
+        failRoleActive: boolean;
+        warnRoleActive: boolean;
+        failRole: string;
+        warnRole: string;
+        legit: boolean;
+        reset: boolean;
+    } | null | undefined;
     groupmute?: string | null | undefined;
     disableAntiHack?: boolean | null | undefined;
     tempBans?: Map<string, {
@@ -125,6 +148,7 @@ export const Guilds: mongoose.Model<{
         antihack_auto_delete: boolean;
         domain_scanning: boolean;
         fake_link_check: boolean;
+        ai: boolean;
     } | null | undefined;
 }> & {
     id: string;
@@ -164,6 +188,17 @@ export const Guilds: mongoose.Model<{
     }>;
     autoJoinRoles: string[];
     blockedCommands: string[];
+    counting?: {
+        channel: string;
+        public: boolean;
+        takeTurns: number;
+        failRoleActive: boolean;
+        warnRoleActive: boolean;
+        failRole: string;
+        warnRole: string;
+        legit: boolean;
+        reset: boolean;
+    } | null | undefined;
     groupmute?: string | null | undefined;
     disableAntiHack?: boolean | null | undefined;
     tempBans?: Map<string, {
@@ -189,6 +224,7 @@ export const Guilds: mongoose.Model<{
         antihack_auto_delete: boolean;
         domain_scanning: boolean;
         fake_link_check: boolean;
+        ai: boolean;
     } | null | undefined;
 } & {
     _id: mongoose.Types.ObjectId;
@@ -232,6 +268,17 @@ export const Guilds: mongoose.Model<{
     }>;
     autoJoinRoles: string[];
     blockedCommands: string[];
+    counting?: {
+        channel: string;
+        public: boolean;
+        takeTurns: number;
+        failRoleActive: boolean;
+        warnRoleActive: boolean;
+        failRole: string;
+        warnRole: string;
+        legit: boolean;
+        reset: boolean;
+    } | null | undefined;
     groupmute?: string | null | undefined;
     disableAntiHack?: boolean | null | undefined;
     tempBans?: Map<string, {
@@ -257,6 +304,7 @@ export const Guilds: mongoose.Model<{
         antihack_auto_delete: boolean;
         domain_scanning: boolean;
         fake_link_check: boolean;
+        ai: boolean;
     } | null | undefined;
 }, mongoose.Document<unknown, {}, mongoose.FlatRecord<{
     id: string;
@@ -296,6 +344,17 @@ export const Guilds: mongoose.Model<{
     }>;
     autoJoinRoles: string[];
     blockedCommands: string[];
+    counting?: {
+        channel: string;
+        public: boolean;
+        takeTurns: number;
+        failRoleActive: boolean;
+        warnRoleActive: boolean;
+        failRole: string;
+        warnRole: string;
+        legit: boolean;
+        reset: boolean;
+    } | null | undefined;
     groupmute?: string | null | undefined;
     disableAntiHack?: boolean | null | undefined;
     tempBans?: Map<string, {
@@ -321,6 +380,7 @@ export const Guilds: mongoose.Model<{
         antihack_auto_delete: boolean;
         domain_scanning: boolean;
         fake_link_check: boolean;
+        ai: boolean;
     } | null | undefined;
 }>> & mongoose.FlatRecord<{
     id: string;
@@ -360,6 +420,17 @@ export const Guilds: mongoose.Model<{
     }>;
     autoJoinRoles: string[];
     blockedCommands: string[];
+    counting?: {
+        channel: string;
+        public: boolean;
+        takeTurns: number;
+        failRoleActive: boolean;
+        warnRoleActive: boolean;
+        failRole: string;
+        warnRole: string;
+        legit: boolean;
+        reset: boolean;
+    } | null | undefined;
     groupmute?: string | null | undefined;
     disableAntiHack?: boolean | null | undefined;
     tempBans?: Map<string, {
@@ -385,6 +456,7 @@ export const Guilds: mongoose.Model<{
         antihack_auto_delete: boolean;
         domain_scanning: boolean;
         fake_link_check: boolean;
+        ai: boolean;
     } | null | undefined;
 }> & {
     _id: mongoose.Types.ObjectId;
@@ -429,6 +501,17 @@ export function guildByID(id: any, updates?: {}): Promise<mongoose.Document<unkn
     }>;
     autoJoinRoles: string[];
     blockedCommands: string[];
+    counting?: {
+        channel: string;
+        public: boolean;
+        takeTurns: number;
+        failRoleActive: boolean;
+        warnRoleActive: boolean;
+        failRole: string;
+        warnRole: string;
+        legit: boolean;
+        reset: boolean;
+    } | null | undefined;
     groupmute?: string | null | undefined;
     disableAntiHack?: boolean | null | undefined;
     tempBans?: Map<string, {
@@ -454,6 +537,7 @@ export function guildByID(id: any, updates?: {}): Promise<mongoose.Document<unkn
         antihack_auto_delete: boolean;
         domain_scanning: boolean;
         fake_link_check: boolean;
+        ai: boolean;
     } | null | undefined;
 }> & {
     id: string;
@@ -493,6 +577,17 @@ export function guildByID(id: any, updates?: {}): Promise<mongoose.Document<unkn
     }>;
     autoJoinRoles: string[];
     blockedCommands: string[];
+    counting?: {
+        channel: string;
+        public: boolean;
+        takeTurns: number;
+        failRoleActive: boolean;
+        warnRoleActive: boolean;
+        failRole: string;
+        warnRole: string;
+        legit: boolean;
+        reset: boolean;
+    } | null | undefined;
     groupmute?: string | null | undefined;
     disableAntiHack?: boolean | null | undefined;
     tempBans?: Map<string, {
@@ -518,6 +613,7 @@ export function guildByID(id: any, updates?: {}): Promise<mongoose.Document<unkn
         antihack_auto_delete: boolean;
         domain_scanning: boolean;
         fake_link_check: boolean;
+        ai: boolean;
     } | null | undefined;
 } & {
     _id: mongoose.Types.ObjectId;
@@ -527,53 +623,189 @@ export function guildByID(id: any, updates?: {}): Promise<mongoose.Document<unkn
 /** @returns {Promise<import("mongoose").HydratedDocument<import("mongoose").InferSchemaType<typeof guildSchema>>>} */
 export function guildByObj(obj: any, updates?: {}): Promise<import("mongoose").HydratedDocument<import("mongoose").InferSchemaType<typeof guildSchema>>>;
 export const Users: mongoose.Model<{
-    id: string;
-    timedOutIn: string[];
-    captcha?: boolean | null | undefined;
+    id: {
+        type: StringConstructor;
+        required: true;
+        unique: true;
+        index: true;
+        trim: true;
+        match: [RegExp, string];
+    };
+    primedEmojiURL: {
+        type: StringConstructor;
+        defaut: "";
+    };
+    primedName: {
+        type: StringConstructor;
+        defaut: "";
+    };
+    timedOutIn: [StringConstructor];
+    primedEmbed: any;
+    config: any;
+    captcha: BooleanConstructor;
 }, {}, {}, {}, mongoose.Document<unknown, {}, {
-    id: string;
-    timedOutIn: string[];
-    captcha?: boolean | null | undefined;
+    id: {
+        type: StringConstructor;
+        required: true;
+        unique: true;
+        index: true;
+        trim: true;
+        match: [RegExp, string];
+    };
+    primedEmojiURL: {
+        type: StringConstructor;
+        defaut: "";
+    };
+    primedName: {
+        type: StringConstructor;
+        defaut: "";
+    };
+    timedOutIn: [StringConstructor];
+    primedEmbed: any;
+    config: any;
+    captcha: BooleanConstructor;
 }> & {
-    id: string;
-    timedOutIn: string[];
-    captcha?: boolean | null | undefined;
+    id: {
+        type: StringConstructor;
+        required: true;
+        unique: true;
+        index: true;
+        trim: true;
+        match: [RegExp, string];
+    };
+    primedEmojiURL: {
+        type: StringConstructor;
+        defaut: "";
+    };
+    primedName: {
+        type: StringConstructor;
+        defaut: "";
+    };
+    timedOutIn: [StringConstructor];
+    primedEmbed: any;
+    config: any;
+    captcha: BooleanConstructor;
 } & {
     _id: mongoose.Types.ObjectId;
 } & {
     __v: number;
 }, mongoose.Schema<any, mongoose.Model<any, any, any, any, any, any>, {}, {}, {}, {}, mongoose.DefaultSchemaOptions, {
-    id: string;
-    timedOutIn: string[];
-    captcha?: boolean | null | undefined;
+    id: {
+        type: StringConstructor;
+        required: true;
+        unique: true;
+        index: true;
+        trim: true;
+        match: [RegExp, string];
+    };
+    primedEmojiURL: {
+        type: StringConstructor;
+        defaut: "";
+    };
+    primedName: {
+        type: StringConstructor;
+        defaut: "";
+    };
+    timedOutIn: [StringConstructor];
+    primedEmbed: any;
+    config: any;
+    captcha: BooleanConstructor;
 }, mongoose.Document<unknown, {}, mongoose.FlatRecord<{
-    id: string;
-    timedOutIn: string[];
-    captcha?: boolean | null | undefined;
+    id: {
+        type: StringConstructor;
+        required: true;
+        unique: true;
+        index: true;
+        trim: true;
+        match: [RegExp, string];
+    };
+    primedEmojiURL: {
+        type: StringConstructor;
+        defaut: "";
+    };
+    primedName: {
+        type: StringConstructor;
+        defaut: "";
+    };
+    timedOutIn: [StringConstructor];
+    primedEmbed: any;
+    config: any;
+    captcha: BooleanConstructor;
 }>> & mongoose.FlatRecord<{
-    id: string;
-    timedOutIn: string[];
-    captcha?: boolean | null | undefined;
+    id: {
+        type: StringConstructor;
+        required: true;
+        unique: true;
+        index: true;
+        trim: true;
+        match: [RegExp, string];
+    };
+    primedEmojiURL: {
+        type: StringConstructor;
+        defaut: "";
+    };
+    primedName: {
+        type: StringConstructor;
+        defaut: "";
+    };
+    timedOutIn: [StringConstructor];
+    primedEmbed: any;
+    config: any;
+    captcha: BooleanConstructor;
 }> & {
     _id: mongoose.Types.ObjectId;
 } & {
     __v: number;
 }>>;
-export function userByID(id: any): Promise<mongoose.Document<unknown, {}, {
-    id: string;
-    timedOutIn: string[];
-    captcha?: boolean | null | undefined;
+export function userByID(id: any, updates?: {}): Promise<mongoose.Document<unknown, {}, {
+    id: {
+        type: StringConstructor;
+        required: true;
+        unique: true;
+        index: true;
+        trim: true;
+        match: [RegExp, string];
+    };
+    primedEmojiURL: {
+        type: StringConstructor;
+        defaut: "";
+    };
+    primedName: {
+        type: StringConstructor;
+        defaut: "";
+    };
+    timedOutIn: [StringConstructor];
+    primedEmbed: any;
+    config: any;
+    captcha: BooleanConstructor;
 }> & {
-    id: string;
-    timedOutIn: string[];
-    captcha?: boolean | null | undefined;
+    id: {
+        type: StringConstructor;
+        required: true;
+        unique: true;
+        index: true;
+        trim: true;
+        match: [RegExp, string];
+    };
+    primedEmojiURL: {
+        type: StringConstructor;
+        defaut: "";
+    };
+    primedName: {
+        type: StringConstructor;
+        defaut: "";
+    };
+    timedOutIn: [StringConstructor];
+    primedEmbed: any;
+    config: any;
+    captcha: BooleanConstructor;
 } & {
     _id: mongoose.Types.ObjectId;
 } & {
     __v: number;
 }>;
 /** @returns {Promise<import("mongoose").HydratedDocument<import("mongoose").InferSchemaType<typeof userSchema>>>} */
-export function userByObj(obj: any): Promise<import("mongoose").HydratedDocument<import("mongoose").InferSchemaType<typeof userSchema>>>;
+export function userByObj(obj: any, updates?: {}): Promise<import("mongoose").HydratedDocument<import("mongoose").InferSchemaType<typeof userSchema>>>;
 export const GuildUsers: mongoose.Model<{
     userId: string;
     guildId: string;
@@ -669,6 +901,17 @@ declare let guildSchema: mongoose.Schema<any, mongoose.Model<any, any, any, any,
     }>;
     autoJoinRoles: string[];
     blockedCommands: string[];
+    counting?: {
+        channel: string;
+        public: boolean;
+        takeTurns: number;
+        failRoleActive: boolean;
+        warnRoleActive: boolean;
+        failRole: string;
+        warnRole: string;
+        legit: boolean;
+        reset: boolean;
+    } | null | undefined;
     groupmute?: string | null | undefined;
     disableAntiHack?: boolean | null | undefined;
     tempBans?: Map<string, {
@@ -694,6 +937,7 @@ declare let guildSchema: mongoose.Schema<any, mongoose.Model<any, any, any, any,
         antihack_auto_delete: boolean;
         domain_scanning: boolean;
         fake_link_check: boolean;
+        ai: boolean;
     } | null | undefined;
 }, mongoose.Document<unknown, {}, mongoose.FlatRecord<{
     id: string;
@@ -733,6 +977,17 @@ declare let guildSchema: mongoose.Schema<any, mongoose.Model<any, any, any, any,
     }>;
     autoJoinRoles: string[];
     blockedCommands: string[];
+    counting?: {
+        channel: string;
+        public: boolean;
+        takeTurns: number;
+        failRoleActive: boolean;
+        warnRoleActive: boolean;
+        failRole: string;
+        warnRole: string;
+        legit: boolean;
+        reset: boolean;
+    } | null | undefined;
     groupmute?: string | null | undefined;
     disableAntiHack?: boolean | null | undefined;
     tempBans?: Map<string, {
@@ -758,6 +1013,7 @@ declare let guildSchema: mongoose.Schema<any, mongoose.Model<any, any, any, any,
         antihack_auto_delete: boolean;
         domain_scanning: boolean;
         fake_link_check: boolean;
+        ai: boolean;
     } | null | undefined;
 }>> & mongoose.FlatRecord<{
     id: string;
@@ -797,6 +1053,17 @@ declare let guildSchema: mongoose.Schema<any, mongoose.Model<any, any, any, any,
     }>;
     autoJoinRoles: string[];
     blockedCommands: string[];
+    counting?: {
+        channel: string;
+        public: boolean;
+        takeTurns: number;
+        failRoleActive: boolean;
+        warnRoleActive: boolean;
+        failRole: string;
+        warnRole: string;
+        legit: boolean;
+        reset: boolean;
+    } | null | undefined;
     groupmute?: string | null | undefined;
     disableAntiHack?: boolean | null | undefined;
     tempBans?: Map<string, {
@@ -822,6 +1089,7 @@ declare let guildSchema: mongoose.Schema<any, mongoose.Model<any, any, any, any,
         antihack_auto_delete: boolean;
         domain_scanning: boolean;
         fake_link_check: boolean;
+        ai: boolean;
     } | null | undefined;
 }> & {
     _id: mongoose.Types.ObjectId;
@@ -829,17 +1097,68 @@ declare let guildSchema: mongoose.Schema<any, mongoose.Model<any, any, any, any,
     __v: number;
 }>;
 declare let userSchema: mongoose.Schema<any, mongoose.Model<any, any, any, any, any, any>, {}, {}, {}, {}, mongoose.DefaultSchemaOptions, {
-    id: string;
-    timedOutIn: string[];
-    captcha?: boolean | null | undefined;
+    id: {
+        type: StringConstructor;
+        required: true;
+        unique: true;
+        index: true;
+        trim: true;
+        match: [RegExp, string];
+    };
+    primedEmojiURL: {
+        type: StringConstructor;
+        defaut: "";
+    };
+    primedName: {
+        type: StringConstructor;
+        defaut: "";
+    };
+    timedOutIn: [StringConstructor];
+    primedEmbed: any;
+    config: any;
+    captcha: BooleanConstructor;
 }, mongoose.Document<unknown, {}, mongoose.FlatRecord<{
-    id: string;
-    timedOutIn: string[];
-    captcha?: boolean | null | undefined;
+    id: {
+        type: StringConstructor;
+        required: true;
+        unique: true;
+        index: true;
+        trim: true;
+        match: [RegExp, string];
+    };
+    primedEmojiURL: {
+        type: StringConstructor;
+        defaut: "";
+    };
+    primedName: {
+        type: StringConstructor;
+        defaut: "";
+    };
+    timedOutIn: [StringConstructor];
+    primedEmbed: any;
+    config: any;
+    captcha: BooleanConstructor;
 }>> & mongoose.FlatRecord<{
-    id: string;
-    timedOutIn: string[];
-    captcha?: boolean | null | undefined;
+    id: {
+        type: StringConstructor;
+        required: true;
+        unique: true;
+        index: true;
+        trim: true;
+        match: [RegExp, string];
+    };
+    primedEmojiURL: {
+        type: StringConstructor;
+        defaut: "";
+    };
+    primedName: {
+        type: StringConstructor;
+        defaut: "";
+    };
+    timedOutIn: [StringConstructor];
+    primedEmbed: any;
+    config: any;
+    captcha: BooleanConstructor;
 }> & {
     _id: mongoose.Types.ObjectId;
 } & {

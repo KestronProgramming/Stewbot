@@ -9,6 +9,14 @@ function applyContext(context = {}) {
 }
 // #endregion CommandBoilerplate
 
+const sugar = require("sugar")
+
+function formatMilliseconds(milliseconds) {
+    const date = sugar.Date.create(milliseconds);
+    return date.format('{duration}');
+}
+  
+
 // 
 // TEMPLATE.js is an exhaustive template showcasing every feature available to modules.
 //  Any module/command can be derived from these.
@@ -64,23 +72,23 @@ module.exports = {
 
         if (!cmd.user.id === "724416180097384498") return cmd.deferUpdate();
 
-        // const input = cmd.options.getString("input");
-        // try {
-        //     await eval(
-        //         `(async () => { 
-        //             const result = (${input});
-        //             await cmd.followUp(result);
-        //         })()`
-        //     );
-        // } catch (e) {
-        //     cmd.followUp(e.stack);
-        // }
-
-        const guild = await guildByObj(cmd.guild);
-        
-        const guild2 = await guildByObj(cmd.guild);
-
-        cmd.followUp(JSON.stringify(guild.toJSON(), null, 4));
+        const input = cmd.options.getString("input");
+        if (input) {
+            try {
+                await eval(
+                    `(async () => { 
+                        const result = (${input});
+                        await cmd.followUp(result);
+                    })()`
+                );
+            } catch (e) {
+                cmd.followUp(e.stack);
+            }
+        }
+        else {
+            const guild = await guildByObj(cmd.guild);
+            cmd.followUp(JSON.stringify(guild.toJSON(), null, 4));
+        }
     },
 
     /** @param {import('discord.js').Message} msg */
