@@ -332,6 +332,30 @@ async function guildUserByObj(guild, userID, updateData={}) {
 // Drop indexes of docs where metadata was changed
 GuildUsers.collection.dropIndexes();
 
+async function dropAllIndexes(db) {
+    try {
+        const collections = await db.db.listCollections().toArray();
+
+        for (const collectionInfo of collections) {
+            const collectionName = collectionInfo.name;
+
+            if (!collectionName.startsWith('system.')) {
+                try {
+                    await db.db.collection(collectionName).dropIndexes();
+                    console.log(`Dropped indexes from collection: ${collectionName}`);
+                } catch (error) {
+                    console.error(`Error dropping indexes from collection ${collectionName}:`, error.message);
+                }
+            }
+        }
+
+        console.log('All indexes dropped (except system indexes).');
+    } catch (error) {
+        console.error('Error dropping all indexes:', error.message);
+    }
+}
+if (process.env.beta) dropAllIndexes(mongoose.connection.db);
+  
 
 
 module.exports = {
