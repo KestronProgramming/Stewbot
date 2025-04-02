@@ -21,7 +21,14 @@ let autoLeaveMessageSchema  = new mongoose.Schema({
     message: { type: String, default: "Farewell ${@USER}. We'll miss you." },
 })
 
-let autoJoinMessageSchema  = new mongoose.Schema({
+let tempBanSchema = new mongoose.Schema({
+    invoker: String,
+    ends: Number,
+    reason: String,
+    private: { type: Boolean, default: false }
+})
+
+let autoJoinMessageSchema = new mongoose.Schema({
     active: { type: Boolean, default: false },
     channel: { type: String, default: "" },
     dm: { type: Boolean, default: true },
@@ -79,6 +86,7 @@ let guildSchema = new mongoose.Schema({
     emojiboards: [ 
         { type: emojiboardSchema, required: true }
     ],
+    tempBans: { type: Map, of: tempBanSchema },
     alm: { type: autoLeaveMessageSchema },
     ajm: { type: autoJoinMessageSchema },
     config: { type: guildConfigSchema },
@@ -103,6 +111,7 @@ guildSchema.post('findOneAndUpdate', async function (doc) {
         ensureField(doc, needsUpdate, "ajm", {});
         ensureField(doc, needsUpdate, "alm", {});
         ensureField(doc, needsUpdate, "emojiboards", []);
+        ensureField(doc, needsUpdate, "tempBans", {});
 
         if (needsUpdate.length > 0) {
             await doc.updateOne({ 
@@ -151,16 +160,26 @@ async function guildByID(id, updates={}) {
 }
 
 /** @returns {Promise<import("mongoose").HydratedDocument<import("mongoose").InferSchemaType<typeof guildSchema>>>} */
-async function guildByObj(obj, updates={}) {
-    // Grab the DB object associated with this guild object, but with cache
-    if (obj._dbObject && Object.keys(updates).length === 0) {
+async function guildByObj(obj, updates = {}) {
+    const cachePeriod = 1500;
+
+    if (obj._dbObject && Object.keys(updates).length === 0 && Date.now() - obj._dbObjectCachedAt < cachePeriod ) {
         return obj._dbObject;
     }
-    
+
     const guild = await guildByID(obj.id, updates);
     obj._dbObject = guild;
+    obj._dbObjectCachedAt = Date.now();
+
+    setTimeout(() => {
+        if (obj._dbObject === guild) {
+            delete obj._dbObject;
+        }
+    }, cachePeriod);
+
     return guild;
 }
+
 
 async function userByID(id) {
     // Fetch a user from the DB, and create it if it does not already exist
@@ -176,13 +195,21 @@ async function userByID(id) {
 
 /** @returns {Promise<import("mongoose").HydratedDocument<import("mongoose").InferSchemaType<typeof userSchema>>>} */
 async function userByObj(obj) {
+    const cachePeriod = 1500;
+
     // Grab the DB object associated to this user object, but with cache
-    if (obj._dbObject) {
+    if (obj._dbObject && Date.now() - obj._dbObjectCachedAt < cachePeriod) {
         const cachedUser = obj._dbObject;
         return cachedUser;
     }
     const user = await userByID(obj.id);
     obj._dbObject = user;
+    obj._dbObjectCachedAt = Date.now();
+
+    setTimeout(() => {
+        delete obj._dbObject;
+    }, cachePeriod);
+
     return user;
 }
 
@@ -200,9 +227,11 @@ async function guildUserByID(guildId, userId) {
 
 /** @returns {Promise<import("mongoose").HydratedDocument<import("mongoose").InferSchemaType<typeof guildUserSchema>>>} */
 async function guildUserByObj(guild, userID, updateData={}) {
+    const cachePeriod = 1500;
+    
     // updateData is json of fields that should be set to specific data.
 
-    if (guild[`_db${userID}`]) {
+    if (guild[`_db${userID}`] && Date.now() - guild[`_db${userID}CachedAt`] < cachePeriod) {
         Object.assign(guild[`_db${userID}`], updateData);
         return guild[`_db${userID}`].save();
     }
@@ -217,8 +246,13 @@ async function guildUserByObj(guild, userID, updateData={}) {
         { $set: updateData },
         { new: true, upsert: true, setDefaultsOnInsert: true }
     );
-
     guild[`_db${userID}`] = user;
+    guild[`_db${userID}CachedAt`] = Date.now();
+
+    setTimeout(() => {
+        delete guild[`_db${userID}`];
+    }, cachePeriod);
+
     return user;
 }
 
