@@ -63,6 +63,8 @@ let guildConfigSchema = new mongoose.Schema({
     antihack_log_channel: { type: String, default: "" },
     antihack_to_log: { type: Boolean, default: false},
     antihack_auto_delete: { type: Boolean, default: true},
+    domain_scanning: { type: Boolean, default: true},
+    fake_link_check: { type: Boolean, default: true},
 });
 
 let guildSchema = new mongoose.Schema({

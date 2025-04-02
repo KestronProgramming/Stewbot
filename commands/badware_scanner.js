@@ -246,23 +246,35 @@ module.exports = {
 
     /** @param {import('discord.js').Interaction} cmd */
     async execute(cmd, context) {
-		applyContext(context);
-		
-		if(cmd.options.getBoolean("domain_scanning")!==null) storage[cmd.guildId].config.domain_scanning=cmd.options.getBoolean("domain_scanning");
-		if(cmd.options.getBoolean("fake_link_check")!==null) storage[cmd.guildId].config.fake_link_check=cmd.options.getBoolean("fake_link_check");
-		
-		cmd.followUp("Badware Scanner configured.");
-	},
+        applyContext(context);
+
+        const updates = {};
+
+        if (cmd.options.getBoolean("domain_scanning") !== null) {
+            updates["config.domain_scanning"] = cmd.options.getBoolean("domain_scanning");
+        }
+
+        if (cmd.options.getBoolean("fake_link_check") !== null) {
+            updates["config.fake_link_check"] = cmd.options.getBoolean("fake_link_check");
+        }
+
+        // Only update if we have changes to make
+        if (Object.keys(updates).length > 0) {
+            await guildByObj(cmd.guild, updates);
+        }
+
+        cmd.followUp("Badware Scanner configured.");
+    },
 
 	/** @param {import('discord.js').Message} msg */
     async onmessage(msg, context) {
 		applyContext(context);
 
+        const guild = await guildByObj(msg.guild);
+
         try {
-
-
             // Check domain
-            if (msg.guild && !(storage[msg.guild.id].config.domain_scanning === false)) {
+            if (msg.guild && !(guild.config.domain_scanning === false)) {
                 const urlRegex = /https?:\/\/[^\s/$.?#].[^\s]*/g;
                 const links = msg.content.match(urlRegex) || [];
                 for (const link of links) {
@@ -285,7 +297,7 @@ module.exports = {
             }
 
             // Check for link hiding behind fake link
-            if (msg.guild && !(storage[msg.guild.id].config.fake_link_check === false)) {
+            if (msg.guild && !(guild.config.fake_link_check === false)) {
                 const fakeLink = detectMismatchedDomains(msg.content);
                 if (fakeLink) {
                     if (msg.channel.permissionsFor(client.user).has(PermissionFlagsBits.SendMessages)) {
