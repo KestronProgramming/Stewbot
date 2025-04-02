@@ -116,24 +116,30 @@ module.exports = {
 		try {
 			switch (action) {
 				case "prime_emoji":
-					delete storage[cmd.user.id].primedEmojiURL;
-					delete storage[cmd.user.id].primedName;
-
 					var {url, emojiName} = getEmojiData(emoji);
+					let success = true;
 
 					if (!emoji) {
-						return cmd.followUp({ content:`Please provide a server emoji with these options.` });
+						success = false;
+						cmd.followUp({ content:`Please provide a server emoji with these options.` });
 					}
 					else if (!url) {
-						return cmd.followUp({ content:`This does not appear to be valid server emoji.` });
+						success = false;
+						cmd.followUp({ content:`This does not appear to be valid server emoji.` });
 					}
-					storage[cmd.user.id].primedEmojiURL = url;
-					storage[cmd.user.id].primedName = emojiName || "unnamed";
-					return cmd.followUp({ content:`Emoji primed. Use it in a server with ${cmds.clone_emoji.mention}` });
+
+					await userByObj(cmd.user, {
+						primedEmojiURL: success ? url : "",
+						primedName: success ? emojiName || "unnamed" : ""
+					})
+
+					if (success) cmd.followUp({ content:`Emoji primed. Use it in a server with ${cmds.clone_emoji.mention}` });
+					break;
 
 				case "clone_primed":
-					const primedURL = storage[cmd.user.id].primedEmojiURL;
-					const primedName = storage[cmd.user.id].primedName;
+					const user = await userByObj(cmd.user);
+					const primedURL = user.primedEmojiURL;
+					const primedName = user.primedName;
 					if (!primedURL) {
 						return cmd.followUp("You have not primed an emoji yet. Run this command with the `Prime emoji` option in another server to clone the emoji, and run this here again to upload the emoji.");
 					}
@@ -141,7 +147,8 @@ module.exports = {
 					return cmd.followUp(result)
 
 				case "clone_embed":
-					const primedContent = storage[cmd.user.id].primedEmbed?.content;
+					const user2 = await userByObj(cmd.user);
+					const primedContent = user2.primedEmbed.content;
 					if (!primedContent) {
 						return cmd.followUp(`You haven't primed any messages. To do this, install [Stewbot](${config.install}) ("Add to My Apps"), right-click a message > Apps > \`prime_embed\`.`)
 					}
