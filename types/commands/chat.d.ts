@@ -13,4 +13,5 @@ export declare namespace data {
     }
 }
 export declare function execute(cmd: any, globalsContext: any): Promise<void>;
-export declare function onmessage(msg: any, globals: any): Promise<void>;
+/** @param {import('discord.js').Message} msg */
+export declare function onmessage(msg: import("discord.js").Message, globals: any): Promise<void>;

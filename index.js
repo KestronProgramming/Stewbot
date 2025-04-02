@@ -261,10 +261,19 @@ commandsLoadedPromise.finally( _ => {
 var ints=Object.keys(GatewayIntentBits).map(a=>GatewayIntentBits[a]);
 ints.splice(ints.indexOf(GatewayIntentBits.GuildPresences),1);
 ints.splice(ints.indexOf("GuildPresences"),1);
+
+/**
+ * @type {import('discord.js').Client}
+ */
 const client=new Client({
     intents:ints,
     partials:Object.keys(Partials).map(a=>Partials[a])
 });
+
+/**
+ * @type {import('discord.js').Client}
+ * @global
+ */
 global.client = client;
 
 // Now that setup is done, define data that should be passed to each module - 

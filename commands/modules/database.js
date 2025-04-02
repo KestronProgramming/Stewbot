@@ -15,15 +15,22 @@
 
 const mongoose = require("mongoose");
 
-function ensureField(doc, needsUpdate, field, defaultValue) {
-    if (!doc[field]) {
-        doc[field] = defaultValue;
-        needsUpdate.push(field);
-    }
-}
-
 //#region Guild
-let autoLeaveMessageSchema  = new mongoose.Schema({
+let countingSchema = new mongoose.Schema({
+    // Config
+    channel: { type: String, default: "" },
+    public: { type: Boolean, default: true },
+    takeTurns: { type: Number, default: 1 },
+    failRoleActive: { type: Boolean, default: false },
+    warnRoleActive: { type: Boolean, default: false },
+    failRole: { type: String, default: "" },
+    warnRole: { type: String, default: "" },
+    // State
+    legit: { type: Boolean, default: true },
+    reset: { type: Boolean, default: false },
+})
+
+let autoLeaveMessageSchema = new mongoose.Schema({
     active: { type: Boolean, default: false },
     channel: { type: String, default: "" },
     message: { type: String, default: "Farewell ${@USER}. We'll miss you." },
@@ -58,7 +65,6 @@ let guildUserSchema = new mongoose.Schema({
     userId: {
         type: String,
         required: true,
-        unique: true,
         index: true,
         trim: true,
         match: [/\d+/, "Error: ServerID must be digits only"]
@@ -66,13 +72,16 @@ let guildUserSchema = new mongoose.Schema({
     guildId: {
         type: String,
         required: true,
-        unique: true,
         index: true,
         trim: true,
         match: [/\d+/, "Error: UserID must be digits only"]
     },
     safeTimestamp: { type: Number, default: 0},
+    countTurns: { type: Number, default: 0 },
+    beenCountWarned: { type: Boolean, default: false },
 })
+// guildUserSchema.index({ userId: 1, guildId: 1 }, { unique: true }); // Compound unique index - only one user per guild
+
 
 let guildConfigSchema = new mongoose.Schema({
     antihack_log_channel: { type: String, default: "" },
@@ -99,6 +108,7 @@ let guildSchema = new mongoose.Schema({
     alm: { type: autoLeaveMessageSchema },
     ajm: { type: autoJoinMessageSchema },
     config: { type: guildConfigSchema },
+    counting: countingSchema,
     autoJoinRoles: [ String ],
     blockedCommands: [ String ],
     groupmute: String,
@@ -116,6 +126,7 @@ guildSchema.post('findOneAndUpdate', async function (doc) {
         ensureField(doc, needsUpdate, "alm", {});
         ensureField(doc, needsUpdate, "emojiboards", []);
         ensureField(doc, needsUpdate, "tempBans", {});
+        ensureField(doc, needsUpdate, "counting", {});
 
         if (needsUpdate.length > 0) {
             await doc.updateOne({ 
@@ -130,10 +141,12 @@ guildSchema.post('findOneAndUpdate', async function (doc) {
 let primedEmbedSchema = mongoose.Schema({
     content: { type: String, default: "" }
 })
+
 let userConfigSchema = mongoose.Schema({
     beenAIDisclaimered: { type: Boolean, default: false },
     aiPings: { type: Boolean, default: true },
 })
+
 let userSchema = new mongoose.Schema({
     id: {
         type: String,
@@ -150,6 +163,7 @@ let userSchema = new mongoose.Schema({
     config: userConfigSchema,
     captcha: Boolean,
 });
+
 userSchema.post('findOneAndUpdate', async function (doc) {
     // This middleware only runs on findOneAndUpdate calls.
     if (doc) {
@@ -192,6 +206,13 @@ const Users = mongoose.model("users", userSchema)
 
 
 //#region Functions
+
+function ensureField(doc, needsUpdate, field, defaultValue) {
+    if (!doc[field]) {
+        doc[field] = defaultValue;
+        needsUpdate.push(field);
+    }
+}
 
 async function guildByID(id, updates={}) {
     // Fetch a guild from the DB, and create it if it does not already exist
@@ -306,6 +327,10 @@ async function guildUserByObj(guild, userID, updateData={}) {
     return user;
 }
 //#endregion
+
+
+// Drop indexes of docs where metadata was changed
+GuildUsers.collection.dropIndexes();
 
 
 
