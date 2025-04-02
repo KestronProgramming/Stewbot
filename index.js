@@ -225,6 +225,7 @@ var uptime=0;
 const defaultGuild=require("./data/defaultGuild.json");
 const defaultGuildUser=require("./data/defaultGuildUser.json");
 const defaultUser=require("./data/defaultUser.json");
+const { guildByID, guildByObj, userByID, userByObj } = require('./commands/modules/database');
 
 // Build dynamic help pages
 var helpCommands=[];
@@ -779,25 +780,26 @@ client.on("messageCreate",async msg => {
 
     
     // Dispatch to listening modules
-    Object.entries(messageListenerModules).forEach(([name, module]) => {
+    for (const [name, module] of Object.entries(messageListenerModules)) {
         // Check if this command is blocked with /block_module
         const commandPath = `${module.data?.command?.name || name}`; // ||name handles non-command modules
         // If this is a guild, check for blocklist
         if (msg.guild?.id) {
-            let guildBlocklist = storage[msg.guild.id].blockedCommands || []
+            
+            let guildBlocklist = (await guildByObj(msg.guild)).blockedCommands;
             guildBlocklist = guildBlocklist.map(blockCommand => blockCommand.replace(/^\//, '')) // Backwards compatability with block_command which had a leading /
             if (guildBlocklist.includes(commandPath)) {
-                return; // Ignore this module
+                continue; // Ignore this module
             }
         }
         // Check global blacklist from home server
-        const globalBlocklist = storage[config.homeServer]?.blockedCommands || []
+        const globalBlocklist = (await guildByID(config.homeServer)).blockedCommands; // TODO: look into long cache for queries like this? A minute at least
         if (globalBlocklist.includes(commandPath)) {
-            return;
+            continue;
         }
 
         module.onmessage(msg, pseudoGlobals);
-    })
+    }
 
     // The sudo handler uses so many globals, it can stay in index.js for now
     if(msg.content.startsWith("~sudo ")&&!process.env.beta||msg.content.startsWith("~betaSudo ")&&process.env.beta){
@@ -967,7 +969,7 @@ client.on("interactionCreate", async cmd=>{
         const commandPathWithSubcommand = `${cmd.commandName} ${cmd.options._subcommand ? cmd.options.getSubcommand() : "<none>"}`; //meh but it works
         const commandPath = `${cmd.commandName}`;
         if (cmd.guild?.id) {
-            let guildBlocklist = storage[cmd.guild.id].blockedCommands || []
+            let guildBlocklist = (await guildByObj(cmd.guild)).blockedCommands;
             guildBlocklist = guildBlocklist.map(blockedCommand => blockedCommand.replace(/^\//, '')) // Backwards compatability with block_command which had a leading /
 
             if (guildBlocklist.includes(commandPath) || guildBlocklist.includes(commandPathWithSubcommand)) {
@@ -980,7 +982,7 @@ client.on("interactionCreate", async cmd=>{
         }
         
         // Check global blacklist from home server
-        const globalBlocklist = storage[config.homeServer]?.blockedCommands || []
+        const globalBlocklist = (await guildByID(config.homeServer)).blockedCommands;
         if (globalBlocklist.includes(commandPath) || globalBlocklist.includes(commandPathWithSubcommand)) {
             return cmd.followUp("This command has temporarily been blocked by Stewbot admins.");
         }
