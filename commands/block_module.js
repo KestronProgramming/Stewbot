@@ -100,6 +100,8 @@ module.exports = {
     async execute(cmd, context) {
 		applyContext(context);
 
+        const guild = await guildByObj(cmd.guild);
+
         const allCommands = getCommandPaths(cmds, true);
         const commandToBlock = cmd.options.getString("command")
         const unblock = cmd.options.getBoolean("unblock")
@@ -113,10 +115,7 @@ module.exports = {
             return cmd.followUp(blockModuleError);
         }
 
-        // Create block list if it doesn't exist
-        storage[cmd.guild.id].blockedCommands = storage[cmd.guild.id].blockedCommands || []
-
-        const index = storage[cmd.guild.id].blockedCommands.indexOf(commandToBlock);
+        const index = guild.blockedCommands.indexOf(commandToBlock);
         const isBlocked = index !== -1;
         const commandMention = getCommandFromPath(commandToBlock)?.mention || '`'+commandToBlock+'`';
         if (!unblock) {
@@ -124,18 +123,19 @@ module.exports = {
                 return cmd.followUp(`${commandMention} is already blocked.`)
             } else {
                 // Add to block list
-                storage[cmd.guild.id].blockedCommands.push(commandToBlock);
-                return cmd.followUp(`${commandMention} has been blocked in this server.`)
+                guild.blockedCommands.push(commandToBlock);
+                cmd.followUp(`${commandMention} has been blocked in this server.`)
             }
         } else {
             // Remove from block list
             if (isBlocked) {
-                storage[cmd.guild.id].blockedCommands.splice(index, 1);
-                return cmd.followUp(`${commandMention} has been unblocked for this server.`)
+                guild.blockedCommands.splice(index, 1);
+                cmd.followUp(`${commandMention} has been unblocked for this server.`)
             } else {
                 return cmd.followUp(`${commandMention} does not seem to be blocked in this server.`)
             }
         }
+        guild.save();
 	},
 
 	async autocomplete(cmd) {

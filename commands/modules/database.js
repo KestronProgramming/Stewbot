@@ -91,6 +91,7 @@ let guildSchema = new mongoose.Schema({
     ajm: { type: autoJoinMessageSchema },
     config: { type: guildConfigSchema },
     autoJoinRoles: [ String ],
+    blockedCommands: [ String ],
     groupmute: String,
     disableAntiHack: Boolean,
 });
@@ -228,7 +229,7 @@ async function guildUserByID(guildId, userId) {
 /** @returns {Promise<import("mongoose").HydratedDocument<import("mongoose").InferSchemaType<typeof guildUserSchema>>>} */
 async function guildUserByObj(guild, userID, updateData={}) {
     const cachePeriod = 1500;
-    
+
     // updateData is json of fields that should be set to specific data.
 
     if (guild[`_db${userID}`] && Date.now() - guild[`_db${userID}CachedAt`] < cachePeriod) {
