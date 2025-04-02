@@ -127,6 +127,9 @@ guildSchema.post('findOneAndUpdate', async function (doc) {
 //#endregion
 
 //#region Users
+let primedEmbedSchema = mongoose.Schema({
+    content: { type: String, default: "" }
+})
 let userConfigSchema = mongoose.Schema({
     beenAIDisclaimered: { type: Boolean, default: false },
     aiPings: { type: Boolean, default: true },
@@ -140,7 +143,10 @@ let userSchema = new mongoose.Schema({
         trim: true,
         match: [/\d+/, "Error: UserID must be digits only"]
     },
+    primedEmojiURL: { type: String, defaut: "" },
+    primedName: { type: String, defaut: "" },
     timedOutIn: [ String ],
+    primedEmbed: userConfigSchema,
     config: userConfigSchema,
     captcha: Boolean,
 });
@@ -203,7 +209,7 @@ async function guildByID(id, updates={}) {
 }
 
 /** @returns {Promise<import("mongoose").HydratedDocument<import("mongoose").InferSchemaType<typeof guildSchema>>>} */
-async function guildByObj(obj, updates = {}) {
+async function guildByObj(obj, updates={}) {
     if (!obj) return null;
 
     const cachePeriod = 1500;
@@ -225,11 +231,9 @@ async function guildByObj(obj, updates = {}) {
     return guild;
 }
 
-
-async function userByID(id) {
-    // Fetch a user from the DB, and create it if it does not already exist
-
-    const user = await Users.findOneAndUpdate({ id }, {}, {
+async function userByID(id, updates={}) {
+    // Fetch a user from the DB, apply updates, and create it if it does not already exist
+    const user = await Users.findOneAndUpdate({ id }, updates, {
         new: true,
         upsert: true,
         setDefaultsOnInsert: true
@@ -239,15 +243,15 @@ async function userByID(id) {
 }
 
 /** @returns {Promise<import("mongoose").HydratedDocument<import("mongoose").InferSchemaType<typeof userSchema>>>} */
-async function userByObj(obj) {
+async function userByObj(obj, updates={}) {
     const cachePeriod = 1500;
 
     // Grab the DB object associated to this user object, but with cache
-    if (obj._dbObject && Date.now() - obj._dbObjectCachedAt < cachePeriod) {
-        const cachedUser = obj._dbObject;
-        return cachedUser;
+    if (obj._dbObject && Object.keys(updates).length === 0 && Date.now() - obj._dbObjectCachedAt < cachePeriod) {
+        return obj._dbObject;
     }
-    const user = await userByID(obj.id);
+    
+    const user = await userByID(obj.id, updates);
     obj._dbObject = user;
     obj._dbObjectCachedAt = Date.now();
 
@@ -257,6 +261,7 @@ async function userByObj(obj) {
 
     return user;
 }
+
 
 async function guildUserByID(guildId, userId) {
     // Fetch a guild from the DB, and create it if it does not already exist
