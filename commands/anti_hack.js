@@ -122,7 +122,6 @@ module.exports = {
                         if (timeoutable) {
                             msg.member.timeout(60000*60*24,`Detected spam activity of high profile pings and/or a URL of some kind. Automatically applied for safety.`); //One day, by then any automated hacks should've run their course
                             user.timedOutIn.push(msg.guild.id);
-                            user.save();
                         }
 
                         const logChannel = logChannelId
@@ -230,6 +229,8 @@ module.exports = {
                             }
                         }
                     }
+                    
+                    user.save();
                 }
             }
             else{

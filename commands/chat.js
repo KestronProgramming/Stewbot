@@ -1,6 +1,6 @@
 // #region CommandBoilerplate
 const Categories = require("./modules/Categories");
-const { Guilds, Users, guildByID, userByID, guildByObj, userByObj } = require("./modules/database.js")
+const { Guilds, Users, ConfigDB, guildByID, userByID, guildByObj, userByObj } = require("./modules/database.js")
 const { ContextMenuCommandBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
 function applyContext(context={}) {
 	for (key in context) {
@@ -20,7 +20,7 @@ const INTERFACES = config.aiNodeInterfaces;
 const BROADCAST_PORT = config.aiNodePort;
 
 let activeAIRequests = {};
-let convoCache = {}; // Stored here instead of storage, since it does not need persistance
+let convoCache = {}; // Stored here instead of storage, since it does not need persistent
 
 // Setup Gemini
 const { GoogleGenerativeAI } = require("@google/generative-ai");
@@ -386,16 +386,6 @@ module.exports = {
 
         // Optional fields
         extra: { "contexts": [0, 1, 2], "integration_types": [0, 1] },//Where the command can be used and what kind of installs it supports
-        /*
-            Contexts
-             - 0: Server command
-             - 1: Bot's DMs
-             - 2: User command
-
-            Integration Types:
-             - 0: Installed to servers
-             - 1: Installed to users
-        */
 
         // Allow variables from the global index file to be accessed here - requiredGlobals["helpPages"]
         requiredGlobals: [],
@@ -412,7 +402,7 @@ module.exports = {
 
         let message = cmd.options.getString("message");
         let thinking = cmd.options.getBoolean("thinking");
-        let gemini = cmd.options.getBoolean("gemini");
+        let gemini = cmd.options.getBoolean("gemini") ?? true;
 
         const clearHistory = cmd.options.getBoolean("clear");
         const threadID = cmd.user.id;
@@ -446,20 +436,25 @@ module.exports = {
         });
     },
 
+    /** @param {import('discord.js').Message} msg */
     async onmessage(msg, globals) {
         applyContext(globals);
+
+        const guild = await guildByObj(msg.guild);
+        const user = await userByObj(msg.author);
 
         // If the bot is pinged
         if (
             msg.mentions.users.has(client.user.id)
-            && storage[msg.author.id]?.config?.aiPings !== false // Check if the user has explicitly disabled AI pings
-            && !(msg.guild && storage[msg.guild.id]?.config?.ai === false) // And as long as the guild has not explicitly disabled it
+            && user?.config.aiPings !== false        // Check if the user has explicitly disabled AI pings
+            && !(guild?.config.ai === false)         // And as long as the guild has not explicitly disabled it
         ) {
+            const botSettings = await ConfigDB.findOne().lean();
 
             // Check for available servers before sending typing indicator (only for Ollama)
             let ollamaInstances = null;
-            if (!storage.useGlobalGemini) ollamaInstances = await getAvailableOllamaServers();
-            if (!storage.useGlobalGemini && ollamaInstances?.length === 0) return; // Don't send typing if no ollama servers and not using gemini
+            if (!botSettings.useGlobalGemini) ollamaInstances = await getAvailableOllamaServers();
+            if (!botSettings.useGlobalGemini && ollamaInstances?.length === 0) return; // Don't send typing if no ollama servers and not using gemini
             
             msg.channel.sendTyping();
 
@@ -468,7 +463,7 @@ module.exports = {
             let threadID = msg.author.id;
             let response, success;
 
-            if (storage.useGlobalGemini) {
+            if (botSettings.useGlobalGemini) {
                 [response, success] = await getAiResponseGemini(threadID, message, false, {
                     name: msg.author.username,
                     server: msg.guild ? msg.guild.name : "Direct Messages",
@@ -508,8 +503,9 @@ module.exports = {
                     response += emoji;
                 }
 
-                if (!storage[msg.author.id].config.beenAIDisclaimered) {
-                    storage[msg.author.id].config.beenAIDisclaimered = true;
+                if (!user.config.beenAIDisclaimered) {
+                    user.config.beenAIDisclaimered = true;
+                    user.save();
                     response += `\n-# This is part of a Stewbot feature. If you wish to disable it, a user can run /personal_config to disable it for them personally, or a moderator can run /general_config.`;
                 }
 
