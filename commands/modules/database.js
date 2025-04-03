@@ -18,6 +18,7 @@ const mongoose = require("mongoose");
 //#region Guild
 let countingSchema = new mongoose.Schema({
     // Config
+    active: { type: Boolean, default: false },
     channel: { type: String, default: "" },
     public: { type: Boolean, default: true },
     takeTurns: { type: Number, default: 1 },
@@ -28,6 +29,8 @@ let countingSchema = new mongoose.Schema({
     // State
     legit: { type: Boolean, default: true },
     reset: { type: Boolean, default: false },
+    nextNum: { type: Number, default: 1 },
+    highestNum: { type: Number, default: 0 },
 })
 
 let autoLeaveMessageSchema = new mongoose.Schema({

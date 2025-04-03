@@ -207,11 +207,7 @@ module.exports = {
                 break;
         }
 
-        // Push updates
-        await guildByObj(cmd.guild,
-            Object.fromEntries(Object.entries(guild.counting)
-                .map(([key, value]) => [`counting.${key}`, value])) // All these values are under the counting sub object
-        )
+        guild.save();
     },
 
     /** @param {import('discord.js').Message} msg */
@@ -222,13 +218,16 @@ module.exports = {
         const guildUser = await guildUserByObj(msg.guild, msg.author.id)
         const guildCounting = guild.counting; // efficiency
 
-        // If the server uses counting, but Stewbot cannot add reactions or send messages, don't do counting
-        if (!msg.author.bot && guildCounting.active && msg.channel.id === guildCounting.channel && (!msg.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.AddReactions) || !msg.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages))) {
-            guildCounting.active = false;
-        }
-
         // Counting
         if (!msg.author.bot && guildCounting.active && msg.channel.id === guildCounting.channel) {
+            
+            // If the server uses counting, but Stewbot cannot add reactions or send messages, don't do counting
+            if (!msg.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.AddReactions) || !msg.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)) {
+                guildCounting.active = false;
+                await guildCounting.save();
+                return;
+            }
+
             var num = processForNumber(msg.content);
             if (num) {
                 if (num === guildCounting.nextNum) {
@@ -263,13 +262,9 @@ module.exports = {
                                 guildCounting.nextNum = 1;
                                 if (guildCounting.reset && guildCounting.takeTurns > 0) guildCounting.legit = true;
                                 
-                                for (let a in storage[msg.guild.id].users) {
-                                    storage[msg.guild.id].users[a].countTurns = 0;
-                                }
-
                                 await GuildUsers.updateMany(
                                     { guildId: msg.guild.id, countTurns: { $gt: 0 } },
-                                    { $inc: { countTurns: -1 } }
+                                    { $set: { countTurns: 0 } }
                                 );
         
                                 if (guildCounting.failRoleActive && msg.guild.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageRoles)) {
@@ -316,9 +311,12 @@ module.exports = {
                         msg.reply(`⛔ **Reset**\nNope, that was incorrect! The next number to post was going to be \`${guildCounting.nextNum}\`, but now it's \`1\`.`);
                         guildCounting.nextNum = 1;
                         if (guildCounting.reset && guildCounting.takeTurns > 0) guildCounting.legit = true;
-                        for (let a in storage[msg.guild.id].users) {
-                            storage[msg.guild.id].users[a].countTurns = 0;
-                        }
+
+                        await GuildUsers.updateMany(
+                            { guildId: msg.guild.id, countTurns: { $gt: 0 } },
+                            { $set: { countTurns: 0 } }
+                        );
+
                         if (guildCounting.failRoleActive && msg.guild.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageRoles)) {
                             var fr = msg.guild.roles.cache.get(guildCounting.failRole);
                             if (!fr) {
@@ -372,7 +370,7 @@ module.exports = {
             }
         }
 
-        guildUser?.save();
+        guildUser.save();
         guild.save();
     }
 };
