@@ -40,13 +40,22 @@ module.exports = {
 				return;
 			}
 			cmd.targetMessage.delete();
-			if (storage[cmd.guildId].logs.mod_actions && storage[cmd.guildId].logs.active) {
-				var c = client.channels.cache.get(storage[cmd.guildId].logs.channel);
+			
+			const guild = await guildByObj(cmd.guild);
+
+			if (guild.logs.mod_actions && guild.logs.active) {
+				var c = client.channels.cache.get(guild.logs.channel);
 				if (c.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)) {
-					c.send({ content: `Message from <@${cmd.targetMessage.author.id}> deleted by **${cmd.user.username}**.\n\n${cmd.targetMessage.content}`, allowedMentions: { parse: [] } });
+					c.send({
+                        content: 
+							`Message from <@${cmd.targetMessage.author.id}> deleted by **${cmd.user.username}**.\n`+
+							`\n`+
+							`${cmd.targetMessage.content}`,
+                        allowedMentions: { parse: [] },
+                    });
 				}
 				else {
-					storage[cmd.guildId].logs.active = false;
+					guild.logs.active = false;
 				}
 			}
 			cmd.followUp({ "content": "Success", "ephemeral": true });

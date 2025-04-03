@@ -16,6 +16,11 @@
 const mongoose = require("mongoose");
 
 //#region Guild
+let guildLogsSchema = new mongoose.Schema({
+    active: { type: Boolean, default: false },
+    // mod_actionscdld
+})
+
 let dailyItemSchema = new mongoose.Schema({
     active: { type: Boolean, default: false },
     channel: { type: String, default: "" },
@@ -128,6 +133,7 @@ let guildSchema = new mongoose.Schema({
     blockedCommands: [ String ],
     daily: { type: dailySchema, default: {} },
     counting: { type: countingSchema, default: {} },
+    logs : { type: guildLogsSchema, default: {} },
     groupmute: String,
     disableAntiHack: Boolean,
 });
