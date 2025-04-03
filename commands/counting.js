@@ -215,12 +215,16 @@ module.exports = {
         applyContext(context);
 
         const guild = await guildByObj(msg.guild);
-        const guildUser = await guildUserByObj(msg.guild, msg.author.id)
         const guildCounting = guild.counting; // efficiency
+        let guildUser;
 
         // Counting
         if (!msg.author.bot && guildCounting.active && msg.channel.id === guildCounting.channel) {
             
+            // Fetch the guild user's storage if we're counting
+            guildUser = await guildUserByObj(msg.guild, msg.author.id)
+            if (!guildUser) return;
+
             // If the server uses counting, but Stewbot cannot add reactions or send messages, don't do counting
             if (!msg.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.AddReactions) || !msg.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)) {
                 guildCounting.active = false;
@@ -368,9 +372,9 @@ module.exports = {
                     }
                 }
             }
-        }
 
-        guildUser.save();
-        guild.save();
+            guildUser.save();
+            guild.save();
+        }
     }
 };
