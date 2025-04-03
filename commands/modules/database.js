@@ -16,6 +16,19 @@
 const mongoose = require("mongoose");
 
 //#region Guild
+let dailyItemSchema = new mongoose.Schema({
+    active: { type: Boolean, default: false },
+    channel: { type: String, default: "" },
+})
+
+let dailySchema = new mongoose.Schema({
+    memes: { type: dailyItemSchema, default: {} },
+    devos: { type: dailyItemSchema, default: {} },
+    verses: { type: dailyItemSchema, default: {} },
+    // wyrs: { type: dailyItemSchema, default: {} },
+    // jokes: { type: dailyItemSchema, default: {} },
+})
+
 let countingSchema = new mongoose.Schema({
     // Config
     active: { type: Boolean, default: false },
@@ -107,13 +120,14 @@ let guildSchema = new mongoose.Schema({
     emojiboards: [ 
         { type: emojiboardSchema, required: true }
     ],
-    tempBans: { type: Map, of: tempBanSchema },
-    alm: { type: autoLeaveMessageSchema },
-    ajm: { type: autoJoinMessageSchema },
-    config: { type: guildConfigSchema },
-    counting: countingSchema,
+    tempBans: { type: Map, of: tempBanSchema, default: [] },
+    alm: { type: autoLeaveMessageSchema, default: {} },
+    ajm: { type: autoJoinMessageSchema, default: {} },
+    config: { type: guildConfigSchema, default: {} },
     autoJoinRoles: [ String ],
     blockedCommands: [ String ],
+    daily: { type: dailySchema, default: {} },
+    counting: { type: countingSchema, default: {} },
     groupmute: String,
     disableAntiHack: Boolean,
 });
@@ -187,6 +201,8 @@ userSchema.post('findOneAndUpdate', async function (doc) {
 // Global bot config - everything from the top level storage.json goes here
 const configSchema = new mongoose.Schema({
     useGlobalGemini: { type: Boolean, default: true },
+    dailyMeme: { type: Number, default: 0 },
+
 })
 
 const ConfigDB = mongoose.model("settings", configSchema)

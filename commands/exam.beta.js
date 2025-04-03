@@ -9,8 +9,6 @@ function applyContext(context = {}) {
 }
 // #endregion CommandBoilerplate
 
-const sugar = require("sugar")
-
 function formatMilliseconds(milliseconds) {
     const date = sugar.Date.create(milliseconds);
     return date.format('{duration}');

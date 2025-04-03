@@ -1,7 +1,7 @@
 // #region CommandBoilerplate
 const Categories = require("./modules/Categories");
-const { Guilds, Users, guildByID, userByID, guildByObj, userByObj } = require("./modules/database.js")
-const { ContextMenuCommandBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
+const { Guilds, Users, ConfigDB, guildByID, userByID, guildByObj, userByObj } = require("./modules/database.js")
+const { ContextMenuCommandBuilder, MessageAttachment , AttachmentBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
 function applyContext(context={}) {
 	for (key in context) {
 		this[key] = context[key];
@@ -12,6 +12,43 @@ function applyContext(context={}) {
 const fs = require("node:fs")
 const Turndown = require('turndown');
 var turndown = new Turndown();
+
+async function sendDailiesToSubscribed(type, message={}) {
+    const dailySubbedGuilds = await Guilds.find({ 
+        [`daily.${type}.active`]: true 
+    }).lean();
+
+    const erroredGuilds = [];
+
+    for (const guild of dailySubbedGuilds) {
+        const subbedChannel = guild.daily[type].channel;
+        try {
+            const channel = await client.channels.fetch(subbedChannel);
+            
+            if (channel.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)) {
+                await channel.send(message);
+            } else {
+                erroredGuilds.push(guild.id);
+            }
+        } catch (err) {
+            // Let's not just delete all errors
+            // Report the error, if need be later we can add specific error types that delete it
+            notify(`Error in sending ${type} daily to specific server:\n` + err.stack)
+
+            // erroredGuilds.push(guild.id);
+        }
+    }
+
+    // Disable on guilds without perms
+    if (erroredGuilds.length > 0) {
+        await Guilds.updateMany(
+            { id: { $in: erroredGuilds } }, 
+            { $set: {
+                [`daily.${type}.active`]: false 
+            } }
+        );
+    }
+}
 
 module.exports = {
 	data: {
@@ -48,42 +85,29 @@ module.exports = {
 	/** @param {import('discord.js').Interaction} cmd */
     async execute(cmd, context) {
 		applyContext(context);
-		
-        if(!storage[cmd.guildId].hasOwnProperty("daily")){
-            storage[cmd.guildId].daily={
-                "memes":{
-                    "active":false,
-                    "channel":""
-                },
-                "wyrs":{
-                    "active":false,
-                    "channel":""
-                },
-                "jokes":{
-                    "active":false,
-                    "channel":""
-                },
-                "devos":{
-                    "active":false,
-                    "channel":""
-                },
-                "verses":{
-                    "active":false,
-                    "channel":""
-                },
-                "qotd":{
-                    "active":false,
-                    "channel":""
-                }
-            };
-        }
-        storage[cmd.guildId].daily[cmd.options.getString("type")].active=cmd.options.getBoolean("active");
-        storage[cmd.guildId].daily[cmd.options.getString("type")].channel=cmd.options.getChannel("channel").id;
-        if(!cmd.options.getChannel("channel").permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
-            cmd.followUp(`I can't send messages in that channel, so I can't run daily ${cmd.options.getString("type")}.`);
+
+        const updates = {};
+
+        const type = cmd.options.getString("type");
+        const channel = cmd.options.getChannel("channel");
+
+        // Push changes
+        updates[`daily.${type}.active`] = cmd.options.getBoolean("active");
+        updates[`daily.${type}.channel`] = channel.id;
+
+        await guildByObj(cmd.guild, updates);
+        
+        if(!channel.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
+            cmd.followUp(`I can't send messages in that channel, so I can't run daily ${type}.`);
             return;
         }
-        cmd.followUp(`${storage[cmd.guildId].daily[cmd.options.getString("type")].active?"A":"Dea"}ctivated daily \`${cmd.options.getString("type")}\` for this server in <#${storage[cmd.guildId].daily[cmd.options.getString("type")].channel}>.`);
+
+        cmd.followUp(
+            `${updates[`daily.${type}.active`]
+                ? "A"
+                :"Dea"
+            }ctivated daily \`${type}\` for this server in <#${channel.id}>.`
+        );
 	},
 
     async daily(context) {
@@ -91,7 +115,10 @@ module.exports = {
 
         // Daily devo
         var dailyDevo=[];
-        fetch("https://www.biblegateway.com/devotionals/niv-365-devotional/today").then(d=>d.text()).then(d=>{
+        try {
+            const req = await fetch("https://www.biblegateway.com/devotionals/niv-365-devotional/today")
+            const d = await req.text();
+
             var temp=turndown.turndown(d.split(`<div class="col-xs-12">`)[1].split("</div>")[0].trim()).split("\\n");
             var cc=0;
             var cOn=0;
@@ -125,23 +152,17 @@ module.exports = {
                     "text":`Bible Gateway, ${now.getMonth()+1}/${now.getDate()}/${now.getFullYear()}`
                 }
             }
-            Object.keys(storage).forEach(s=>{
-                if(storage[s]?.daily?.devos?.active){
-                    var c=client.channels.cache.get(storage[s].daily.devos.channel);
-                    if(c.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
-                        c.send({embeds:dailyDevo});
-                    }
-                    else{
-                        storage[s].daily.devos.active=false;
-                    }
-                }
-            });
-        }).catch(e => {
-            notify("Devo daily: " + e.stack);
-        });
 
+            await sendDailiesToSubscribed("devos", {embeds: dailyDevo});
+
+        } catch (e) {
+            notify("Devo daily: " + e.stack);
+        }
+        
         // Verse of the day
-        fetch("https://www.bible.com/verse-of-the-day").then(d=>d.text()).then(d=>{
+        try {
+            const req = await fetch("https://www.bible.com/verse-of-the-day")
+            const d = await req.text();
             var now=new Date();
             const nextData = JSON.parse(d.match(/<script id="__NEXT_DATA__" type="application\/json">(.+?)<\/script>/)[1])
             const verse = nextData.props.pageProps.verses[0];
@@ -160,52 +181,39 @@ module.exports = {
                 }
             };
     
+            await sendDailiesToSubscribed("verses", {embeds: [votd]});
     
-            Object.keys(storage).forEach(s=>{
-                if(storage[s]?.daily?.verses?.active){
-                    var c=client.channels.cache.get(storage[s].daily.verses.channel);
-                    if(c.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
-                        c.send({embeds:[votd]});
-                    }
-                    else{
-                        storage[s].daily.verses.active=false;
-                    }
-                }
-            });
-        }).catch(e => {
+        } catch {
             notify("Verse Of The Day error: " + e.stack);
-        });
+        };
 
         // Send the daily meme to each server
-        if(storage.dailyMeme===undefined||storage.dailyMeme===null) storage.dailyMeme=-1;
-        storage.dailyMeme++;
-        if(storage.dailyMeme >= fs.readdirSync("./memes").length) storage.dailyMeme=0;
-        Object.keys(storage).forEach(s => {
-            try {
-                if(storage[s]?.daily?.memes?.active){
-                    var c=client.channels.cache.get(storage[s].daily.memes.channel);
-                    if(c.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
-                        c.send({
-                            content: `## Daily Meme\n-# Meme \\#${storage.dailyMeme}`,
-                            files: [
-                                `./memes/${storage.dailyMeme}.${
-                                    fs.readdirSync("./memes")
-                                        .filter((a) =>
-                                            a.split(".")[0] ===
-                                            `${storage.dailyMeme}`
-                                        )[0]
-                                        .split(".")[1]
-                                }`,
-                            ],
-                        });
-                    }
-                    else{
-                        storage[s].daily.memes.active=false;
-                    }
-                }
-            } catch (e) {
-                notify("Daily meme error: " + e.stack);
-            }
-        })
+        try {
+            const botSettings = await ConfigDB.findOneAndUpdate(
+                {}, 
+                { $inc: { dailyMeme: 1 } }, 
+                { new: true }
+            ).select("dailyMeme").lean();
+            const memes = await fs.promises.readdir("./memes");
+            const selectedMemeName = memes[botSettings.dailyMeme % memes.length];
+
+            console.log(botSettings.dailyMeme)
+                
+            // Read the selected meme file into a buffer
+            const selectedMemeBuffer = await fs.promises.readFile(`./memes/${selectedMemeName}`);
+
+            // Create an attachment from the buffer
+            const attachment = new AttachmentBuilder(selectedMemeBuffer, { 
+                name: selectedMemeName,
+                description: "Today's daily meme."
+            });
+
+            await sendDailiesToSubscribed("memes", {
+                content: `## Daily Meme\n-# Meme \\#${botSettings.dailyMeme}`,
+                files: [ attachment ],
+            });
+        } catch (e) {
+            notify("Meme Of The Day error: " + e.stack);
+        };
     }
 };
