@@ -72,12 +72,11 @@ module.exports = {
 			cmd.followUp(`That emoji is in use for groupmute.`);
 			return;
 		}
-		if(guild.emojiboards.some(e=>e.emoji===emoji)) {
+		if(guild.emojiboards.has(emoji)) {
 			cmd.followUp(`That emoji already has an emojiboard.`);
 			return;
 		}
-		guild.emojiboards.push({
-			emoji,
+		guild.emojiboards.set(emoji, {
 			channel: cmd.options.getChannel("channel").id,
 			active: true,
 			threshold: cmd.options.getInteger("threshold") || 3,
