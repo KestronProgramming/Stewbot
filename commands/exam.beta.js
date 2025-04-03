@@ -85,7 +85,12 @@ module.exports = {
         }
         else {
             const guild = await guildByObj(cmd.guild);
-            cmd.followUp(JSON.stringify(guild.toJSON(), null, 4));
+            const buffer = Buffer.from(JSON.stringify(guild.toJSON(), null, 4));
+            const attachment = {
+                attachment: buffer,
+                name: 'guild.json'
+            };
+            cmd.followUp({ files: [attachment] });
         }
     },
 

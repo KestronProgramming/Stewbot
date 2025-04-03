@@ -72,7 +72,7 @@ let autoJoinMessageSchema = new mongoose.Schema({
 })
 
 let emojiboardSchema = new mongoose.Schema({
-    emoji: { type: String, trim: true },
+    // emoji: { type: String, trim: true },
     messType: String,
     threshold: Number,
     active: Boolean,
@@ -122,9 +122,10 @@ let guildSchema = new mongoose.Schema({
         trim: true,
         match: [/\d+/, "Error: ServerID must be digits only"]
     },
-    emojiboards: [ 
-        { type: emojiboardSchema, required: true }
-    ],
+    emojiboards: { type: Map, of: emojiboardSchema, default: [] },
+    // emojiboards: [ 
+    //     { type: emojiboardSchema, required: true }
+    // ],
     tempBans: { type: Map, of: tempBanSchema, default: [] },
     alm: { type: autoLeaveMessageSchema, default: {} },
     ajm: { type: autoJoinMessageSchema, default: {} },
@@ -137,19 +138,19 @@ let guildSchema = new mongoose.Schema({
     groupmute: String,
     disableAntiHack: Boolean,
 });
-
+ 
 // Make sure each doc subfield exists
 guildSchema.post('findOneAndUpdate', async function (doc) {
     // This middleware only runs on findOneAndUpdate calls.
     if (doc) {
         const needsUpdate = [];
 
-        ensureField(doc, needsUpdate, "config", {});
-        ensureField(doc, needsUpdate, "ajm", {});
-        ensureField(doc, needsUpdate, "alm", {});
-        ensureField(doc, needsUpdate, "emojiboards", []);
-        ensureField(doc, needsUpdate, "tempBans", {});
-        ensureField(doc, needsUpdate, "counting", {});
+        // ensureField(doc, needsUpdate, "config", {});
+        // ensureField(doc, needsUpdate, "ajm", {});
+        // ensureField(doc, needsUpdate, "alm", {});
+        // ensureField(doc, needsUpdate, "emojiboards", []);
+        // ensureField(doc, needsUpdate, "tempBans", {});
+        // ensureField(doc, needsUpdate, "counting", {});
 
         if (needsUpdate.length > 0) {
             await doc.updateOne({ 
