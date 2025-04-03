@@ -10,3 +10,9 @@ Port guild users
 Port users
 
 Port root level storage (config)
+
+
+
+TODO:
+Once general_config is ported, test turning off embeds, chat, etc
+Once prime embed is ported, test embedding it with embed_message

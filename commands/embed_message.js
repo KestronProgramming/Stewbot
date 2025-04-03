@@ -40,10 +40,18 @@ module.exports = {
 	/** @param {import('discord.js').Interaction} cmd */
     async execute(cmd, context) {
 		applyContext(context);
+
+        const user = userByObj(cmd.user);
 		
-        if(cmd.options.getString("link").toLowerCase()==="primed"&&storage[cmd.user.id].hasOwnProperty("primedEmbed")){
+        if (cmd.options.getString("link").toLowerCase() === "primed" && user.primedEmbed) {
             var primer=getPrimedEmbed(cmd.user.id,cmd.guild?.id);
-            cmd.followUp({"content":`-# Embedded primed message. Use the context menu command \`/prime_embed\` and type \`PRIMED\` into ${cmds.embed_message.mention} to do the same.`,embeds:[primer],files:primer.title==="Blocked"?[]:storage[cmd.user.id].primedEmbed.attachmentURLs});
+            cmd.followUp({
+                "content":`-# Embedded primed message. Use the context menu command \`/prime_embed\` and type \`PRIMED\` into ${cmds.embed_message.mention} to do the same.`,
+                embeds:[primer],
+                files: primer.title==="Blocked"
+                    ? []
+                    : user.primedEmbed.attachmentURLs
+                });
         }
         else{
             try{
@@ -103,15 +111,45 @@ module.exports = {
     /** @param {import('discord.js').Message} msg */
     async onmessage(msg, context) {
 		applyContext(context);
+
+        
         
         // Discord message embeds
-        var links=msg.content.match(discordMessageRegex)||[];
-        var progs=msg.content.match(kaProgramRegex)||[];
-        if(!storage[msg.author.id].config.embedPreviews||!storage[msg.guildId]?.config.embedPreviews||!msg.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)||!msg.channel.permissionsFor(msg.author.id)?.has(PermissionFlagsBits.EmbedLinks)){
-            // If the embed shouldn't be posted, force set it to nothing
-            links=[];
-            progs=[];
+        var links = msg.content.match(discordMessageRegex) || [];
+        var progs = msg.content.match(kaProgramRegex) || [];
+        if (links.length > 0 || progs.length > 0) {
+            // Check for settings blocking
+            await (async () => {
+                // Make sure we have perms to embed
+                if (!msg.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages) || !msg.channel.permissionsFor(msg.author.id)?.has(PermissionFlagsBits.EmbedLinks)) {
+                    links = progs = [];
+                    return;
+                }
+
+                // If this message has links, check if the user blocked embeds
+                const user = await Users.findOrCreate({ id: msg.author.id })
+                    .select("config.embedPreviews")
+                    .lean();
+
+                // .lean doesn't return unset defaults, and this prop defaults to true so consider undefined as true
+                if (!user?.config?.embedPreviews === false) { 
+                    links = progs = [];
+                    return;
+                }
+
+                // Now check guild
+                if (!msg.guild) return;
+                const guild = await Guilds.findOrCreate({ id: msg.guild.id })
+                    .select("config.embedPreviews")
+                    .lean();
+
+                if (!guild?.config?.embedPreviews === false) {
+                    links = progs = [];
+                    return;
+                }
+            })()
         }
+
         var embs=[];
         var fils=[];
         for(var i=0;i<links.length;i++){

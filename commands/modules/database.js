@@ -110,7 +110,8 @@ let guildConfigSchema = new mongoose.Schema({
     antihack_auto_delete: { type: Boolean, default: true},
     domain_scanning: { type: Boolean, default: true},
     fake_link_check: { type: Boolean, default: true},
-    ai: { type: Boolean, default: true}
+    ai: { type: Boolean, default: true},
+    embedPreviews: { type: Boolean, default: true },
 });
 
 let guildSchema = new mongoose.Schema({
@@ -123,9 +124,6 @@ let guildSchema = new mongoose.Schema({
         match: [/\d+/, "Error: ServerID must be digits only"]
     },
     emojiboards: { type: Map, of: emojiboardSchema, default: [] },
-    // emojiboards: [ 
-    //     { type: emojiboardSchema, required: true }
-    // ],
     tempBans: { type: Map, of: tempBanSchema, default: [] },
     alm: { type: autoLeaveMessageSchema, default: {} },
     ajm: { type: autoJoinMessageSchema, default: {} },
@@ -163,12 +161,14 @@ guildSchema.post('findOneAndUpdate', async function (doc) {
 
 //#region Users
 let primedEmbedSchema = mongoose.Schema({
-    content: { type: String, default: "" }
+    content: String,
+    attachmentURLs: [ String ],
 })
 
 let userConfigSchema = mongoose.Schema({
     beenAIDisclaimered: { type: Boolean, default: false },
     aiPings: { type: Boolean, default: true },
+    embedPreviews: { type: Boolean, default: true, required: true},
 })
 
 let userSchema = new mongoose.Schema({
@@ -183,8 +183,8 @@ let userSchema = new mongoose.Schema({
     primedEmojiURL: { type: String, defaut: "" },
     primedName: { type: String, defaut: "" },
     timedOutIn: [ String ],
-    primedEmbed: userConfigSchema,
-    config: userConfigSchema,
+    primedEmbed: userConfigSchema, // This prop shouldn't exist unless set firsts
+    config: { type: userConfigSchema, default: {} },
     captcha: Boolean,
 });
 
@@ -193,7 +193,7 @@ userSchema.post('findOneAndUpdate', async function (doc) {
     if (doc) {
         const needsUpdate = [];
 
-        ensureField(doc, needsUpdate, "config", {});
+        // ensureField(doc, needsUpdate, "config", {});
 
         if (needsUpdate.length > 0) {
             await doc.updateOne({ 
@@ -225,13 +225,24 @@ ConfigDB.findOne().then(async (config) => {
 
 //#endregion
 
-
-const Guilds = mongoose.model("guilds", guildSchema);
-const GuildUsers = mongoose.model("guildusers", guildUserSchema);
-const Users = mongoose.model("users", userSchema)
-
-
 //#region Functions
+
+function findOrCreate(query, updates = {}) {
+    // Adding this as a static utility function to all docs.
+    // This makes them create fields that don't already exist and such.
+    return this.findOneAndUpdate(
+        query,
+        { $set: updates },
+        {
+            new: true,
+            upsert: true,
+            setDefaultsOnInsert: true
+        }
+    );
+}
+guildSchema.statics.findOrCreate = findOrCreate;
+guildUserSchema.statics.findOrCreate = findOrCreate;
+userSchema.statics.findOrCreate = findOrCreate;
 
 function ensureField(doc, needsUpdate, field, defaultValue) {
     if (!doc[field]) {
@@ -355,8 +366,11 @@ async function guildUserByObj(guild, userID, updateData={}) {
 //#endregion
 
 
-// Drop indexes of docs where metadata was changed
+const Guilds = mongoose.model("guilds", guildSchema);
+const GuildUsers = mongoose.model("guildusers", guildUserSchema);
+const Users = mongoose.model("users", userSchema)
 
+// Drop indexes of docs where metadata was changed
 async function dropIndexes(Model){
     try {
         const indexes = await Model.collection.indexes();
