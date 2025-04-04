@@ -20,6 +20,10 @@ mongoose.set('setDefaultsOnInsert', true);
 
 
 //#region Guild
+let groupMuteSchema = new mongoose.Schema({
+    
+})
+
 let filterSchema = new mongoose.Schema({
     active: { type: Boolean, default: false },
     censor: { type: Boolean, default: true },
@@ -84,7 +88,6 @@ let autoJoinMessageSchema = new mongoose.Schema({
 })
 
 let emojiboardSchema = new mongoose.Schema({
-    // emoji: { type: String, trim: true },
     messType: String,
     threshold: Number,
     active: Boolean,
@@ -147,7 +150,7 @@ let guildSchema = new mongoose.Schema({
     counting: { type: countingSchema, default: {} },
     logs: { type: guildLogsSchema, default: {} },
     filter: { type: filterSchema, default: {} },
-    groupmute: String,
+    groupmute: String, // The emoji tied to an emojiboard with groupmute configs
     disableAntiHack: Boolean,
     testProp: String,
 });
