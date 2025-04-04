@@ -33,44 +33,61 @@ module.exports = {
 	/** @param {import('discord.js').Interaction} cmd */
     async execute(cmd, context) {
 		applyContext(context);
-		
-        fetch("https://api.dictionaryapi.dev/api/v2/entries/en/"+cmd.options.getString("what")).then(d=>d.json()).then(d=>{
-            d = d[0];
+
+        try {
+            const res = await fetch("https://api.dictionaryapi.dev/api/v2/entries/en/"+cmd.options.getString("what"));
+            const wordDefinition = await res.json();
             
-            if (d?.meanings) {
-                if(checkDirty(cmd.guild?.id,d.word)||checkDirty(config.homeServer,d.word)){
+            wordDefinition = wordDefinition[0];
+            
+            if (wordDefinition?.meanings) {
+                if(await checkDirty(cmd.guild?.id,wordDefinition.word)||await checkDirty(config.homeServer,wordDefinition.word)){
                     cmd.followUp({content:"I am not able to provide a definition for that word.",ephemeral:true});
                     return;
                 }
 
                 let defs = [];
-                for (var i = 0; i < d.meanings.length; i++) {
-                    for (var j = 0;j < d.meanings[i].definitions.length;j++) {
-                        let foundOne=checkDirty(cmd.guild?.id,d.meanings[i].definitions[j].example)||checkDirty(cmd.guild?.id,d.meanings[i].definitions[j].definition)||checkDirty(config.homeServer,d.meanings[i].definitions[j].example)||checkDirty(config.homeServer,d.meanings[i].definitions[j].definition);
+                for (var i = 0; i < wordDefinition.meanings.length; i++) {
+                    for (var j = 0;j < wordDefinition.meanings[i].definitions.length;j++) {
+                        // Check definition and example against our filter, for home and main server
+                        let foundOne =
+                            (await checkDirty(
+                                cmd.guild?.id,
+                                wordDefinition.meanings[i].definitions[j].example,
+                                false,
+                                true
+                            )) ||
+                            (await checkDirty(
+                                cmd.guild?.id,
+                                wordDefinition.meanings[i].definitions[j].definition,
+                                false,
+                                true
+                            ))
+                        
                         defs.push({
-                            name:"Type: " +d.meanings[i].partOfSpeech,
-                            value:foundOne?"Blocked definition":d.meanings[i].definitions[j].definition+(d.meanings[i].definitions[j].example?"\nExample: " +d.meanings[i].definitions[j].example:""),
+                            name:"Type: " +wordDefinition.meanings[i].partOfSpeech,
+                            value:foundOne?"Blocked definition":wordDefinition.meanings[i].definitions[j].definition+(wordDefinition.meanings[i].definitions[j].example?"\nExample: " +wordDefinition.meanings[i].definitions[j].example:""),
                             inline: true
                         });
                     }
                 }
                 cmd.followUp({embeds:[{
                     type: "rich",
-                    title: "Definition of "+d.word,
-                    description: d.origin,
+                    title: "Definition of "+wordDefinition.word,
+                    description: wordDefinition.origin,
                     color: 0x773e09,
                     fields: defs.slice(0,25),
                     footer: {
-                        text: d.phonetic,
+                        text: wordDefinition.phonetic,
                     }
                 }]});
             }
             else { 
                 cmd.followUp("I'm sorry, I didn't find a definition for that");
             }
-        }).catch(e=>{
-            notify("Dictionary error: " + String(e));
+        } catch (e) {
+            notify("Dictionary error:\n" + String(e));
             cmd.followUp("I'm sorry, I didn't find a definition for that");
-        });
+        };
     },
 };

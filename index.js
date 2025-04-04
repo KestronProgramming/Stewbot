@@ -307,7 +307,7 @@ global.sendHook = async function(what, msg) {
     if(typeof what==="string"){
         what={"content": what}
     }
-    what.content=checkDirty(config.homeServer,what.content,true)[1];
+    what.content=(await checkDirty(config.homeServer,what.content,true))[1];
     
     // Prevent pings
     what.allowedMentions = { parse: [] };
@@ -1066,7 +1066,7 @@ client.on("messageReactionAdd",async (react,user)=>{
 
     // Reaction filters
     if(storage[react.message.guild?.id]?.filter.active&&react.message.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageMessages)){
-        if(checkDirty(react.message.guild.id,`${react._emoji}`)){
+        if(await checkDirty(react.message.guild.id,`${react._emoji}`)){
             react.remove();
             if(storage[react.message.guild.id].filter.log){
                 var c=client.channels.cache.get(storage[react.message.guild.id].filter.channel);
@@ -1180,7 +1180,7 @@ client.on("messageUpdate",async (msgO,msg)=>{
 
     // Filter edit handler
     if(storage[msg.guild.id]?.filter.active){
-        let [filtered, filteredContent, foundWords] = checkDirty(msg.guildId, msg.content, true)
+        let [filtered, filteredContent, foundWords] = await checkDirty(msg.guildId, msg.content, true)
 
         if(filtered) {
             storage[msg.guild.id].users[msg.author.id].infractions++;
@@ -1598,7 +1598,22 @@ client.on("stickerUpdate",async (stickerO,sticker)=>{
         if(diffs.length>0){
             var c=sticker.guild.channels.cache.get(storage[sticker.guild.id].logs.channel);
             if(c.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
-                c.send({content:`**Sticker Edited**\n- **Name**: ${diffs.includes("name")?`${stickerO.name} -> `:""}${sticker.name}\n- **Related Emoji**: ${diffs.includes("tags")?`${/^\d{19}$/.test(stickerO.tags)?`<:${client.emojis.cache.get(stickerO.tags).name}:${stickerO.tags}>`:stickerO.tags} -> `:""}${/^\d{19}$/.test(sticker.tags)?`<:${client.emojis.cache.get(sticker.tags).name}:${sticker.tags}>`:sticker.tags}\n- **Description**: ${diffs.includes("description")?`${stickerO.description} -> `:""}${sticker.description}`,stickers:[sticker]});
+                c.send({
+                    content:
+                        `**Sticker Edited**\n`+
+                        `- **Name**: ${ diffs.includes("name") 
+                            ? `${stickerO.name} -> `
+                            :""}${sticker.name}\n`+
+                        `- **Related Emoji**: ${diffs.includes("tags")
+                            ? `${/^\d{19}$/.test(stickerO.tags)
+                                ?`<:${client.emojis.cache.get(stickerO.tags).name}:${stickerO.tags}>`
+                                :stickerO.tags} -> `
+                            :""}${/^\d{19}$/.test(sticker.tags)
+                                ?`<:${client.emojis.cache.get(sticker.tags).name}:${sticker.tags}>`
+                                :sticker.tags}\n`+
+                        `- **Description**: ${diffs.includes("description")?`${stickerO.description} -> `:""}${sticker.description}`,
+                    stickers: [sticker]
+                });
             }
             else{
                 storage[sticker.guild.id].logs.active=false;

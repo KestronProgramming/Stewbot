@@ -37,12 +37,16 @@ module.exports = {
     async execute(cmd, context) {
 		applyContext(context);
 		
-		translate(cmd.targetMessage.content,{
-			to:cmd.locale.slice(0,2)
-		}).then(t=>{
-			t.text=checkDirty(config.homeServer,t.text,true)[1];
-			if(cmd.guildId&&storage[cmd.guildId]?.filter.active) t.text=checkDirty(cmd.guildId,t.text,true)[1];
-			cmd.followUp(`Attempted to translate${t.text!==cmd.targetMessage.content?`:\n\`\`\`\n${escapeBackticks(t.text)}\n\`\`\`\n-# If this is incorrect, try using ${cmds.translate.mention}.`:`, but I was unable to. Try using ${cmds.translate.mention}.`}`);
-		});
+		const t = await translate(cmd.targetMessage.content,{to:cmd.locale.slice(0,2)});
+		t.text = await checkDirty(config.homeServer, t.text, true)[1];
+		if (cmd.guildId && storage[cmd.guildId]?.filter.active) t.text = await checkDirty(cmd.guildId, t.text, true)[1];
+		cmd.followUp(
+			`Attempted to translate${t.text !== cmd.targetMessage.content 
+				? `:\n`+
+					`\`\`\`\n`+
+					`${escapeBackticks(t.text)}\n`+
+					`\`\`\`\n`+
+					`-# If this is incorrect, try using ${cmds.translate.mention}.` 
+				: `, but I was unable to. Try using ${cmds.translate.mention}.`}`);
 	}
 };

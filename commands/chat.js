@@ -428,7 +428,7 @@ module.exports = {
 
 
         response = await postprocessAIMessage(limitLength(response))
-        response = checkDirty(cmd.guild?.id, response, true, true)[1];
+        response = await checkDirty(cmd.guild?.id, response, true, true)[1];
 
         cmd.followUp({
             content: await postprocessAIMessage(limitLength(response), cmd.guild),
@@ -485,7 +485,7 @@ module.exports = {
                 }
 
                 response = await postprocessAIMessage(response, msg.guild);
-                response = checkDirty(msg.guild?.id, response, true, true)[1];
+                response = await checkDirty(msg.guild?.id, response, true, true)[1];
 
                 // Let's trim emojis as reactions
                 var emojiEnding = /[\p{Emoji}\uFE0F]$/u;

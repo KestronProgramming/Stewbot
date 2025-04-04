@@ -16,3 +16,9 @@ Port root level storage (config)
 TODO:
 Once general_config is ported, test turning off embeds, chat, etc
 Once prime embed is ported, test embedding it with embed_message
+
+
+
+
+# TODO:
+CheckDirty needs aggressive caching... which needs to be invalidated when modified

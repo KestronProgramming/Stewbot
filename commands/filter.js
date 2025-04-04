@@ -1,6 +1,6 @@
 // #region CommandBoilerplate
 const Categories = require("./modules/Categories");
-const { Guilds, Users, guildByID, userByID, guildByObj, userByObj } = require("./modules/database.js")
+const { Guilds, Users, GuildUsers, guildByID, userByID, guildByObj, userByObj, guildUserByObj } = require("./modules/database.js")
 const { ContextMenuCommandBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
 function applyContext(context={}) {
 	for (key in context) {
@@ -53,7 +53,7 @@ function defangURL(message) {
     });
 }
 
-global.checkDirty = function(guildID, what, filter=false, applyGlobalFilter=false) { // This function is important enough we can make it global
+const checkDirty = global.checkDirty = async function(guildID, what, filter=false, applyGlobalFilter=false) { // This function is important enough we can make it global
     // If filter is false, it returns: hasBadWords
     // If filter is true, it returns [hadBadWords, censoredMessage, wordsFound]
 
@@ -72,14 +72,23 @@ global.checkDirty = function(guildID, what, filter=false, applyGlobalFilter=fals
     let dirty = false;
     let foundWords = []; // keep track of all filtered words to later tell the user what was filtered
 
-    // Mostly for stewbot-created content (like AI), filter from both our and their server
-    let blacklist = storage[guildID]?.filter?.blacklist;
+    // TODO: consider way to rewrite this to cache blocked words. As this currently queries the DB on every single message
+    const localGuild = await Guilds.findOrCreate({ id: guildID })
+        .select("filter.blacklist")
+        .lean();
+
+    // For stewbot-created content (like AI), filter from our server too
+    let blacklist = localGuild?.filter?.blacklist || [];
     if (applyGlobalFilter) {
-        const globalBlacklist = storage[config.homeServer]?.filter?.blacklist || [];
+        const homeGuild = await Guilds.findOrCreate({ id: config.homeServer })
+            .select("filter.blacklist")
+            .lean();
+
+        const globalBlacklist = homeGuild?.filter?.blacklist || [];
         blacklist = [...new Set([...(blacklist || []), ...globalBlacklist])];
     }
 
-    if (blacklist) for (blockedWord of blacklist) {
+    if (blacklist) for (let blockedWord of blacklist) {
         // Ignore the new beta json format for now
         if (typeof(blockedWord) !== 'string') {
             continue
@@ -221,22 +230,24 @@ module.exports = {
 		applyContext(context);
 
         const word = cmd.options.getString("word");
+
+        const guild = await guildByObj(cmd.guild);
 		
         if(!cmd.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageMessages)){
-            storage[cmd.guildId].filter.active=false;
+            guild.filter.active=false;
             cmd.followUp(`I cannot run a filter for this server. I need the MANAGE_MESSAGES permission first, otherwise I cannot delete messages.`);
             return;
         }
         switch(cmd.options.getSubcommand()){
             case "add":
-                if (storage[cmd.guildId].filter.blacklist.includes(word)) {
+                if (guild.filter.blacklist.includes(word)) {
                     cmd.followUp({
                         "ephemeral": true,
-                        "content": `The word ||${word}|| is already in the blacklist.${storage[cmd.guildId].filter.active ? "" : `To begin filtering in this server, use ${cmds.filter.config.mention}.`}`
+                        "content": `The word ||${word}|| is already in the blacklist.${guild.filter.active ? "" : `To begin filtering in this server, use ${cmds.filter.config.mention}.`}`
                     });
                 } else {
-                    storage[cmd.guildId].filter.blacklist.push(word);
-                    cmd.followUp(`Added ||${word}|| to the filter for this server.${storage[cmd.guildId].filter.active ? "" : `\n\nThe filter for this server is currently disabled. To enable it, use ${cmds.filter.config.mention}.`}`);
+                    guild.filter.blacklist.push(word);
+                    cmd.followUp(`Added ||${word}|| to the filter for this server.${guild.filter.active ? "" : `\n\nThe filter for this server is currently disabled. To enable it, use ${cmds.filter.config.mention}.`}`);
             
                     try {
                         const existingRules = await cmd.guild.autoModerationRules.fetch();
@@ -290,8 +301,8 @@ module.exports = {
                 }
                 break;
             case "remove":
-                if(storage[cmd.guildId].filter.blacklist.includes(word)){
-                    storage[cmd.guildId].filter.blacklist.splice(storage[cmd.guildId].filter.blacklist.indexOf(word),1);
+                if(guild.filter.blacklist.includes(word)){
+                    guild.filter.blacklist.splice(guild.filter.blacklist.indexOf(word),1);
                     cmd.followUp(`Alright, I have removed ||${word}|| from the filter.`);
                 }
                 else{
@@ -321,21 +332,21 @@ module.exports = {
             break;
             case "config":
                 var disclaimers=[];
-                storage[cmd.guildId].filter.active=cmd.options.getBoolean("active");
-                if(cmd.options.getBoolean("censor")!==null) storage[cmd.guildId].filter.censor=cmd.options.getBoolean("censor");
-                if(cmd.options.getBoolean("log")!==null) storage[cmd.guildId].filter.log=cmd.options.getBoolean("log");
-                if(cmd.options.getChannel("channel")!==null) storage[cmd.guildId].filter.channel=cmd.options.getChannel("channel").id;
+                guild.filter.active=cmd.options.getBoolean("active");
+                if(cmd.options.getBoolean("censor")!==null) guild.filter.censor=cmd.options.getBoolean("censor");
+                if(cmd.options.getBoolean("log")!==null) guild.filter.log=cmd.options.getBoolean("log");
+                if(cmd.options.getChannel("channel")!==null) guild.filter.channel=cmd.options.getChannel("channel").id;
                 
-                if(!cmd.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageWebhooks)&&storage[cmd.guildId].filter.censor){
-                    storage[cmd.guildId].filter.censor=false;
+                if(!cmd.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageWebhooks)&&guild.filter.censor){
+                    guild.filter.censor=false;
                     disclaimers.push(`I cannot run censoring for this server, I need the MANAGE_WEBHOOKS permission first, otherwise I can't post a censored version.`);
                 }
-                if(storage[cmd.guildId].filter.channel===""&&storage[cmd.guildId].filter.log){
-                    storage[cmd.guildId].filter.log=false;
+                if(guild.filter.channel===""&&guild.filter.log){
+                    guild.filter.log=false;
                     disclaimers.push(`No channel was set to log summaries of deleted messages to, so logging these is turned off.`);
                 }
-                else if(storage[cmd.guildId].filter.log&&!client.channels.cache.get(storage[cmd.guildId].filter.channel).permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
-                    storage[cmd.guildId].filter.log=false;
+                else if(guild.filter.log&&!client.channels.cache.get(guild.filter.channel).permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
+                    guild.filter.log=false;
                     disclaimers.push(`I cannot send messages to the specified log channel for this server, so logging deleted messages has been turned off.`);
                 }
                 cmd.followUp(`Filter configured.${disclaimers.map(d=>`\n\n${d}`).join("")}`);
@@ -345,8 +356,8 @@ module.exports = {
                     var badWords=d.split(",");
                     let addedWords=[];
                     badWords.forEach(word=>{
-                        if(!storage[cmd.guildId].filter.blacklist.includes(word)){
-                            storage[cmd.guildId].filter.blacklist.push(word);
+                        if(!guild.filter.blacklist.includes(word)){
+                            guild.filter.blacklist.push(word);
                             addedWords.push(word);
                         }
                     });
@@ -355,27 +366,60 @@ module.exports = {
                 });
             break;
         }
+
+        guild.save();
     },
 
     /** @param {import('discord.js').Message} msg */
     async onmessage(msg, context) {
+        if (!msg.guild) return;
 		applyContext(context);
 
+        // const guild = await guildByObj(msg.guild);
+
+        // TODO: look into major caching here too
+        const guild = await Guilds.findOrCreate({ id: msg.guildId })
+            .select("filter.active")
+            .lean();
+        
+        global.filter ??= {}
+        guild.filter.censor ??= true;
+        guild.filter.active ??= false;
+
         // Filter
-        if(storage[msg.guildId]?.filter.active){
-            let [filtered, filteredContent, foundWords] = checkDirty(msg.guildId, msg.content, true)
+        if(guild?.filter?.active){
+            let [filtered, filteredContent, foundWords] = await checkDirty(msg.guildId, msg.content, true)
 
             if(filtered && msg.webhookId===null){
                 msg.ogContent = msg.content;
                 msg.content = filteredContent;
 
-                storage[msg.guildId].users[msg.author.id].infractions++;
+                const user = await userByObj(msg.guild) // TODO: lean read if this isn't cached somewhere else?
+
+                // const guildUser = await guildUserByObj(msg.guild, msg.author.id);
+                // guildUser.infractions++;
+                // guildUser.save(); // TODO: increment
+
+                await GuildUsers.updateOne(
+                    { guildId: msg.guild.id, userId: msg.author.id },
+                    { $inc: { infractions: 1 } },
+                    { upsert: true, setDefaultsOnInsert: true }
+                );
+
                 msg.delete();
-                if(storage[msg.guildId].filter.censor){
-                    var replyBlip="";
-                    if(msg.type===MessageType.Reply){
-                        var rMsg=await msg.fetchReference();
-                        replyBlip=`_[Reply to **${rMsg.author.username}**: ${rMsg.content.slice(0,22).replace(/(https?\:\/\/|\n)/ig,"").replace(/\@/ig,"[@]")}${rMsg.content.length>22?"...":""}](<https://discord.com/channels/${rMsg.guild.id}/${rMsg.channel.id}/${rMsg.id}>)_\n`;
+                if (guild?.filter?.censor) {
+                    var replyBlip = "";
+                    if (msg.type === MessageType.Reply) {
+                        var rMsg = await msg.fetchReference();
+                        replyBlip = `_[Reply to **${rMsg.author.username}**: ${
+                                rMsg.content
+                                    .slice(0, 22)
+                                    .replace(/(https?\:\/\/|\n)/gi, "")
+                                    .replace(/\@/gi, "[@]")}${
+                                    rMsg.content.length > 22 
+                                        ? "..." 
+                                        : ""
+                            }](<https://discord.com/channels/${rMsg.guild.id}/${rMsg.channel.id}/${rMsg.id}>)_\n`;
                     }
 
                     const filteredMessageData = {
@@ -386,19 +430,46 @@ module.exports = {
 
                     sendHook(filteredMessageData, msg);
                 }
-                if(storage[msg.author.id].config.dmOffenses&&msg.webhookId===null){
-                    try{msg.author.send(limitLength(`Your message in **${msg.guild.name}** was ${storage[msg.guildId].filter.censor?"censored":"deleted"} due to the following word${foundWords.length>1?"s":""} being in the filter: ||${foundWords.join("||, ||")}||${storage[msg.author.id].config.returnFiltered?"```\n"+msg.ogContent.replaceAll("`","\\`")+"```":""}`)).catch(e=>{});}catch(e){}
+                if(user.config.dmOffenses&&msg.webhookId===null){
+                    try {
+                        msg.author.send(
+                            limitLength(
+                                `Your message in **${msg.guild.name}** was ${
+                                    guild.filter.censor
+                                        ? "censored"
+                                        : "deleted"
+                                } due to the following word${foundWords.length > 1 ? "s" : ""} being in the filter: ` +
+                                    `||${foundWords.join("||, ||")}||${
+                                        guild.config.returnFiltered
+                                            ?   "```\n" +
+                                                msg.ogContent.replaceAll("`", "\\`") +
+                                                "```"
+                                            : ""
+                                    }`
+                            )
+                        ).catch((e) => {});
+                    } catch (e) {}
                 }
-                if(storage[msg.guildId].filter.log&&storage[msg.guildId].filter.channel){
-                    var c=client.channels.cache.get(storage[msg.guildId].filter.channel);
+                if(guild.filter.log&&guild.filter.channel){
+                    var c=client.channels.cache.get(guild.filter.channel);
                     if(c.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
-                        c.send(limitLength(`I have ${storage[msg.guildId].filter.censor?"censored":"deleted"} a message from **${msg.author.username}** in <#${msg.channel.id}> for the following blocked word${foundWords.length>1?"s":""}: ||${foundWords.join("||, ||")}||\`\`\`\n${msg.ogContent.replaceAll("`","\\`").replaceAll(/(?<=https?:\/\/[^(\s|\/)]+)\./gi, "[.]").replaceAll(/(?<=https?):\/\//gi, "[://]")}\`\`\``));
+                        c.send(limitLength(
+                            `I have ${guild.filter.censor?"censored":"deleted"} a message from **${msg.author.username}** in <#${msg.channel.id}> for the following blocked word${foundWords.length>1?"s":""}: `+
+                                `||${foundWords.join("||, ||")}||\`\`\`\n`+
+                            `${msg.ogContent
+                                .replaceAll("`","\\`") // Don't allow breaking out of code block
+                                .replaceAll(/(?<=https?:\/\/[^(\s|\/)]+)\./gi, "[.]") // defang URL (prevent bad URLs from embedding, phishing from being clicked, etc)
+                                .replaceAll(/(?<=https?):\/\//gi, "[://]")
+                            }\`\`\``)
+                        );
                     }
                     else{
-                        storage[msg.guildId].filter.log=false;
+                        await guildByObj(cmd.guild, {
+                            "filter.log": false
+                        })
+                        // (.save doesn't work here because we're reading guild in read-only for speed)
                     }
                 }
-                
                 return;
             }
         }

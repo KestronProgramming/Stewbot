@@ -101,9 +101,9 @@ module.exports = {
             var resp;
             var reminder="";
             if(cmd.options.getString("reminder")!==null){
-                reminder=checkDirty(config.homeServer,cmd.options.getString("reminder"),true)[1];
+                reminder=await checkDirty(config.homeServer,cmd.options.getString("reminder"),true)[1];
                 if(cmd.guildId&&storage[cmd.guildId]?.filter.active){
-                    reminder=checkDirty(cmd.guildId,reminder,true)[1];
+                    reminder=await checkDirty(cmd.guildId,reminder,true)[1];
                 }
             }
             if(respondHere&&!cmd.channel?.id){

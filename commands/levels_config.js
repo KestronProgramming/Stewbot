@@ -51,7 +51,7 @@ module.exports = {
 		storage[cmd.guildId].levels.active=cmd.options.getBoolean("active");
 		if(cmd.options.getChannel("channel")!==null) storage[cmd.guildId].levels.channel=cmd.options.getChannel("channel").id;
 		if(cmd.options.getString("location")!==null) storage[cmd.guildId].levels.location=cmd.options.getString("location");
-		if(cmd.options.getString("message")!==null) storage[cmd.guildId].levels.msg=checkDirty(config.homeServer,cmd.options.getString("message"),true)[1];
+		if(cmd.options.getString("message")!==null) storage[cmd.guildId].levels.msg=await checkDirty(config.homeServer,cmd.options.getString("message"),true)[1];
 		var disclaimers=[];
 		if(storage[cmd.guildId].levels.channel===""&&storage[cmd.guildId].levels.location==="channel"){
 			storage[cmd.guildId].levels.location="DM";
@@ -69,7 +69,7 @@ module.exports = {
 		applyContext(context);
 
 		// Level-up XP
-		if(!msg.author.bot&&storage[msg.guildId]?.levels.active&&storage[msg.guildId]?.users[msg.author.id].expTimeout<Date.now()&&!checkDirty(config.homeServer,msg.content)){
+		if(!msg.author.bot&&storage[msg.guildId]?.levels.active&&storage[msg.guildId]?.users[msg.author.id].expTimeout<Date.now()&&!await checkDirty(config.homeServer,msg.content)){
 			storage[msg.guildId].users[msg.author.id].expTimeout=Date.now()+60000;
 			storage[msg.guildId].users[msg.author.id].exp+=Math.floor(Math.random()*11)+15;//Between 15 and 25
 			if(storage[msg.guild.id].users[msg.author.id].exp>getLvl(storage[msg.guild.id].users[msg.author.id].lvl)){

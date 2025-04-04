@@ -1,6 +1,6 @@
 // #region CommandBoilerplate
 const Categories = require("./modules/Categories");
-const { Guilds, Users, guildByID, userByID, guildByObj, userByObj } = require("./modules/database.js")
+const { Guilds, Users, guildByID, userByID, guildByObj, userByObj, guildUserByObj } = require("./modules/database.js")
 const { ContextMenuCommandBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType, AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType } = require("discord.js");
 function applyContext(context = {}) {
     for (key in context) {
@@ -85,12 +85,19 @@ module.exports = {
         }
         else {
             const guild = await guildByObj(cmd.guild);
-            const buffer = Buffer.from(JSON.stringify(guild.toJSON(), null, 4));
-            const attachment = {
-                attachment: buffer,
-                name: 'guild.json'
-            };
-            cmd.followUp({ files: [attachment] });
+            const guildUser = await guildUserByObj(cmd.guild, cmd.user.id);
+            const guildBuffer = Buffer.from(JSON.stringify(guild.toJSON(), null, 4));
+            const guildUserBuffer = Buffer.from(JSON.stringify(guildUser.toJSON(), null, 4));
+            cmd.followUp({ files: [
+                {
+                    attachment: guildBuffer,
+                    name: 'guild.json'
+                },
+                {
+                    attachment: guildUserBuffer,
+                    name: 'guildUser.json'
+                }
+            ]});
         }
     },
 

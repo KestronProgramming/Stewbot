@@ -62,11 +62,11 @@ module.exports = {
     async execute(cmd, context) {
 		applyContext(context);
 		
-		if(checkDirty(cmd.guild?.id,cmd.options.getString("prompt"))){
+		if(await checkDirty(cmd.guild?.id,cmd.options.getString("prompt"))){
 			cmd.followUp({content:"This server doesn't want me to process that prompt.","ephemeral":true});
 			return;
 		}
-		cmd.followUp({ "content": `**${checkDirty(config.homeServer, cmd.options.getString("prompt"), true)[1]}**`, "ephemeral": true, "components": [new ActionRowBuilder().addComponents(
+		cmd.followUp({ "content": `**${await checkDirty(config.homeServer, cmd.options.getString("prompt"), true)[1]}**`, "ephemeral": true, "components": [new ActionRowBuilder().addComponents(
 			new ButtonBuilder().setCustomId("poll-addOption").setLabel("Add a poll option").setStyle(ButtonStyle.Primary), 
 			new ButtonBuilder().setCustomId("poll-delOption").setLabel("Remove a poll option").setStyle(ButtonStyle.Danger), 
 			new ButtonBuilder().setCustomId("poll-publish").setLabel("Publish the poll").setStyle(ButtonStyle.Success)
@@ -197,12 +197,12 @@ module.exports = {
 					cmd.reply({content:"It looks like you've already generated the maximum amount of options!",ephemeral:true});
 					break;
 				}
-				if(checkDirty(cmd.guild?.id,cmd.fields.getTextInputValue("poll-addedInp"))){
+				if(await checkDirty(cmd.guild?.id,cmd.fields.getTextInputValue("poll-addedInp"))){
 					cmd.reply({ephemeral:true,content:"I have been asked not to add this option by this server"});
 					break;
 				}
 				poll.options.push(cmd.fields.getTextInputValue("poll-addedInp"));
-				cmd.update(checkDirty(config.homeServer,`**${poll.title}**${poll.options.map((a,i)=>`\n${i}. ${a}`).join("")}`,true)[1]);
+				cmd.update(await checkDirty(config.homeServer,`**${poll.title}**${poll.options.map((a,i)=>`\n${i}. ${a}`).join("")}`,true)[1]);
 			break;
 			
 			case 'poll-removed':

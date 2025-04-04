@@ -61,7 +61,7 @@ module.exports = {
 				cmd.reply({content:`Please enter a valid word.`,ephemeral:true});
 				return;
 			}
-			if(checkDirty(config.homeServer,guess)){
+			if(await checkDirty(config.homeServer,guess)){
 				cmd.reply({content:`I am not willing to process this word.`,ephemeral:true});
 				return;
 			}

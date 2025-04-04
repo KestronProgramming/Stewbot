@@ -171,7 +171,7 @@ module.exports = {
                 for (let a in storage) {
                     if (storage[a].counting?.public) {
                         try {
-                            leaders.push([checkDirty(cmd.guild?.id, client.guilds.cache.get(a).name) ? "[Blocked name]" : client.guilds.cache.get(a).name, storage[a].counting.highestNum, a]);
+                            leaders.push([await checkDirty(cmd.guild?.id, client.guilds.cache.get(a).name) ? "[Blocked name]" : client.guilds.cache.get(a).name, storage[a].counting.highestNum, a]);
                         }
                         catch (e) { }
                     }
