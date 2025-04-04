@@ -38,8 +38,15 @@ module.exports = {
     async execute(cmd, context) {
 		applyContext(context);
 
-		if (cmd.options.getBoolean("ai_pings") !== null) storage[cmd.guildId].config.ai = cmd.options.getBoolean("ai_pings");
-		if (cmd.options.getBoolean("embeds") !== null) storage[cmd.guildId].config.embedPreviews = cmd.options.getBoolean("embeds");
+		const updates = {}
+
+		if (cmd.options.getBoolean("ai_pings") !== null) 
+			updates["config.ai"] = cmd.options.getBoolean("ai_pings");
+
+		if (cmd.options.getBoolean("embeds") !== null) 
+			updates["config.embedPreviews"] = cmd.options.getBoolean("embeds");
+
+		await guildByObj(cmd.guild, updates);
 
 		cmd.followUp("Configured your server setup");
 	}
