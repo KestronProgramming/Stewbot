@@ -67,37 +67,64 @@ module.exports = {
     /** @param {import('discord.js').Interaction} cmd */
     async execute(cmd, context) {
         applyContext(context);
-
         if (!cmd.user.id === "724416180097384498") return cmd.deferUpdate();
 
-        const input = cmd.options.getString("input");
-        if (input) {
-            try {
-                await eval(
-                    `(async () => { 
-                        const result = (${input});
-                        await cmd.followUp(result);
-                    })()`
-                );
-            } catch (e) {
-                cmd.followUp(e.stack);
-            }
-        }
-        else {
-            const guild = await guildByObj(cmd.guild);
-            const guildUser = await guildUserByObj(cmd.guild, cmd.user.id);
-            const guildBuffer = Buffer.from(JSON.stringify(guild.toJSON(), null, 4));
-            const guildUserBuffer = Buffer.from(JSON.stringify(guildUser.toJSON(), null, 4));
-            cmd.followUp({ files: [
-                {
-                    attachment: guildBuffer,
-                    name: 'guild.json'
-                },
-                {
-                    attachment: guildUserBuffer,
-                    name: 'guildUser.json'
+        const input = cmd.options.getString("input") || "";
+
+        switch (input) {
+            // If no input, dump db objects
+            case "": 
+                const guild = await guildByObj(cmd.guild);
+                const guildUser = await guildUserByObj(cmd.guild, cmd.user.id);
+                const guildBuffer = Buffer.from(JSON.stringify(guild.toJSON(), null, 4));
+                const guildUserBuffer = Buffer.from(JSON.stringify(guildUser.toJSON(), null, 4));
+                cmd.followUp({ files: [
+                    {
+                        attachment: guildBuffer,
+                        name: 'guild.json'
+                    },
+                    {
+                        attachment: guildUserBuffer,
+                        name: 'guildUser.json'
+                    }
+                ]});
+                break;
+
+            // Special tests
+            case "1":
+                const doc1 = await guildByObj(cmd.guild);
+                const doc2 = doc1;
+                // const doc2 = await guildByObj(cmd.guild);
+
+                // Start two save calls in parallel on the same doc
+                Promise.all([
+                    (async () => {
+                        doc1.testProp = 'Test 1';
+                        await doc1.save();
+                    })(),
+                    (async () => {
+                        doc2.testProp = 'Test 2';
+                        await doc2.save();
+                    })()
+                ]);
+
+                break;
+
+            // Eval anything else
+            default: 
+                try {
+                    await eval(
+                        `(async () => { 
+                            const result = (${input});
+                            await cmd.followUp(result);
+                        })()`
+                    );
+                } catch (e) {
+                    cmd.followUp(e.stack);
                 }
-            ]});
+                break;
+
+
         }
     },
 

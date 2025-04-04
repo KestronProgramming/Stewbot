@@ -383,7 +383,7 @@ module.exports = {
             .lean({ virtuals: true });
 
         // Filter
-        if(guild.filter.active){
+        if(guild?.filter?.active){
             let [filtered, filteredContent, foundWords] = await checkDirty(msg.guildId, msg.content, true)
 
             if(filtered && msg.webhookId===null){
