@@ -160,6 +160,35 @@ function hash(obj) {
     return crypto.createHash('md5').update(input).digest('hex');
 }
 
+var ints=Object.keys(GatewayIntentBits).map(a=>GatewayIntentBits[a]);
+ints.splice(ints.indexOf(GatewayIntentBits.GuildPresences),1);
+ints.splice(ints.indexOf("GuildPresences"),1);
+const client=new Client({
+    intents:ints,
+    partials:Object.keys(Partials).map(a=>Partials[a])
+});
+global.client = client;
+global.notify = function(what, useWebhook=false) {
+    console.beta(what);
+    try {
+        if (useWebhook) {
+            fetch(process.env.logWebhook, {
+                'method': 'POST',
+                'headers': {
+                    "Content-Type": "application/json"
+                },
+                'body': JSON.stringify({
+                    'username': "Stewbot Notify Webhook", 
+                    "content": limitLength(what)
+                })
+            })
+        }
+        else client.channels.cache.get(process.env.beta ? config.betaNoticeChannel : config.noticeChannel).send(limitLength(what));//Notify the staff of the Kestron Support server
+    }catch(e){
+        console.beta("Couldn't send notify()")
+    }
+}
+
 // Database stuff
 const storageLocations = ["./storage.json", "./storage2.json"];
 let storageCycleIndex = 0;
@@ -258,14 +287,7 @@ commandsLoadedPromise.finally( _ => {
     fs.writeFileSync("./data/helpPages.json", JSON.stringify(helpCommands, null, 4))
 })
 
-var ints=Object.keys(GatewayIntentBits).map(a=>GatewayIntentBits[a]);
-ints.splice(ints.indexOf(GatewayIntentBits.GuildPresences),1);
-ints.splice(ints.indexOf("GuildPresences"),1);
-const client=new Client({
-    intents:ints,
-    partials:Object.keys(Partials).map(a=>Partials[a])
-});
-global.client = client;
+
 
 // Now that setup is done, define data that should be passed to each module - 
 const pseudoGlobals = {
@@ -607,26 +629,7 @@ async function sendWelcome(guild) {
         }
     });
 }
-global.notify = function(what, useWebhook=false) {
-    console.beta(what);
-    try {
-        if (useWebhook) {
-            fetch(process.env.logWebhook, {
-                'method': 'POST',
-                'headers': {
-                    "Content-Type": "application/json"
-                },
-                'body': JSON.stringify({
-                    'username': "Stewbot Notify Webhook", 
-                    "content": limitLength(what)
-                })
-            })
-        }
-        else client.channels.cache.get(process.env.beta ? config.betaNoticeChannel : config.noticeChannel).send(limitLength(what));//Notify the staff of the Kestron Support server
-    }catch(e){
-        console.beta("Couldn't send notify()")
-    }
-}
+
 function checkPersistentDeletion(guild, channel, message){
     // If persistence is not active, or a new persistence message was posted, it was stewbot who deleted it.
     if(!storage[guild].persistence[channel].active || storage[guild].persistence[channel].lastPost!==message){
