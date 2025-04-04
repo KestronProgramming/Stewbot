@@ -219,12 +219,13 @@ module.exports = {
                 notify(`Error embeding message:\n${e.stack}`)
             }
         }
+
         var progsDeleted = false;
         if(embs.length>0){
             msg.reply({content:`-# Embedded linked message${embs.length>1?"s":""}. You can prevent this behavior by surrounding message links in \`<\` and \`>\`.`,embeds:embs,files:fils,allowedMentions:{parse:[]}});
         }
 
-        // Khan Academy program embeds
+        // #region KA Embeds
         for(var i=0;i<progs.length;i++){
             let prog=progs[i];
             var progId = prog.split("/")[prog.split("/").length-1].split("?")[0];
@@ -313,6 +314,7 @@ module.exports = {
             if (progsDeleted) cont = `${embds.length>1?"Backed programs up to and/or retrieved programs from":"Program retrieved from"}`;
             msg.reply({content: `${cont} the KAP Archive, which you can visit [here](https://kap-archive.bhavjit.com/).`,embeds:embds,allowedMentions:{parse:[]}});
         }
+        // #endregion KA Embeds
 
 
     },
