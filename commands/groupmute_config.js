@@ -49,29 +49,59 @@ module.exports = {
 			cmd.followUp(`I can't help with groupmutes because I don't have the ModerateMembers permission.`);
 			return;
 		}
+
 		var emoji = getEmojiFromMessage(cmd.options.getString("emoji"));
 		if(!emoji) {
 			cmd.followUp("That emoji is not valid.");
 			return;
 		}
-		if(storage[cmd.guildId].hasOwnProperty("groupmute")&&storage[cmd.guildId].groupmute!==emoji){
-			storage[cmd.guildId].emojiboards[emoji]=structuredClone(storage[cmd.guildId].emojiboards[storage[cmd.guildId].groupmute]);
-			delete storage[cmd.guildId].emojiboards[storage[cmd.guildId].groupmute];
+		
+		const guild = await guildByObj(cmd.guild);
+
+		const oldEmoji = guild.groupmute;
+
+		
+		// If just moving to a different emoji
+		if (oldEmoji && oldEmoji !== emoji) {
+			// If the emoji is different than it already was,
+			// delete the emojiboard for it since we are gonna store the groupmute there
+			
+			// Set new one
+			guild.emojiboards.set(
+				emoji, 
+				guild.emojiboards.get(oldEmoji)
+			);
+
+			// Delete the old one
+			guild.emojiboards.delete(oldEmoji);
 		}
-		if(!storage[cmd.guildId].emojiboards.hasOwnProperty(emoji)){
-			storage[cmd.guildId].emojiboards[emoji]={
+		if(!guild.emojiboards.has(emoji)){
+			guild.emojiboards.set(emoji, {
 				active: false,
 				emoji:emoji,
 				threshold: 5,
 				length:60000*5,
 				isMute:true
-			};
+			});
 		}
-		storage[cmd.guildId].emojiboards[emoji].active=cmd.options.getBoolean("active");
-		storage[cmd.guildId].groupmute=emoji;
-		if(cmd.options.getInteger("threshold")!==null) storage[cmd.guildId].emojiboards[emoji].threshold=cmd.options.getInteger("threshold");
-		if(cmd.options.getInteger("mute_length")!==null) storage[cmd.guildId].emojiboards[emoji].length=cmd.options.getInteger("mute_length");
+
+		guild.emojiboards.get(emoji).active=cmd.options.getBoolean("active");
+		guild.groupmute=emoji;
+
+		if(cmd.options.getInteger("threshold")!==null) 
+			guild.emojiboards.get(emoji).threshold=cmd.options.getInteger("threshold");
+
+		if(cmd.options.getInteger("mute_length")!==null) 
+			guild.emojiboards.get(emoji).length=cmd.options.getInteger("mute_length");
 		
-		cmd.followUp(`Alright, I have configured groupmute.${cmd.options.getBoolean("active")?` If ${parseEmoji(emoji)} is reacted ${storage[cmd.guild.id].emojiboards[emoji].threshold} times, I'll mute the author of the message.`:``}`);
+		await guild.save();
+
+		cmd.followUp(
+			`Alright, I have configured groupmute.${
+				cmd.options.getBoolean("active")
+					? ` If ${parseEmoji(emoji)} is reacted ${guild.emojiboards.get(emoji).threshold} times, I'll mute the author of the message.`
+					: ``
+			}`
+		);
     }
 };
