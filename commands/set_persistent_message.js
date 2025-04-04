@@ -66,7 +66,7 @@ module.exports = {
             cmd.followUp(`I have set your settings for this channel's persistent messages.`);
 
             var resp={
-                "content":checkDirty(config.homeServer,storage[cmd.guild.id].persistence[cmd.channel.id].content,true)[1],
+                "content":await checkDirty(config.homeServer,storage[cmd.guild.id].persistence[cmd.channel.id].content,true)[1],
                 "avatarURL":cmd.guild.iconURL(),
                 "username":cmd.guild.name
             };

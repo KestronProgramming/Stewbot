@@ -43,18 +43,18 @@ module.exports = {
     async execute(cmd, context) {
 		applyContext(context);
 		
-		translate(cmd.options.getString("what"), 
+		const t = await translate(cmd.options.getString("what"), 
 			Object.assign({
 				to: cmd.options.getString("language_to") || cmd.locale.slice(0, 2)
 			},
 			cmd.options.getString("language_from") ? cmd.options.getString("languageFrom") : {})
-		).then(t => {
-			if (checkDirty(cmd.guild?.id, t.text) || checkDirty(cmd.guild?.id, cmd.options.getString("what"))) {
-				cmd.followUp({ content: `I have been asked not to translate that by this server`, ephemeral: true });
-				return;
-			}
-			t.text=checkDirty(config.homeServer,t.text,true)[1];
-			cmd.followUp(`Attempted to translate${t.text !== cmd.options.getString("what") ? `:\n\`\`\`\n${escapeBackticks(t.text)}\n\`\`\`\n-# If this is incorrect, try using ${cmds.translate.mention} again and specify more.` : `, but I was unable to. Try using ${cmds.translate.mention} again and specify more.`}`);
-		});
+		);
+		
+		if (await checkDirty(cmd.guild?.id, t.text) || await checkDirty(cmd.guild?.id, cmd.options.getString("what"))) {
+			cmd.followUp({ content: `I have been asked not to translate that by this server`, ephemeral: true });
+			return;
+		}
+		t.text=await checkDirty(config.homeServer,t.text,true)[1];
+		cmd.followUp(`Attempted to translate${t.text !== cmd.options.getString("what") ? `:\n\`\`\`\n${escapeBackticks(t.text)}\n\`\`\`\n-# If this is incorrect, try using ${cmds.translate.mention} again and specify more.` : `, but I was unable to. Try using ${cmds.translate.mention} again and specify more.`}`);
 	}
 };

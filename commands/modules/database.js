@@ -16,6 +16,14 @@
 const mongoose = require("mongoose");
 
 //#region Guild
+let filterSchema = new mongoose.Schema({
+    active: { type: Boolean, default: false },
+    censor: { type: Boolean, default: true },
+    log: { type: Boolean, default: false },
+    channel: { type: String, default: "" },
+    blacklist: [ String ], // TODO: rewrite this field into a filter item field, allowing regex and per-item stuff
+})
+
 let guildLogsSchema = new mongoose.Schema({
     active: { type: Boolean, default: false },
     // mod_actionscdld
@@ -97,6 +105,7 @@ let guildUserSchema = new mongoose.Schema({
         trim: true,
         match: [/\d+/, "Error: UserID must be digits only"]
     },
+    infractions: { type: Number, defaults: 0 },
     safeTimestamp: { type: Number, default: 0},
     countTurns: { type: Number, default: 0 },
     beenCountWarned: { type: Boolean, default: false },
@@ -132,7 +141,8 @@ let guildSchema = new mongoose.Schema({
     blockedCommands: [ String ],
     daily: { type: dailySchema, default: {} },
     counting: { type: countingSchema, default: {} },
-    logs : { type: guildLogsSchema, default: {} },
+    logs: { type: guildLogsSchema, default: {} },
+    filter: { type: filterSchema, default: {} },
     groupmute: String,
     disableAntiHack: Boolean,
 });
@@ -227,6 +237,15 @@ ConfigDB.findOne().then(async (config) => {
 
 //#region Functions
 
+/**
+ * Returns a document matching the query or creates a new one, filling in unset default values.
+ * Updates can be provided with the provided as a json map of key to new value.
+ * 
+ * @param {Object} query - The query to find the document.
+ * @param {Object} [updates={}] - The updates to apply to the document.
+ * @returns {Promise<import("mongoose").HydratedDocument<import("mongoose").InferSchemaType<any>>>} 
+ * A mongoose document promise.
+ */
 function findOrCreate(query, updates = {}) {
     // Adding this as a static utility function to all docs.
     // This makes them create fields that don't already exist and such.
@@ -240,6 +259,7 @@ function findOrCreate(query, updates = {}) {
         }
     );
 }
+
 guildSchema.statics.findOrCreate = findOrCreate;
 guildUserSchema.statics.findOrCreate = findOrCreate;
 userSchema.statics.findOrCreate = findOrCreate;

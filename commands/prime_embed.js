@@ -9,9 +9,9 @@ function applyContext(context = {}) {
 }
 // #endregion CommandBoilerplate
 
-function getPrimedEmbed(userId,guildIn){
+async function getPrimedEmbed(userId,guildIn){
 	var mes=storage[userId].primedEmbed;
-	if(checkDirty(guildIn,mes.content)||checkDirty(guildIn,mes.author.name)||checkDirty(guildIn,mes.server.name)||checkDirty(guildIn,mes.server.channelName)){
+	if(await checkDirty(guildIn,mes.content)||await checkDirty(guildIn,mes.author.name)||await checkDirty(guildIn,mes.server.name)||await checkDirty(guildIn,mes.server.channelName)){
 		return {
 			"type": "rich",
 			"title": `Blocked`,
@@ -26,7 +26,7 @@ function getPrimedEmbed(userId,guildIn){
 			iconURL: "" + mes.author.icon,
 			url: "https://discord.com/users/" + mes.author.id
 		})
-		.setDescription(checkDirty(config.homeServer,mes.content,true)[1]||null)
+		.setDescription(await checkDirty(config.homeServer,mes.content,true)[1]||null)
 		.setTimestamp(new Date(mes.timestamp))
 		.setFooter({
 			text: mes.server.name + " / " + mes.server.channelName,

@@ -42,7 +42,7 @@ module.exports = {
 		}
 		cmd.followUp({
             content: `${
-                checkDirty(
+                await checkDirty(
                     config.homeServer,
                     cmd.options.getString("message"),
                     true

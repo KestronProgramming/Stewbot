@@ -44,7 +44,7 @@ module.exports = {
         const user = userByObj(cmd.user);
 		
         if (cmd.options.getString("link").toLowerCase() === "primed" && user.primedEmbed) {
-            var primer=getPrimedEmbed(cmd.user.id,cmd.guild?.id);
+            var primer=await getPrimedEmbed(cmd.user.id,cmd.guild?.id);
             cmd.followUp({
                 "content":`-# Embedded primed message. Use the context menu command \`/prime_embed\` and type \`PRIMED\` into ${cmds.embed_message.mention} to do the same.`,
                 embeds:[primer],
@@ -53,15 +53,25 @@ module.exports = {
                     : user.primedEmbed.attachmentURLs
                 });
         }
-        else{
-            try{
-                let slashes=cmd.options.getString("link").split("channels/")[1].split("/");
-                let embs=[];
-                try{
-                    var channelLinked=await client.channels.cache.get(slashes[slashes.length-2]);
-                    var mes=await channelLinked.messages.fetch(slashes[slashes.length-1]);
-                    if(checkDirty(cmd.guild?.id,mes.content) || checkDirty(cmd.guild?.id,mes.author.nickname||mes.author.globalName||mes.author.username) || checkDirty(cmd.guild?.id,mes.guild.name) || checkDirty(cmd.guild?.id,mes.channel.name)||checkDirty(config.homeServer,mes.content) || checkDirty(config.homeServer,mes.author.nickname||mes.author.globalName||mes.author.username) || checkDirty(config.homeServer,mes.guild.name) || checkDirty(config.homeServer,mes.channel.name)){
-                        cmd.followUp(`I'm sorry, I am unable to embed that message due to its content.`);
+        else {
+            try {
+                let slashes = cmd.options.getString("link").split("channels/")[1].split("/");
+                let embs = [];
+                try {
+                    var channelLinked = await client.channels.cache.get(slashes[slashes.length - 2]);
+                    var mes = await channelLinked.messages.fetch(slashes[slashes.length - 1]);
+                    if (
+                        (await checkDirty(cmd.guild?.id, mes.content, false, true)) ||
+                        (await checkDirty(
+                            cmd.guild?.id,
+                            mes.author.nickname || mes.author.globalName || mes.author.username
+                        ), false, true) ||
+                        (await checkDirty(cmd.guild?.id, mes.guild.name, false, true)) ||
+                        (await checkDirty(cmd.guild?.id, mes.channel.name, false, true))
+                    ) {
+                        cmd.followUp(
+                            `I'm sorry, I am unable to embed that message due to its content.`
+                        );
                         return;
                     }
                     let messEmbed = new EmbedBuilder()
@@ -157,7 +167,12 @@ module.exports = {
             try{
                 var channelLinked=await client.channels.fetch(linkIDs[linkIDs.length-2]);
                 var mes=await channelLinked.messages.fetch(linkIDs[linkIDs.length-1]);
-                if(checkDirty(msg.guild?.id,mes.content)||checkDirty(msg.guild?.id,mes.author.nickname||mes.author.globalName||mes.author.username)||checkDirty(msg.guild?.id,mes.guild.name)||checkDirty(msg.guild?.id,mes.channel.name)){
+                if(
+                    await checkDirty(msg.guild?.id,mes.content) ||
+                    await checkDirty(msg.guild?.id, mes.author.nickname || mes.author.globalName || mes.author.username) ||
+                    await checkDirty(msg.guild?.id, mes.guild.name) ||
+                    await checkDirty(msg.guild?.id, mes.channel.name)
+                ){
                     embs.push(
                         new EmbedBuilder()
                             .setColor("#006400")
@@ -174,11 +189,11 @@ module.exports = {
                     .setTitle("(Jump to message)")
                     .setURL(links[i])
                     .setAuthor({
-                        name: checkDirty(config.homeServer,mes.member?.nickname||mes.author.globalName||mes.author.username,true)[1],
+                        name: await checkDirty(config.homeServer,mes.member?.nickname||mes.author.globalName||mes.author.username,true)[1],
                         iconURL: "" + mes.author.displayAvatarURL(),
                         url: "https://discord.com/users/" + mes.author.id,
                     })
-                    .setDescription(checkDirty(config.homeServer,mes.content,true)[1]||null)
+                    .setDescription(await checkDirty(config.homeServer,mes.content,true)[1]||null)
                     .setTimestamp(new Date(mes.createdTimestamp))
                     .setFooter({
                         text: mes.guild?.name?mes.guild.name + " / " + mes.channel.name:`DM with ${client.user.username}`,
