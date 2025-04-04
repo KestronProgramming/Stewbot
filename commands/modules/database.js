@@ -18,6 +18,7 @@ const mongooseLeanVirtuals = require('mongoose-lean-virtuals');
 const mongooseLeanDefaults = require('mongoose-lean-defaults').default;
 mongoose.set('setDefaultsOnInsert', true);
 
+
 //#region Guild
 let filterSchema = new mongoose.Schema({
     active: { type: Boolean, default: false },
@@ -148,6 +149,7 @@ let guildSchema = new mongoose.Schema({
     filter: { type: filterSchema, default: {} },
     groupmute: String,
     disableAntiHack: Boolean,
+    testProp: String,
 });
  
 // Make sure each doc subfield exists
@@ -294,21 +296,20 @@ async function guildByID(id, updates={}) {
 async function guildByObj(obj, updates={}) {
     if (!obj) return null;
 
-    const cachePeriod = 1500;
-
-    if (obj._dbObject && Object.keys(updates).length === 0 && Date.now() - obj._dbObjectCachedAt < cachePeriod ) {
-        return obj._dbObject;
-    }
+    // const cachePeriod = 1500;
+    // if (obj._dbObject && Object.keys(updates).length === 0 && Date.now() - obj._dbObjectCachedAt < cachePeriod ) {
+    //     return obj._dbObject;
+    // }
 
     const guild = await guildByID(obj.id, updates);
-    obj._dbObject = guild;
-    obj._dbObjectCachedAt = Date.now();
+    // obj._dbObject = guild;
+    // obj._dbObjectCachedAt = Date.now();
 
-    setTimeout(() => {
-        if (obj._dbObject === guild) {
-            delete obj._dbObject;
-        }
-    }, cachePeriod);
+    // setTimeout(() => {
+    //     if (obj._dbObject === guild) {
+    //         delete obj._dbObject;
+    //     }
+    // }, cachePeriod);
 
     return guild;
 }
@@ -328,18 +329,18 @@ async function userByID(id, updates={}) {
 async function userByObj(obj, updates={}) {
     const cachePeriod = 1500;
 
-    // Grab the DB object associated to this user object, but with cache
-    if (obj._dbObject && Object.keys(updates).length === 0 && Date.now() - obj._dbObjectCachedAt < cachePeriod) {
-        return obj._dbObject;
-    }
+    // // Grab the DB object associated to this user object, but with cache
+    // if (obj._dbObject && Object.keys(updates).length === 0 && Date.now() - obj._dbObjectCachedAt < cachePeriod) {
+    //     return obj._dbObject;
+    // }
     
     const user = await userByID(obj.id, updates);
-    obj._dbObject = user;
-    obj._dbObjectCachedAt = Date.now();
+    // obj._dbObject = user;
+    // obj._dbObjectCachedAt = Date.now();
 
-    setTimeout(() => {
-        delete obj._dbObject;
-    }, cachePeriod);
+    // setTimeout(() => {
+    //     delete obj._dbObject;
+    // }, cachePeriod);
 
     return user;
 }
@@ -363,10 +364,10 @@ async function guildUserByObj(guild, userID, updateData={}) {
 
     // updateData is json of fields that should be set to specific data.
 
-    if (guild[`_db${userID}`] && Date.now() - guild[`_db${userID}CachedAt`] < cachePeriod) {
-        Object.assign(guild[`_db${userID}`], updateData);
-        return guild[`_db${userID}`].save();
-    }
+    // if (guild[`_db${userID}`] && Date.now() - guild[`_db${userID}CachedAt`] < cachePeriod) {
+    //     Object.assign(guild[`_db${userID}`], updateData);
+    //     return guild[`_db${userID}`].save();
+    // }
 
     // Ensure the user exists in the server first
     const serverUser = await guild.members.fetch(userID).catch(() => null);
@@ -400,7 +401,7 @@ const GuildUsers = mongoose.model("guildusers", guildUserSchema);
 const Users = mongoose.model("users", userSchema)
 
 // Drop indexes of docs where metadata was changed
-async function dropIndexes(Model){
+async function dropIndexes(Model) {
     try {
         const indexes = await Model.collection.indexes();
         console.log("Indexes before deletion:", indexes.length);
@@ -409,13 +410,21 @@ async function dropIndexes(Model){
         console.log("Indexes after deletion:", indexes2.length);
     } catch {}
 }
-if (process.env.beta) {
-    dropIndexes(GuildUsers);
-    dropIndexes(Guilds);
-    dropIndexes(Users);
-};
-  
+function onConnect() {
+    if (process.env.beta) {
+        dropIndexes(GuildUsers);
+        dropIndexes(Guilds);
+        dropIndexes(Users);
+    };
 
+    mongoose.connection.db.setProfilingLevel(
+        process.env.beta
+            ? "all"
+            : "slow_only"
+    )
+}
+mongoose.connection.on('connected', onConnect);
+  
 
 module.exports = {
     Guilds,

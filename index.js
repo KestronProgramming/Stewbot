@@ -98,6 +98,8 @@ logTime("require('./commands/restart.js')");
 const { resetAIRequests } = require("./commands/chat.js")
 logTime("require('./commands/chat.js')");
 
+const { onDBConnect } = require("./commands/modules/database");
+
 logTime("Finished Imports Region");
 //#endregion Imports
 

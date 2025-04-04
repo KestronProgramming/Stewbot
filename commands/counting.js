@@ -249,6 +249,7 @@ module.exports = {
                             guildCounting.highestNum = num;
                         }
 
+                        // Reduce the turns of all other users
                         await GuildUsers.updateMany(
                             { guildId: msg.guild.id, countTurns: { $gt: 0 } },
                             { $inc: { countTurns: -1 } }
