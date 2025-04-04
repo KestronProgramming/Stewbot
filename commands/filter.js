@@ -382,7 +382,7 @@ module.exports = {
             .select("filter.active")
             .lean();
         
-        global.filter ??= {}
+        guild.filter ??= {}
         guild.filter.censor ??= true;
         guild.filter.active ??= false;
 
