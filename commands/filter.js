@@ -379,15 +379,11 @@ module.exports = {
 
         // TODO: look into major caching here too
         const guild = await Guilds.findOrCreate({ id: msg.guildId })
-            .select("filter.active")
-            .lean();
-        
-        guild.filter ??= {}
-        guild.filter.censor ??= true;
-        guild.filter.active ??= false;
+            .select("filter")
+            .lean({ virtuals: true });
 
         // Filter
-        if(guild?.filter?.active){
+        if(guild.filter.active){
             let [filtered, filteredContent, foundWords] = await checkDirty(msg.guildId, msg.content, true)
 
             if(filtered && msg.webhookId===null){
@@ -396,16 +392,14 @@ module.exports = {
 
                 const user = await userByObj(msg.guild) // TODO: lean read if this isn't cached somewhere else?
 
-                // const guildUser = await guildUserByObj(msg.guild, msg.author.id);
-                // guildUser.infractions++;
-                // guildUser.save(); // TODO: increment
-
+                // Increment infractions
                 await GuildUsers.updateOne(
                     { guildId: msg.guild.id, userId: msg.author.id },
                     { $inc: { infractions: 1 } },
                     { upsert: true, setDefaultsOnInsert: true }
                 );
 
+                // Send webhook
                 msg.delete();
                 if (guild?.filter?.censor) {
                     var replyBlip = "";

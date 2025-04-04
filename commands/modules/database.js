@@ -14,6 +14,9 @@
 
 
 const mongoose = require("mongoose");
+const mongooseLeanVirtuals = require('mongoose-lean-virtuals');
+const mongooseLeanDefaults = require('mongoose-lean-defaults').default;
+mongoose.set('setDefaultsOnInsert', true);
 
 //#region Guild
 let filterSchema = new mongoose.Schema({
@@ -195,6 +198,7 @@ let userSchema = new mongoose.Schema({
     timedOutIn: [ String ],
     primedEmbed: userConfigSchema, // This prop shouldn't exist unless set firsts
     config: { type: userConfigSchema, default: {} },
+    dmOffenses: { type: Boolean, default: true },
     captcha: Boolean,
 });
 
@@ -385,7 +389,12 @@ async function guildUserByObj(guild, userID, updateData={}) {
 }
 //#endregion
 
+// Attach lean-default injector to all mongoose schemas
+// [guildSchema, guildUserSchema, userSchema].map(schema => schema.plugin(mongooseLeanVirtuals));
+mongoose.plugin(mongooseLeanDefaults)
+mongoose.plugin(mongooseLeanVirtuals)
 
+// Define docs
 const Guilds = mongoose.model("guilds", guildSchema);
 const GuildUsers = mongoose.model("guildusers", guildUserSchema);
 const Users = mongoose.model("users", userSchema)
