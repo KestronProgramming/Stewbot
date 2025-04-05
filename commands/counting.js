@@ -130,6 +130,22 @@ module.exports = {
 
         switch (cmd.options.getSubcommand()) {
             case "config":
+
+                // If anything was made more "legit", reset the count to 0
+                let resetJustSet = false;
+                let turnsJustLegit = false;
+                if (cmd.options.getBoolean("reset") && !guild.counting.reset) {
+                    guild.counting.nextNum = 1;
+                    resetJustSet = true;
+                }
+                if (cmd.options.getBoolean("reset") !== null) guild.counting.reset = cmd.options.getBoolean("reset");
+
+                // If resetting is on and post between turns is enabled, reset the count so it can be legit
+                if (cmd.options.getInteger("posts_between_turns") >= 1 && guild.counting.takeTurns < 1 && guild.counting.reset) {
+                    guild.counting.nextNum = 1;
+                    turnsJustLegit = true;
+                }
+
                 guild.counting.active = cmd.options.getBoolean("active");
                 if (cmd.options.getChannel("channel") !== null) guild.counting.channel = cmd.options.getChannel("channel").id;
                 if (cmd.options.getBoolean("public") !== null) guild.counting.public = cmd.options.getBoolean("public");
@@ -139,6 +155,7 @@ module.exports = {
                 if (cmd.options.getRole("fail-role") !== null) guild.counting.failRole = cmd.options.getRole("fail-role")?.id;
                 if (cmd.options.getRole("warn-role") !== null) guild.counting.warnRole = cmd.options.getRole("warn-role")?.id;
 
+                // Verification checks and permissions
                 var disclaimers = [];
                 if (guild.counting.failRoleActive) {
                     var fr = cmd.guild.roles.cache.get(guild.counting.failRole);
@@ -155,7 +172,6 @@ module.exports = {
                         guild.counting.failRoleActive = false;
                     }
                 }
-
                 if (guild.counting.warnRoleActive) {
                     var wr = cmd.guild.roles.cache.get(guild.counting.warnRole);
                     if (!wr) {
@@ -184,11 +200,32 @@ module.exports = {
                     guild.counting.active = false;
                     disclaimers.push(`I can't add reactions in the specified channel, so counting is disabled currently.`);
                 }
+
+                // Check whether the config is legit
                 if (!guild.counting.reset || guild.counting.takeTurns < 1) {
                     guild.counting.legit = false;
+                } else {
+                    // Now that we reset the count to 0 when resetting, it's safe to call it legit here.
+                    guild.counting.legit = true;
                 }
 
-                cmd.followUp(`Alright, I configured counting for this server.${disclaimers.map(d => `\n\n${d}`).join("")}${guild.counting.legit ? "" : `\n\n-# Please be aware this server is currently ineligible for the leaderboard. To fix this, make sure that reset is set to true, that the posts between turns is at least 1, and that you don't set the number to anything higher than 1 manually.`}`);
+                await cmd.followUp(`Alright, I configured counting for this server.${
+                        disclaimers.map(d => `\n\n${d}`).join("")
+                    }${
+                        resetJustSet 
+                            ? "\n\nBecause you just enabled `reset`, the count has been set to 1."
+                            : ""
+                    }
+                    ${
+                        turnsJustLegit 
+                            ? "\n\nBecause you just set `posts_between_turns` and reset is enabled, the count has been reset."
+                            : ""
+                    }${
+                        guild.counting.legit 
+                            ? "" 
+                            : `\n\n-# Please be aware this server is currently ineligible for the leaderboard. To fix this, make sure that reset is set to true, that the posts between turns is at least 1, and that you don't set the number to anything higher than 1 manually.`
+                    }`
+                );
                 break;
 
             case "set_number":
@@ -315,7 +352,9 @@ module.exports = {
                     if (guildUser.beenCountWarned && guildCounting.reset) {
                         msg.reply(`⛔ **Reset**\nNope, that was incorrect! The next number to post was going to be \`${guildCounting.nextNum}\`, but now it's \`1\`.`);
                         guildCounting.nextNum = 1;
-                        if (guildCounting.reset && guildCounting.takeTurns > 0) guildCounting.legit = true;
+                        
+                        if (guildCounting.reset && guildCounting.takeTurns > 0) 
+                            guildCounting.legit = true;
 
                         await GuildUsers.updateMany(
                             { guildId: msg.guild.id, countTurns: { $gt: 0 } },

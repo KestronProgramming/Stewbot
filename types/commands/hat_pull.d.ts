@@ -1,4 +1,4 @@
-export function finHatPull(who: any, force: any): Promise<void>;
+export function finHatPull(userId: any, force: any): Promise<void>;
 export declare namespace data {
     let command: import("discord.js").SlashCommandOptionsOnlyBuilder;
     namespace extra {

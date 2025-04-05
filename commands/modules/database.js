@@ -20,6 +20,9 @@ mongoose.set('setDefaultsOnInsert', true);
 
 
 //#region Guild
+let levelsSchema = new mongoose.Schema({
+    active: { type: Boolean, default: false }
+})
 
 let filterSchema = new mongoose.Schema({
     active: { type: Boolean, default: false },
@@ -51,7 +54,7 @@ let countingSchema = new mongoose.Schema({
     // Config
     active: { type: Boolean, default: false },
     channel: { type: String, default: "" },
-    public: { type: Boolean, default: true },
+    public: { type: Boolean, default: false },
     takeTurns: { type: Number, default: 1 },
     failRoleActive: { type: Boolean, default: false },
     warnRoleActive: { type: Boolean, default: false },
@@ -89,8 +92,8 @@ let emojiboardSchema = new mongoose.Schema({
     threshold: Number,
     active: Boolean,
     channel: String,
-    posted: mongoose.Schema.Types.Mixed,  // TODO: Figure out format / type
-    posters: mongoose.Schema.Types.Mixed, // TODO: Figure out format / type
+    posted:  { type: Map, of: Number },
+    posters: { type: Map, of: String },
 })
 
 // See notes at the top
@@ -141,6 +144,7 @@ let guildSchema = new mongoose.Schema({
     alm: { type: autoLeaveMessageSchema, default: {} },
     ajm: { type: autoJoinMessageSchema, default: {} },
     config: { type: guildConfigSchema, default: {} },
+    levels: { type: levelsSchema, default: {} },
     autoJoinRoles: [ String ],
     blockedCommands: [ String ],
     daily: { type: dailySchema, default: {} },
@@ -194,6 +198,8 @@ let userConfigSchema = mongoose.Schema({
     beenAIDisclaimered: { type: Boolean, default: false },
     aiPings: { type: Boolean, default: true },
     embedPreviews: { type: Boolean, default: true, required: true},
+    lvl: { type: Number, default: 0 },
+    exp: { type: Number, default: 0 },
 })
 
 let userSchema = new mongoose.Schema({

@@ -22,3 +22,8 @@ Once prime embed is ported, test embedding it with embed_message
 
 # TODO:
 CheckDirty needs aggressive caching... which needs to be invalidated when modified
+
+
+# TODO:
+Ctrl+F for "TODO_DB
+
