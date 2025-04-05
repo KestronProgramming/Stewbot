@@ -20,9 +20,6 @@ mongoose.set('setDefaultsOnInsert', true);
 
 
 //#region Guild
-let groupMuteSchema = new mongoose.Schema({
-    
-})
 
 let filterSchema = new mongoose.Schema({
     active: { type: Boolean, default: false },
@@ -178,6 +175,16 @@ guildSchema.post('findOneAndUpdate', async function (doc) {
 //#endregion
 
 //#region Users
+let hatPullSchema = new mongoose.Schema({
+    limit: { type: Number, default: 0 },
+    winCount: { type: Number, default: 1 },
+    entered: [String],
+    closes: Number,
+    location: String,
+    registered: Boolean,
+    user: String, // Opening user
+})
+
 let primedEmbedSchema = mongoose.Schema({
     content: String,
     attachmentURLs: [ String ],
@@ -204,6 +211,7 @@ let userSchema = new mongoose.Schema({
     primedEmbed: userConfigSchema, // This prop shouldn't exist unless set firsts
     config: { type: userConfigSchema, default: {} },
     dmOffenses: { type: Boolean, default: true },
+    hat_pull: hatPullSchema, // This one does not need defaults, it is checked for existence
     captcha: Boolean,
 });
 

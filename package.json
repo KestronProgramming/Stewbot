@@ -17,6 +17,7 @@
     "mongoose": "^8.9.5",
     "mongoose-lean-defaults": "^2.2.1",
     "mongoose-lean-virtuals": "^1.1.0",
+    "ms": "^2.1.3",
     "node-cache": "^5.1.2",
     "ollama": "^0.5.12",
     "performance-now": "^2.1.0",

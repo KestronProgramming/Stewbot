@@ -705,7 +705,6 @@ client.once("ready",async ()=>{
             }
             if(storage[key]?.hasOwnProperty("hat_pull")){
                 if(storage[key].hat_pull.ends-Date.now()<=60000*60*24){
-                    storage[key].hat_pull.registered=true;
                     if(storage[key].hat_pull.ends-Date.now()>0){
                         setTimeout(()=>{finHatPull(key)},storage[key].hat_pull.ends-Date.now());
                     }
