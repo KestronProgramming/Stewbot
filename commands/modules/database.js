@@ -236,7 +236,7 @@ let userSchema = new mongoose.Schema({
 const configSchema = new mongoose.Schema({
     useGlobalGemini: { type: Boolean, default: true },
     dailyMeme: { type: Number, default: 0 },
-
+    pfp: String,
 })
 
 const ConfigDB = mongoose.model("settings", configSchema)
