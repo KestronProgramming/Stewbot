@@ -1,6 +1,6 @@
 // #region CommandBoilerplate
 const Categories = require("./modules/Categories");
-const { Guilds, Users, guildByID, userByID, guildByObj, userByObj } = require("./modules/database.js")
+const { Guilds, Users, ConfigDB, guildByID, userByID, guildByObj, userByObj } = require("./modules/database.js")
 const { ContextMenuCommandBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
 function applyContext(context={}) {
 	for (key in context) {
@@ -11,7 +11,7 @@ function applyContext(context={}) {
 
 const setDates = require("../data/setDates.json");
 
-function holidayPfpCheck() {
+async function holidayPfpCheck() {
     function Easter(Y) {//Thanks StackOverflow :) https://stackoverflow.com/questions/1284314/easter-date-in-javascript
         var C = Math.floor(Y/100);
         var N = Y - 19*Math.floor(Y/19);
@@ -26,8 +26,10 @@ function holidayPfpCheck() {
         var D = L + 28 - 31*Math.floor(M/4);
         return M+'/'+D;
     }
-    var newPfp = null;
+    var newPfp = "main.jpg";
     var today=new Date();
+
+    const botConfig = await ConfigDB.findOne();
 
     setDates.forEach(holiday=>{
         if(holiday.days.includes(`${today.getMonth()+1}/${today.getDate()}`)){
@@ -44,18 +46,16 @@ function holidayPfpCheck() {
         newPfp="easter.jpg";
     }
 
-	// avoid null storage issues
-    newPfp = newPfp || "main.jpg";
-
     if (process.env.beta) {
         notify(`A pfp change to \`${newPfp}\` was triggered, which will be ignored in beta.`)
         newPfp = "beta.png"
     }
     
-    if (newPfp !== storage.pfp) {
-        storage.pfp = newPfp;
-        client.user.setAvatar(`./pfps/${newPfp}`);
+    if (newPfp !== botConfig.pfp) {
+        botConfig.pfp = newPfp;
+        await client.user.setAvatar(`./pfps/${newPfp}`);
     }
+    await botConfig.save()
 }
 
 module.exports = {
@@ -75,6 +75,6 @@ module.exports = {
 	async daily(context) {
 		applyContext(context);
 
-		holidayPfpCheck();
+		await holidayPfpCheck();
 	}
 };
