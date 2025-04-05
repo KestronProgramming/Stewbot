@@ -153,25 +153,25 @@ let guildSchema = new mongoose.Schema({
 });
  
 // Make sure each doc subfield exists
-guildSchema.post('findOneAndUpdate', async function (doc) {
-    // This middleware only runs on findOneAndUpdate calls.
-    if (doc) {
-        const needsUpdate = [];
+// guildSchema.post('findOneAndUpdate', async function (doc) {
+//     // This middleware only runs on findOneAndUpdate calls.
+//     if (doc) {
+//         const needsUpdate = [];
 
-        // ensureField(doc, needsUpdate, "config", {});
-        // ensureField(doc, needsUpdate, "ajm", {});
-        // ensureField(doc, needsUpdate, "alm", {});
-        // ensureField(doc, needsUpdate, "emojiboards", []);
-        // ensureField(doc, needsUpdate, "tempBans", {});
-        // ensureField(doc, needsUpdate, "counting", {});
+//         // ensureField(doc, needsUpdate, "config", {});
+//         // ensureField(doc, needsUpdate, "ajm", {});
+//         // ensureField(doc, needsUpdate, "alm", {});
+//         // ensureField(doc, needsUpdate, "emojiboards", []);
+//         // ensureField(doc, needsUpdate, "tempBans", {});
+//         // ensureField(doc, needsUpdate, "counting", {});
 
-        if (needsUpdate.length > 0) {
-            await doc.updateOne({ 
-                $set: needsUpdate.reduce((acc, field) => ({ ...acc, [field]: doc[field] }), {}) 
-            });
-        }
-    }
-});
+//         if (needsUpdate.length > 0) {
+//             await doc.updateOne({ 
+//                 $set: needsUpdate.reduce((acc, field) => ({ ...acc, [field]: doc[field] }), {}) 
+//             });
+//         }
+//     }
+// });
 //#endregion
 
 //#region Users
@@ -215,20 +215,20 @@ let userSchema = new mongoose.Schema({
     captcha: Boolean,
 });
 
-userSchema.post('findOneAndUpdate', async function (doc) {
-    // This middleware only runs on findOneAndUpdate calls.
-    if (doc) {
-        const needsUpdate = [];
+// userSchema.post('findOneAndUpdate', async function (doc) {
+//     // This middleware only runs on findOneAndUpdate calls.
+//     if (doc) {
+//         const needsUpdate = [];
 
-        // ensureField(doc, needsUpdate, "config", {});
+//         // ensureField(doc, needsUpdate, "config", {});
 
-        if (needsUpdate.length > 0) {
-            await doc.updateOne({ 
-                $set: needsUpdate.reduce((acc, field) => ({ ...acc, [field]: doc[field] }), {}) 
-            });
-        }
-    }
-});
+//         if (needsUpdate.length > 0) {
+//             await doc.updateOne({ 
+//                 $set: needsUpdate.reduce((acc, field) => ({ ...acc, [field]: doc[field] }), {}) 
+//             });
+//         }
+//     }
+// });
 //#endregion
 
 //#region Config
