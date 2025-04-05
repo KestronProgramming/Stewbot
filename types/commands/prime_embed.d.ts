@@ -1,9 +1,9 @@
-export function getPrimedEmbed(userId: any, guildIn: any): EmbedBuilder | {
+export function getPrimedEmbed(userId: any, guildIn: any): Promise<EmbedBuilder | {
     type: string;
     title: string;
     description: string;
     color: number;
-};
+}>;
 import { ContextMenuCommandBuilder } from "@discordjs/builders";
 import { EmbedBuilder } from "discord.js";
 export declare namespace data {

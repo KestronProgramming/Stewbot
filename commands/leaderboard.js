@@ -1,6 +1,6 @@
 // #region CommandBoilerplate
 const Categories = require("./modules/Categories");
-const { Guilds, Users, guildByID, userByID, guildByObj, userByObj } = require("./modules/database.js")
+const { Guilds, Users, GuildUsers, guildByID, userByID, guildByObj, userByObj, guildUserByObj } = require("./modules/database.js")
 const { SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType, AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType } = require("discord.js");
 function applyContext(context = {}) {
     for (key in context) {
@@ -14,7 +14,7 @@ const { getLvl } = require("./rank.js")
 module.exports = {
     data: {
         // Slash command data
-        command: new SlashCommandBuilder().setName("leaderboard").setDescription("View a leaderboard")
+        command: new SlashCommandBuilder().setName("leaderboard").setDescription("View a leaderboard for a guild or a rank card for a user.")
             .addStringOption(option =>
                 option.setName("which").setDescription("Which leaderboard do you want to see?").setChoices(
                     { name: "Counting", value: "counting" },
@@ -50,22 +50,48 @@ module.exports = {
     async execute(cmd, context) {
         applyContext(context);
 
+        // TODO_DB: test this module
+
+        const guild = await guildByObj(cmd.guild);
+
+        let requestedUser;
+        let emoji = cmd.options.getString("emoji")
+
+        // Only some leaderboards are able to be used in servers
         if (cmd.guild?.id === undefined && cmd.options.getString("which") !== "counting") {
             cmd.followUp(`I can't find leaderboard content for that board at the moment. Try in a server that uses it!`);
             return;
         }
+
         switch (cmd.options.getString("which")) {
             case "levels":
-                if (!storage[cmd.guildId].levels.active) {
+                // TODO_DB: test this when levels are ported
+
+                if (!guild.levels.active) {
                     cmd.followUp(`This server doesn't use level ups at the moment. It can be configured using ${cmds.levels_config.mention}.`);
                     return;
                 }
                 if (cmd.options.getUser("who")?.id) {
                     var usr = cmd.options.getUser("who")?.id || cmd.user.id;
-                    if (!storage[cmd.guildId].users.hasOwnProperty(usr)) {
+
+
+                    // TODO: optimize into a single aggregation query
+                    requestedUser = await guildUserByObj(cmd.guild, usr);
+                    const requestedUserRank = await GuildUsers.countDocuments({
+                        guildId: cmd.guild.id,
+                        $or: [
+                            { exp: { $gt: requestedUser.exp } },
+                        ]
+                    }) + 1;
+
+
+                    if (!requestedUser) {
+                        // Since mongo, this shouldn't be hit, the user should always be returned at least as a virtual default.
                         cmd.followUp(`I am unaware of this user presently`);
                         return;
                     }
+                    
+                    // Single user rank
                     cmd.followUp({
                         content: `Server rank card for <@${usr}>`, embeds: [{
                             "type": "rich",
@@ -75,17 +101,17 @@ module.exports = {
                             "fields": [
                                 {
                                     "name": `Level`,
-                                    "value": storage[cmd.guildId].users[usr].lvl + "",
+                                    "value": requestedUser.lvl + "",
                                     "inline": true
                                 },
                                 {
                                     "name": `EXP`,
-                                    "value": `${storage[cmd.guildId].users[usr].exp}`.replace(/\B(?=(\d{3})+(?!\d))/g, ","),
+                                    "value": `${requestedUser.exp}`.replace(/\B(?=(\d{3})+(?!\d))/g, ","),
                                     "inline": true
                                 },
                                 {
                                     "name": `Server Rank`,
-                                    "value": `#${Object.keys(storage[cmd.guildId].users).map(a => Object.assign(storage[cmd.guildId].users[a], { "id": a })).sort((a, b) => b.exp - a.exp).map(a => a.id).indexOf(usr) + 1}`,
+                                    "value": `#${requestedUserRank}`,
                                     "inline": true
                                 }
                             ],
@@ -95,21 +121,38 @@ module.exports = {
                                 "width": 0
                             },
                             "author": {
-                                "name": client.users.cache.get(usr) ? client.users.cache.get(usr).username : "Unknown",
+                                "name": client.users.cache.get(usr) 
+                                    ? client.users.cache.get(usr).username 
+                                    : "Unknown",
                                 "icon_url": client.users.cache.get(usr)?.displayAvatarURL()
                             },
                             "footer": {
-                                "text": `Next rank up at ${(getLvl(storage[cmd.guildId].users[usr].lvl) + "").replace(/\B(?=(\d{3})+(?!\d))/g, ",")}`
+                                "text": `Next rank up at ${
+                                    (getLvl(requestedUser.lvl) + "")
+                                        .replace(/\B(?=(\d{3})+(?!\d))/g, ",")}`
                             }
                         }], allowedMentions: { parse: [] }
                     });
                     break;
                 }
+
+                // Leaderboard leaderboard
+                const mostLevelsUsers = await GuildUsers.find({
+                    "guildId": cmd.guild.id,
+                })
+                    .select("userId lvl exp")
+                    .sort([['lvl', -1], ['exp', -1]]) // Sort by level, then the users within those level
+                    .limit(10)
+                    .lean();
+
+
                 cmd.followUp({
                     content: `**Levels Leaderboard**`, embeds: [{
                         "type": "rich",
                         "title": `${cmd.guild.name} Leaderboard`,
-                        "description": Object.keys(storage[cmd.guildId].users).map(a => Object.assign(storage[cmd.guildId].users[a], { "id": a })).sort((a, b) => b.exp - a.exp).slice(0, 10).map((a, i) => `\n${["🥇", "🥈", "🥉", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"][i]}. <@${a.id}>, level ${a.lvl}`).join(""),
+                        "description": mostLevelsUsers.map((user, rank) => 
+                                `\n${["🥇", "🥈", "🥉", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"][rank]}. <@${user.userId}>, level ${user.lvl}`
+                            ).join(""),
                         "color": 0x006400,
                         "thumbnail": {
                             "url": cmd.guild.iconURL(),
@@ -123,26 +166,48 @@ module.exports = {
                 });
                 break;
             case "emojiboard":
-                if (Object.keys(storage[cmd.guildId]?.emojiboards).length < 1) {
+                if (Object.keys(guild.emojiboards).length < 1) {
                     cmd.followUp(`This server doesn't use any emojiboards at the moment. It can be configured using ${cmds.add_emojiboard.mention}.`);
                     break;
                 }
+
+
                 var searchId = cmd.options.getUser("who")?.id || cmd.user.id;
                 if (searchId !== cmd.user.id) {
-                    if (!storage[cmd.guildId].users.hasOwnProperty(searchId)) {
+                    if (!guild.users.hasOwnProperty(searchId)) {
                         cmd.followUp(`I am unaware of this user presently`);
                         break;
                     }
                 }
+
+                // TODO_DB WIP: come back and fix this once I have actual emoji data to build aggregation queries on
+
+                const allBoards = emoji === null;
+
                 var leaderboard = "";
-                var emote = "Emoji";
-                if (cmd.options.getString("emoji") === null) {
-                    leaderboard = Object.keys(storage[cmd.guildId].users).map(a => Object.assign(storage[cmd.guildId].users[a], { "id": a })).sort((a, b) => b.stars - a.stars).slice(0, 10).map((a, i) => `\n${["🥇", "🥈", "🥉", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"][i]}. <@${a.id}> ${a.stars} emojiboards`).join("");
+                var emote = getEmojiFromMessage(emoji); // Emoji formatted for the leaderboards
+
+                // If no emoji
+                if (emoji === null) {
+                    leaderboard = Object.keys(storage[cmd.guildId].users)
+                        .map(a => Object.assign(storage[cmd.guildId].users[a], { "id": a }))
+                        .sort((a, b) => b.stars - a.stars)
+                        .slice(0, 10)
+                        .map((a, i) => `\n${["🥇", "🥈", "🥉", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"][i]}. <@${a.id}> ${a.stars} emojiboards`)
+                        .join("");
                 }
                 else {
-                    if (storage[cmd.guildId].emojiboards.hasOwnProperty(getEmojiFromMessage(cmd.options.getString("emoji")))) {
-                        emote = getEmojiFromMessage(cmd.options.getString("emoji"));
-                        leaderboard = Object.keys(storage[cmd.guildId].emojiboards[emote].posters).map(a => Object.assign(storage[cmd.guildId].emojiboards[emote].posters[a], { "id": a })).sort((a, b) => b - a).slice(0, 10).map((a, i) => `\n${["🥇", "🥈", "🥉", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"][i]}. <@${a.id}> ${a} ${emote.includes(":") ? emote : cmd.options.getString("emoji") !== null ? cmd.options.getString("emoji") : "Emoji"}boards`).join("");
+                    if (guild.emojiboards.has(emote)) {
+                        leaderboard = 
+                            Object.keys(guild.emojiboards.get(emote).posters)
+                            .map(a => 
+                                Object.assign(guild.emojiboards.get(emote).posters[a], { "id": a }))
+                                .sort((a, b) => b - a)
+                                .slice(0, 10)
+                                .map((a, i) => 
+                                    `\n${["🥇", "🥈", "🥉", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"][i]}. <@${a.id}> ${a} ${
+                                        emote.includes(":") ? emote : emoji !== null ? emoji : "Emoji"}boards`
+                        ).join("");
                     }
                     else {
                         cmd.followUp(`This server doesn't have that emojiboard setup.`);
@@ -152,7 +217,7 @@ module.exports = {
                 cmd.followUp({
                     content: `**Emojiboard Leaderboard**`, embeds: [{
                         "type": "rich",
-                        "title": `${cmd.guild.name} ${emote.includes(":") ? emote : cmd.options.getString("emoji") !== null ? cmd.options.getString("emoji") : "Emoji"}board Leaderboard`,
+                        "title": `${cmd.guild.name} ${emote.includes(":") ? emote : emoji !== null ? emoji : "Emoji"}board Leaderboard`,
                         "description": leaderboard,
                         "color": 0xffff00,
                         "thumbnail": {
@@ -161,27 +226,62 @@ module.exports = {
                             "width": 0
                         },
                         "footer": {
-                            "text": `${emote.includes(":") ? emote.split(":")[1] : cmd.options.getString("emoji") !== null ? cmd.options.getString("emoji") : "Emoji"}board Leaderboards`
+                            "text": `${emote.includes(":") ? emote.split(":")[1] : emoji !== null ? emoji : "Emoji"}board Leaderboards`
                         }
                     }]
                 });
                 break;
             case "counting":
-                var leaders = [];
-                for (let a in storage) {
-                    if (storage[a].counting?.public) {
-                        try {
-                            leaders.push([await checkDirty(cmd.guild?.id, client.guilds.cache.get(a).name) ? "[Blocked name]" : client.guilds.cache.get(a).name, storage[a].counting.highestNum, a]);
-                        }
-                        catch (e) { }
-                    }
+                const topCountingGuilds = await Guilds.find({
+                    // Find eligible, public servers
+                    "counting": { $exists: true },
+                    "counting.highestNum": { $gt: 0 },
+                    "counting.public": true,
+                    "counting.legit": true,
+                })
+                    .select("id counting")
+                    .sort([['counting.highestNum', -1]])
+                    .limit(10)
+                    .lean();
+
+                // Process into easier to read format
+                let leaders = []; // [name, highestNum, id]
+                for (const guild of topCountingGuilds) {
+                    const discordGuild = await client.guilds.fetch(guild.id).catch(e=>null);
+                    const guildName = discordGuild?.name
+                        ? await checkDirty(cmd.guild?.id, discordGuild.name) 
+                            ? "[Blocked name]" 
+                            : discordGuild.name
+                        : "Unknown Guild"
+
+                    leaders.push([
+                        guildName, 
+                        guild.counting.highestNum, 
+                        guild.id
+                    ]);
                 }
-                leaders.sort((a, b) => b[1] - a[1]);
+
+                let footerRank = "";
+                if (cmd.guild && guild?.counting?.active) {
+                    const place = leaders.map(a => a[2]).indexOf(cmd.guildId);
+                    let placeEnd = ["st", "nd", "rd"][place] || "th";
+                    
+                    footerRank = 
+                        `${cmd.guild.name} is in ${place+1}${placeEnd} place with a high score of ${guild.counting.highestNum}.`
+                }
+
+                
                 cmd.followUp({
                     "content": `**Counting Leaderboard**`, embeds: [{
                         "type": "rich",
                         "title": `Counting Leaderboard`,
-                        "description": `${leaders.slice(0, 10).map((a, i) => `\n${["🥇", "🥈", "🥉", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"][i]}. ${a[0]}: \`${a[1]}\``).join("")}`,
+                        "description": `${
+                            leaders.map((guild, rank) => 
+                                `\n${
+                                    ["🥇", "🥈", "🥉", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"][rank]
+                                }. ${guild[0]}: \`${guild[1]}\``
+                            ).join("")
+                        }`,
                         "color": 0x006400,
                         "thumbnail": {
                             "url": "https://stewbot.kestron.software/roboabacus.jpg",
@@ -189,13 +289,13 @@ module.exports = {
                             "width": 0
                         },
                         "footer": {
-                            "text": `${cmd.guild && storage[cmd.guild?.id]?.counting?.active ? `${cmd.guild.name} is in ${leaders.map(a => a[2]).indexOf(cmd.guildId) + 1}${leaders.map(a => a[2]).indexOf(cmd.guildId) === 0 ? "st" : leaders.map(a => a[2]).indexOf(cmd.guildId) === 1 ? "nd" : leaders.map(a => a[2]).indexOf(cmd.guildId) === 2 ? "rd" : "th"} place with a high score of ${storage[cmd.guildId].counting.highestNum}.` : ""}`
+                            "text": footerRank
                         }
                     }]
                 });
                 break;
             case "profanity":
-                if (!storage[cmd.guildId].filter.active) {
+                if (!guild.filter.active) {
                     cmd.followUp(`This server doesn't use the filter at the moment. It can be configured using ${cmds.filter.config.mention}.`);
                     return;
                 }
@@ -203,12 +303,20 @@ module.exports = {
                     cmd.followUp(`I'm sorry, to prevent being filtered being used as a game this leaderboard is only available to moderators.`);
                     return;
                 }
+
+                // Rank card for a specific user
                 if (cmd.options.getUser("who")?.id) {
                     var usr = cmd.options.getUser("who")?.id || cmd.user.id;
-                    if (!storage[cmd.guildId].users.hasOwnProperty(usr)) {
-                        cmd.followUp(`I am unaware of this user presently`);
-                        return;
-                    }
+
+                    requestedUser = await guildUserByObj(cmd.guild, usr);
+                    const requestedUserInfractions = requestedUser.infractions || 0;
+                    const requestedUserRank = await GuildUsers.countDocuments({
+                        guildId: cmd.guild.id,
+                        infractions: { $gt: requestedUserInfractions },
+                    }) + 1;
+
+                    const discordUser = await client.users.fetch(usr).catch(e=>null);
+
                     cmd.followUp({
                         content: `Server profanity card for <@${usr}>`, embeds: [{
                             "type": "rich",
@@ -218,12 +326,12 @@ module.exports = {
                             "fields": [
                                 {
                                     "name": `Times Filtered`,
-                                    "value": storage[cmd.guildId].users[usr].infractions + "",
+                                    "value": requestedUserInfractions || 0,
                                     "inline": true
                                 },
                                 {
                                     "name": `Profanity Rank`,
-                                    "value": `#${Object.keys(storage[cmd.guildId].users).map(a => Object.assign(storage[cmd.guildId].users[a], { "id": a })).sort((a, b) => b.infractions - a.infractions).map(a => a.id).indexOf(usr) + 1}`,
+                                    "value": `#${requestedUserRank}`,
                                     "inline": true
                                 }
                             ],
@@ -233,8 +341,8 @@ module.exports = {
                                 "width": 0
                             },
                             "author": {
-                                "name": client.users.cache.get(usr) ? client.users.cache.get(usr).username : "Unknown",
-                                "icon_url": client.users.cache.get(usr)?.displayAvatarURL()
+                                "name": discordUser ? discordUser.username : "Unknown",
+                                "icon_url": discordUser?.displayAvatarURL()
                             },
                             "footer": {
                                 "text": `Profanity Leaderboard`
@@ -243,11 +351,26 @@ module.exports = {
                     });
                     break;
                 }
+
+                // Compile leaderboard for whole server
+
+                const mostProfaneUsers = await GuildUsers.find({
+                    "guildId": cmd.guild.id,
+                })
+                    .select("userId infractions")
+                    .sort([['infractions', -1]])
+                    .limit(10)
+                    .lean();
+
                 cmd.followUp({
                     content: `**Profanity Leaderboard**`, embeds: [{
                         "type": "rich",
                         "title": `${cmd.guild.name} Profanity Leaderboard`,
-                        "description": Object.keys(storage[cmd.guildId].users).map(a => Object.assign(storage[cmd.guildId].users[a], { "id": a })).sort((a, b) => b.infractions - a.infractions).slice(0, 10).map((a, i) => `\n${["🥇", "🥈", "🥉", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"][i]}. <@${a.id}>, ${a.infractions} times filtered`).join(""),
+                        "description": 
+                            mostProfaneUsers.map((userObj, i) => 
+                                `\n${["🥇", "🥈", "🥉", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"][i]}. <@${userObj.userId}>, ${userObj.infractions || 0} times filtered`
+                            )
+                            .join(""),
                         "color": 0x006400,
                         "thumbnail": {
                             "url": cmd.guild.iconURL(),
@@ -261,16 +384,46 @@ module.exports = {
                 });
             break;
             case "cleanliness":
-                if (!storage[cmd.guildId].filter.active) {
+                if (!guild.filter.active) {
                     cmd.followUp(`This server doesn't use the filter at the moment. It can be configured using ${cmds.filter.config.mention}.`);
                     return;
                 }
+
+                // User-specific cleanliness leaderboard
                 if (cmd.options.getUser("who")?.id) {
                     var usr = cmd.options.getUser("who")?.id || cmd.user.id;
-                    if (!storage[cmd.guildId].users.hasOwnProperty(usr)) {
-                        cmd.followUp(`I am unaware of this user presently`);
-                        return;
-                    }
+
+                    requestedUser = await guildUserByObj(cmd.guild, usr);
+                    const requestedUserInfractions = requestedUser.infractions || 0;
+                    const requestedUserExp = requestedUser.exp || 0;
+                    const requestedUserRank = await GuildUsers.countDocuments({
+                        guildId: cmd.guild.id,
+                        $expr: {
+                            $or: [
+                                // Get all users with less infractions in our DB.
+                                // TODO: unstored users kinda aren't counted, so assume everyone not in our DB is 0 
+                                { $lt: [
+                                    { $ifNull: ["$infractions", 0] }, // Treat missing infractions as 0
+                                    requestedUserInfractions
+                                ]},
+
+                                // Users with the same amount of infractions but more time spent in the server are cleaner
+                                { $and: [
+                                    { $eq: [
+                                            { $ifNull: ["$infractions", 0] },
+                                            requestedUserInfractions
+                                    ]},
+                                    { $gt: [
+                                        { $ifNull: ["$exp", 0] },
+                                        requestedUserExp
+                                    ]}
+                                ]}
+                            ]
+                        }
+                    }) + 1;
+
+                    const discordUser = await client.users.fetch(usr).catch(e=>null);
+
                     cmd.followUp({
                         content: `Server cleanliness card for <@${usr}>`, embeds: [{
                             "type": "rich",
@@ -280,12 +433,12 @@ module.exports = {
                             "fields": [
                                 {
                                     "name": `Times Filtered`,
-                                    "value": storage[cmd.guildId].users[usr].infractions + "",
+                                    "value": requestedUser.infractions || 0,
                                     "inline": true
                                 },
                                 {
                                     "name": `Cleanliness Rank`,
-                                    "value": `#${Object.keys(storage[cmd.guildId].users).map(a => Object.assign(storage[cmd.guildId].users[a], { "id": a })).sort((a,b)=>b.exp-a.exp).sort((a, b) => a.infractions - b.infractions).map(a => a.id).indexOf(usr) + 1}`,
+                                    "value": `#${requestedUserRank}`,
                                     "inline": true
                                 }
                             ],
@@ -295,8 +448,8 @@ module.exports = {
                                 "width": 0
                             },
                             "author": {
-                                "name": client.users.cache.get(usr) ? client.users.cache.get(usr).username : "Unknown",
-                                "icon_url": client.users.cache.get(usr)?.displayAvatarURL()
+                                "name": discordUser ? discordUser.username : "Unknown",
+                                "icon_url": discordUser?.displayAvatarURL()
                             },
                             "footer": {
                                 "text": `Cleanliness Leaderboard`
@@ -305,11 +458,24 @@ module.exports = {
                     });
                     break;
                 }
+
+                // Server cleanliness leaderboard
+                const mostCleanUsers = await GuildUsers.find({
+                    "guildId": cmd.guild.id,
+                })
+                    .select("userId infractions exp")
+                    .sort([['infractions', 1], ['exp', -1]]) // fewest infractions, then higher exp
+                    .limit(10)
+                    .lean();
+                
+
                 cmd.followUp({
                     content: `**Cleanliness Leaderboard**`, embeds: [{
                         "type": "rich",
                         "title": `${cmd.guild.name} Cleanliness Leaderboard`,
-                        "description": Object.keys(storage[cmd.guildId].users).map(a => Object.assign(storage[cmd.guildId].users[a], { "id": a })).sort((a,b)=>b.exp-a.exp).sort((a, b) => a.infractions - b.infractions).slice(0, 10).map((a, i) => `\n${["🥇", "🥈", "🥉", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"][i]}. <@${a.id}>, ${a.infractions} times filtered`).join(""),
+                        "description": mostCleanUsers.map((user, i) => 
+                                `\n${["🥇", "🥈", "🥉", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"][i]}. <@${user.userId}>, ${user.infractions || 0} times filtered`
+                            ).join(""),
                         "color": 0x006400,
                         "thumbnail": {
                             "url": cmd.guild.iconURL(),
