@@ -209,8 +209,12 @@ let primedEmbedSchema = mongoose.Schema({
 let userConfigSchema = mongoose.Schema({
     beenAIDisclaimered: { type: Boolean, default: false },
     aiPings: { type: Boolean, default: true },
-    embedPreviews: { type: Boolean, default: true, required: true},
+    dmOffenses: { type: Boolean, default: true },
+    returnFiltered: { type: Boolean, default: true }, // infraction content
+    embedPreviews: { type: Boolean, default: true },
     levelUpMsgs: { type: Boolean, default: true },
+    hasSetTZ: { type: Boolean, default: false },
+    timeOffset: { type: Number, default: 0 },
 })
 
 let userSchema = new mongoose.Schema({

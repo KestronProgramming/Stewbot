@@ -76,8 +76,11 @@ module.exports = {
             case "": 
                 const guild = await guildByObj(cmd.guild);
                 const guildUser = await guildUserByObj(cmd.guild, cmd.user.id);
+                const user = await userByObj(cmd.guild);
+                
                 const guildBuffer = Buffer.from(JSON.stringify(guild.toJSON(), null, 4));
                 const guildUserBuffer = Buffer.from(JSON.stringify(guildUser.toJSON(), null, 4));
+                const userBuffer = Buffer.from(JSON.stringify(user.toJSON(), null, 4));
                 cmd.followUp({ files: [
                     {
                         attachment: guildBuffer,
@@ -86,6 +89,10 @@ module.exports = {
                     {
                         attachment: guildUserBuffer,
                         name: 'guildUser.json'
+                    },
+                    {
+                        attachment: userBuffer,
+                        name: 'user.json'
                     }
                 ]});
                 break;

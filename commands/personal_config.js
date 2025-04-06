@@ -55,12 +55,14 @@ module.exports = {
 	/** @param {import('discord.js').Interaction} cmd */
     async execute(cmd, context) {
 		applyContext(context);
+
+		const user = await guildByObj(cmd.user);
 		
-		if(cmd.options.getBoolean("ai_pings")!==null) storage[cmd.user.id].config.aiPings=cmd.options.getBoolean("ai_pings");
-		if(cmd.options.getBoolean("dm_infractions")!==null) storage[cmd.user.id].config.dmOffenses=cmd.options.getBoolean("dm_infractions");
-		if(cmd.options.getBoolean("dm_infraction_content")!==null) storage[cmd.user.id].config.returnFiltered=cmd.options.getBoolean("dm_infraction_content");
-		if(cmd.options.getBoolean("embeds")!==null) storage[cmd.user.id].config.embedPreviews=cmd.options.getBoolean("embeds");
-		if(cmd.options.getBoolean("level_up_messages"!==null)) storage[cmd.user.id].config.levelUpMsgs=cmd.options.getBoolean("level_up_messages");
+		if (cmd.options.getBoolean("ai_pings") !== null) user.config.aiPings = cmd.options.getBoolean("ai_pings");
+		if (cmd.options.getBoolean("dm_infractions") !== null) user.config.dmOffenses = cmd.options.getBoolean("dm_infractions");
+		if (cmd.options.getBoolean("dm_infraction_content") !== null) user.config.returnFiltered = cmd.options.getBoolean("dm_infraction_content");
+		if (cmd.options.getBoolean("embeds") !== null) user.config.embedPreviews = cmd.options.getBoolean("embeds");
+		if (cmd.options.getBoolean("level_up_messages" !== null)) user.config.levelUpMsgs = cmd.options.getBoolean("level_up_messages");
 		
 		// Timezone response is more complex so respond differently at the end if we're configuring that 
 		if(!cmd.options.getBoolean("configure_timezone")){
@@ -71,26 +73,28 @@ module.exports = {
 			const curHour = cur.getUTCHours();
 			const curMinute = cur.getUTCMinutes();
 
-			if(!storage[cmd.user.id].config.hasSetTZ) storage[cmd.user.id].config.timeOffset=0;
+			if(!user.config.hasSetTZ) user.config.timeOffset=0;
 			cmd.followUp({
                 content: `## Timezone Configuration\n\nPlease use the buttons to make the following number your current time (you can ignore minutes)\n${
-                    curHour + storage[cmd.user.id].config.timeOffset === 0
+                    curHour + user.config.timeOffset === 0
                         ? "12"
                         : curHour +
-                              storage[cmd.user.id].config.timeOffset > 12
-                        	? curHour + storage[cmd.user.id].config.timeOffset - 12
-                        	: curHour + storage[cmd.user.id].config.timeOffset
+                              user.config.timeOffset > 12
+                        	? curHour + user.config.timeOffset - 12
+                        	: curHour + user.config.timeOffset
                 }:${(curMinute + "").padStart(2, "0")} ${
-                    curHour + storage[cmd.user.id].config.timeOffset > 11
+                    curHour + user.config.timeOffset > 11
                         ? "PM"
                         : "AM"
                 }\n${(
-                    curHour + storage[cmd.user.id].config.timeOffset + ""
+                    curHour + user.config.timeOffset + ""
                 ).padStart(2, "0")}${(curMinute + "").padStart(2, "0")}`,
                 
 				components: tzConfig,
             });
 		}
+
+		user.save();
 	},
 
 	subscribedButtons: ["tzUp", "tzDown", "tzSave"],
@@ -99,34 +103,32 @@ module.exports = {
     async onbutton(cmd, context) {
 		applyContext(context);
 
+		const user = await userByObj(cmd.user);
+
 		const cur = new Date();
 		const curHour = cur.getUTCHours();
 		const curMinute = cur.getUTCMinutes();
 
 		switch(cmd.customId) {
 			case 'tzUp':
-				if(!storage[cmd.user.id].config.hasOwnProperty("timeOffset")){
-					storage[cmd.user.id].config.timeOffset=0;
-					storage[cmd.user.id].config.hasSetTZ=false;
-				}
-				storage[cmd.user.id].config.timeOffset++;
-				
-				cmd.update(`## Timezone Configuration\n\nPlease use the buttons to make the following number your current time (you can ignore minutes)\n${(curHour+storage[cmd.user.id].config.timeOffset)===0?"12":(curHour+storage[cmd.user.id].config.timeOffset)>12?(curHour+storage[cmd.user.id].config.timeOffset)-12:(curHour+storage[cmd.user.id].config.timeOffset)}:${(curMinute+"").padStart(2,"0")} ${(curHour+storage[cmd.user.id].config.timeOffset)>11?"PM":"AM"}\n${((curHour+storage[cmd.user.id].config.timeOffset)+"").padStart(2,"0")}${(curMinute+"").padStart(2,"0")}`);
+				user.config.timeOffset++;
+				cmd.update(`## Timezone Configuration\n\nPlease use the buttons to make the following number your current time (you can ignore minutes)\n${(curHour+user.config.timeOffset)===0?"12":(curHour+user.config.timeOffset)>12?(curHour+user.config.timeOffset)-12:(curHour+user.config.timeOffset)}:${(curMinute+"").padStart(2,"0")} ${(curHour+user.config.timeOffset)>11?"PM":"AM"}\n${((curHour+user.config.timeOffset)+"").padStart(2,"0")}${(curMinute+"").padStart(2,"0")}`);
 			break;
 			case 'tzDown':
-				if(!storage[cmd.user.id].config.hasOwnProperty("timeOffset")){
-					storage[cmd.user.id].config.timeOffset=0;
-					storage[cmd.user.id].config.hasSetTZ=false;
-				}
-				storage[cmd.user.id].config.timeOffset--;
-
-				cmd.update(`## Timezone Configuration\n\nPlease use the buttons to make the following number your current time (you can ignore minutes)\n${(curHour+storage[cmd.user.id].config.timeOffset)===0?"12":(curHour+storage[cmd.user.id].config.timeOffset)>12?(curHour+storage[cmd.user.id].config.timeOffset)-12:(curHour+storage[cmd.user.id].config.timeOffset)}:${(curMinute+"").padStart(2,"0")} ${(curHour+storage[cmd.user.id].config.timeOffset)>11?"PM":"AM"}\n${((curHour+storage[cmd.user.id].config.timeOffset)+"").padStart(2,"0")}${(curMinute+"").padStart(2,"0")}`);
+				// NOTE: it would be better of the offset is stored in the buttons until they click save.
+				user.config.timeOffset--;
+				cmd.update(`## Timezone Configuration\n\nPlease use the buttons to make the following number your current time (you can ignore minutes)\n${(curHour+user.config.timeOffset)===0?"12":(curHour+user.config.timeOffset)>12?(curHour+user.config.timeOffset)-12:(curHour+user.config.timeOffset)}:${(curMinute+"").padStart(2,"0")} ${(curHour+user.config.timeOffset)>11?"PM":"AM"}\n${((curHour+user.config.timeOffset)+"").padStart(2,"0")}${(curMinute+"").padStart(2,"0")}`);
 			break;
 			case 'tzSave':
-				storage[cmd.user.id].config.hasSetTZ=true;
+				user.config.hasSetTZ=true;
 				
-				cmd.update({content:`## Timezone Configured\n\nUTC ${storage[cmd.user.id].config.timeOffset}`,components:[]});
+				cmd.update({
+					content:`## Timezone Configured\n\nUTC ${user.config.timeOffset}`,
+					components:[]
+				});
 			break;
 		}
+
+		user.save();
 	}
 };
