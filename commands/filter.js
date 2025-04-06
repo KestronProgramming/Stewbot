@@ -390,7 +390,7 @@ module.exports = {
                 msg.ogContent = msg.content;
                 msg.content = filteredContent;
 
-                const user = await userByObj(msg.user) // TODO: lean read if this isn't cached somewhere else?
+                const user = await userByObj(msg.author) // TODO: lean read if this isn't cached somewhere else?
 
                 // Increment infractions
                 await GuildUsers.updateOne(

@@ -30,6 +30,8 @@ CheckDirty needs aggressive caching... which needs to be invalidated when modifi
 
 
 # TODO:
+On message handler should pass a read-only guild
+
 Ctrl+F for "TODO_DB
 
 Double check all checkDirty calls with [1] after them, make sure await has parenths
@@ -38,3 +40,6 @@ Regex for:
 userBy.+\(.+\.guild
 
 Warn when guild object or guild user is provided to on obj functions, maybe warn in beta when ID seems like a guild ID or not?
+
+Make sure all onmessage listeners use cmd.author instead of cmd.user
+

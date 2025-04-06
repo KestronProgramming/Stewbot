@@ -21,8 +21,13 @@ const mongooseLeanVirtuals = require('mongoose-lean-virtuals');
 const mongooseLeanDefaults = require('mongoose-lean-defaults').default;
 mongoose.set('setDefaultsOnInsert', true);
 
-
 //#region Guild
+let persistenceSchema = new mongoose.Schema({
+    active: { type: Boolean, default: false },
+    content: { type: String, default: "This is a Stewbot persistent message! Use /set_persistent_message to configure" },
+    lastPost: { type: String, default: null }
+})
+
 let pollSchema = new mongoose.Schema({
     options: { type: Map, of: [ String ], default: {} }, // The key is the option, the string is the userID
     title: String,
@@ -159,9 +164,10 @@ let guildSchema = new mongoose.Schema({
         trim: true,
         match: [/\d+/, "Error: ServerID must be digits only"]
     },
-    emojiboards: { type: Map, of: emojiboardSchema, default: [] },
-    tempBans: { type: Map, of: tempBanSchema, default: [] },
-    polls: { type: Map, of: pollSchema, default: [] },
+    emojiboards: { type: Map, of: emojiboardSchema, default: {} },
+    tempBans: { type: Map, of: tempBanSchema, default: {} },
+    polls: { type: Map, of: pollSchema, default: {} },
+    persistence: { type: Map, of: persistenceSchema, default: {} },
     alm: { type: autoLeaveMessageSchema, default: {} },
     ajm: { type: autoJoinMessageSchema, default: {} },
     config: { type: guildConfigSchema, default: {} },
