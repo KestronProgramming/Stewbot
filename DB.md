@@ -36,3 +36,5 @@ Double check all checkDirty calls with [1] after them, make sure await has paren
 
 Regex for:
 userBy.+\(.+\.guild
+
+Warn when guild object or guild user is provided to on obj functions, maybe warn in beta when ID seems like a guild ID or not?

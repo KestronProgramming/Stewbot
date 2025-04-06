@@ -119,8 +119,9 @@ module.exports = {
 				cmd.followUp(`I have selected a random number between **${low}** and **${high}**: **${choice}**`);
 			break;
 			case '8-ball':
-				var ques=await checkDirty(config.homeServer,cmd.options.getString("question"),true)[1];
-				if(cmd.guildId&&storage[cmd.guildId]?.filter.active) ques=await checkDirty(cmd.guildId,ques,true)[1];
+				const guild = await guildByObj(cmd.guild);
+				var ques=(await checkDirty(config.homeServer,cmd.options.getString("question"),true))[1];
+				if(guild&&guild.filter.active) ques=(await checkDirty(cmd.guildId,ques,true))[1];
 				cmd.followUp(
 					`I have generated a random response to the question \`${escapeBackticks(ques)}\`.\n` +
 					`:8ball: The answer is **${m8ballResponses[Math.floor(Math.random()*m8ballResponses.length)]}**.`);
