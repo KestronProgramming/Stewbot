@@ -10,6 +10,9 @@
 ///   On top of that, it's just easier to store users on their own and index by the userID
 ///   because then it can auto-populate on fetch.
 ///
+/// - ConfigDB:
+///   This doc is the root-level storage. Anything global across stewbot,
+///   like his pfp or RSS feeds to check daily, go here.
 ///
 
 
@@ -280,11 +283,21 @@ let userSchema = new mongoose.Schema({
 //#endregion
 
 //#region Config
-// Global bot config - everything from the top level storage.json goes here
+// Global bot config - everything from the top level "storage.json" goes here
+let rssFeedSchema = new mongoose.Schema({
+    hash: String,
+    url: String,
+    // channels: { type: Map, of: String, default: [] },
+    channels: [ String ],
+    lastSent: { type: Date, default: () => new Date() },
+    fails: { type: Number, default: 0 }
+})
+
 const configSchema = new mongoose.Schema({
     useGlobalGemini: { type: Boolean, default: true },
     dailyMeme: { type: Number, default: 0 },
     pfp: String,
+    rss: { type: Map, of: rssFeedSchema, default: {} }
 })
 
 const ConfigDB = mongoose.model("settings", configSchema)

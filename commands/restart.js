@@ -106,6 +106,7 @@ module.exports = {
                 notify(String("Caught error while restarting: " + err.stack))
             }
 
+            // TODO_DB: remove
             fs.writeFileSync("./storage.json", process.env.beta ? JSON.stringify(storage, null, 4) : JSON.stringify(storage));
             
             // Start the maintenance bot to handle commands during this time

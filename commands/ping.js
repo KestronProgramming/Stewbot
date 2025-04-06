@@ -10,6 +10,7 @@ function applyContext(context={}) {
 // #endregion CommandBoilerplate
 
 const mongoose = require("mongoose")
+const ms = require("ms");
 
 module.exports = {
 	data: {
@@ -46,15 +47,15 @@ module.exports = {
 		const db = mongoose.connection.db;
 		const start = performance.now();
 		await db.command({ ping: 1 });
-		const dbPingInMillis = (performance.now() - start).toFixed(2);
+		const dbPingInMillis = +(performance.now() - start).toFixed(2);
 	
 
 		cmd.followUp(
 			`**Online**\n`+
-			`- Discord latency: ${client.ws.ping} milliseconds\n`+
-			`- Database latency: ${dbPingInMillis} milliseconds\n`+
+			`- Discord latency: ${ms(client.ws.ping, { long: true })}\n`+
+			`- Database latency: ${ms(dbPingInMillis, { long: true })}\n`+
 			`- Last Started: <t:${uptime}:f>, <t:${uptime}:R>\n`+
-			`- Uptime: ${((Math.round(Date.now() / 1000) - uptime) / (60 * 60)).toFixed(2)} hours\n`+
+			`- Uptime: ${ms(Date.now() - (uptime*1000), { long: true })}\n`+
 			`- Server Count: ${client.guilds.cache.size} Servers\n`+
 			`- User Install Count: ${app.approximateUserInstallCount} Users`
 		);

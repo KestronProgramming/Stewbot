@@ -1,6 +1,6 @@
 // #region CommandBoilerplate
 const Categories = require("./modules/Categories");
-const { Guilds, Users, guildByID, userByID, guildByObj, userByObj } = require("./modules/database.js")
+const { Guilds, Users, guildByID, userByID, guildByObj, userByObj, ConfigDB } = require("./modules/database.js")
 const { ContextMenuCommandBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
 function applyContext(context={}) {
 	for (key in context) {
@@ -116,13 +116,16 @@ const fetchWithRedirectCheck = async (inputUrl, maxRedirects = 5) => {
     throw new Error('Too many redirects');
 };
 async function checkRSS() {
-	if(!storage.hasOwnProperty("rss")) storage.rss={};
-	Object.keys(storage.rss).forEach(async feed=>{
-		feed=storage.rss[feed];
+	const config = await ConfigDB.findOne({});
+	
+	for (const feedHash of config.rss.keys()) {
+
+		const feed = config.rss.get(feedHash);
+
 		if(feed.channels.length===0){
-			delete storage.rss[feed.hash];
+			config.rss.delete(feedHash);
 		}
-		else{
+		else {
 			var cont=true;
 			var parsed;
 			try {
@@ -134,16 +137,11 @@ async function checkRSS() {
 				cont = false;
 
 				// Track fails
-				if (feed.fails) {
-					feed.fails++;
-				} 
-				else {
-					feed.fails = 1;
-				}
+				feed.fails++;
 
 				// Remove failing URLs
 				if (feed.fails > 7) {
-					delete storage.rss[feed.hash];
+					config.rss.delete(feedHash);
 				}
 			}
 			if(cont){
@@ -222,7 +220,9 @@ async function checkRSS() {
 				feed.lastSent = mostRecentArticle.toISOString();
 			}
 		}
-	});
+	};
+
+	config.save();
 }
 
 module.exports = {
@@ -287,22 +287,43 @@ module.exports = {
     async execute(cmd, context) {
 		applyContext(context);
 
-		if (!storage.rss) storage.rss = storage.rss || {};
+		const channelInput = cmd.options.getChannel("channel");
+
+		let config;
 		
 		switch(cmd.options.getSubcommand()){
 			case 'check':
-				var feeds=[];
-				Object.keys(storage.rss).forEach(feed=>{
-					feed=storage.rss[feed];
-					if(feed.channels.includes(cmd.options.getChannel("channel").id)){
-						feeds.push(feed.url);
-					}
-				});
-				cmd.followUp(feeds.length>0?`The RSS feeds being followed for <#${cmd.options.getChannel("channel").id}> include the following:\n${feeds.map(f=>`- ${f}`).join("\n")}`:`There are no feeds followed in <#${cmd.options.getChannel("channel").id}>`);
+				const followedURLs = await ConfigDB.aggregate([
+					// Create a document with an array of all rss items
+					{ $project: {
+						rssArray: {
+							$objectToArray: "$rss"
+						}
+					} },
+					// Split the each item of the rrs array into separate documents
+					{ $unwind: "$rssArray" },
+					// Match only rss item documents that this channel follows
+					{ $match: {
+						"rssArray.v.channels": cmd.channel.id
+					} },
+					// Extract just the URL of each document
+					{ $project: {
+						url: "$rssArray.v.url",
+						_id: 0
+					} }
+				]);
+				
+				cmd.followUp(
+					followedURLs.length > 0 
+						? `The RSS feeds being followed for <#${channelInput.id}> include the following:\n${
+							followedURLs.map(f => `- ${f.url}`).join("\n")
+						}` 
+						: `There are no feeds followed in <#${channelInput.id}>`);
 			break;
+			
 			case 'follow':
-				if(!cmd.options.getChannel("channel").permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
-					cmd.followUp(`I'm not allowed to send messages in <#${cmd.options.getChannel("channel").id}> so this action cannot be completed.`);
+				if(!channelInput.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
+					cmd.followUp(`I'm not allowed to send messages in <#${channelInput.id}> so this action cannot be completed.`);
 					break;
 				}
 
@@ -332,42 +353,55 @@ module.exports = {
 					cmd.followUp(`Error parsing RSS from link.`);
 					break
 				}
-
 				// At this point, the URL is valid and all
-				var hash = crypto.createHash('md5').update(url).digest('hex');
-				if(!storage.rss.hasOwnProperty(hash)){
-					storage.rss[hash]={
-						"hash":hash,
-						"url":url,
-						"channels":[],
-						"lastSent":new Date()
-					};
-				}
-				storage.rss[hash].channels.push(cmd.options.getChannel("channel").id);
-				cmd.followUp("I have followed the feed for that channel");
+
+				// TODO: trim URL, make sure it's in standard notation for the hash
+				var hash = crypto.createHash('md5').update(url).digest('hex'); 
+				config = await ConfigDB.findOne({});
 				
+				// Create a new container for this hash
+				if(!config.rss.has(hash)) {
+					config.rss.set(hash, {
+						"hash": hash,
+						"url": url,
+						"channels": [],
+						"lastSent": new Date()
+					});
+				}
+
+				if (config.rss.get(hash).channels.includes(channelInput.id)) {
+					cmd.followUp("You already follow that feed in that channel");	
+					return;
+				}
+
+				config.rss.get(hash).channels.push(channelInput.id);
+				await config.save();
+				cmd.followUp("I have followed the feed for that channel");	
 			break;
+
 			case 'unfollow':
-				if(cmd.options.getString("feed").toLowerCase()!=="all"){
+				config = await ConfigDB.findOne({});
+				if(cmd.options.getString("feed").toLowerCase()!=="all") {
 					var hash = crypto.createHash('md5').update(cmd.options.getString("feed").trim()).digest('hex');
-					if(storage.rss?.[hash]?.channels?.includes(cmd.options.getChannel("channel").id)){
-						storage.rss[hash].channels.splice(storage.rss[hash].channels.indexOf(cmd.options.getChannel("channel").id), 1);
+					if(config.rss.get(hash)?.channels.includes(channelInput.id)) {
+						config.rss.get(hash).channels.splice(config.rss.get(hash).channels.indexOf(channelInput.id), 1);
 						cmd.followUp("I have unfollowed the feed for that channel");
 					}
 					else{
-						cmd.followUp(`That feed is not in my database`);
+						cmd.followUp(`You don't seem to follow that feed in that channel`);
 					}
+					await config.save();
 				}
-				else{
-					Object.keys(storage.rss).forEach(feed=>{
-						feed=storage.rss[feed];
-						if(feed.channels.includes(cmd.options.getChannel("channel").id)){
-							feed.channels.splice(feed.channels.indexOf(cmd.options.getChannel("channel").id),1);
-						}
-					});
+				else {
+					// Remove this channel from all feeds - TODO_DB: make sure RSS is only checked if it has a channel
+					const updates = {};
+					for (const key of config.rss.keys()) {
+						updates[`rss.${key}.channels`] = channelInput.id;
+					}
+					await config.updateOne({ $pull: updates }); // Remove these channels
+
 					cmd.followUp(`I have unfollowed all feeds for that channel`);
 				}
-				
 			break;
 		}
 	},
