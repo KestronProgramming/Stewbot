@@ -20,6 +20,11 @@ mongoose.set('setDefaultsOnInsert', true);
 
 
 //#region Guild
+let pollSchema = new mongoose.Schema({
+    options: { type: Map, of: [ String ], default: {} }, // The key is the option, the string is the userID
+    title: String,
+})
+
 let levelsSchema = new mongoose.Schema({
     active: { type: Boolean, default: false },
     channel: { type: String, default: "" },
@@ -153,6 +158,7 @@ let guildSchema = new mongoose.Schema({
     },
     emojiboards: { type: Map, of: emojiboardSchema, default: [] },
     tempBans: { type: Map, of: tempBanSchema, default: [] },
+    polls: { type: Map, of: pollSchema, default: [] },
     alm: { type: autoLeaveMessageSchema, default: {} },
     ajm: { type: autoJoinMessageSchema, default: {} },
     config: { type: guildConfigSchema, default: {} },

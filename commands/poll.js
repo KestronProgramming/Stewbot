@@ -1,7 +1,7 @@
 // #region CommandBoilerplate
 const Categories = require("./modules/Categories");
 const { Guilds, Users, guildByID, userByID, guildByObj, userByObj } = require("./modules/database.js")
-const { ContextMenuCommandBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
+const { ContextMenuCommandBuilder, AttachmentBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
 function applyContext(context={}) {
 	for (key in context) {
 		this[key] = context[key];
@@ -13,6 +13,19 @@ const { createCanvas } = require('canvas');
 const fs = require("node:fs")
 const pieCols=require("../data/pieCols.json");
 
+
+/**
+ * Parses a poll message content and extracts poll details.
+ *
+ * @param {string} c - The content of the poll message.
+ * @param {boolean} published - Indicates whether the poll is published.
+ * @returns {Object|undefined} An object containing the parsed poll details:
+ * - `title` {string}: The title of the poll.
+ * - `options` {Array<string>|Object<string, number>}: The poll options. If `published` is true, this will be an object mapping options to their vote counts.
+ * - `choices` {Array<string>}: The list of poll choices (only if `published` is true).
+ * - `starter` {string}: The ID of the user who started the poll (only if `published` is true).
+ * Returns `undefined` if an error occurs during parsing.
+ */
 function parsePoll(c, published){
     try{
         var ret={};
@@ -66,7 +79,7 @@ module.exports = {
 			cmd.followUp({content:"This server doesn't want me to process that prompt.","ephemeral":true});
 			return;
 		}
-		cmd.followUp({ "content": `**${await checkDirty(config.homeServer, cmd.options.getString("prompt"), true)[1]}**`, "ephemeral": true, "components": [new ActionRowBuilder().addComponents(
+		cmd.followUp({ "content": `**${(await checkDirty(config.homeServer, cmd.options.getString("prompt"), true))[1]}**`, "ephemeral": true, "components": [new ActionRowBuilder().addComponents(
 			new ButtonBuilder().setCustomId("poll-addOption").setLabel("Add a poll option").setStyle(ButtonStyle.Primary), 
 			new ButtonBuilder().setCustomId("poll-delOption").setLabel("Remove a poll option").setStyle(ButtonStyle.Danger), 
 			new ButtonBuilder().setCustomId("poll-publish").setLabel("Publish the poll").setStyle(ButtonStyle.Success)
@@ -78,6 +91,9 @@ module.exports = {
     /** @param {import('discord.js').ButtonInteraction} cmd */
     async onbutton(cmd, context) {
 		applyContext(context);
+
+		const guild = await guildByObj(cmd.guild);
+		const pollDB = guild.polls.get(cmd.message.id);
 
 		switch (cmd.customId) {
 			case 'poll-addOption':
@@ -103,25 +119,36 @@ module.exports = {
 			break;
 
 			case 'poll-voters':
-				cmd.reply({content:limitLength(`**Voters**\n${Object.keys(storage[cmd.guildId].polls[cmd.message.id].options).map(opt=>`\n${opt}${storage[cmd.guildId].polls[cmd.message.id].options[opt].map(a=>`\n- <@${a}>`).join("")}`).join("")}`),ephemeral:true,allowedMentions:{parse:[]}});
+				cmd.reply({
+					content: limitLength(`**Voters**\n${
+						Array.from(pollDB.options.keys())
+							.map(opt=>`\n${opt}${
+								pollDB.options.get(opt)
+									.map(a=>`\n- <@${a}>`)
+									.join("")
+						}`)
+						.join("")}`),
+					ephemeral:true,
+					allowedMentions:{ parse:[] }
+				});
 			break;
 
 			case 'poll-removeVote':
 				var poll=parsePoll(cmd.message.content,true);
-				var keys=Object.keys(storage[cmd.guildId].polls[cmd.message.id].options);
-				for(var i=0;i<keys.length;i++){
-					if(storage[cmd.guildId].polls[cmd.message.id].options[keys[i]].includes(cmd.user.id)){
-						storage[cmd.guildId].polls[cmd.message.id].options[keys[i]].splice(storage[cmd.guildId].polls[cmd.message.id].options[keys[i]].indexOf(cmd.user.id),1);
+				var options=Array.from(pollDB.options.keys());
+				for(var i=0;i<options.length;i++){
+					if(pollDB.options.get(options[i]).includes(cmd.user.id)){
+						pollDB.options.get(options[i]).splice(pollDB.options.get(options[i]).indexOf(cmd.user.id),1);
 						i--;
 					}
 				}
 				var finalResults={};
 				var totalVotes=0;
-				keys.forEach(a=>{
-					totalVotes+=storage[cmd.guildId].polls[cmd.message.id].options[a].length;
+				options.forEach(a=>{
+					totalVotes+=pollDB.options.get(a).length;
 				});
-				keys.forEach(a=>{
-					if(storage[cmd.guildId].polls[cmd.message.id].options[a].length>0) finalResults[a]=((360/totalVotes)*storage[cmd.guildId].polls[cmd.message.id].options[a].length);
+				options.forEach(a=>{
+					if(pollDB.options.get(a).length>0) finalResults[a]=((360/totalVotes)*pollDB.options.get(a).length);
 				});
 				let canvas = createCanvas(600, 600);
 				let ctx = canvas.getContext('2d');
@@ -138,57 +165,66 @@ module.exports = {
 					ctx.fill();
 					if(Object.keys(finalResults).length>1) ctx.stroke();
 				});
-				fs.writeFileSync("./tempPoll.png",canvas.toBuffer("image/png"));
-				cmd.update({content:`<@${poll.starter}> asks: **${poll.title}**${poll.choices.map((a,i)=>`\n${i}. ${a} **${storage[cmd.guildId].polls[cmd.message.id].options[a].length}**${finalResults.hasOwnProperty(a)?` - ${pieCols[i][1]}`:""}`).join("")}`,files:["./tempPoll.png"]});
+				const pollImage = new AttachmentBuilder(canvas.toBuffer("image/png"), { name: "poll.png" });
+
+				cmd.update({
+					content:`<@${poll.starter}> asks: **${poll.title}**${poll.choices.map((a,i)=>`\n${i}. ${a} **${pollDB.options.get(a).length}**${finalResults.hasOwnProperty(a)?` - ${pieCols[i][1]}`:""}`).join("")}`,
+					files:[pollImage]
+				});
 			break;
 
 			case 'poll-publish':
-				if(!cmd.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
-					cmd.reply({content:`I can't send messages in this channel.`,ephemeral:true});
+				if (!cmd.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)) {
+					cmd.reply({ content: `I can't send messages in this channel.`, ephemeral: true });
 					break;
 				}
-				var poll=parsePoll(cmd.message.content);
-				var comp=[];
-				var comp2=[];
-				for(var i=0;i<poll.options.length;i++){
-					comp2.push(new ButtonBuilder().setCustomId("voted"+i).setLabel(poll.options[i]).setStyle(ButtonStyle.Primary));
-					if(comp2.length===5){
+				var poll = parsePoll(cmd.message.content);
+				var comp = [];
+				var comp2 = [];
+				for (var i = 0; i < poll.options.length; i++) {
+					comp2.push(new ButtonBuilder().setCustomId("voted" + i).setLabel(poll.options[i]).setStyle(ButtonStyle.Primary));
+					if (comp2.length === 5) {
 						comp.push(new ActionRowBuilder().addComponents(...comp2));
-						comp2=[];
+						comp2 = [];
 					}
 				}
-				if(comp2.length>0) comp.push(new ActionRowBuilder().addComponents(...comp2));
-				cmd.channel.send({
-                        content: `<@${cmd.user.id}> asks: **${poll.title}**${poll.options.map((a, i) => `\n${i}. ${a} **0**`).join("")}`,
-                        components: [
-                            ...comp,
-                            new ActionRowBuilder().addComponents(
-                                new ButtonBuilder()
-                                    .setCustomId("poll-removeVote")
-                                    .setLabel("Remove vote")
-                                    .setStyle(ButtonStyle.Danger),
-									new ButtonBuilder().setCustomId("poll-voters").setLabel("View voters").setStyle(ButtonStyle.Primary),
-                                new ButtonBuilder()
-                                    .setCustomId(
-                                        "poll-closeOption" + cmd.user.id
-                                    )
-                                    .setLabel("Close poll")
-                                    .setStyle(ButtonStyle.Danger)
-                            ),
-                        ],
-                        allowedMentions: { users: [] },
-                    })
-                    .then((msg) => {
-                        var t = {};
-                        poll.options.forEach((option) => {
-                            t[option] = [];
-                        });
-                        poll.options = structuredClone(t);
-                        storage[cmd.guildId].polls[msg.id] =
-                            structuredClone(poll);
-                    });
-				cmd.update({"content":"\u200b",components:[]});
-			break;
+				if (comp2.length > 0) comp.push(new ActionRowBuilder().addComponents(...comp2));
+				
+				const msg = await cmd.channel.send({
+					content: `<@${cmd.user.id}> asks: **${poll.title}**${poll.options.map((a, i) => `\n${i}. ${a} **0**`).join("")}`,
+					components: [
+						...comp,
+						new ActionRowBuilder().addComponents(
+							new ButtonBuilder()
+								.setCustomId("poll-removeVote")
+								.setLabel("Remove vote")
+								.setStyle(ButtonStyle.Danger),
+							new ButtonBuilder().setCustomId("poll-voters").setLabel("View voters").setStyle(ButtonStyle.Primary),
+							new ButtonBuilder()
+								.setCustomId(
+									"poll-closeOption" + cmd.user.id
+								)
+								.setLabel("Close poll")
+								.setStyle(ButtonStyle.Danger)
+						),
+					],
+					allowedMentions: { users: [] },
+				})
+
+				// Compile these options on top of the poll object or smth like that
+				var t = {};
+				poll.options.forEach((option) => {
+					t[option] = [];
+				});
+				poll.options = structuredClone(t);
+
+				// Finally save the poll
+				guild.polls.set(msg.id, poll);
+				guild.save();
+				
+				// Clear original poll
+				cmd.update({ "content": "\u200b", components: [] });
+				break;
 
 			// Modals
 			case 'poll-added':
@@ -202,7 +238,11 @@ module.exports = {
 					break;
 				}
 				poll.options.push(cmd.fields.getTextInputValue("poll-addedInp"));
-				cmd.update(await checkDirty(config.homeServer,`**${poll.title}**${poll.options.map((a,i)=>`\n${i}. ${a}`).join("")}`,true)[1]);
+				cmd.update((await checkDirty(
+					config.homeServer,
+					`**${poll.title}**${poll.options.map((a,i)=>`\n${i}. ${a}`).join("")}`,
+					true
+				))[1]);
 			break;
 			
 			case 'poll-removed':
@@ -225,14 +265,14 @@ module.exports = {
 		if(cmd.customId?.startsWith("poll-closeOption")){
 			if(cmd.user.id===cmd.customId.split("poll-closeOption")[1]||cmd.member.permissions.has(PermissionFlagsBits.ManageMessages)){
 				var poll=parsePoll(cmd.message.content,true);
-				var keys=Object.keys(storage[cmd.guildId].polls[cmd.message.id].options);
+				var options=Array.from(pollDB.options.keys());
 				var finalResults={};
 				var totalVotes=0;
-				keys.forEach(a=>{
-					totalVotes+=storage[cmd.guildId].polls[cmd.message.id].options[a].length;
+				options.forEach(a=>{
+					totalVotes+=pollDB.options.get(a).length;
 				});
-				keys.forEach(a=>{
-					if(storage[cmd.guildId].polls[cmd.message.id].options[a].length>0) finalResults[a]=((360/totalVotes)*storage[cmd.guildId].polls[cmd.message.id].options[a].length);
+				options.forEach(a=>{
+					if(pollDB.options.get(a).length>0) finalResults[a]=((360/totalVotes)*pollDB.options.get(a).length);
 				});
 				let canvas = createCanvas(600, 600);
 				let ctx = canvas.getContext('2d');
@@ -249,10 +289,17 @@ module.exports = {
 					ctx.fill();
 					if(Object.keys(finalResults).length>1) ctx.stroke();
 				});
-				fs.writeFileSync("./tempPoll.png",canvas.toBuffer("image/png"));
-				cmd.update({content:limitLength(`**Poll Closed**\n<@${poll.starter}> asked: **${poll.title}**${poll.choices.map((a,i)=>`\n${i}. ${a} **${storage[cmd.guildId].polls[cmd.message.id].options[a].length}** - ${pieCols[i][1]}`).join("")}\n\n**Voters**${Object.keys(storage[cmd.guildId].polls[cmd.message.id].options).map(opt=>`\n${opt}${storage[cmd.guildId].polls[cmd.message.id].options[opt].map(a=>`\n- <@${a}>`).join("")}`).join("")}`),components:[],allowedMentions:{"parse":[]},files:["./tempPoll.png"]});
-				delete storage[cmd.guildId].polls[cmd.message.id];
+
+				const pollImage = new AttachmentBuilder(canvas.toBuffer("image/png"), { name: "poll.png" });
+
+				cmd.update({
+					content:limitLength(`**Poll Closed**\n<@${poll.starter}> asked: **${poll.title}**${poll.choices.map((a,i)=>`\n${i}. ${a} **${pollDB.options.get(a).length}** - ${pieCols[i][1]}`).join("")}\n\n**Voters**${Array.from(pollDB.options.keys()).map(opt=>`\n${opt}${pollDB.options.get(opt).map(a=>`\n- <@${a}>`).join("")}`).join("")}`),
+					components:[],
+					allowedMentions:{"parse":[]},
+					files:[pollImage]
+				});
 				
+				guild.polls.delete(cmd.message.id);				
 			}
 			else{
 				cmd.reply({"ephemeral":true,"content":"You didn't start this poll and you don't have sufficient permissions to override this."});
@@ -261,23 +308,23 @@ module.exports = {
 		
 		if(cmd.customId?.startsWith("voted")){
 			var poll=parsePoll(cmd.message.content,true);
-			var choice=poll.choices[+cmd.customId.split('voted')[1]];
-			var keys=Object.keys(storage[cmd.guildId].polls[cmd.message.id].options);
-			for(var i=0;i<keys.length;i++){
-				if(storage[cmd.guildId].polls[cmd.message.id].options[keys[i]].includes(cmd.user.id)){
-					storage[cmd.guildId].polls[cmd.message.id].options[keys[i]].splice(storage[cmd.guildId].polls[cmd.message.id].options[keys[i]].indexOf(cmd.user.id),1);
+			var choice=poll.choices[+cmd.customId.split('voted').slice(1).join("")];
+			var options = Array.from(pollDB.options.keys());
+			for(var i=0;i<options.length;i++){
+				if(pollDB.options.get(options[i]).includes(cmd.user.id)){
+					pollDB.options.get(options[i]).splice(pollDB.options.get(options[i]).indexOf(cmd.user.id),1);
 					i--;
 				}
 			}
-			storage[cmd.guildId].polls[cmd.message.id].options[choice].push(cmd.user.id);
+			pollDB.options.get(choice).push(cmd.user.id);
 	
 			var finalResults={};
 			var totalVotes=0;
-			keys.forEach(a=>{
-				totalVotes+=storage[cmd.guildId].polls[cmd.message.id].options[a].length;
+			options.forEach(a=>{
+				totalVotes+=pollDB.options.get(a).length;
 			});
-			keys.forEach(a=>{
-				if(storage[cmd.guildId].polls[cmd.message.id].options[a].length>0) finalResults[a]=((360/totalVotes)*storage[cmd.guildId].polls[cmd.message.id].options[a].length);
+			options.forEach(a=>{
+				if(pollDB.options.get(a).length>0) finalResults[a]=((360/totalVotes)*pollDB.options.get(a).length);
 			});
 			let canvas = createCanvas(600, 600);
 			let ctx = canvas.getContext('2d');
@@ -294,10 +341,19 @@ module.exports = {
 				ctx.fill();
 				if(Object.keys(finalResults).length>1) ctx.stroke();
 			});
-			fs.writeFileSync("./tempPoll.png",canvas.toBuffer("image/png"));
-			cmd.update({content:`<@${poll.starter}> asks: **${poll.title}**${poll.choices.map((a,i)=>`\n${i}. ${a} **${storage[cmd.guildId].polls[cmd.message.id].options[a].length}**${finalResults.hasOwnProperty(a)?` - ${pieCols[i][1]}`:""}`).join("")}`,files:["./tempPoll.png"]});
-			
+
+			// fs.writeFileSync("./tempPoll.png",canvas.toBuffer("image/png"));
+
+			const pollImage = new AttachmentBuilder(canvas.toBuffer("image/png"), { name: "poll.png" });
+
+			cmd.update({
+				content:`<@${poll.starter}> asks: **${poll.title}**${poll.choices.map((a,i)=>`\n${i}. ${a} **${pollDB.options.get(a).length}**${finalResults.hasOwnProperty(a)?` - ${pieCols[i][1]}`:""}`).join("")}`,
+				files:[ pollImage ]
+			});
+
 		}
 		
+		// Save if changed
+		await guild.save();
 	}
 };
