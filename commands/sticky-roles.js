@@ -42,8 +42,11 @@ module.exports = {
 			cmd.followUp(`I do not have the MANAGE_ROLES permission for this server, so I cannot run sticky roles.`);
 			return;
 		}
-		storage[cmd.guildId].stickyRoles=cmd.options.getBoolean("active");
+
+		guildByObj(cmd.guild, {
+			"stickyRoles": cmd.options.getBoolean("active")
+		})
+
 		cmd.followUp("Sticky roles configured. Please be aware I can only manage roles lower than my highest role in the server roles list.");
-        
 	}
 };

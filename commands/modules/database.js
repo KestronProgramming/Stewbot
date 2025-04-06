@@ -19,6 +19,7 @@
 const mongoose = require("mongoose");
 const mongooseLeanVirtuals = require('mongoose-lean-virtuals');
 const mongooseLeanDefaults = require('mongoose-lean-defaults').default;
+const { Guild, User } = require('discord.js');
 mongoose.set('setDefaultsOnInsert', true);
 
 //#region Guild
@@ -190,6 +191,7 @@ let guildSchema = new mongoose.Schema({
     groupmute: String, // The emoji tied to an emojiboard with groupmute configs
     disableAntiHack: Boolean,
     testProp: String,
+    stickyRoles: Boolean,
 });
 //#endregion
 
@@ -345,23 +347,20 @@ async function guildByID(id, updates={}) {
 
 /** @returns {Promise<import("mongoose").HydratedDocument<import("mongoose").InferSchemaType<typeof guildSchema>>>} */
 async function guildByObj(obj, updates={}) {
+    // Beta prechecks for dev mistakes
+    if (
+        process.env.beta && (
+            !(obj instanceof Guild)
+        )
+    ) {
+        const warning = "WARNING: obj input seems incorrect. See console for stack trace.";
+        console.trace(warning);
+        notify(warning);
+    }
+
     if (!obj) return null;
 
-    // const cachePeriod = 1500;
-    // if (obj._dbObject && Object.keys(updates).length === 0 && Date.now() - obj._dbObjectCachedAt < cachePeriod ) {
-    //     return obj._dbObject;
-    // }
-
     const guild = await guildByID(obj.id, updates);
-    // obj._dbObject = guild;
-    // obj._dbObjectCachedAt = Date.now();
-
-    // setTimeout(() => {
-    //     if (obj._dbObject === guild) {
-    //         delete obj._dbObject;
-    //     }
-    // }, cachePeriod);
-
     return guild;
 }
 
@@ -378,24 +377,21 @@ async function userByID(id, updates={}) {
 
 /** @returns {Promise<import("mongoose").HydratedDocument<import("mongoose").InferSchemaType<typeof userSchema>>>} */
 async function userByObj(obj, updates={}) {
-    const cachePeriod = 1500;
+    // Beta prechecks for dev mistakes
+    if (
+        process.env.beta && (
+            !(obj instanceof User)
+        )
+    ) {
+        const warning = "WARNING: obj input seems incorrect. See console for stack trace.";
+        console.trace(warning);
+        notify(warning);
+    }
 
-    // // Grab the DB object associated to this user object, but with cache
-    // if (obj._dbObject && Object.keys(updates).length === 0 && Date.now() - obj._dbObjectCachedAt < cachePeriod) {
-    //     return obj._dbObject;
-    // }
-    
     const user = await userByID(obj.id, updates);
-    // obj._dbObject = user;
-    // obj._dbObjectCachedAt = Date.now();
-
-    // setTimeout(() => {
-    //     delete obj._dbObject;
-    // }, cachePeriod);
 
     return user;
 }
-
 
 async function guildUserByID(guildId, userId) {
     // Fetch a guild from the DB, and create it if it does not already exist
@@ -411,6 +407,17 @@ async function guildUserByID(guildId, userId) {
 
 /** @returns {Promise<import("mongoose").HydratedDocument<import("mongoose").InferSchemaType<typeof guildUserSchema>>>} */
 async function guildUserByObj(guild, userID, updateData={}) {
+    // Beta prechecks for dev mistakes
+    if (
+        process.env.beta && (
+            !(guild instanceof Guild)
+        )
+    ) {
+        const warning = "WARNING: obj input seems incorrect. See console for stack trace.";
+        console.trace(warning);
+        notify(warning);
+    }
+
     const cachePeriod = 1500;
 
     // updateData is json of fields that should be set to specific data.
