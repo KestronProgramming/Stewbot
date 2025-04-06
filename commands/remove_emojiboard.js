@@ -35,21 +35,23 @@ module.exports = {
 	/** @param {import('discord.js').Interaction} cmd */
     async execute(cmd, context) {
 		applyContext(context);
-		
-		if(!cmd.guild?.id){
-			cmd.followUp("Something is wrong");
-			return;
-		}
+
 		var emoji = getEmojiFromMessage(cmd.options.getString("emoji"));
 		if(!emoji) {
 			cmd.followUp("That emoji is not valid.");
 			return;
 		}
-		if(!(emoji in storage[cmd.guildId].emojiboards)||storage[cmd.guildId].emojiboards[emoji]?.isMute){
+		
+		const guild = await guildByObj(cmd.guild);
+
+		if(!guild.emojiboards.has(emoji) || guild.emojiboards.get(emoji).isMute){
 			cmd.followUp("That emoji is not in use for an emojiboard.");
 			return;
 		}
-		delete storage[cmd.guildId].emojiboards[emoji];
+
+		guild.emojiboards.delete(emoji);
 		cmd.followUp("Emojiboard for " + parseEmoji(emoji) + " emoji removed.");
+
+		guild.save();
 	}
 };
