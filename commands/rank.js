@@ -1,6 +1,6 @@
 // #region CommandBoilerplate
 const Categories = require("./modules/Categories");
-const { Guilds, Users, guildByID, userByID, guildByObj, userByObj } = require("./modules/database.js")
+const { Guilds, Users, GuildUsers, guildByID, userByID, guildByObj, userByObj, guildUserByObj } = require("./modules/database.js")
 const { ContextMenuCommandBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
 function applyContext(context={}) {
 	for (key in context) {
@@ -46,18 +46,29 @@ module.exports = {
 	/** @param {import('discord.js').Interaction} cmd */
     async execute(cmd, context) {
 		applyContext(context);
+
+        const guild = await guildByObj(cmd.guild);
 		
-        if(!storage[cmd.guildId].levels.active){
+        if(!guild.levels.active){
             cmd.followUp(`This server doesn't use level ups at the moment. It can be configured using ${cmds.levels_config.mention}.`);
             return;
         }
-        var usr=cmd.options.getUser("target")?.id||cmd.user.id;
-        if(!storage[cmd.guildId].users.hasOwnProperty(usr)){
-            cmd.followUp(`I am unaware of this user presently`);
-            return;
-        }
+
+        var usrId = cmd.options.getUser("target")?.id || cmd.user.id;
+        const targetUser = await guildUserByObj(cmd.guild, usrId)
+
+        // TODO: optimize these three queries into a single one?
+        const requestedUserRank = await GuildUsers.countDocuments({
+            guildId: cmd.guild.id,
+            $or: [
+                { exp: { $gt: targetUser.exp } },
+            ]
+        }) + 1;
+
+        const discordUser = await client.users.fetch(usrId)
+        
         cmd.followUp({
-            content: `Server rank card for <@${usr}>`, embeds: [{
+            content: `Server rank card for <@${usrId}>`, embeds: [{
                 "type": "rich",
                 "title": `Rank for ${cmd.guild.name}`,
                 "description": "",
@@ -65,17 +76,17 @@ module.exports = {
                 "fields": [
                     {
                         "name": `Level`,
-                        "value": storage[cmd.guildId].users[usr].lvl + "",
+                        "value": targetUser.lvl || 0,
                         "inline": true
                     },
                     {
                         "name": `EXP`,
-                        "value": `${storage[cmd.guildId].users[usr].exp}`.replace(/\B(?=(\d{3})+(?!\d))/g, ","),
+                        "value": `${targetUser.exp}`.replace(/\B(?=(\d{3})+(?!\d))/g, ","),
                         "inline": true
                     },
                     {
                         "name": `Server Rank`,
-                        "value": `#${Object.keys(storage[cmd.guildId].users).map(a => Object.assign(storage[cmd.guildId].users[a], { "id": a })).sort((a, b) => b.exp - a.exp).map(a => a.id).indexOf(usr) + 1}`,
+                        "value": `#${requestedUserRank}`,
                         "inline": true
                     }
                 ],
@@ -85,11 +96,11 @@ module.exports = {
                     "width": 0
                 },
                 "author": {
-                    "name": client.users.cache.get(usr) ? client.users.cache.get(usr).username : "Unknown",
-                    "icon_url": client.users.cache.get(usr)?.displayAvatarURL()
+                    "name": discordUser ? discordUser.username : "Unknown",
+                    "icon_url": discordUser.displayAvatarURL()
                 },
                 "footer": {
-                    "text": `Next rank up at ${(getLvl(storage[cmd.guildId].users[usr].lvl) + "").replace(/\B(?=(\d{3})+(?!\d))/g, ",")}`
+                    "text": `Next rank up at ${(getLvl(requestedUserRank.lvl) + "").replace(/\B(?=(\d{3})+(?!\d))/g, ",")}`
                 }
             }], 
             allowedMentions: { parse: [] }
