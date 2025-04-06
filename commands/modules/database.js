@@ -21,7 +21,10 @@ mongoose.set('setDefaultsOnInsert', true);
 
 //#region Guild
 let levelsSchema = new mongoose.Schema({
-    active: { type: Boolean, default: false }
+    active: { type: Boolean, default: false },
+    channel: { type: String, default: "" },
+    location: { type: String, default: "DM" },
+    msg: { type: String, default: "Congratulations ${USERNAME}, you have leveled up to level ${LVL}!" },
 })
 
 let filterSchema = new mongoose.Schema({
@@ -116,6 +119,8 @@ let guildUserSchema = new mongoose.Schema({
     safeTimestamp: { type: Number, default: 0},
     countTurns: { type: Number, default: 0 },
     beenCountWarned: { type: Boolean, default: false },
+    lvl: { type: Number, default: 0 },
+    exp: { type: Number, default: 0 },
 })
 // guildUserSchema.index({ userId: 1, guildId: 1 }, { unique: true }); // Compound unique index - only one user per guild
 
@@ -128,6 +133,7 @@ let guildConfigSchema = new mongoose.Schema({
     fake_link_check: { type: Boolean, default: true},
     ai: { type: Boolean, default: true},
     embedPreviews: { type: Boolean, default: true },
+    levelUpMsgs: { type: Boolean, default: false },
 });
 
 let guildSchema = new mongoose.Schema({
@@ -155,7 +161,7 @@ let guildSchema = new mongoose.Schema({
     disableAntiHack: Boolean,
     testProp: String,
 });
- 
+
 // Make sure each doc subfield exists
 // guildSchema.post('findOneAndUpdate', async function (doc) {
 //     // This middleware only runs on findOneAndUpdate calls.
@@ -198,8 +204,7 @@ let userConfigSchema = mongoose.Schema({
     beenAIDisclaimered: { type: Boolean, default: false },
     aiPings: { type: Boolean, default: true },
     embedPreviews: { type: Boolean, default: true, required: true},
-    lvl: { type: Number, default: 0 },
-    exp: { type: Number, default: 0 },
+    levelUpMsgs: { type: Boolean, default: true },
 })
 
 let userSchema = new mongoose.Schema({

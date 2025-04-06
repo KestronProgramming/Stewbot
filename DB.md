@@ -12,6 +12,11 @@ Port users
 Port root level storage (config)
 
 
+Consider - port both of these locations:
+if (storage[msg.guild.id].levels.hasOwnProperty("channelOrDM")) {
+    storage[msg.guild.id].levels.location = storage[msg.guild.id].levels.channelOrDM;
+
+
 
 TODO:
 Once general_config is ported, test turning off embeds, chat, etc

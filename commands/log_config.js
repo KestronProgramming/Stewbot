@@ -52,21 +52,27 @@ module.exports = {
 	/** @param {import('discord.js').Interaction} cmd */
     async execute(cmd, context) {
 		applyContext(context);
+
+		const guild = await guildByObj(cmd.guild);
 		
-		storage[cmd.guildId].logs.active=cmd.options.getBoolean("active");
-		storage[cmd.guildId].logs.channel=cmd.options.getChannel("channel").id;
-		if(cmd.options.getBoolean("channel_events")!==null) storage[cmd.guildId].logs.channel_events=cmd.options.getBoolean("channel_events");
-		if(cmd.options.getBoolean("emoji_events")!==null) storage[cmd.guildId].logs.emoji_events=cmd.options.getBoolean("emoji_events");
-		if(cmd.options.getBoolean("user_change_events")!==null) storage[cmd.guildId].logs.user_change_events=cmd.options.getBoolean("user_change_events");
-		if(cmd.options.getBoolean("joining_and_leaving")!==null) storage[cmd.guildId].logs.joining_and_leaving=cmd.options.getBoolean("joining_and_leaving");
-		if(cmd.options.getBoolean("invite_events")!==null) storage[cmd.guildId].logs.invite_events=cmd.options.getBoolean("invite_events");
-		if(cmd.options.getBoolean("role_events")!==null) storage[cmd.guildId].logs.role_events=cmd.options.getBoolean("role_events");
-		if(cmd.options.getBoolean("mod_actions")!==null) storage[cmd.guildId].logs.mod_actions=cmd.options.getBoolean("mod_actions");
+		guild.logs.active=cmd.options.getBoolean("active");
+		guild.logs.channel=cmd.options.getChannel("channel").id;
+		if(cmd.options.getBoolean("channel_events")!==null) guild.logs.channel_events=cmd.options.getBoolean("channel_events");
+		if(cmd.options.getBoolean("emoji_events")!==null) guild.logs.emoji_events=cmd.options.getBoolean("emoji_events");
+		if(cmd.options.getBoolean("user_change_events")!==null) guild.logs.user_change_events=cmd.options.getBoolean("user_change_events");
+		if(cmd.options.getBoolean("joining_and_leaving")!==null) guild.logs.joining_and_leaving=cmd.options.getBoolean("joining_and_leaving");
+		if(cmd.options.getBoolean("invite_events")!==null) guild.logs.invite_events=cmd.options.getBoolean("invite_events");
+		if(cmd.options.getBoolean("role_events")!==null) guild.logs.role_events=cmd.options.getBoolean("role_events");
+		if(cmd.options.getBoolean("mod_actions")!==null) guild.logs.mod_actions=cmd.options.getBoolean("mod_actions");
 		var disclaimers=[];
-		if(!client.channels.cache.get(storage[cmd.guildId].logs.channel).permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
-			storage[cmd.guildId].logs.active=false;
+
+		if(!client.channels.cache.get(guild.logs.channel).permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
+			guild.logs.active=false;
 			disclaimers.push(`I can't post in the specified channel, so logging is turned off.`);
 		}
+
+		await guild.save();
+
 		cmd.followUp(`Configured log events.${disclaimers.map(d=>`\n\n${d}`).join("")}`);
 	}
 };

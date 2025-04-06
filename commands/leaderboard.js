@@ -214,6 +214,7 @@ module.exports = {
                         break;
                     }
                 }
+                
                 cmd.followUp({
                     content: `**Emojiboard Leaderboard**`, embeds: [{
                         "type": "rich",
