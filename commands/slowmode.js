@@ -9,31 +9,37 @@ function applyContext(context={}) {
 }
 // #endregion CommandBoilerplate
 
+const ms = require("ms")
 
-async function finTempSlow(guild,channel,force){
-    var chan=client.channels.cache.get(channel);
-    if(!storage[guild]?.hasOwnProperty("tempSlow")||!storage[guild]?.tempSlow?.hasOwnProperty(channel)){
+async function finTempSlow(guildId, channel, force){
+    var chan = await client.channels.fetch(channel);
+
+    const guild = await guildByID(guildId);
+
+    if(!guild.tempSlow.has(channel)){
         return;
     }
-    if(storage[guild].tempSlow[channel].ends-Date.now()>10000&&!force){
-        setTimeout(()=>{finTempSlow(guild,channel)},storage[guild].tempSlow[channel].ends-Date.now());
+    if(guild.tempSlow.get(channel).ends-Date.now()>10000&&!force){
+        setTimeout(()=>{finTempSlow(guildId, channel)},guild.tempSlow.get(channel).ends-Date.now());
         return;
     }
     if(chan===null||chan===undefined){
-        client.users.cache.get(storage[guild].tempSlow[channel].invoker).send(`I was unable to remove the temporary slowmode setting in <#${channel}>.`).catch(e=>{});
-        delete storage[guild].tempSlow[channel];
+        (await client.users.fetch(guild.tempSlow.get(channel).invoker)).send(`I was unable to remove the temporary slowmode setting in <#${channel}>.`).catch(e=>{});
+        guild.tempSlow.delete(channel);
         return;
     }
     if(!chan.permissionsFor(client.user.id).has(PermissionFlagsBits.ManageChannels)){
-        client.users.cache.get(storage[guild].tempSlow[channel].invoker).send(`I was unable to remove the temporary slowmode setting in <#${channel}> due to not having the \`ManageChannels\` permission.`).catch(e=>{});
-        delete storage[guild].tempSlow[channel];
+        (await client.users.fetch(guild.tempSlow.get(channel).invoker)).send(`I was unable to remove the temporary slowmode setting in <#${channel}> due to not having the \`ManageChannels\` permission.`).catch(e=>{});
+        guild.tempSlow.delete(channel);
         return;
     }
-    chan.setRateLimitPerUser(storage[guild].tempSlow[channel].origMode);
-    if(!storage[guild].tempSlow[channel].private){
-        chan.send(`Temporary slowmode setting reverted.`);
-        delete storage[guild].tempSlow[channel];
+    chan.setRateLimitPerUser(guild.tempSlow.get(channel).origMode);
+    if(!guild.tempSlow.get(channel).private){
+        chan.send(`Temporary slowmode setting reverted.`).catch(e=>{});
+        guild.tempSlow.delete(channel);
     }
+
+    guild.save();
 }
 
 
@@ -43,7 +49,7 @@ module.exports = {
 	data: {
 		// Slash command data
 		command: new SlashCommandBuilder().setName('slowmode').setDescription('Set a slowmode for this channel, temporarily if desired').addIntegerOption(option=>
-                option.setName("preset_mode").setDescription("Some presets for slowmode lengths").addChoices(
+                option.setName("preset_mode").setDescription("Common presets for slowmode lengths").addChoices(
                     {"name":"Slowmode Off","value":0},
                     {"name":"5s","value":5},
                     {"name":"10s","value":10},
@@ -94,44 +100,56 @@ module.exports = {
             cmd.followUp(`I do not have the \`ManageChannels\` permission, I am unable to set slow mode restrictions.`);
             return;
         }
+
+        // Time until reset
         var timer=0;
-        var temp=false;
+        var hasRevertTime=false;
         if(cmd.options.getInteger("hours_until_reverted")!==null) timer+=cmd.options.getInteger("hours_until_reverted")*60000*60;
         if(cmd.options.getInteger("minutes_until_reverted")!==null) timer+=cmd.options.getInteger("minutes_until_reverted")*60000;
         if(timer > 0){
-            temp=true;
+            hasRevertTime=true;
         }
+
+        // Slowmode delay time
         var time=0;
         if(cmd.options.getInteger("preset_mode")!==null) time=cmd.options.getInteger("preset_mode");
         if(cmd.options.getInteger("hours")!==null) time+=cmd.options.getInteger("hours")*60*60;
         if(cmd.options.getInteger("minutes")!==null) time+=cmd.options.getInteger("minutes")*60;
         if(cmd.options.getInteger("seconds")!==null) time+=cmd.options.getInteger("seconds");
-        if(time<5){
-            time=30;
-        }
-        if(time>21600){
-            time=21600;
-        }
+        
+        // Validation
+        time = Math.max(time, 0);
+        time = Math.min(time, ms("24h")/1000);
 
-        if(!storage[cmd.guild.id].hasOwnProperty("tempslow")&&temp){
-            storage[cmd.guild.id].tempSlow={};
-        }
-        if(temp&&storage[cmd.guild.id].tempSlow.hasOwnProperty(cmd.channel.id)){
-            cmd.followUp({content:`You already have a temp slowmode running in this channel. You must clear it or let it expire before you add a new one. It expires on its own <t:${Math.round(storage[cmd.guild.id].tempSlow[cmd.channel.id].ends/1000)}:R>.`,components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setStyle(ButtonStyle.Danger).setLabel("Revert Now").setCustomId(`revertTempSlow`))]});
+        const guild = await guildByObj(cmd.guild);
+
+        if(hasRevertTime&&guild.tempSlow.has(cmd.channel.id)){
+            cmd.followUp({
+                content:`You already have a temp slowmode running in this channel. You must clear it or let it expire before you add a new one. It expires on its own <t:${Math.round(guild.tempSlow.get(cmd.channel.id).ends/1000)}:R>.`,
+                components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setStyle(ButtonStyle.Danger).setLabel("Revert Now").setCustomId(`revertTempSlow`))]
+            });
             return;
         }
-        if(temp){
-            storage[cmd.guild.id].tempSlow[cmd.channel.id]={
-                "invoker":cmd.user.id,//If I'm unable to revert the slowmode for any reason, DM the person who set it
-                "ends":Date.now()+timer,
-                "origMode":cmd.channel.rateLimitPerUser,
-                "guild":cmd.guild.id,
-                "private":cmd.options.getBoolean("private")===null?false:cmd.options.getBoolean("private")
-            };
+        if(hasRevertTime){
+            guild.tempSlow.set(cmd.channel.id, {
+                "invoker": cmd.user.id,//If I'm unable to revert the slowmode for any reason, DM the person who set it
+                "ends": Date.now() + timer,
+                "origMode": cmd.channel.rateLimitPerUser,
+                "guild": cmd.guild.id,
+                "private": cmd.options.getBoolean("private") === null ? false : cmd.options.getBoolean("private")
+            });
             setTimeout(()=>{finTempSlow(cmd.guild.id,cmd.channel.id)},timer);
         }
-        cmd.channel.setRateLimitPerUser(time);
-        cmd.followUp({content:`Alright, I have set a${temp?` temporary`:``} slowmode setting for this channel${temp?` until <t:${Math.round(storage[cmd.guild.id].tempSlow[cmd.channel.id].ends/1000)}:f> <t:${Math.round(storage[cmd.guild.id].tempSlow[cmd.channel.id].ends/1000)}:R>`:``}.`,components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setStyle(ButtonStyle.Danger).setLabel("Revert Now").setCustomId(`revertTempSlow`))]});
+        await cmd.channel.setRateLimitPerUser(time);
+        cmd.followUp({
+            content:`Alright, I have set a${hasRevertTime?` temporary`:``} slowmode setting for this channel${hasRevertTime?` until <t:${Math.round(guild.tempSlow.get(cmd.channel.id).ends/1000)}:f> <t:${Math.round(guild.tempSlow.get(cmd.channel.id).ends/1000)}:R>`:``}.`,
+            components:
+                hasRevertTime
+                    ? [new ActionRowBuilder().addComponents(new ButtonBuilder().setStyle(ButtonStyle.Danger).setLabel("Revert Now").setCustomId(`revertTempSlow`))]
+                    : []
+        });
+
+        guild.save();
 	},
 
 	// Only button subscriptions matched will be sent to the handler 
@@ -149,8 +167,10 @@ module.exports = {
             cmd.reply({content:`I don't have the \`ManageChannels\` permission and so I'm unable to revert the slowmode setting.`,ephemeral:true});
             return;
         }
-        finTempSlow(cmd.guild.id,cmd.channel.id,true);
-        cmd.message.edit({components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setStyle(ButtonStyle.Danger).setLabel("Revert Now").setCustomId("revertTempSlow").setDisabled(true))]});
+        await finTempSlow(cmd.guild.id,cmd.channel.id,true);
+        await cmd.message.edit({
+            components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setStyle(ButtonStyle.Danger).setLabel("Revert Now").setCustomId("revertTempSlow").setDisabled(true))]
+        });
         cmd.reply({content:`Alright, reverted the setting early.`,ephemeral:true});
 	}
 };

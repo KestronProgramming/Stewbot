@@ -102,6 +102,14 @@ let tempBanSchema = new mongoose.Schema({
     private: { type: Boolean, default: false }
 })
 
+let tempSlowmodeSchema = new mongoose.Schema({
+    invoker: String,
+    ends: Number,
+    origMode: Number,
+    guild: String,
+    private: Boolean,
+})
+
 let autoJoinMessageSchema = new mongoose.Schema({
     active: { type: Boolean, default: false },
     channel: { type: String, default: "" },
@@ -166,6 +174,7 @@ let guildSchema = new mongoose.Schema({
     },
     emojiboards: { type: Map, of: emojiboardSchema, default: {} },
     tempBans: { type: Map, of: tempBanSchema, default: {} },
+    tempSlow: { type: Map, of: tempSlowmodeSchema, default: {} },
     polls: { type: Map, of: pollSchema, default: {} },
     persistence: { type: Map, of: persistenceSchema, default: {} },
     alm: { type: autoLeaveMessageSchema, default: {} },
@@ -182,27 +191,6 @@ let guildSchema = new mongoose.Schema({
     disableAntiHack: Boolean,
     testProp: String,
 });
-
-// Make sure each doc subfield exists
-// guildSchema.post('findOneAndUpdate', async function (doc) {
-//     // This middleware only runs on findOneAndUpdate calls.
-//     if (doc) {
-//         const needsUpdate = [];
-
-//         // ensureField(doc, needsUpdate, "config", {});
-//         // ensureField(doc, needsUpdate, "ajm", {});
-//         // ensureField(doc, needsUpdate, "alm", {});
-//         // ensureField(doc, needsUpdate, "emojiboards", []);
-//         // ensureField(doc, needsUpdate, "tempBans", {});
-//         // ensureField(doc, needsUpdate, "counting", {});
-
-//         if (needsUpdate.length > 0) {
-//             await doc.updateOne({ 
-//                 $set: needsUpdate.reduce((acc, field) => ({ ...acc, [field]: doc[field] }), {}) 
-//             });
-//         }
-//     }
-// });
 //#endregion
 
 //#region Users
@@ -271,21 +259,6 @@ let userSchema = new mongoose.Schema({
     hat_pull: hatPullSchema, // This one does not need defaults, it is checked for existence
     captcha: Boolean,
 });
-
-// userSchema.post('findOneAndUpdate', async function (doc) {
-//     // This middleware only runs on findOneAndUpdate calls.
-//     if (doc) {
-//         const needsUpdate = [];
-
-//         // ensureField(doc, needsUpdate, "config", {});
-
-//         if (needsUpdate.length > 0) {
-//             await doc.updateOne({ 
-//                 $set: needsUpdate.reduce((acc, field) => ({ ...acc, [field]: doc[field] }), {}) 
-//             });
-//         }
-//     }
-// });
 //#endregion
 
 //#region Config
