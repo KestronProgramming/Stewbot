@@ -9,8 +9,10 @@ function applyContext(context = {}) {
 }
 // #endregion CommandBoilerplate
 
-async function getPrimedEmbed(userId,guildIn){
-	var mes=storage[userId].primedEmbed;
+async function getPrimedEmbed(userId, guildIn){
+	const user = await userByID(userId);
+
+	var mes=user.primedEmbed;
 	if(await checkDirty(guildIn,mes.content)||await checkDirty(guildIn,mes.author.name)||await checkDirty(guildIn,mes.server.name)||await checkDirty(guildIn,mes.server.channelName)){
 		return {
 			"type": "rich",
@@ -69,7 +71,7 @@ module.exports = {
     async execute(cmd, context) {
 		applyContext(context);
 
-		storage[cmd.user.id].primedEmbed = {
+		const primedEmbed = {
 			"content": cmd.targetMessage.content,
 			"timestamp": cmd.targetMessage.createdTimestamp,
 			"author": {
@@ -88,10 +90,23 @@ module.exports = {
 			"attachmentURLs": []
 		};
 		cmd.targetMessage.attachments.forEach(a => {
-			storage[cmd.user.id].primedEmbed.attachmentURLs.push(a.url);
+			primedEmbed.attachmentURLs.push(a.url);
 		});
-		cmd.followUp({ content: `I have prepared the message to be embedded. Use ${cmds.embed_message.mention} and type **PRIMED** to embed this message.`, embeds: [getPrimedEmbed(cmd.user.id)], files: storage[cmd.user.id].primedEmbed.attachmentURLs });
 
+		await Users.updateOne(
+			{ id: cmd.user.id },
+			{
+				$set: { primedEmbed: primedEmbed }
+			},
+			{ upsert: true }
+		);
 
+		cmd.followUp({ 
+			content: `I have prepared the message to be embedded. Use ${cmds.embed_message.mention} and type **PRIMED** to embed this message.`, 
+			embeds: [
+				await getPrimedEmbed(cmd.user.id)
+			], 
+			files: primedEmbed.attachmentURLs
+		});
 	}
 };

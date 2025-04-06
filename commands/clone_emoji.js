@@ -139,7 +139,7 @@ module.exports = {
 				case "clone_primed":
 					const user = await userByObj(cmd.user);
 					const primedURL = user.primedEmojiURL;
-					const primedName = user.primedName;
+					const primedName = user.primedName; // TODO_DB: look at this... doesn't seem to be set anywhere?
 					if (!primedURL) {
 						return cmd.followUp("You have not primed an emoji yet. Run this command with the `Prime emoji` option in another server to clone the emoji, and run this here again to upload the emoji.");
 					}

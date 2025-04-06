@@ -30,7 +30,7 @@ let levelsSchema = new mongoose.Schema({
     channel: { type: String, default: "" },
     location: { type: String, default: "DM" },
     msg: { type: String, default: "Congratulations ${USERNAME}, you have leveled up to level ${LVL}!" },
-})
+}, { _id: false })
 
 let filterSchema = new mongoose.Schema({
     active: { type: Boolean, default: false },
@@ -54,7 +54,7 @@ let guildLogsSchema = new mongoose.Schema({
 let dailyItemSchema = new mongoose.Schema({
     active: { type: Boolean, default: false },
     channel: { type: String, default: "" },
-})
+}, { _id: false })
 
 let dailySchema = new mongoose.Schema({
     memes: { type: dailyItemSchema, default: {} },
@@ -85,7 +85,7 @@ let autoLeaveMessageSchema = new mongoose.Schema({
     active: { type: Boolean, default: false },
     channel: { type: String, default: "" },
     message: { type: String, default: "Farewell ${@USER}. We'll miss you." },
-})
+}, { _id: false })
 
 let tempBanSchema = new mongoose.Schema({
     invoker: String,
@@ -207,12 +207,33 @@ let hatPullSchema = new mongoose.Schema({
     user: String, // Opening user
 })
 
-let primedEmbedSchema = mongoose.Schema({
-    content: String,
-    attachmentURLs: [ String ],
+let primedEmbedSchema = new mongoose.Schema({
+	content: { type: String, default: "" },
+	timestamp: { type: Number, required: true },
+
+	author: {
+		icon: { type: String, default: "" },
+		name: { type: String, required: true },
+		id: { type: String, required: true }
+	},
+
+	server: {
+		channelName: { type: String, default: "" },
+		name: { type: String, default: "" },
+		channelId: { type: String, default: null },
+		id: { type: String, default: "@me" },
+		icon: { type: String, default: "" }
+	},
+
+	id: { type: String, required: true },
+
+	attachmentURLs: {
+		type: [String],
+		default: []
+	}
 })
 
-let userConfigSchema = mongoose.Schema({
+let userConfigSchema = new mongoose.Schema({
     beenAIDisclaimered: { type: Boolean, default: false },
     aiPings: { type: Boolean, default: true },
     dmOffenses: { type: Boolean, default: true },
@@ -232,10 +253,10 @@ let userSchema = new mongoose.Schema({
         trim: true,
         match: [/\d+/, "Error: UserID must be digits only"]
     },
-    primedEmojiURL: { type: String, defaut: "" },
-    primedName: { type: String, defaut: "" },
+    primedEmbed: { type: primedEmbedSchema },
+    primedEmojiURL: { type: String, default: "" },
+    primedName: { type: String, default: "" },
     timedOutIn: [ String ],
-    primedEmbed: userConfigSchema, // This prop shouldn't exist unless set firsts
     config: { type: userConfigSchema, default: {} },
     dmOffenses: { type: Boolean, default: true },
     hat_pull: hatPullSchema, // This one does not need defaults, it is checked for existence

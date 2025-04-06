@@ -76,7 +76,7 @@ module.exports = {
             case "": 
                 const guild = await guildByObj(cmd.guild);
                 const guildUser = await guildUserByObj(cmd.guild, cmd.user.id);
-                const user = await userByObj(cmd.guild);
+                const user = await userByObj(cmd.user);
                 
                 const guildBuffer = Buffer.from(JSON.stringify(guild.toJSON(), null, 4));
                 const guildUserBuffer = Buffer.from(JSON.stringify(guildUser.toJSON(), null, 4));

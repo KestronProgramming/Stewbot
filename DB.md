@@ -33,3 +33,6 @@ CheckDirty needs aggressive caching... which needs to be invalidated when modifi
 Ctrl+F for "TODO_DB
 
 Double check all checkDirty calls with [1] after them, make sure await has parenths
+
+Regex for:
+userBy.+\(.+\.guild

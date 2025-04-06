@@ -56,7 +56,7 @@ module.exports = {
     async execute(cmd, context) {
 		applyContext(context);
 
-		const user = await guildByObj(cmd.user);
+		const user = await userByObj(cmd.user);
 		
 		if (cmd.options.getBoolean("ai_pings") !== null) user.config.aiPings = cmd.options.getBoolean("ai_pings");
 		if (cmd.options.getBoolean("dm_infractions") !== null) user.config.dmOffenses = cmd.options.getBoolean("dm_infractions");
