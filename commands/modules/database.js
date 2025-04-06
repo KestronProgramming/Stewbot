@@ -37,7 +37,13 @@ let filterSchema = new mongoose.Schema({
 
 let guildLogsSchema = new mongoose.Schema({
     active: { type: Boolean, default: false },
-    // mod_actionscdld
+    channel_events: { type: Boolean, default: false },
+    emoji_events: { type: Boolean, default: false },
+    user_change_events: { type: Boolean, default: false },
+    joining_and_leaving: { type: Boolean, default: false },
+    invite_events: { type: Boolean, default: false },
+    role_events: { type: Boolean, default: false },
+    mod_actions: { type: Boolean, default: false },
 })
 
 let dailyItemSchema = new mongoose.Schema({
