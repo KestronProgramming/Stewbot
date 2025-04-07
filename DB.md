@@ -43,3 +43,5 @@ Warn when guild object or guild user is provided to on obj functions, maybe warn
 
 Make sure all onmessage listeners use cmd.author instead of cmd.user
 
+Ctrl+F for default stuff
+

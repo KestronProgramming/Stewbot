@@ -1,6 +1,6 @@
 // #region CommandBoilerplate
 const Categories = require("./modules/Categories");
-const { Guilds, Users, guildByID, userByID, guildByObj, userByObj } = require("./modules/database.js")
+const { Guilds, Users, guildByID, userByID, guildByObj, userByObj, guildUserByObj, GuildUsers } = require("./modules/database.js")
 const { ContextMenuCommandBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
 function applyContext(context={}) {
 	for (key in context) {
@@ -43,34 +43,27 @@ module.exports = {
 		applyContext(context);
 
         const sortMethod = cmd.options.getString("sort") || "severity";
+        const who = cmd.options.getUser("who");
 		
-        if(cmd.options.getUser("who")!==null) {
-            if(!storage[cmd.guild.id].users.hasOwnProperty(cmd.options.getUser("who").id)){
-                storage[cmd.guild.id].users[cmd.options.getUser("who").id]=structuredClone(defaultGuildUser);
-            }
-            if(!storage[cmd.guild.id].users[cmd.options.getUser("who").id].hasOwnProperty("warnings")){
-                storage[cmd.guild.id].users[cmd.options.getUser("who").id].warnings=[];
-            }
+        if(who!==null) {
+
+            const guildUser = await guildUserByObj(cmd.guild, who.id);
+
             cmd.followUp({
                 content: limitLength(
                     `${
-                        storage[cmd.guild.id].users[
-                            cmd.options.getUser("who").id
-                        ].warnings.length > 0
+                        guildUser.warnings.length > 0
                             ? `There are ${
-                                  storage[cmd.guild.id].users[
-                                      cmd.options.getUser("who").id
-                                  ].warnings.length
+                                guildUser.warnings.length
                               } warnings for <@${
-                                  cmd.options.getUser("who").id
-                              }>.${storage[cmd.guild.id].users[
-                                  cmd.options.getUser("who").id
-                              ].warnings
-                                  .map(
-                                      (a, i) =>
-                                          `\n${i}. <@${a.moderator}>: \`${a.reason}\`, level **${a.severity}**, given <t:${a.when}:R>.`
-                                  )
-                                  .join("")}`
+                                  who.id
+                              }>.${
+                                guildUser.warnings
+                                    .map(
+                                        (a, i) =>
+                                            `\n${i}. <@${a.moderator}>: \`${a.reason}\`, level **${a.severity}**, given <t:${a.when}:R>.`
+                                    )
+                                    .join("")}`
                             : `This user has no warnings currently present.`
                     }`
                 ),
@@ -81,55 +74,84 @@ module.exports = {
                             .setLabel("Remove a Warning")
                             .setStyle(ButtonStyle.Danger)
                             .setCustomId(
-                                `remWarn-${cmd.options.getUser("who").id}`
+                                `remWarn-${who.id}`
                             ),
                         new ButtonBuilder()
                             .setLabel("Clear all Warnings")
                             .setStyle(ButtonStyle.Danger)
                             .setCustomId(
-                                `clearWarn-${cmd.options.getUser("who").id}`
+                                `clearWarn-${who.id}`
                             )
                     ),
                 ],
             });
         }
         else {
+            // Decide how to sort
+            let sortStage = { };
+            switch (sortMethod) {
+                case "warnings":
+                    sortStage = {
+                        warningsCount: -1,
+                        sumSeverity: -1,
+                    }
+                    break
+                case "severity":
+                    sortStage = {
+                        sumSeverity: -1,
+                        warningsCount: -1,
+                    }
+                    break
+            }
+
             // Collect all users with warnings
-            const usersWithWarnings = Object.keys(storage[cmd.guild.id].users).filter(id => {
-                const user = storage[cmd.guild.id].users[id];
-                return user.hasOwnProperty("warnings") && user.warnings.length > 0;
-            })
-
-            // Collect data we need from these user
-            const warningData = usersWithWarnings.map(id => {
-                const usersWarnings = storage[cmd.guild.id].users[id].warnings;
-                return [ // I'd use json but arrays are faster and we could be searching through 250K users
-                    id,
-                    usersWarnings.length,
-                    usersWarnings.reduce((b, c) =>
-                        (typeof b === "object" ? b.severity : b) + c.severity
-                    , {severity:0}),
-                ]
-            })
-
-            // Sort  <-  this is a code comment
-            warningData.sort((data1, data2) => {
-                switch (sortMethod) {
-                    case "warnings":
-                        return data2[1] - data1[1];
-                    case "severity":
-                        return data2[2] - data1[2];
-                }
-            })
+            const warningData = await GuildUsers.aggregate([
+                {
+                    // Get all users of this guild, with at least one warning
+                    $match: {
+                        guildId: cmd.guild.id,
+                        "warnings.0": { $exists: true }
+                    }
+                },
+                {
+                    // get the number of warnings, the sum of the severity, and the user ID.
+                    $project: {
+                        userId: 1,
+                        warningsCount: { $size: "$warnings" },
+                        sumSeverity: {
+                            $sum: {
+                                $map: {
+                                    input: "$warnings",
+                                    as: "w",
+                                    in: {
+                                        $cond: {
+                                            if: {
+                                                $gt: ["$$w.severity", null]
+                                            },
+                                            then: "$$w.severity",
+                                            else: 0
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                // Finally sort as requested
+                { $sort: sortStage }
+            ]);
 
             // Parse data into warnings message
             const warningsMessage = warningData.map( data => {
-                return `\n- <@${data[0]}>: \`${data[1]}\` warnings dealt. Sum of Severities: \`${data[2]}\``
+                return `\n- <@${data.userId}>: \`${data.warningsCount}\` warnings dealt. Sum of Severities: \`${data.sumSeverity}\``
             })
 
             cmd.followUp({
                 content: limitLength(
-                    `**Warnings in ${cmd.guild.name}**${warningsMessage.length > 0 ? warningsMessage.join("") : `\n-# No Warnings have been issued. Use ${cmds.warn.mention} to issue a warning.`}`
+                    `**Warnings in ${cmd.guild.name}**${
+                        warningsMessage.length > 0 
+                            ? warningsMessage.join("") 
+                            : `\n-# No Warnings have been issued. Use ${cmds.warn.mention} to issue a warning.`}`
                 ),
                 allowedMentions: { parse: [] },
             });
@@ -162,24 +184,30 @@ module.exports = {
         }
 
         if(cmd.customId?.startsWith("remWarning-")){
+            const guildUser = await guildUserByObj(cmd.guild, cmd.customId.split("remWarning-")[1]);
+
             if(!/\d\d?/ig.test(cmd.fields.getTextInputValue("warning"))){
                 cmd.deferUpdate();
             }
-            else if(+cmd.fields.getTextInputValue("warning")>=storage[cmd.guild.id].users[cmd.customId.split("-")[1]].warnings.length){
+            else if (+cmd.fields.getTextInputValue("warning") >= guildUser.warnings.length) {
                 cmd.deferUpdate();
             }
             else{
-                storage[cmd.guild.id].users[cmd.customId.split("-")[1]].warnings.splice(cmd.fields.getTextInputValue("warning")-1,1);
+                guildUser.warnings.splice(cmd.fields.getTextInputValue("warning")-1, 1);
                 cmd.reply({content:`Alright, I have removed warning \`${cmd.fields.getTextInputValue("warning")}\` from <@${cmd.customId.split("-")[1]}>.`,allowedMentioned:{parse:[]}});
             }
+            guildUser.save();
         }
         
         if(cmd.customId?.startsWith("clearWarning-")){
+            const guildUser = await guildUserByObj(cmd.guild, cmd.customId.split("-")[1]);
+
             if(cmd.fields.getTextInputValue("confirm").toLowerCase()!=="yes"){
                 cmd.deferUpdate();
             }
             else{
-                storage[cmd.guild.id].users[cmd.customId.split("-")[1]].warnings=[];
+                guildUser.warnings=[];
+                guildUser.save();
                 cmd.reply({content:`Alright, I have cleared all warnings for <@${cmd.customId.split("-")[1]}>`,allowedMentions:{parse:[]}});
             }
         }

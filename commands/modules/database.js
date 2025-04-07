@@ -131,6 +131,13 @@ let emojiboardSchema = new mongoose.Schema({
     posters: { type: Map, of: String },
 })
 
+let warningSchema = new mongoose.Schema({
+    moderator: String,
+    reason: String,
+    severity: Number,
+    when: Number,
+})
+
 let guildConfigSchema = new mongoose.Schema({
     antihack_log_channel: { type: String, default: "" },
     antihack_to_log: { type: Boolean, default: false},
@@ -195,6 +202,7 @@ let guildUserSchema = new mongoose.Schema({
     beenCountWarned: { type: Boolean, default: false },
     lvl: { type: Number, default: 0 },
     exp: { type: Number, default: 0 },
+    warnings: [ warningSchema ],
 })
 guildUserSchema.index({ userId: 1, guildId: 1 }, { unique: true }); // Compound unique index - only one user per guild
 //#endregion

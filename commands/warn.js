@@ -1,6 +1,6 @@
 // #region CommandBoilerplate
 const Categories = require("./modules/Categories");
-const { Guilds, Users, guildByID, userByID, guildByObj, userByObj } = require("./modules/database.js")
+const { Guilds, Users, guildByID, userByID, guildByObj, userByObj, guildUserByObj } = require("./modules/database.js")
 const { SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType, AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType } = require("discord.js");
 function applyContext(context = {}) {
     for (key in context) {
@@ -42,25 +42,24 @@ module.exports = {
         applyContext(context);
 
         const who = cmd.options.getUser("who");
-        const what = await checkDirty(config.homeServer,cmd.options.getString("what"),true)[1];
+        const what = (await checkDirty(config.homeServer,cmd.options.getString("what"),true))[1];
         const severity = cmd.options.getInteger("severity");
 
         if (who.bot) {
             cmd.followUp(`Bots cannot be warned. Consider reconfiguring or removing a bot if it's giving you issues.`);
             return;
         }
-        if (!storage[cmd.guild.id].users.hasOwnProperty(who.id)) {
-            storage[cmd.guild.id].users[who.id] = structuredClone(defaultGuildUser);
-        }
-        if (!storage[cmd.guild.id].users[who.id].hasOwnProperty("warnings")) {
-            storage[cmd.guild.id].users[who.id].warnings = [];
-        }
-        storage[cmd.guild.id].users[who.id].warnings.push({
+
+        // TODO_DB: minimize into one query instead of two
+        const guildUser = await guildUserByObj(cmd.guild, who.id);
+        guildUser.warnings.push({
             "moderator": cmd.user.id,
             "reason": what === null ? `None given` : what,
             "severity": severity === null ? 0 : severity,
             "when": Math.round(Date.now() / 1000)
         });
+        await guildUser.save();
+
         try {
             who.send({
                 embeds: [{
@@ -79,6 +78,6 @@ module.exports = {
                 }]
             }).catch(e => { });
         } catch (e) { }
-        cmd.followUp({ content: `Alright, I have warned <@${who.id}>${what === null ? `` : ` with the reason \`${what}\``}${severity === null ? `` : ` at a level \`${severity}\``}. This is warning #\`${storage[cmd.guild.id].users[who.id].warnings.length}\` for them.`, allowedMentions: { parse: [] } });
+        cmd.followUp({ content: `Alright, I have warned <@${who.id}>${what === null ? `` : ` with the reason \`${what}\``}${severity === null ? `` : ` at a level \`${severity}\``}. This is warning #\`${guildUser.warnings.length}\` for them.`, allowedMentions: { parse: [] } });
     }
 };
