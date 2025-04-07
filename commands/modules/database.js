@@ -16,10 +16,12 @@
 ///
 
 
+const { Guild, User } = require('discord.js');
 const mongoose = require("mongoose");
 const mongooseLeanVirtuals = require('mongoose-lean-virtuals');
 const mongooseLeanDefaults = require('mongoose-lean-defaults').default;
-const { Guild, User } = require('discord.js');
+mongoose.plugin(mongooseLeanDefaults)
+mongoose.plugin(mongooseLeanVirtuals)
 mongoose.set('setDefaultsOnInsert', true);
 
 //#region Guild
@@ -297,7 +299,8 @@ const configSchema = new mongoose.Schema({
     useGlobalGemini: { type: Boolean, default: true },
     dailyMeme: { type: Number, default: 0 },
     pfp: String,
-    rss: { type: Map, of: rssFeedSchema, default: {} }
+    rss: { type: Map, of: rssFeedSchema, default: {} },
+    wotd: { type: String, default: "jerry" },
 })
 
 const ConfigDB = mongoose.model("settings", configSchema)
@@ -450,8 +453,6 @@ async function guildUserByObj(guild, userID, updateData={}) {
 
 
 // Set plugins and define docs
-mongoose.plugin(mongooseLeanDefaults)
-mongoose.plugin(mongooseLeanVirtuals)
 const Guilds = mongoose.model("guilds", guildSchema);
 const GuildUsers = mongoose.model("guildusers", guildUserSchema);
 const Users = mongoose.model("users", userSchema)

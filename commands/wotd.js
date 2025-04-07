@@ -1,6 +1,6 @@
 // #region CommandBoilerplate
 const Categories = require("./modules/Categories");
-const { Guilds, Users, guildByID, userByID, guildByObj, userByObj } = require("./modules/database.js")
+const { Guilds, Users, ConfigDB, guildByID, userByID, guildByObj, userByObj } = require("./modules/database.js")
 const { ContextMenuCommandBuilder, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
 function applyContext(context={}) {
 	for (key in context) {
@@ -43,9 +43,11 @@ module.exports = {
 
 	async daily(context) {
 		applyContext(context);
+ 
+		const wotd = wotdList[Math.floor(Math.random()*wotdList.length)];
+		await ConfigDB.updateOne({}, { wotd: wotd });
 
-		storage.wotd=wotdList[Math.floor(Math.random()*wotdList.length)];
-		notify(`WOTD is now ||${storage.wotd}||, use \`~sudo setWord jerry\` to change it.`)
+		notify(`WOTD is now ||${wotd}||, use \`~sudo setWord jerry\` to change it.`)
 	},
 
 	// Only button subscriptions matched will be sent to the handler 
@@ -54,6 +56,12 @@ module.exports = {
     /** @param {import('discord.js').ButtonInteraction} cmd */
     async onbutton(cmd, context) {
 		applyContext(context);
+
+		const config = await ConfigDB.findOne()
+			// .select("wotd")
+			.lean({ defaults: true })
+
+		const wotd = config.wotd;
 
 		if (cmd.customId == "wotdModal") {
 			var guess=cmd.fields.getTextInputValue("wotdInput").toLowerCase();
@@ -73,7 +81,7 @@ module.exports = {
 			var nextInp=-1;
 			var accuracies={};
 			var won=false;
-			if(guess===storage.wotd) won=true;
+			if(guess===wotd) won=true;
 			`ABCDEFGHIJKLMNOPQRSTUVWXYZ`.split("").forEach(letter=>{
 				accuracies[letter]="";
 			});
@@ -111,11 +119,11 @@ module.exports = {
 			}
 			var guessAccuracy=[];
 			guess.split("").forEach((char,i)=>{
-				if(storage.wotd.split("")[i]===char){
+				if(wotd.split("")[i]===char){
 					guessAccuracy.push(`**${char.toUpperCase()}** `);
 					accuracies[char.toUpperCase()]=`**`;
 				}
-				else if(storage.wotd.includes(char)){
+				else if(wotd.includes(char)){
 					guessAccuracy.push(`__${char.toUpperCase()}__ `);
 					if(accuracies[char.toUpperCase()]!=="**") accuracies[char.toUpperCase()]=`__`;
 				}
@@ -126,7 +134,7 @@ module.exports = {
 			});
 			priorGuesses[nextInp]=guessAccuracy.join(" ");//guess.split("").map(a=>`${guessAccuracies[a]}${a.toUpperCase()}${guessAccuracies[a]}${guessAccuracies[a]==="`"?``:` `}`).join(" ");
 			if(nextInp===5||won){
-				cmd.update({content:`# WOTD Game\n${priorGuesses.join("\n")}\n\n${`QWERTYUIOP`.split("").map(lett=>`${accuracies[lett]}${lett}${accuracies[lett]}`).join(" ")}\n${`ASDFGHJKL`.split("").map(lett=>`${accuracies[lett]}${lett}${accuracies[lett]}`).join(" ")}\n${`ZXCVBNM`.split("").map(lett=>`${accuracies[lett]}${lett}${accuracies[lett]}`).join(" ")}\n## Word: ||${storage.wotd.toUpperCase()}||`,components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setLabel(`Make a Guess`).setCustomId(`wotd-${cmd.user.id}`).setStyle(ButtonStyle.Primary).setDisabled(true),new ButtonBuilder().setLabel(`Based on Wordle`).setURL(`https://www.nytimes.com/games/wordle/index.html`).setStyle(ButtonStyle.Link))]});
+				cmd.update({content:`# WOTD Game\n${priorGuesses.join("\n")}\n\n${`QWERTYUIOP`.split("").map(lett=>`${accuracies[lett]}${lett}${accuracies[lett]}`).join(" ")}\n${`ASDFGHJKL`.split("").map(lett=>`${accuracies[lett]}${lett}${accuracies[lett]}`).join(" ")}\n${`ZXCVBNM`.split("").map(lett=>`${accuracies[lett]}${lett}${accuracies[lett]}`).join(" ")}\n## Word: ||${wotd.toUpperCase()}||`,components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setLabel(`Make a Guess`).setCustomId(`wotd-${cmd.user.id}`).setStyle(ButtonStyle.Primary).setDisabled(true),new ButtonBuilder().setLabel(`Based on Wordle`).setURL(`https://www.nytimes.com/games/wordle/index.html`).setStyle(ButtonStyle.Link))]});
 			}
 			else{
 				cmd.update(`# WOTD Game\n${priorGuesses.join("\n")}\n\n${`QWERTYUIOP`.split("").map(lett=>`${accuracies[lett]}${lett}${accuracies[lett]}`).join(" ")}\n${`ASDFGHJKL`.split("").map(lett=>`${accuracies[lett]}${lett}${accuracies[lett]}`).join(" ")}\n${`ZXCVBNM`.split("").map(lett=>`${accuracies[lett]}${lett}${accuracies[lett]}`).join(" ")}`);
