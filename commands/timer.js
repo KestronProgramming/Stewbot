@@ -9,45 +9,47 @@ function applyContext(context={}) {
 }
 // #endregion CommandBoilerplate
 
-async function finTimer(who,force){
-    if(!storage[who].hasOwnProperty("timer")){
+async function finTimer(userId,force){
+    const user = await userByID(userId);
+
+    if(!user.timer) {
         return;
     }
-    if(storage[who].timer.time-Date.now()>10000&&!force){
-        setTimeout(()=>{finTimer(who)},storage[who].timer.time-Date.now());
+    if(user.timer.time-Date.now()>10000&&!force){
+        setTimeout(()=>{finTimer(userId)},user.timer.time-Date.now());
         return;
     }
-    if(storage[who].timer.respLocation==="DM"){
+    if(user.timer.respLocation==="DM"){
         try{
-            client.users.cache.get(who).send(`Your timer is done!${storage[who].timer.reminder.length>0?`\n\`${storage[who].timer.reminder}\``:``}`).catch(e=>{console.beta(e)});
+            client.users.cache.get(userId).send(`Your timer is done!${user.timer.reminder.length>0?`\n\`${user.timer.reminder}\``:``}`).catch(e=>{console.beta(e)});
         }
         catch(e){console.beta(e)}
     }
     else{
         try{
-            var chan=await client.channels.cache.get(storage[who].timer.respLocation.split("/")[0]);
+            var chan=await client.channels.cache.get(user.timer.respLocation.split("/")[0]);
             try{
                 if(chan&&chan?.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
-                    var msg=await chan.messages.fetch(storage[who].timer.respLocation.split("/")[1]);
+                    var msg=await chan.messages.fetch(user.timer.respLocation.split("/")[1]);
                     if(msg){
-                        msg.reply(`<@${who}>, your timer is done!${storage[who].timer.reminder.length>0?`\n\`${escapeBackticks(storage[who].timer.reminder)}\``:``}`);
+                        msg.reply(`<@${userId}>, your timer is done!${user.timer.reminder.length>0?`\n\`${escapeBackticks(user.timer.reminder)}\``:``}`);
                         msg.edit({components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setLabel("Clear Timer").setCustomId("jerry").setStyle(ButtonStyle.Danger).setDisabled(true))]});
                     }
                     else{
-                        chan.send(`<@${who}>, your timer is done!${storage[who].timer.reminder.length>0?`\n\`${escapeBackticks(storage[who].timer.reminder)}\``:``}`);
+                        chan.send(`<@${userId}>, your timer is done!${user.timer.reminder.length>0?`\n\`${escapeBackticks(user.timer.reminder)}\``:``}`);
                     }
                 }
                 else{
-                    client.users.cache.get(who).send(`Your timer is done!${storage[who].timer.reminder.length>0?`\n\`${escapeBackticks(storage[who].timer.reminder)}\``:``}`).catch(e=>{console.beta(e)});
+                    (await client.users.fetch(userId)).send(`Your timer is done!${user.timer.reminder.length>0?`\n\`${escapeBackticks(user.timer.reminder)}\``:``}`).catch(e=>{console.beta(e)});
                 }
             }
             catch(e){
-                client.users.cache.get(who).send(`Your timer is done!${storage[who].timer.reminder.length>0?`\n\`${storage[who].timer.reminder}\``:``}`).catch(e=>{console.beta(e)});
+                (await client.users.fetch(userId)).send(`Your timer is done!${user.timer.reminder.length>0?`\n\`${user.timer.reminder}\``:``}`).catch(e=>{console.beta(e)});
             }
         }
         catch(e){console.beta(e)}
     }
-    delete storage[who].timer;
+    delete storage[userId].timer;
 }
 
 module.exports = {
@@ -84,11 +86,13 @@ module.exports = {
 	/** @param {import('discord.js').Interaction} cmd */
     async execute(cmd, context) {
 		applyContext(context);
-		if(storage[cmd.user.id].hasOwnProperty("timer")){
+
+		if(storage[cmd.user.id].timer){
             cmd.followUp({content:`You already have a timer registered. This timer must be cleared before setting another. Would you like to clear it now?`,components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setLabel("Clear Timer").setCustomId(`clearTimer-${cmd.user.id}`).setStyle(ButtonStyle.Danger))]});
             return;
         }
         else{
+            // Calc length
             var timer=0;
             if(cmd.options.getInteger("hours")!==null) timer+=cmd.options.getInteger("hours")*60000*60;
             if(cmd.options.getInteger("minutes")!==null) timer+=cmd.options.getInteger("minutes")*60000;
@@ -97,27 +101,38 @@ module.exports = {
                 cmd.followUp(`Please set a valid time for the timer`);
                 return;
             }
+
+            // Calc reminder settings
             var respondHere=cmd.options.getBoolean("respond_here")||false;
             var resp;
             var reminder="";
             if(cmd.options.getString("reminder")!==null){
-                reminder=await checkDirty(config.homeServer,cmd.options.getString("reminder"),true)[1];
+                reminder=(await checkDirty(config.homeServer,cmd.options.getString("reminder"),true))[1];
                 if(cmd.guildId&&storage[cmd.guildId]?.filter.active){
-                    reminder=await checkDirty(cmd.guildId,reminder,true)[1];
+                    reminder=(await checkDirty(cmd.guildId,reminder,true))[1];
                 }
             }
+
             if(respondHere&&!cmd.channel?.id){
                 respondHere=false;
-                resp=await cmd.followUp({content:`Alright, I have set a timer that expires <t:${Math.round((Date.now()+timer)/1000)}:R> at <t:${Math.round((Date.now()+timer)/1000)}:f>. I was asked to ping you here, but I cannot do that in this channel. I will DM you instead.${reminder.length>0?`\n\`${reminder}\``:``}`,components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setLabel("Clear Timer").setCustomId(`clearTimer-${cmd.user.id}`).setStyle(ButtonStyle.Danger))]});
+                resp=await cmd.followUp({
+                    content:`Alright, I have set a timer that expires <t:${Math.round((Date.now()+timer)/1000)}:R> at <t:${Math.round((Date.now()+timer)/1000)}:f>. I was asked to ping you here, but I cannot do that in this channel. I will DM you instead.${reminder.length>0?`\n\`${reminder}\``:``}`,
+                    components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setLabel("Clear Timer").setCustomId(`clearTimer-${cmd.user.id}`).setStyle(ButtonStyle.Danger))]
+                });
             }
             else{
-                resp=await cmd.followUp({content:`Alright, I have set a timer that expires <t:${Math.round((Date.now()+timer)/1000)}:R> at <t:${Math.round((Date.now()+timer)/1000)}:f>. I will ${respondHere?`ping you here`:`DM you`} when it finishes.${reminder.length>0?`\n\`${reminder}\``:``}`,components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setLabel("Clear Timer").setCustomId(`clearTimer-${cmd.user.id}`).setStyle(ButtonStyle.Danger))]});
+                resp=await cmd.followUp({
+                    content:`Alright, I have set a timer that expires <t:${Math.round((Date.now()+timer)/1000)}:R> at <t:${Math.round((Date.now()+timer)/1000)}:f>. I will ${respondHere?`ping you here`:`DM you`} when it finishes.${reminder.length>0?`\n\`${reminder}\``:``}`,
+                    components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setLabel("Clear Timer").setCustomId(`clearTimer-${cmd.user.id}`).setStyle(ButtonStyle.Danger))]
+                });
             }
-            storage[cmd.user.id].timer={
-                "time":Date.now()+timer,
-                "respLocation":respondHere?`${cmd.channel.id}/${resp.id}`:"DM",
-                "reminder":reminder
-            };
+
+            await userByObj(cmd.user, {
+                "timer.time": Date.now()+timer,
+                "timer.respLocation": respondHere?`${cmd.channel.id}/${resp.id}`:"DM",
+                "timer.reminder": reminder
+            })
+
             setTimeout(()=>{finTimer(cmd.user.id)},timer);
         }
 	},

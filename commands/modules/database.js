@@ -200,6 +200,12 @@ guildUserSchema.index({ userId: 1, guildId: 1 }, { unique: true }); // Compound 
 //#endregion
 
 //#region Users
+let timerSchema = new mongoose.Schema({
+    "time": Number,
+    "respLocation": String,
+    "reminder": String
+})
+
 let hatPullSchema = new mongoose.Schema({
     limit: { type: Number, default: 0 },
     winCount: { type: Number, default: 1 },
@@ -263,6 +269,7 @@ let userSchema = new mongoose.Schema({
     config: { type: userConfigSchema, default: {} },
     dmOffenses: { type: Boolean, default: true },
     hat_pull: hatPullSchema, // This one does not need defaults, it is checked for existence
+    timer: timerSchema,
     captcha: Boolean,
 });
 //#endregion
