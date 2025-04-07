@@ -33,8 +33,10 @@ module.exports = {
 	/** @param {import('discord.js').Interaction} cmd */
     async execute(cmd, context) {
 		applyContext(context);
+
+		const guild = await guildByObj(cmd.guild);
 		
-		if(storage[cmd.guildId].filter.blacklist.length>0&&storage[cmd.guildId].filter.active){
+		if(guild.filter.blacklist.length>0&&guild.filter.active){
 			cmd.followUp({"content":`## ⚠️ Warning\nWhat follows _may_ be considered dirty, or offensive, as these are words that **${cmd.guild.name}** has decided to not allow.\n-# If you would like to continue, press the button below.`,"components":[new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('view_filter').setLabel('DM me the blacklist').setStyle(ButtonStyle.Danger))]});
 		}
 		else{
@@ -50,8 +52,10 @@ module.exports = {
 
 		switch (cmd.customId) {
 			case "view_filter":
+				const guild = await guildByObj(cmd.guild);
+				
 				cmd.user.send({
-					content: `The following is the blacklist for **${ cmd.guild.name}** as requested.\n\n||${storage[cmd.guildId].filter.blacklist.join("||, ||")}||`,
+					content: `The following is the blacklist for **${ cmd.guild.name}** as requested.\n\n||${guild.filter.blacklist.join("||, ||")}||`,
 					components: [new ActionRowBuilder().addComponents(
 						new ButtonBuilder().setCustomId("delete-all").setLabel("Delete message").setStyle(ButtonStyle.Danger), 
 						new ButtonBuilder().setCustomId("export").setLabel("Export to CSV").setStyle(ButtonStyle.Primary),
