@@ -18,6 +18,7 @@ if (storage[msg.guild.id].levels.hasOwnProperty("channelOrDM")) {
 
 
 
+
 TODO:
 Once general_config is ported, test turning off embeds, chat, etc
 Once prime embed is ported, test embedding it with embed_message
@@ -26,10 +27,14 @@ Once prime embed is ported, test embedding it with embed_message
 
 
 # TODO:
+
+Figure out what files to zip and backup
+Check for db tools, warn about not backing up if not, link to https://www.mongodb.com/docs/database-tools/installation/#std-label-dbtools_installation
+https://www.mongodb.com/try/download/shell
+"MongoDB Command Line Database Tools Download"
+
 CheckDirty needs aggressive caching... which needs to be invalidated when modified
 
-
-# TODO:
 On message handler should pass a read-only guild
 
 Ctrl+F for "TODO_DB

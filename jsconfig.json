@@ -8,10 +8,11 @@
         "paths": {
             "*": ["./*"] // Tells it to look for modules in project root.
         },
-        "typeRoots": ["./types"], // Tell VS Code where to look for `.d.ts` files
+        "typeRoots": ["./types", "./node_modules/@types"], // Include node_modules/@types for external type definitions
         "esModuleInterop": true // Recommended for better compatibility with ES modules
     },
     "exclude": [
-        "node_modules" // Exclude node_modules from type checking
+        "node_modules", // Exclude node_modules from type checking
+        "**/*.d.ts" // Exclude any missing or unnecessary `.d.ts` files
     ]
 }

@@ -1,4 +1,4 @@
-export function finTimer(who: any, force: any): Promise<void>;
+export function finTimer(userId: any, force: any): Promise<void>;
 export declare namespace data {
     let command: import("discord.js").SlashCommandOptionsOnlyBuilder;
     namespace extra {

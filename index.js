@@ -650,9 +650,9 @@ client.once("ready",async ()=>{
     
     // (Later) Once backup.js fully imports, start the backup thread
     startBackupThreadPromise.then( startBackupThread => {
-        // startBackupThread("./storage.json", 60*60*1000, error => {
-        //     notify(String(error));
-        // }, true)
+        startBackupThread("./storage.json", 60*60*1000, error => {
+            notify(String(error));
+        }, true)
     })
 
     uptime=Math.round(Date.now()/1000);

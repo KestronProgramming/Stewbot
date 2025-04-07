@@ -1,4 +1,4 @@
-export function finTempRole(guild: any, user: any, role: any): Promise<void>;
+export function finTempRole(guildId: any, userId: any, roleId: any): Promise<void>;
 export declare namespace data {
     let command: import("discord.js").SlashCommandOptionsOnlyBuilder;
     namespace extra {

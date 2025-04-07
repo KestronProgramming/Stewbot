@@ -1,4 +1,4 @@
-export function finTempSlow(guild: any, channel: any, force: any): Promise<void>;
+export function finTempSlow(guildId: any, channel: any, force: any): Promise<void>;
 export declare namespace data {
     let command: import("discord.js").SlashCommandOptionsOnlyBuilder;
     namespace extra {

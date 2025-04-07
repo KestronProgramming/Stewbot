@@ -46,6 +46,9 @@ if ($env:Path -notlike "*$binPath*") {
     Write-Output "MongoDB is already in PATH."
 }
 
+#region MongoD
+Write-Output "Setting up database service"
+
 Stop-Service -Name "MongoDB" -ErrorAction SilentlyContinue
 
 # Setup location for Stewbot's Data
@@ -67,5 +70,22 @@ mongod.exe --remove
 mongod.exe --config "$binPath\mongod.cfg" --install
 Start-Service -Name "MongoDB"
 Set-Service -StartupType Automatic -Name "MongoDB"
+#endregion MongoD
+
+Write-Output "Installing MongoDB Tools"
+winget install MongoDB.DatabaseTools
+
+$mongoToolsPath = Get-ChildItem -Path "C:\Program Files\MongoDB\Tools" -Directory | Sort-Object Name -Descending | Select-Object -First 1 -ExpandProperty FullName
+$toolsBinPath = Join-Path $mongoToolsPath "bin"
+if ($env:Path -notlike "*$toolsBinPath*") {
+    Write-Output "Adding MongoDB Tools to system PATH..."
+    $currentPath = [System.Environment]::GetEnvironmentVariable("Path", [System.EnvironmentVariableTarget]::Machine)
+    $newPath = "$currentPath;$toolsBinPath"
+    [System.Environment]::SetEnvironmentVariable("Path", $newPath, [System.EnvironmentVariableTarget]::Machine)
+    Write-Output "MongoDB Tools path added. Restart your terminal for changes to take effect."
+} else {
+    Write-Output "MongoDB Tools are already in PATH."
+}
+
 
 pause;
