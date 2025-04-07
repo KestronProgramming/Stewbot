@@ -18,9 +18,9 @@ console.beta = (...args) => process.env.beta && console.log(...args);
 const config = require("../data/config")
 const INTERFACES = config.aiNodeInterfaces;
 const BROADCAST_PORT = config.aiNodePort;
-
+    
 let activeAIRequests = {};
-let convoCache = {}; // Stored here instead of storage, since it does not need persistent
+let convoCache = {}; // Stored here instead of database, since it does not need persistent
 
 // Setup Gemini
 const { GoogleGenerativeAI } = require("@google/generative-ai");

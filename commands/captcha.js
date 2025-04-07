@@ -86,7 +86,7 @@ module.exports = {
 									members.forEach(m=>{
 										if(m.id===cmd.user.id){
 											m.timeout(null);
-											storage[m.guild.id].users[m.id].safeTimestamp=new Date();
+											user.safeTimestamp=new Date();
 										}
 									});
 								});

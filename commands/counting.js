@@ -258,7 +258,7 @@ module.exports = {
         // Counting
         if (!msg.author.bot && guildCounting.active && msg.channel.id === guildCounting.channel) {
             
-            // Fetch the guild user's storage if we're counting
+            // Fetch the guild user's doc if we're counting
             guildUser = await guildUserByObj(msg.guild, msg.author.id)
             if (!guildUser) return;
 

@@ -36,16 +36,19 @@ module.exports = {
 	/** @param {import('discord.js').Interaction} cmd */
     async execute(cmd, context) {
 		applyContext(context);
+
+		const updates = {
+			"stickyRoles": cmd.options.getBoolean("active")
+		}
 		
 		if(!cmd.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageRoles)){
-			storage[cmd.guildId].stickyRoles=false;
+			updates.stickyRoles=false;
 			cmd.followUp(`I do not have the MANAGE_ROLES permission for this server, so I cannot run sticky roles.`);
 			return;
 		}
 
-		guildByObj(cmd.guild, {
-			"stickyRoles": cmd.options.getBoolean("active")
-		})
+		// Push updates
+		await guildByObj(cmd.guild, updates)
 
 		cmd.followUp("Sticky roles configured. Please be aware I can only manage roles lower than my highest role in the server roles list.");
 	}

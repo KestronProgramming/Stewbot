@@ -166,6 +166,8 @@ module.exports = {
                 });
                 break;
             case "emojiboard":
+                // TODO_DB WIP: come back and fix this once I have actual emoji data to build aggregation queries on
+
                 if (Object.keys(guild.emojiboards).length < 1) {
                     cmd.followUp(`This server doesn't use any emojiboards at the moment. It can be configured using ${cmds.add_emojiboard.mention}.`);
                     break;
@@ -179,8 +181,6 @@ module.exports = {
                         break;
                     }
                 }
-
-                // TODO_DB WIP: come back and fix this once I have actual emoji data to build aggregation queries on
 
                 const allBoards = emoji === null;
 
