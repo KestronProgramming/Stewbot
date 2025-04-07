@@ -36,10 +36,12 @@ module.exports = {
 	/** @param {import('discord.js').Interaction} cmd */
     async execute(cmd, context) {
 		applyContext(context);
+
+		const guild = await guildByObj(cmd.guild);
 		
 		const t = await translate(cmd.targetMessage.content,{to:cmd.locale.slice(0,2)});
-		t.text = await checkDirty(config.homeServer, t.text, true)[1];
-		if (cmd.guildId && storage[cmd.guildId]?.filter.active) t.text = await checkDirty(cmd.guildId, t.text, true)[1];
+		t.text = (await checkDirty(config.homeServer, t.text, true))[1];
+		if (cmd.guildId && guild.filter.active) t.text = (await checkDirty(cmd.guildId, t.text, true))[1];
 		cmd.followUp(
 			`Attempted to translate${t.text !== cmd.targetMessage.content 
 				? `:\n`+
