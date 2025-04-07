@@ -1,6 +1,6 @@
 // #region CommandBoilerplate
 const Categories = require("./modules/Categories");
-const { Guilds, Users, guildByID, userByID, guildByObj, userByObj } = require("./modules/database.js")
+const { Guilds, Users, guildByID, userByID, guildByObj, userByObj, guildUserByObj, guildUserByID } = require("./modules/database.js")
 const { ContextMenuCommandBuilder, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
 function applyContext(context={}) {
 	for (key in context) {
@@ -9,22 +9,27 @@ function applyContext(context={}) {
 }
 // #endregion CommandBoilerplate
 
-async function finTempRole(guild,user,role){
-    if(!storage[guild].users[user].tempRoles?.hasOwnProperty(role)){
+async function finTempRole(guildId, userId, roleId) {
+    const guild = await client.guilds.fetch(guildId);
+    if (guild === null || guild === undefined) return;
+
+    const guildUser = await guildUserByObj(guild, userId);
+    if(!guildUser?.tempRoles?.has(roleId)){
         return;
     }
-    guild=client.guilds.cache.get(guild);
-    if(guild===null||guild===undefined) return;
-    user=guild.members.cache.get(user);
-    role=guild.roles.cache.get(role);
-    if(role===null||role===undefined||user===null||user===undefined) return;
-    if(user.roles.cache.has(role.id)){
-        user.roles.remove(role).catch(e=>{});
+    const user = await guild.members.fetch(userId);
+    const role = await guild.roles.fetch(roleId);
+    if (role === null || role === undefined || user === null || user === undefined) return;
+    
+    if (user.roles.cache.has(role.id)) {
+        user.roles.remove(role).catch(e => { });
     }
     else{
         user.roles.add(role).catch(e=>{});
     }
-    delete storage[guild.id].users[user.id].tempRoles[role.id];
+
+    guildUser.tempRoles.delete(roleId);
+    guildUser.save();
 }
 
 module.exports = {
@@ -90,26 +95,35 @@ module.exports = {
             cmd.followUp(`I cannot help with that role. If you would like me to, grant me a role that is ordered to be higher in the roles list than ${role.name}. You can reorder roles from Server Settings -> Roles.`);
             return;
         }
-        if(!storage[cmd.guild.id].users[cmd.user.id].hasOwnProperty("tempRoles")){
-            storage[cmd.guild.id].users[cmd.user.id].tempRoles={};
-        }
-        if(storage[cmd.guild.id].users[cmd.user.id].tempRoles.hasOwnProperty(role.id)){
-            cmd.followUp({content:`This is already a temporarily assigned role for this user. You can cancel it, or wait it out.`,components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setLabel("Finish Early").setCustomId(`finishTempRole-${user.id}-${role.id}`).setStyle(ButtonStyle.Secondary))]});
+
+        const guildUser = await guildUserByObj(cmd.guild, cmd.user.id);
+        if(guildUser.tempRoles.has(role.id)){
+            cmd.followUp({
+                content:`This is already a temporarily assigned role for this user. You can cancel it, or wait it out.`,
+                components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setLabel("Finish Early").setCustomId(`finishTempRole-${user.id}-${role.id}`).setStyle(ButtonStyle.Secondary))]
+            });
             return;
         }
+        
         var added;
-        if(targetMember.roles.cache.has(role.id)){
+        if (targetMember.roles.cache.has(role.id)) {
             added=false;
             targetMember.roles.remove(role.id).catch(e=>{});
         }
-        else{
+        else {
             added=true;
             targetMember.roles.add(role.id).catch(e=>{});
         }
-        storage[cmd.guild.id].users[cmd.user.id].tempRoles[role.id]=Date.now()+timer;
-        cmd.followUp({content:`Alright, I have ${added?`added`:`removed`} <@&${role.id}> ${added?`to`:`from`} <@${targetMember.id}> until <t:${Math.round((Date.now()+timer)/1000)}:f> <t:${Math.round((Date.now()+timer)/1000)}:R>`,components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setLabel("Finish Early").setCustomId(`finishTempRole-${user.id}-${role.id}`).setStyle(ButtonStyle.Secondary))]});
+
+        guildUser.tempRoles.set(role.id, Date.now()+timer);
+        cmd.followUp({
+            content:`Alright, I have ${added?`added`:`removed`} <@&${role.id}> ${added?`to`:`from`} <@${targetMember.id}> until <t:${Math.round((Date.now()+timer)/1000)}:f> <t:${Math.round((Date.now()+timer)/1000)}:R>`,
+            components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setLabel("Finish Early").setCustomId(`finishTempRole-${user.id}-${role.id}`).setStyle(ButtonStyle.Secondary))]
+        });
         
         setTimeout(()=>{finTempRole(cmd.guild.id,cmd.user.id,role.id)},timer);
+
+        guildUser.save();
     },
 
 	subscribedButtons: [/finishTempRole-.*/],

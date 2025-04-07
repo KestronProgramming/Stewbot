@@ -111,6 +111,10 @@ let tempSlowmodeSchema = new mongoose.Schema({
     private: Boolean,
 })
 
+let tempRoleSchema = new mongoose.Schema({
+
+})
+
 let autoJoinMessageSchema = new mongoose.Schema({
     active: { type: Boolean, default: false },
     channel: { type: String, default: "" },
@@ -126,32 +130,6 @@ let emojiboardSchema = new mongoose.Schema({
     posted:  { type: Map, of: Number },
     posters: { type: Map, of: String },
 })
-
-// See notes at the top
-let guildUserSchema = new mongoose.Schema({
-    userId: {
-        type: String,
-        required: true,
-        index: true,
-        trim: true,
-        match: [/\d+/, "Error: ServerID must be digits only"]
-    },
-    guildId: {
-        type: String,
-        required: true,
-        index: true,
-        trim: true,
-        match: [/\d+/, "Error: UserID must be digits only"]
-    },
-    infractions: { type: Number, defaults: 0 },
-    safeTimestamp: { type: Number, default: 0},
-    countTurns: { type: Number, default: 0 },
-    beenCountWarned: { type: Boolean, default: false },
-    lvl: { type: Number, default: 0 },
-    exp: { type: Number, default: 0 },
-})
-// guildUserSchema.index({ userId: 1, guildId: 1 }, { unique: true }); // Compound unique index - only one user per guild
-
 
 let guildConfigSchema = new mongoose.Schema({
     antihack_log_channel: { type: String, default: "" },
@@ -193,6 +171,32 @@ let guildSchema = new mongoose.Schema({
     testProp: String,
     stickyRoles: Boolean,
 });
+
+let guildUserSchema = new mongoose.Schema({
+    // See notes at the top
+    userId: {
+        type: String,
+        required: true,
+        index: true,
+        trim: true,
+        match: [/\d+/, "Error: ServerID must be digits only"]
+    },
+    guildId: {
+        type: String,
+        required: true,
+        index: true,
+        trim: true,
+        match: [/\d+/, "Error: UserID must be digits only"]
+    },
+    tempRoles: { type: Map, of: Number, default: {} },
+    infractions: { type: Number, defaults: 0 },
+    safeTimestamp: { type: Number, default: 0},
+    countTurns: { type: Number, default: 0 },
+    beenCountWarned: { type: Boolean, default: false },
+    lvl: { type: Number, default: 0 },
+    exp: { type: Number, default: 0 },
+})
+guildUserSchema.index({ userId: 1, guildId: 1 }, { unique: true }); // Compound unique index - only one user per guild
 //#endregion
 
 //#region Users
@@ -318,17 +322,10 @@ function findOrCreate(query, updates = {}) {
         }
     );
 }
-
 guildSchema.statics.findOrCreate = findOrCreate;
 guildUserSchema.statics.findOrCreate = findOrCreate;
 userSchema.statics.findOrCreate = findOrCreate;
 
-function ensureField(doc, needsUpdate, field, defaultValue) {
-    if (!doc[field]) {
-        doc[field] = defaultValue;
-        needsUpdate.push(field);
-    }
-}
 
 async function guildByID(id, updates={}) {
     // Fetch a guild from the DB, and create it if it does not already exist
@@ -393,16 +390,17 @@ async function userByObj(obj, updates={}) {
     return user;
 }
 
-async function guildUserByID(guildId, userId) {
-    // Fetch a guild from the DB, and create it if it does not already exist
+async function guildUserByID(guildID, userID, updateData={}, upsert) {
+    // By default, this function, unlike the others, does not upsert new data.
 
-    const guild = await GuildUsers.findOneAndUpdate({ guildId, userId }, {}, {
-        new: true,
-        upsert: true,
-        setDefaultsOnInsert: true
-    });
-    
-    return guild;
+    // Fetch and update in one query
+    const user = await GuildUsers.findOneAndUpdate(
+        { guildId: guildID, userId: userID },
+        { $set: updateData },
+        { new: true, setDefaultsOnInsert: true, upsert }
+    );
+
+    return user;
 }
 
 /** @returns {Promise<import("mongoose").HydratedDocument<import("mongoose").InferSchemaType<typeof guildUserSchema>>>} */
@@ -410,7 +408,8 @@ async function guildUserByObj(guild, userID, updateData={}) {
     // Beta prechecks for dev mistakes
     if (
         process.env.beta && (
-            !(guild instanceof Guild)
+            !(guild instanceof Guild) || 
+            !(typeof(userID) == 'string')
         )
     ) {
         const warning = "WARNING: obj input seems incorrect. See console for stack trace.";
@@ -418,42 +417,26 @@ async function guildUserByObj(guild, userID, updateData={}) {
         notify(warning);
     }
 
-    const cachePeriod = 1500;
-
-    // updateData is json of fields that should be set to specific data.
-
-    // if (guild[`_db${userID}`] && Date.now() - guild[`_db${userID}CachedAt`] < cachePeriod) {
-    //     Object.assign(guild[`_db${userID}`], updateData);
-    //     return guild[`_db${userID}`].save();
-    // }
-
     // Ensure the user exists in the server first
     const serverUser = await guild.members.fetch(userID).catch(() => null);
     if (!serverUser) return null;
 
     // Fetch and update in one query
-    const user = await GuildUsers.findOneAndUpdate(
-        { guildId: guild.id, userId: userID },
-        { $set: updateData },
-        { new: true, upsert: true, setDefaultsOnInsert: true }
-    );
-    guild[`_db${userID}`] = user;
-    guild[`_db${userID}CachedAt`] = Date.now();
-
-    setTimeout(() => {
-        delete guild[`_db${userID}`];
-    }, cachePeriod);
+    // const user = await GuildUsers.findOneAndUpdate(
+    //     { guildId: guild.id, userId: userID },
+    //     { $set: updateData },
+    //     { new: true, upsert: true, setDefaultsOnInsert: true }
+    // );
+    const user = await guildUserByID(guild.id, userID, updateData, true); // upsert is true since we've checked this user exists
 
     return user;
 }
 //#endregion
 
-// Attach lean-default injector to all mongoose schemas
-// [guildSchema, guildUserSchema, userSchema].map(schema => schema.plugin(mongooseLeanVirtuals));
+
+// Set plugins and define docs
 mongoose.plugin(mongooseLeanDefaults)
 mongoose.plugin(mongooseLeanVirtuals)
-
-// Define docs
 const Guilds = mongoose.model("guilds", guildSchema);
 const GuildUsers = mongoose.model("guildusers", guildUserSchema);
 const Users = mongoose.model("users", userSchema)
@@ -494,7 +477,7 @@ module.exports = {
     userByObj,
 
     GuildUsers,
-    // guildUserByID, // This function is less preferred, as it does not internally cache or check for guild member existence first 
+    guildUserByID, // This function is less preferred, as it does not check for guild member existence first 
     guildUserByObj,
 
     ConfigDB
