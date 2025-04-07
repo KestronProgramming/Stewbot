@@ -8,6 +8,10 @@ const process = require('process');
 const envs = require("./env.json");
 const archiver = require('archiver');
 
+// Other related config we're using rn - this could be cleaned up a good bit
+const uploadName = envs.beta ? "stewbeta-backup.zip" : "stewbot-backup.zip";
+
+
 
 const startBackupThreadPromise = new Promise(async (resolve, reject) => {
     // Declare module variables - will be loaded lazily
@@ -204,9 +208,9 @@ const startBackupThreadPromise = new Promise(async (resolve, reject) => {
         }
     }
 
-    async function uploadZipFile(drive, filePath) {
+    async function uploadZipFile(drive, filePath, filename) {
         const fileMetadata = {
-            name: (envs.beta ? "beta-" : "") + path.basename(filePath),
+            name: filename, // (envs.beta ? "beta-" : "") + path.basename(filePath),
             parents: [envs.google.folderID]
         };
         const media = {
@@ -328,7 +332,7 @@ const startBackupThreadPromise = new Promise(async (resolve, reject) => {
             return false;
         }
 
-        const outputName = "dump.zip";
+        const outputName = "backup.zip";
         const dumpDir = path.join(__dirname, 'dump');
         const zipPath = path.join(__dirname, outputName);
 
@@ -378,7 +382,7 @@ const startBackupThreadPromise = new Promise(async (resolve, reject) => {
         // 4. Upload to Google Drive
         try {
             await deleteFileIfExists(googleDrive, folderId, outputName);
-            await uploadZipFile(googleDrive, outputName);
+            await uploadZipFile(googleDrive, outputName, uploadName);
             // console.log(`Backup of "${filename}" successful.`); // Optional success log
             return true;
         } catch (err) {
