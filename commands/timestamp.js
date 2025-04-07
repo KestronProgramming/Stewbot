@@ -19,7 +19,7 @@ function getOffsetDateByUTCOffset(timestamp, targetOffset) {
 	return new Date(date.getTime() + (offsetDiff * 60 * 1000));
 }
 
-function parseTextDateIfValid(text, timezone) {
+function parseTextDateIfValid(text, myTimezone) {
 	// returns null if invalid
 	if (!text) return null;
 
@@ -30,6 +30,8 @@ function parseTextDateIfValid(text, timezone) {
 	startingTime = getOffsetDateByUTCOffset(startingTime, myTimezone);
 
 	if (isNaN(startingTime?.getTime())) return null;
+
+	return startingTime;
 }
 
 const components = {
@@ -126,14 +128,19 @@ module.exports = {
 	/** @param {import('discord.js').Interaction} cmd */
     async execute(cmd, context) {
 		applyContext(context);
+
+		const user = await userByObj(cmd.user);
 		
-		if(storage[cmd.user.id].config.hasSetTZ){
-			const myTimezone = storage[cmd.user.id].config.timeOffset;
+		if(user.config.hasSetTZ){
+			const myTimezone = user.config.timeOffset;
 			const quickInput = cmd.options.getString("quick-input");
-			let startingTime = parseTextDateIfValid(quickInput)
+			let startingTime = parseTextDateIfValid(quickInput, myTimezone)
 			if (!startingTime) startingTime = new Date();
 			
-			cmd.followUp({content:`<t:${Math.round(( startingTime )/1000)}:t>`,components:components.timestamp});
+			cmd.followUp({
+				content:`<t:${Math.round(( startingTime )/1000)}:t>`,
+				components:components.timestamp
+			});
 		}
 		else{
 			cmd.followUp(`This command needs you to set your timezone first! Run ${cmds.personal_config.mention} and specify \`configure_timezone\` to get started,`);
@@ -146,6 +153,8 @@ module.exports = {
     /** @param {import('discord.js').ButtonInteraction} cmd */
     async onbutton(cmd, context) {
 		applyContext(context);
+
+		const user = await userByObj(cmd.user);
 
 		switch(cmd.customId) {
 			// Buttons
@@ -202,7 +211,7 @@ module.exports = {
 					cmd.deferUpdate();
 					break;
 				}
-				inp=+inp-storage[cmd.user.id].config.timeOffset;
+				inp=+inp-user.config.timeOffset;
 				if(cmd.fields.getTextInputValue("tsAmPm").toLowerCase()[0]==="p"&&inp<13){
 					inp+=12;
 				}
@@ -223,10 +232,10 @@ module.exports = {
 				}
 				inp=+inp;
 				var t=new Date(+cmd.message.content.split(":")[1]*1000);
-				if(24-t.getUTCHours()<storage[cmd.user.id].config.timeOffset){
+				if(24-t.getUTCHours()<user.config.timeOffset){
 					inp++;
 				}
-				if(t.getUTCHours()-storage[cmd.user.id].config.timeOffset<0){
+				if(t.getUTCHours()-user.config.timeOffset<0){
 					inp--;
 				}
 				cmd.update(`<t:${Math.round(t.setUTCDate(inp)/1000)}:${cmd.message.content.split(":")[2].split(">")[0]}>`);
