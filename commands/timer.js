@@ -49,7 +49,7 @@ async function finTimer(userId,force){
         }
         catch(e){console.beta(e)}
     }
-    delete storage[userId].timer;
+    await user.updateOne({ $unset: { timer: "" } })
 }
 
 module.exports = {
@@ -87,7 +87,9 @@ module.exports = {
     async execute(cmd, context) {
 		applyContext(context);
 
-		if(storage[cmd.user.id].timer){
+        const user = await userByObj(cmd.user);
+
+		if(user.timer){
             cmd.followUp({content:`You already have a timer registered. This timer must be cleared before setting another. Would you like to clear it now?`,components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setLabel("Clear Timer").setCustomId(`clearTimer-${cmd.user.id}`).setStyle(ButtonStyle.Danger))]});
             return;
         }
@@ -108,7 +110,9 @@ module.exports = {
             var reminder="";
             if(cmd.options.getString("reminder")!==null){
                 reminder=(await checkDirty(config.homeServer,cmd.options.getString("reminder"),true))[1];
-                if(cmd.guildId&&storage[cmd.guildId]?.filter.active){
+
+                const guild = await guildByObj(cmd.guild);
+                if(cmd.guildId&&guild.filter.active){
                     reminder=(await checkDirty(cmd.guildId,reminder,true))[1];
                 }
             }
@@ -127,11 +131,18 @@ module.exports = {
                 });
             }
 
-            await userByObj(cmd.user, {
-                "timer.time": Date.now()+timer,
-                "timer.respLocation": respondHere?`${cmd.channel.id}/${resp.id}`:"DM",
-                "timer.reminder": reminder
-            })
+            user.timer = {
+                "time": Date.now()+timer,
+                "respLocation": respondHere?`${cmd.channel.id}/${resp.id}`:"DM",
+                "reminder": reminder
+            }
+            await user.save();
+
+            // await userByObj(cmd.user, {
+            //     "timer.time": Date.now()+timer,
+            //     "timer.respLocation": respondHere?`${cmd.channel.id}/${resp.id}`:"DM",
+            //     "timer.reminder": reminder
+            // })
 
             setTimeout(()=>{finTimer(cmd.user.id)},timer);
         }
@@ -144,9 +155,11 @@ module.exports = {
     async onbutton(cmd, context) {
 		applyContext(context);
 
+        const user = await userByObj(cmd.user);
+
 		if(cmd.customId?.startsWith("clearTimer-")){
-            if((cmd.member?.permissions?.has(PermissionFlagsBits.ManageMessages)&&cmd.message.id===storage[cmd.user.id].timer?.respLocation.split("/")[1])||cmd.user.id===cmd.customId.split("-")[1]){
-                delete storage[cmd.user.id].timer;
+            if((cmd.member?.permissions?.has(PermissionFlagsBits.ManageMessages)&&cmd.message.id===user.timer?.respLocation.split("/")[1])||cmd.user.id===cmd.customId.split("-")[1]){
+                await user.updateOne({ $unset: { timer: "" } })
                 cmd.message.edit({components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setLabel("Clear Timer").setStyle(ButtonStyle.Danger).setDisabled(true).setCustomId("disabled"))]});
                 cmd.reply({content:`I have cleared the timer.`,ephemeral:true});
             }
