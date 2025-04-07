@@ -47,7 +47,7 @@ logTime("require('./data/commands.json') and set global.cmds");
 console.beta("Importing backup.js");
 logTime("console.beta log");
 
-const startBackupThreadPromise = require("./backup.js");
+const { startBackupThreadPromise, checkForMongoRestore } = require("./backup.js");
 logTime("require('./backup.js')");
 
 console.beta("Importing everything else");
@@ -63,7 +63,15 @@ const crypto = require('crypto');
 logTime("require('crypto')");
 
 const mongoose = require("mongoose");
-const DBConnectPromise = mongoose.connect(`${process.env.databaseURI}/${process.env.beta ? "stewbeta" : "stewbot"}`) // start the to the DB connection now, so it runs in the background and is ready later
+
+const DBConnectPromise = new Promise((resolve, reject) => {
+    // Start the to the DB connection now, so it runs in the background and is ready later
+    checkForMongoRestore().finally(_ => {
+        mongoose.connect(`${process.env.databaseURI}/${process.env.beta ? "stewbeta" : "stewbot"}`)
+        resolve();
+    })
+})
+
 const cache = global.cache = {}; // This is used for things like antihack hashes that need to be stored, but not persistent 
 logTime("require('mongoose')");
 
@@ -97,8 +105,6 @@ logTime("require('./commands/restart.js')");
 
 const { resetAIRequests } = require("./commands/chat.js")
 logTime("require('./commands/chat.js')");
-
-const { onDBConnect } = require("./commands/modules/database");
 
 logTime("Finished Imports Region");
 //#endregion Imports
@@ -652,7 +658,7 @@ client.once("ready",async ()=>{
     startBackupThreadPromise.then( startBackupThread => {
         startBackupThread("./storage.json", 60*60*1000, error => {
             notify(String(error));
-        }, true)
+        }, global.importedAtBoot ?? true)
     })
 
     uptime=Math.round(Date.now()/1000);

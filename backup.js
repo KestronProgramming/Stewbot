@@ -7,10 +7,10 @@ const path = require('path');
 const process = require('process');
 const envs = require("./env.json");
 const archiver = require('archiver');
+const unzip = require('unzipper');
 
 // Other related config we're using rn - this could be cleaned up a good bit
 const uploadName = envs.beta ? "stewbeta-backup.zip" : "stewbot-backup.zip";
-
 
 
 const startBackupThreadPromise = new Promise(async (resolve, reject) => {
@@ -384,7 +384,6 @@ const startBackupThreadPromise = new Promise(async (resolve, reject) => {
             await deleteFileIfExists(googleDrive, folderId, outputName);
             await uploadZipFile(googleDrive, outputName, uploadName);
             // console.log(`Backup of "${filename}" successful.`); // Optional success log
-            return true;
         } catch (err) {
             const isAuthError = err.message?.includes('invalid_grant') ||
                                 err.message?.includes('Invalid Credentials') ||
@@ -408,11 +407,17 @@ const startBackupThreadPromise = new Promise(async (resolve, reject) => {
                 return false;
             }
         }
+
+        // 4. Remove backup.zip and dump
+        await fs.promises.rm(zipPath, { force: true });
+        await fs.promises.rm(dumpDir, { recursive: true, force: true });
+
+        return true;
     }
 
     // TODO: move to node-cron instead so boot loops don't prevent backups
     function startBackupThread(filename, msFrequency, userErrorCallback = null, backupNow = false) {
-        backupNow = true;
+        // backupNow = true;
 
         // Pass an error handler, for us this would call notify
         if (userErrorCallback) {
@@ -443,4 +448,68 @@ const startBackupThreadPromise = new Promise(async (resolve, reject) => {
 
 });
 
-module.exports = startBackupThreadPromise;
+// --- Import Process ---
+// Less complicated since we're not dealing with GDrive.
+async function checkForMongoRestore() {
+    const database = envs.beta ? "stewbeta" : "stewbot";
+
+    const dumpDir = path.join(__dirname, 'dump');
+    const zipPath = path.join(__dirname, uploadName);
+
+    // 1. Check if the zip file exists
+    const fileExists = await fs.promises.access(zipPath).then(() => true).catch(() => false);
+    if (!fileExists) {
+        envs.beta && console.log(`Restore file "${uploadName}" not found.`);
+        return false;
+    }
+
+    console.log(`Found mongo backup, importing...`);
+
+    // 2. Delete the existing dump directory
+    await fs.promises.rm(dumpDir, { recursive: true, force: true });
+
+    // 3. Extract the zip file
+    await new Promise((resolve, reject) => {
+        fs.createReadStream(zipPath)
+            .pipe(unzip.Extract({ path: dumpDir }))
+            .on('close', () => {
+                envs.beta && console.log(`Archive extracted to ${dumpDir}`);
+                resolve();
+            })
+            .on('error', (err) => {
+                console.error(`Failed to extract zip: ${err.message}`);
+                reject(err);
+            });
+    });
+
+    // 4. Run mongorestore
+    await new Promise((resolve, reject) => {
+        const restoreCommand = `mongorestore --drop --nsInclude=${database}.* "${dumpDir}"`
+        exec(restoreCommand, (error, stdout, stderr) => {
+            if (error) {
+                console.error(`mongorestore error: ${stderr}`);
+                notify(`Restore failed:\n${stderr}`);
+                return reject(stderr);
+            } else {
+                envs.beta && console.log(`mongorestore output: ${stdout}`);
+                // Notify with the last bit
+                const notifBody = (stderr + stdout).slice(-1900);
+                if (notifBody) notify(
+                    "```\n"+
+                    "..." + notifBody +
+                    "```", true)
+                resolve();
+            }
+        });
+    });
+
+    // 5. Remove uploaded zip and dump dir
+    await fs.promises.rm(zipPath, { force: true });
+    await fs.promises.rm(dumpDir, { recursive: true, force: true });
+    
+    global.importedAtBoot = true;
+    return true;
+}
+
+
+module.exports = { startBackupThreadPromise, checkForMongoRestore };
