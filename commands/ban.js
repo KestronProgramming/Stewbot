@@ -1,6 +1,6 @@
 // #region CommandBoilerplate
 const Categories = require("./modules/Categories");
-const { Guilds, Users, guildByID, userByID, guildByObj, userByObj } = require("./modules/database.js")
+const { Guilds, Users, guildByID, userByID, guildByObj, userByObj, GuildUsers } = require("./modules/database.js")
 const { ContextMenuCommandBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
 function applyContext(context={}) {
 	for (key in context) {
@@ -8,6 +8,8 @@ function applyContext(context={}) {
 	}
 }
 // #endregion CommandBoilerplate
+
+const ms = require("ms")
 
 async function finTempBan(guildId, who, force) {
 	const guildDB = await guildByID(guildId);
@@ -149,6 +151,7 @@ module.exports = {
 			return;
 		}
 		
+		// TODO_DB: uncomment
 		// targetInServer.ban({reason:`Instructed to ${temp?`temporarily `:``}ban by ${cmd.user.username}${reason ? ": "+reason: "."}`});
 		
 		if(cmd.options.getBoolean("private")===null||!cmd.options.getBoolean("private")){
@@ -224,27 +227,53 @@ module.exports = {
 		}
 	},
 
-
 	async daily(context) {
 		applyContext(context);
 
-		// Check all servers, register timers for the tempBans
-		Object.keys(storage).forEach(s => {					
-			// Removing temp bans / setting timeouts to remove temp bans when it's within 24 hours of them
-			try {
-				if(storage[s]?.hasOwnProperty("tempBans")){
-					Object.keys(storage[s].tempBans).forEach(ban=>{
-						if(storage[s].tempBans[ban].ends-Date.now()>0&&!storage[s].tempBans[ban].registered){
-							setTimeout(()=>{finTempBan(s,ban)},storage[s].tempBans[ban].ends-Date.now());
-						}
-						else if(!storage[s].tempBans[ban].registered){
-							finTempBan(s,ban);
-						}
-					});
+		// TODO_DB: index?
+		const unbannedTodayUsers = await Guilds.aggregate([
+			{
+				// Get all guilds with temp bans
+				'$match': {
+					'tempBans': {
+						'$exists': true,
+						'$ne': {}
+					}
 				}
-			} catch (e) {
-				notify("Error creating tempBan removing timer: " + e.stack);
+			}, {
+				// Match just the bans and server ID
+				'$project': {
+					'tempBans': {
+						'$objectToArray': '$tempBans'
+					},
+					'guildId': '$id'
+				}
+			}, {
+				// Expand each tempBan into its own item
+				'$unwind': {
+					'path': '$tempBans'
+				}
+			}, {
+				// Filter to just the tempBans in the next day
+				'$match': {
+					'tempBans.v.ends': {
+						'$lt': Date.now() + ms("1d")
+					}
+				}
+			}, {
+				// Return relevant fields
+				'$project': {
+					'userId': '$tempBans.k', 
+					'guildId': 1,
+					"ends": "$tempBans.v.ends"
+				}
 			}
-		});
+		]);
+
+		unbannedTodayUsers.map( user => 
+			setTimeout(() => { 
+				finTempBan(user.guildId, user.userId) 
+			}, user.ends - Date.now())
+		)
 	}
 };

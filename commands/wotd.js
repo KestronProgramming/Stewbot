@@ -58,7 +58,7 @@ module.exports = {
 		applyContext(context);
 
 		const config = await ConfigDB.findOne()
-			// .select("wotd")
+			.select("wotd")
 			.lean({ defaults: true })
 
 		const wotd = config.wotd;

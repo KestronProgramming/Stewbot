@@ -8,12 +8,19 @@
 ///   This is the per-guild per-user object for user specific storage in-guild. 
 ///   This is not stored under the guild directly because each document can only have 16MB
 ///   On top of that, it's just easier to store users on their own and index by the userID
-///   because then it can auto-populate on fetch.
+///    because then it can auto-populate on fetch.
 ///
 /// - ConfigDB:
 ///   This doc is the root-level storage. Anything global across stewbot,
-///   like his pfp or RSS feeds to check daily, go here.
+///    like his pfp or RSS feeds to check daily, go here.
 ///
+/// - Maps:
+///   Maps in this case are the more efficient json.
+///   The one issue with maps is that they can expand indefinitely.
+///   Mongoose objects are only allowed to be 16MB in size currently.
+///   This means at some point we should setup the DB to alert us when 
+///    starts getting close to this limit, so we can take whatever their 
+///    largest sub-schema is and move it to it's own doc like GuildUsers.
 
 
 const { Guild, User } = require('discord.js');
@@ -111,10 +118,6 @@ let tempSlowmodeSchema = new mongoose.Schema({
     origMode: Number,
     guild: String,
     private: Boolean,
-})
-
-let tempRoleSchema = new mongoose.Schema({
-
 })
 
 let autoJoinMessageSchema = new mongoose.Schema({

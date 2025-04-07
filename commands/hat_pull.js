@@ -221,6 +221,7 @@ module.exports = {
                 await cmd.deferUpdate();
 
                 // Grab the hatPull for this command
+                // TODO_DB: index hat pull location
                 hatPullHost = await Users.findOne({
                     "hat_pull.location": `${cmd.guild.id}/${cmd.channel.id}/${cmd.message.id}`
                 });
