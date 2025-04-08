@@ -36,7 +36,7 @@ module.exports = {
 
         try {
             const res = await fetch("https://api.dictionaryapi.dev/api/v2/entries/en/"+cmd.options.getString("what"));
-            const wordDefinition = await res.json();
+            let wordDefinition = await res.json();
             
             wordDefinition = wordDefinition[0];
             
@@ -86,7 +86,7 @@ module.exports = {
                 cmd.followUp("I'm sorry, I didn't find a definition for that");
             }
         } catch (e) {
-            notify("Dictionary error:\n" + String(e));
+            notify("Dictionary error:\n" + String(e.stack));
             cmd.followUp("I'm sorry, I didn't find a definition for that");
         };
     },
