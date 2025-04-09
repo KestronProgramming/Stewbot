@@ -132,7 +132,7 @@ let emojiboardSchema = new mongoose.Schema({
     threshold: Number,
     active: Boolean,
     channel: String,
-    posted:  { type: Map, of: Number },
+    posted:  { type: Map, of: String }, // A record of the original message ID for us to delete 
     posters: { type: Map, of: Number }, // List of poster IDs mapped to how many posts they have
 })
 

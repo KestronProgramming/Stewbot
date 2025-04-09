@@ -59,6 +59,12 @@ sudo perm status, config status
 
 Check for any execute's that need guildId to be "0" as a string...
 
+Test deleting original message to delete emojiboard
+
+Check guild.users and guildStore.users to make sure we're not reading them wrong
+
+Test filtering on deletion
+
 # Async
 make checkPersistentDeletion async -> might not be needed
 

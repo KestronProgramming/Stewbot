@@ -262,7 +262,7 @@ var uptime=0;
 const defaultGuild=require("./data/defaultGuild.json");
 const defaultGuildUser=require("./data/defaultGuildUser.json");
 const defaultUser=require("./data/defaultUser.json");
-const { guildByID, guildByObj, userByID, userByObj, Guilds, GuildUsers, ConfigDB } = require('./commands/modules/database');
+const { guildByID, guildByObj, userByID, userByObj, Guilds, Users, GuildUsers, ConfigDB } = require('./commands/modules/database');
 
 // Build dynamic help pages
 var helpCommands=[];
@@ -1000,14 +1000,18 @@ client.on("messageDelete",async msg=>{
     }
 
     // Emojiboard deleted handlers
-    // TODO_DB: figure out what this is doing and aggrigate query it sometime when I'm not half asleep
-    if(Array.from(guildStore.emojiboards.keys()).length>0){
+    // TODO_DB: Port this efficiently with better queries 
+    // TODO_DB: figure out what this is doing and aggregate query it sometime when I'm not half asleep
+    
+    // Find which emojiboard contains this posted msg ID
+    if (guildStore.emojiboards.size() > 0){
         Array.from(guildStore.emojiboards.keys()).forEach(async emoji=>{
-            emoji=guildStore.emojiboards[emoji];
+            emoji=guildStore.emojiboards.get(emoji);
             if(emoji.isMute) return;
-            if(emoji.posted.hasOwnProperty(msg.id)){
+            if(emoji.posted.has(msg.id)){
+
                 try {
-                    if(emoji.posted[msg.id].startsWith("webhook")&&emoji.channel?.permissionsFor(client.user.id).has(PermissionFlagsBits.ManageMessages)){
+                    if (emoji.posted[msg.id].startsWith("webhook")&&emoji.channel?.permissionsFor(client.user.id).has(PermissionFlagsBits.ManageMessages)){
                         var c=await client.channels.cache.get(emoji.channel).messages.fetch(emoji.posted[msg.id].split("webhook")[1]);
                         c.delete();
                     }
@@ -1023,18 +1027,18 @@ client.on("messageDelete",async msg=>{
     }
 
     // Resend if the latest counting number was deleted
-    if(storage[msg.guild.id]?.counting.active&&storage[msg.guild.id]?.counting.channel===msg.channel.id){
+    if(guildStore.counting.active&&guildStore.counting.channel===msg.channel.id){
         // var num=msg.content?.match(/^(\d|,)+(?:\b)/i);
         var num = msg.content ? processForNumber(msg.content) : null;
         if(num!==null&&num!==undefined){
-            if(+num===storage[msg.guild.id].counting.nextNum-1){
+            if(+num===guildStore.counting.nextNum-1){
                 msg.channel.send(String(num)).then(m=>m.react("✅"));
             }
         }
     }
 
     // Logs stuff
-    if(storage[msg.guild.id]?.logs.mod_actions&&storage[msg.guild.id]?.logs.active){
+    if(guildStore.logs.mod_actions&&guildStore.logs.active){
         if(msg.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ViewAuditLog)){
             setTimeout(async ()=>{
                 const fetchedLogs = await msg.guild.fetchAuditLogs({
@@ -1045,51 +1049,53 @@ client.on("messageDelete",async msg=>{
                 if(!firstEntry) return;
                 firstEntry.timestamp=BigInt("0b"+BigInt(firstEntry.id).toString(2).slice(0,39))+BigInt(1420070400000);
                 if(firstEntry.target.id===msg?.author?.id&&BigInt(Date.now())-firstEntry.timestamp<BigInt(60000)){
-                    var c=msg.guild.channels.cache.get(storage[msg.guild.id].logs.channel);
+                    var c=msg.guild.channels.cache.get(guildStore.logs.channel);
                     if(c?.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
                         c.send({content:limitLength(`**Message from <@${firstEntry.target.id}> Deleted by <@${firstEntry.executor.id}> in <#${msg.channel.id}>**\n\n${msg.content.length>0?`\`\`\`\n${msg.content}\`\`\``:""}${msg.attachments?.size>0?`There were **${msg.attachments.size}** attachments on this message.`:""}`),allowedMentions:{parse:[]}});
                     }
                     else{
-                        storage[msg.guild.id].logs.active=false;
+                        guildStore.logs.active=false;
                     }
                 }
             },2000);
         }
         else{
-            storage[msg.guild.id].logs.mod_actions=false;
+            guildStore.logs.mod_actions=false;
         }
     }
+
+    guildStore.save();
 });
 
 client.on("messageUpdate",async (msgO,msg)=>{
     if(msg.guild?.id===undefined||client.user.id===msg.author?.id) return;//Currently there's no use for messageUpdate in DMs, only in servers. If this ever changes, remove the guildId check and add more further down
     
-    // Manage storage
-    if(!storage.hasOwnProperty(msg.author.id)){
-        storage[msg.author.id]=structuredClone(defaultUser);   
-    }
-    if(!storage.hasOwnProperty(msg.guildId)){
-        storage[msg.guildId]=structuredClone(defaultGuild);
-    }
-    if(!storage[msg.guildId].users.hasOwnProperty(msg.author.id)){
-        storage[msg.guildId].users[msg.author.id]=structuredClone(defaultGuildUser);
-    }
+    const guildStore = await guildByObj(msg.guild);
 
     // Filter edit handler
-    if(storage[msg.guild.id]?.filter.active){
+    if(guildStore.filter.active){
         let [filtered, filteredContent, foundWords] = await checkDirty(msg.guildId, msg.content, true)
 
         if(filtered) {
-            storage[msg.guild.id].users[msg.author.id].infractions++;
-            if(storage[msg.guildId].filter.censor){
+            msg.delete();
+
+            Users.updateOne({id: msg.author.id}, {
+                $inc: { infractions: 1 }
+            });
+
+            if(guildStore.filter.censor){
                 msg.channel.send({content:`A post by <@${msg.author.id}> sent at <t:${Math.round(msg.createdTimestamp/1000)}:f> <t:${Math.round(msg.createdTimestamp/1000)}:R> has been deleted due to retroactively editing a blocked word into the message.`,allowedMentions:{parse:[]}});
             }
-            msg.delete();
-            if(storage[msg.author.id].config.dmOffenses&&!msg.author.bot){
-                msg.author.send(limitLength(`Your message in **${msg.guild.name}** was deleted due to editing in the following word${foundWords.length>1?"s":""} that are in the filter: ||${foundWords.join("||, ||")}||${storage[msg.author.id].config.returnFiltered?"```\n"+msg.content.replaceAll("`","\\`")+"```":""}`)).catch(e=>{});
+
+            if(guildStore.config.dmOffenses&&!msg.author.bot){
+                const userSettings = await Users.find({id: msg.author.id})
+                    .select("config.returnFiltered")
+                    .lean({virtuals: true});
+                msg.author.send(limitLength(`Your message in **${msg.guild.name}** was deleted due to editing in the following word${foundWords.length>1?"s":""} that are in the filter: ||${foundWords.join("||, ||")}||${userSettings.config.returnFiltered?"```\n"+msg.content.replaceAll("`","\\`")+"```":""}`)).catch(e=>{});
             }
-            if(storage[msg.guildId].filter.log&&storage[msg.guildId].filter.channel){
-                client.channels.cache.get(storage[msg.guildId].filter.channel).send(limitLength(`I have deleted a message from **${msg.author.username}** in <#${msg.channel.id}> for editing in the following blocked word${foundWords.length>1?"s":""}: ||${foundWords.join("||, ||")}||\`\`\`\n${msg.content.replaceAll("`","\\`")}\`\`\``));
+
+            if(guildStore.filter.log&&guildStore.filter.channel){
+                client.channels.cache.get(guildStore.filter.channel).send(limitLength(`I have deleted a message from **${msg.author.username}** in <#${msg.channel.id}> for editing in the following blocked word${foundWords.length>1?"s":""}: ||${foundWords.join("||, ||")}||\`\`\`\n${msg.content.replaceAll("`","\\`")}\`\`\``));
             }
             
             return;
