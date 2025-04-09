@@ -353,8 +353,7 @@ const startBackupThreadPromise = new Promise(async (resolve, reject) => {
                     );
                     return reject(stderr);
                 } else {
-                    // TODO_DB remove log
-                    envs.beta && console.log(`mongodump output: ${stdout}`);
+                    // envs.beta && console.log(`mongodump output: ${stdout}`);
                     resolve();
                 }
             });

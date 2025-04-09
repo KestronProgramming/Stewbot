@@ -483,7 +483,7 @@ async function sendWelcome(guild) {
     for (const [ channelId, chan ] of guild.channels.cache) {
         if (chan?.permissionsFor(client.user.id).has(PermissionFlagsBits.ViewChannel)) {
             const messages = await chan?.messages?.fetch({limit:3});
-            if (messages) for (const msg of messages) {
+            if (messages) for (const [ msgId, msg ] of messages) {
                 const guildStore = await guildByObj(guild);
                 if(
                     !guildStore.sentWelcome && (
@@ -606,8 +606,7 @@ async function checkPersistentDeletion(guild, channel, message){
 client.once("ready",async ()=>{
     killMaintenanceBot();
     
-    // (Later) Once backup.js fully imports, start the backup thread
-    // TODO_DB: change function input to nothing
+    // Once backup.js fully imports, start the backup thread
     startBackupThreadPromise.then( startBackupThread => {
         startBackupThread( ms("1h") , error => {
             notify(String(error));
@@ -1155,6 +1154,8 @@ client.on("guildMemberAdd",async member => {
 });
 
 client.on("guildMemberRemove",async member=>{
+    if (member.user.id == client.user.id) return;
+
     // Save all this user's roles
     const guildUser = await guildUserByID(member.guild, member.id);
     const guildStore = await guildByObj(member.guild);
