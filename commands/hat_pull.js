@@ -61,8 +61,48 @@ async function finHatPull(userId, force){
     await user.updateOne({ $unset: { "hat_pull": 1 } })
 }
 
+async function scheduleTodaysHats() {
+    // TODO_DB: if this is scheduled by main *and* this daily thread that could be an issue...
+    const needsSchedulingFilter = { 
+        hat_pull: { $exists: true },
+        "hat_pull.closes": { $lt: Date.now() + ms("1d") },
+        "hat_pull.scheduled": false,
+    }
+
+    // Grab all hat pulls
+    const usersWithHats = await Users.find(needsSchedulingFilter);
+
+    // Mark these as scheduled so we don't double schedule
+    await Users.updateMany(
+        { _id: { $in: usersWithHats.map(u => u._id) } },
+        { $set: { "hat_pull.scheduled": true } }
+    );
+    
+    for (const user of usersWithHats) {
+        if (user.hat_pull.closes - Date.now() > 0) {
+            // if it's in the future, schedule
+            setTimeout(() => { 
+                finHatPull(user.id)
+            }, user.hat_pull.closes - Date.now());
+        } else {
+            // if it's in the past, run now that we're awake
+            finHatPull(user.id);
+        }
+    }
+}
+
+async function resetHatScheduleLocks() {
+    // marks all "scheduled" hat pulls as not. This is run at boot to reset locks.
+    await Users.updateMany(
+        { "hat_pull.scheduled": true }, 
+        { $set: { "hat_pull.scheduled": false }
+    });
+}
+
 module.exports = {
     finHatPull,
+    scheduleTodaysHats,
+    resetHatScheduleLocks,
     
 	data: {
 		// Slash command data
@@ -148,18 +188,20 @@ module.exports = {
             ],
             allowedMentions: { parse: [] },
         });
+
+        const scheduleNow = timer <= ms("md");
         
         user.hat_pull = {
             "limit":cmd.options.getInteger("limit")!==null?cmd.options.getInteger("limit"):0,
             "winCount":cmd.options.getInteger("winners")!==null?cmd.options.getInteger("winners"):1,
             "closes":Date.now()+timer,
             "location":`${cmd.guild.id}/${cmd.channel.id}/${resp.id}`,
-            "registered":timer<=60000*60*24,
             "user":cmd.user.id,
-            "entered":[]
+            "entered": [],
+            "scheduled": scheduleNow,
         };
         
-        if(timer<=60000*60*24){
+        if (timer <= scheduleNow) {
             setTimeout(()=>{finHatPull(cmd.user.id)});
         }
 
@@ -169,23 +211,7 @@ module.exports = {
     async daily(context) {
         applyContext(context);
 
-        const usersWithHats = await Users.find({ 
-            hat_pull: { $exists: true },
-            "hat_pull.closes": { $lt: Date.now() + ms("1d") }
-        });
-        
-        for (const user of usersWithHats) {
-            if (user.hat_pull.closes - Date.now() > 0) {
-                // if it's in the future, schedule
-                setTimeout(() => { 
-                    finHatPull(user.id)
-                }, user.hat_pull.closes - Date.now());
-            } else {
-                // if it's in the past, run now that we're awake
-                finHatPull(user.id);
-            }
-        }
-
+        scheduleTodaysHats()
     },
 
 	// Only button subscriptions matched will be sent to the handler 

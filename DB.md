@@ -50,3 +50,12 @@ Make sure all onmessage listeners use cmd.author instead of cmd.user
 
 Ctrl+F for default stuff
 
+# Changed things to test:
+Emojiboards
+
+sendWelcome
+
+# Async
+make checkPersistentDeletion async -> might not be needed
+
+make transfer script mark all guilds as sentWelcome

@@ -42,9 +42,58 @@ async function finTempSlow(guildId, channel, force){
     guild.save();
 }
 
+async function getFinishingSlowmodes() {
+    // For when the bot boots
+    return Guilds.aggregate([
+        {
+            $match: {
+                tempSlow: {
+                    $exists: true,
+                    $ne: {}
+                }
+            }
+        },
+        {
+            $project: {
+                tempSlow: {
+                    $objectToArray: "$tempSlow"
+                },
+                guildId: "$id"
+            }
+        },
+        {
+            $unwind: {
+                path: "$tempSlow"
+            }
+        },
+        {
+            $match: {
+                "tempSlow.v.ends": {
+                    $lte: Date.now() + ms("1d")
+                }
+            }
+        },
+        {
+            $project: {
+                userId: "$tempSlow.k",
+                guildId: 1,
+                ends: "$tempSlow.v.ends"
+            }
+        }
+    ])
+}
+
+async function scheduleTodaysSlowmode() {
+    (await getFinishingSlowmodes()).map(user => 
+		setTimeout(() => { 
+			finTempSlow(user.guildId, user.userId); 
+		}, user.ends - Date.now())
+	)
+}
 
 module.exports = {
     finTempSlow, 
+    scheduleTodaysSlowmode,
 
 	data: {
 		// Slash command data

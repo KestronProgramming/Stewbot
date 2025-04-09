@@ -16,18 +16,18 @@ async function finTimer(userId,force){
         return;
     }
     if(user.timer.time-Date.now()>10000&&!force){
-        setTimeout(()=>{finTimer(userId)},user.timer.time-Date.now());
+        setTimeout(() => { finTimer(userId) }, user.timer.time - Date.now());
         return;
     }
     if(user.timer.respLocation==="DM"){
         try{
-            client.users.cache.get(userId).send(`Your timer is done!${user.timer.reminder.length>0?`\n\`${user.timer.reminder}\``:``}`).catch(e=>{console.beta(e)});
+            (await client.users.fetch(userId)).send(`Your timer is done!${user.timer.reminder.length>0?`\n\`${user.timer.reminder}\``:``}`).catch(e=>{console.beta(e)});
         }
         catch(e){console.beta(e)}
     }
     else{
         try{
-            var chan=await client.channels.cache.get(user.timer.respLocation.split("/")[0]);
+            var chan=await client.channels.fetch(user.timer.respLocation.split("/")[0]);
             try{
                 if(chan&&chan?.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
                     var msg=await chan.messages.fetch(user.timer.respLocation.split("/")[1]);
@@ -52,8 +52,24 @@ async function finTimer(userId,force){
     await user.updateOne({ $unset: { timer: "" } })
 }
 
+async function scheduleTimerEnds() {
+    // Grab all timers and schedule
+    // TODO_DB: index
+    const usersWTimersEnding = await Users.find({
+        timer: { $exists: true },
+        "timer.time": { $gt: Date.now() } // Only in the future. This also means timers that ended over boot won't go off 
+    });
+
+    usersWTimersEnding.forEach(user => {
+        setTimeout(()=>{
+            finTimer(user.id)
+        }, user.timer.time-Date.now())
+    })
+}
+
 module.exports = {
     finTimer,
+    scheduleTimerEnds,
     
 	data: {
 		// Slash command data

@@ -1,6 +1,6 @@
 // #region CommandBoilerplate
 const Categories = require("./modules/Categories");
-const { Guilds, Users, guildByID, userByID, guildByObj, userByObj, guildUserByObj, guildUserByID } = require("./modules/database.js")
+const { Guilds, Users, guildByID, userByID, guildByObj, userByObj, guildUserByObj, guildUserByID, GuildUsers } = require("./modules/database.js")
 const { ContextMenuCommandBuilder, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
 function applyContext(context={}) {
 	for (key in context) {
@@ -8,6 +8,8 @@ function applyContext(context={}) {
 	}
 }
 // #endregion CommandBoilerplate
+
+const ms = require("ms")
 
 async function finTempRole(guildId, userId, roleId) {
     const guild = await client.guilds.fetch(guildId);
@@ -32,8 +34,28 @@ async function finTempRole(guildId, userId, roleId) {
     guildUser.save();
 }
 
+async function scheduleTodaysTemproles() {
+    // TODO_DB: index this
+    const tempRoleUsers = await GuildUsers.find(
+        { tempRoles: { $exists: 1, $ne: {} } }
+    )    
+        .select("tempRoles guildId userId")
+        .lean()
+    
+    tempRoleUsers.forEach(user => {
+        const { guildId, userId, tempRoles } = user;
+
+        Object.entries(tempRoles).forEach(([roleId, roleEnd]) => {
+            setTimeout(() => {
+                finTempRole(guildId, userId, roleId);
+            }, roleEnd - Date.now());
+        });
+    })
+}
+
 module.exports = {
     finTempRole,
+    scheduleTodaysTemproles,
     
 	data: {
 		// Slash command data
@@ -66,12 +88,12 @@ module.exports = {
 		applyContext(context);
 
         const role = cmd.options.getRole("role");
-        const user = cmd.options.getUser("who");
-        const targetMember = cmd.guild.members.cache.get(user.id);
-		const issuerMember = cmd.guild.members.cache.get(cmd.user.id);
+        const selectUser = cmd.options.getUser("who");
+        const targetMember = await cmd.guild.members.fetch(selectUser.id);
+		const issuerMember = await cmd.guild.members.fetch(cmd.user.id);
 
         if(targetMember===null||targetMember===undefined){
-            cmd.followUp({content:`I couldn't find <@${user.id}>, so I can't help unfortunately.`,allowedMentions:{parse:[]}});
+            cmd.followUp({content:`I couldn't find <@${selectUser.id}>, so I can't help unfortunately.`,allowedMentions:{parse:[]}});
             return;
         }
 
@@ -96,11 +118,11 @@ module.exports = {
             return;
         }
 
-        const guildUser = await guildUserByObj(cmd.guild, cmd.user.id);
+        const guildUser = await guildUserByObj(cmd.guild, selectUser.id);
         if(guildUser.tempRoles.has(role.id)){
             cmd.followUp({
                 content:`This is already a temporarily assigned role for this user. You can cancel it, or wait it out.`,
-                components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setLabel("Finish Early").setCustomId(`finishTempRole-${user.id}-${role.id}`).setStyle(ButtonStyle.Secondary))]
+                components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setLabel("Finish Early").setCustomId(`finishTempRole-${selectUser.id}-${role.id}`).setStyle(ButtonStyle.Secondary))]
             });
             return;
         }
@@ -118,7 +140,7 @@ module.exports = {
         guildUser.tempRoles.set(role.id, Date.now()+timer);
         cmd.followUp({
             content:`Alright, I have ${added?`added`:`removed`} <@&${role.id}> ${added?`to`:`from`} <@${targetMember.id}> until <t:${Math.round((Date.now()+timer)/1000)}:f> <t:${Math.round((Date.now()+timer)/1000)}:R>`,
-            components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setLabel("Finish Early").setCustomId(`finishTempRole-${user.id}-${role.id}`).setStyle(ButtonStyle.Secondary))]
+            components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setLabel("Finish Early").setCustomId(`finishTempRole-${selectUser.id}-${role.id}`).setStyle(ButtonStyle.Secondary))]
         });
         
         setTimeout(()=>{finTempRole(cmd.guild.id,cmd.user.id,role.id)},timer);

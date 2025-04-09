@@ -438,7 +438,7 @@ const startBackupThreadPromise = new Promise(async (resolve, reject) => {
         });
 
         // Set interval
-        setInterval(() => { backupToDrive(filename); }, msFrequency);
+        setInterval(() => { backupMongo(envs.beta ? "stewbeta" : "stewbot"); }, msFrequency);
 
         // console.log(`Backup thread started for "${filename}" every ${msFrequency}ms.`);
     }
@@ -459,7 +459,6 @@ async function checkForMongoRestore() {
     // 1. Check if the zip file exists
     const fileExists = await fs.promises.access(zipPath).then(() => true).catch(() => false);
     if (!fileExists) {
-        envs.beta && console.log(`Restore file "${uploadName}" not found.`);
         return false;
     }
 

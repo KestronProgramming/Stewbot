@@ -23,7 +23,7 @@
 ///    largest sub-schema is and move it to it's own doc like GuildUsers.
 
 
-const { Guild, User } = require('discord.js');
+const { OAuth2Guild, Guild, User } = require('discord.js');
 const mongoose = require("mongoose");
 const mongooseLeanVirtuals = require('mongoose-lean-virtuals');
 const mongooseLeanDefaults = require('mongoose-lean-defaults').default;
@@ -133,7 +133,7 @@ let emojiboardSchema = new mongoose.Schema({
     active: Boolean,
     channel: String,
     posted:  { type: Map, of: Number },
-    posters: { type: Map, of: String },
+    posters: { type: Map, of: Number }, // List of poster IDs mapped to how many posts they have
 })
 
 let warningSchema = new mongoose.Schema({
@@ -161,7 +161,7 @@ let guildSchema = new mongoose.Schema({
         unique: true,
         index: true,
         trim: true,
-        match: [/\d+/, "Error: ServerID must be digits only"]
+        match: [/\d{5,}/, "Error: ServerID must be digits only, and longer than 5 chars"]
     },
     emojiboards: { type: Map, of: emojiboardSchema, default: {} },
     tempBans: { type: Map, of: tempBanSchema, default: {} },
@@ -178,6 +178,7 @@ let guildSchema = new mongoose.Schema({
     counting: { type: countingSchema, default: {} },
     logs: { type: guildLogsSchema, default: {} },
     filter: { type: filterSchema, default: {} },
+    sentWelcome: { type: Boolean, default: false },
     groupmute: String, // The emoji tied to an emojiboard with groupmute configs
     disableAntiHack: Boolean,
     testProp: String,
@@ -215,7 +216,7 @@ guildUserSchema.index({ userId: 1, guildId: 1 }, { unique: true }); // Compound 
 //#region Users
 let timerSchema = new mongoose.Schema({
     "time": Number,
-    "respLocation": String,
+    "respLocation": String, 
     "reminder": String
 })
 
@@ -227,6 +228,7 @@ let hatPullSchema = new mongoose.Schema({
     location: String,
     registered: Boolean,
     user: String, // Opening user
+    scheduled: { type: Boolean, default: false }, // Set to false on boot, true when scheduled. Prevents double scheduling via boot and daily
 })
 
 let primedEmbedSchema = new mongoose.Schema({
@@ -368,7 +370,7 @@ async function guildByObj(obj, updates={}) {
     // Beta prechecks for dev mistakes
     if (
         process.env.beta && (
-            !(obj instanceof Guild)
+            !(obj instanceof Guild || obj instanceof OAuth2Guild)
         )
     ) {
         const warning = "WARNING: obj input seems incorrect. See console for stack trace.";

@@ -72,8 +72,59 @@ async function finTempBan(guildId, who, force) {
 	await guildDB.save();
 }
 
+async function getUnbannedTodayUsers() {
+	// TODO_DB: index?
+	return await Guilds.aggregate([
+		{
+			// Get all guilds with temp bans
+			'$match': {
+				'tempBans': {
+					'$exists': true,
+					'$ne': {}
+				}
+			}
+		}, {
+			// Match just the bans and server ID
+			'$project': {
+				'tempBans': {
+					'$objectToArray': '$tempBans'
+				},
+				'guildId': '$id' 
+			}
+		}, {
+			// Expand each tempBan into its own item
+			'$unwind': {
+				'path': '$tempBans'
+			}
+		}, {
+			// Filter to just the tempBans in the next day
+			'$match': {
+				'tempBans.v.ends': {
+					'$lt': Date.now() + ms("1d")
+				}
+			}
+		}, {
+			// Return relevant fields
+			'$project': {
+				'userId': '$tempBans.k', 
+				'guildId': 1,
+				"ends": "$tempBans.v.ends"
+			}
+		}
+	]);
+}
+
+async function scheduleTodaysUnbans() {
+	(await getUnbannedTodayUsers()).map( user => 
+		setTimeout(() => { 
+			finTempBan(user.guildId, user.userId) 
+		}, user.ends - Date.now())
+	);
+}
+
 module.exports = {
 	finTempBan,
+	scheduleTodaysUnbans,
 	
 	data: {
 		// Slash command data
@@ -230,50 +281,6 @@ module.exports = {
 	async daily(context) {
 		applyContext(context);
 
-		// TODO_DB: index?
-		const unbannedTodayUsers = await Guilds.aggregate([
-			{
-				// Get all guilds with temp bans
-				'$match': {
-					'tempBans': {
-						'$exists': true,
-						'$ne': {}
-					}
-				}
-			}, {
-				// Match just the bans and server ID
-				'$project': {
-					'tempBans': {
-						'$objectToArray': '$tempBans'
-					},
-					'guildId': '$id'
-				}
-			}, {
-				// Expand each tempBan into its own item
-				'$unwind': {
-					'path': '$tempBans'
-				}
-			}, {
-				// Filter to just the tempBans in the next day
-				'$match': {
-					'tempBans.v.ends': {
-						'$lt': Date.now() + ms("1d")
-					}
-				}
-			}, {
-				// Return relevant fields
-				'$project': {
-					'userId': '$tempBans.k', 
-					'guildId': 1,
-					"ends": "$tempBans.v.ends"
-				}
-			}
-		]);
-
-		unbannedTodayUsers.map( user => 
-			setTimeout(() => { 
-				finTempBan(user.guildId, user.userId) 
-			}, user.ends - Date.now())
-		)
+		scheduleTodaysUnbans()
 	}
 };
