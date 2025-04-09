@@ -173,39 +173,85 @@ module.exports = {
                     break;
                 }
 
-                var searchId = cmd.options.getUser("who")?.id || cmd.user.id;
+                var searchId = cmd.options.getUser("who")?.id || cmd.user.id; // TODO: unused rn
                 var leaderboard = "";
-                var emote = getEmojiFromMessage(emoji); // Emoji formatted for the leaderboards
+                var emote = emoji ? getEmojiFromMessage(emoji) : ""; // Emoji formatted for the leaderboards
 
-                // If no emoji
-                if (emoji === null) {
-                    // Aggregate which user has the most stars across all emojiboards
+                if (emote && !guild.emojiboards.has(emote)) {
+                    cmd.followUp(`This server doesn't have that emojiboard setup.`);
+                    break;
+                }
 
-                    leaderboard = Object.keys(storage[cmd.guildId].users)
-                        .map(a => Object.assign(storage[cmd.guildId].users[a], { "id": a }))
-                        .sort((a, b) => b.stars - a.stars)
-                        .slice(0, 10)
-                        .map((a, i) => `\n${["🥇", "🥈", "🥉", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"][i]}. <@${a.id}> ${a.stars} emojiboards`)
-                        .join("");
-                }
-                else {
-                    if (guild.emojiboards.has(emote)) {
-                        leaderboard = 
-                            Object.keys(guild.emojiboards.get(emote).posters)
-                            .map(a => 
-                                Object.assign(guild.emojiboards.get(emote).posters[a], { "id": a }))
-                                .sort((a, b) => b - a)
-                                .slice(0, 10)
-                                .map((a, i) => 
-                                    `\n${["🥇", "🥈", "🥉", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"][i]}. <@${a.id}> ${a} ${
-                                        emote.includes(":") ? emote : emoji !== null ? emoji : "Emoji"}boards`
-                        ).join("");
+                const topPosters = await Guilds.aggregate([
+                    {
+                        $match: {
+                            id: cmd.guild.id
+                        }
+                    },
+                    {
+                        $project: {
+                            id: 1,
+                            emojiboards: {
+                                $objectToArray: "$emojiboards"
+                            }
+                        }
+                    },
+                    {
+                        $unwind: {
+                            path: "$emojiboards"
+                        }
+                    },
+                    {
+                        $project: {
+                            id: 1,
+                            emoji: "$emojiboards.k",
+                            posters: {
+                                $objectToArray: "$emojiboards.v.posters"
+                            }
+                        }
+                    },
+                    // Only match the requested emoji, and only if it exists
+                    (emote ? { $match: { emoji: emote } } : undefined),
+                    {
+                        $unwind:
+                        // Finally we can split out the user per emoji with how many they have
+                        {
+                            path: "$posters"
+                        }
+                    },
+                    {
+                        $group:
+                        // Group across emojiboards together by the user
+                        {
+                            _id: "$posters.k",
+                            total: {
+                                $sum: "$posters.v"
+                            }
+                        }
+                    },
+                    {
+                        $sort: {
+                            total: -1
+                        }
+                    },
+                    {
+                        $limit: 10
+                    },
+                    {
+                        $match:
+                        // Only ones with posts
+                        {
+                            total: {
+                                $gt: 0
+                            }
+                        }
                     }
-                    else {
-                        cmd.followUp(`This server doesn't have that emojiboard setup.`);
-                        break;
-                    }
-                }
+                ].filter(s=>s!=undefined))
+
+                leaderboard = topPosters
+                    .map((user, i) => `\n${["🥇", "🥈", "🥉", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"][i]}. <@${user._id}> ${user.total} emojiboards`)
+                    .join("");
+                
                 
                 cmd.followUp({
                     content: `**Emojiboard Leaderboard**`, embeds: [{
