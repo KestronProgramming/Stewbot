@@ -1,20 +1,11 @@
 ## Conversion
 #### Notes about things when converting the database
 
-Emojiboards is no an array of json - TODO: actually go back and make this one a map
-
-Port guilds
-
-Port guild users
-
-Port users
-
-Port root level storage (config)
-
-
 Consider - port both of these locations:
 if (storage[msg.guild.id].levels.hasOwnProperty("channelOrDM")) {
     storage[msg.guild.id].levels.location = storage[msg.guild.id].levels.channelOrDM;
+
+if ajm.message (or alm) is "", make it the default and disable ajms
 
 
 
@@ -64,6 +55,10 @@ Test deleting original message to delete emojiboard
 Check guild.users and guildStore.users to make sure we're not reading them wrong
 
 Test filtering on deletion
+
+Find where .inServer is checked and what we break by checking it
+
+Guild member add / remove
 
 # Async
 make checkPersistentDeletion async -> might not be needed

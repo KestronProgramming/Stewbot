@@ -416,7 +416,7 @@ const startBackupThreadPromise = new Promise(async (resolve, reject) => {
     }
 
     // TODO: move to node-cron instead so boot loops don't prevent backups
-    function startBackupThread(filename, msFrequency, userErrorCallback = null, backupNow = false) {
+    function startBackupThread(msFrequency, userErrorCallback = null, backupNow = false) {
         // backupNow = true;
 
         // Pass an error handler, for us this would call notify

@@ -168,27 +168,19 @@ module.exports = {
             case "emojiboard":
                 // TODO_DB WIP: come back and fix this once I have actual emoji data to build aggregation queries on
 
-                if (Object.keys(guild.emojiboards).length < 1) {
+                if (guild.emojiboards.size < 1) {
                     cmd.followUp(`This server doesn't use any emojiboards at the moment. It can be configured using ${cmds.add_emojiboard.mention}.`);
                     break;
                 }
 
-
                 var searchId = cmd.options.getUser("who")?.id || cmd.user.id;
-                if (searchId !== cmd.user.id) {
-                    if (!guild.users.hasOwnProperty(searchId)) {
-                        cmd.followUp(`I am unaware of this user presently`);
-                        break;
-                    }
-                }
-
-                const allBoards = emoji === null;
-
                 var leaderboard = "";
                 var emote = getEmojiFromMessage(emoji); // Emoji formatted for the leaderboards
 
                 // If no emoji
                 if (emoji === null) {
+                    // Aggregate which user has the most stars across all emojiboards
+
                     leaderboard = Object.keys(storage[cmd.guildId].users)
                         .map(a => Object.assign(storage[cmd.guildId].users[a], { "id": a }))
                         .sort((a, b) => b.stars - a.stars)

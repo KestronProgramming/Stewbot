@@ -1,8 +1,6 @@
 // Stewbot main file.
 // This file imports everything, dispatches events to the files they need to go to, and handles overall bot logic.
 
-// TODO: remember to reenable storage backups as soon as I am on solid wifi again.
-
 const bootedAt = Date.now();
 
 //#region Startup
@@ -29,7 +27,7 @@ logTime("require('./data/config.json')");
 console.beta("Importing discord");
 logTime("console.beta log"); // Note: This logs the time since the *previous* log, not the execution of console.beta itself
 
-const {Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
+const {Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType, TeamMemberMembershipState}=require("discord.js");
 logTime("require('discord.js')");
 
 console.beta("Importing commands");
@@ -63,6 +61,8 @@ const crypto = require('crypto');
 logTime("require('crypto')");
 
 const mongoose = require("mongoose");
+
+const ms = require("ms");
 
 const DBConnectPromise = new Promise((resolve, reject) => {
     // Start the to the DB connection now, so it runs in the background and is ready later
@@ -196,73 +196,12 @@ global.notify = function(what, useWebhook=false) {
     }
 }
 
-// Database stuff
-const storageLocations = ["./storage.json", "./storage2.json"];
-let storageCycleIndex = 0;
-function readLatestDatabase() {
-    // TODO, multinode: this function will probably handle determining if the drive version or the local version is later, and copy those locally.
-    // It should ideally also sort each drive location by write time, and pull them in the same way sortedLocations does here.
-    //  although, it would be better to actually add a timestamp to the storage.json and read that... since upload time for the drive files is not hte same as the time the file was created, necessarily.
-    //  or maybe it's close enough since under normal cases, it would only be 30 seconds off.
-
-
-    // We'll overwrite these right away once we read the correct one
-    const corruptedFiles = []
-
-    // Get a list, in order of which ones we should read first
-    const sortedLocations = storageLocations
-        .filter(file => fs.existsSync(file)) // For file that exists,
-        .map(file => ({
-            file,
-            mtime: fs.statSync(file).mtime   // get the last modified time
-        }))
-        .sort((a, b) => b.mtime - a.mtime)  // sort this array by the most frequent
-        .map(({ file }) => file);
-    
-    for (let location of sortedLocations) {
-        try {
-            const data = require(location);
-            console.beta(`Read database from ${location}`)
-
-            // This shouldn't be needed, unless it was a boot-loop error that kept corrupting its own files. Plan for the worst.
-            corruptedFiles.forEach(file => {
-                fs.writeFileSync(file, JSON.stringify(data));
-            })
-            
-            return data;
-        } catch (e) {
-            corruptedFiles.push(location)
-            notify(`Storage location ${location} could not be loaded (*${e.message}*), trying the next one.`, true)
-        }
-    }
-
-    // This case should never be hit - in theory we could try to load from the latest google drive. 
-    notify(`No storage locations could be loaded. Tried: ${sortedLocations.join(", ")}.`);
-    process.exit();
-}
-global.storage = readLatestDatabase(); // Storage needs to be global for our submodules
-let lastStorageHash = hash(storage);
-setInterval(() => {
-    writeLocation = storageLocations[storageCycleIndex % storageLocations.length];
-    const storageString = process.env.beta ? JSON.stringify(storage, null, 4) : JSON.stringify(storage);
-    const thisWriteHash = hash(storageString);
-    if (lastStorageHash !== thisWriteHash) {
-        fs.writeFileSync(writeLocation, storageString);
-        lastStorageHash = thisWriteHash;
-        storageCycleIndex++; 
-        console.beta(`Just wrote DB to ${writeLocation}`)
-        
-        // Doing this here could be lossy but doesn't matter since we have good uptime
-        fs.writeFileSync("./data/usage.json", JSON.stringify(usage));
-    }
-}, 10 * 1000);
-
 // Other data
 var uptime=0;
 const defaultGuild=require("./data/defaultGuild.json");
 const defaultGuildUser=require("./data/defaultGuildUser.json");
 const defaultUser=require("./data/defaultUser.json");
-const { guildByID, guildByObj, userByID, userByObj, Guilds, Users, GuildUsers, ConfigDB } = require('./commands/modules/database');
+const { guildByID, guildByObj, userByID, userByObj, Guilds, Users, GuildUsers, ConfigDB, guildUserByID } = require('./commands/modules/database');
 
 // Build dynamic help pages
 var helpCommands=[];
@@ -472,7 +411,7 @@ async function doEmojiboardReaction(react) {
         hook = hook.find(h => h.token);
         if (hook) {
             hook.send(resp).then(h => {
-                emojiboard.posted[react.message.id] = `webhook${h.id}`;
+                emojiboard.posted.set(react.message.id, `webhook${h.id}`);
             });
         }
         else {
@@ -481,7 +420,7 @@ async function doEmojiboardReaction(react) {
                 avatar: config.pfp,
             }).then(d => {
                 d.send(resp).then(h => {
-                    emojiboard.posted[react.message.id] = `webhook${h.id}`;
+                    emojiboard.posted.set(react.message.id, `webhook${h.id}`);
                 });
             });
         }
@@ -523,18 +462,15 @@ async function doEmojiboardReaction(react) {
             guild.save();
             return;
         }
-        c.send(resp).then(d => {
-            emojiboard.posted[react.message.id] = d.id;
-        });
+        const d = await c.send(resp);
+        emojiboard.posted.set(react.message.id, d.id);
     }
-
-    // guild.emojiboards.set(emoji, emojiboard);
     
-    if (!guild.emojiboards.get(emoji).posters[react.message.author.id]) {
-        guild.emojiboards.get(emoji).posters[react.message.author.id] = 0;
+    if (!guild.emojiboards.get(emoji).posters.get(react.message.author.id)) {
+        guild.emojiboards.get(emoji).posters.set(react.message.author.id, 0);
     }
 
-    guild.emojiboards.get(emoji).posters[react.message.author.id]++;
+    guild.emojiboards.get(emoji).posters.set(react.message.author.id, guild.emojiboards.get(emoji).posters.get(react.message.author.id) + 1);
     guild.save();
 }
 function daily(dontLoop=false){
@@ -673,7 +609,7 @@ client.once("ready",async ()=>{
     // (Later) Once backup.js fully imports, start the backup thread
     // TODO_DB: change function input to nothing
     startBackupThreadPromise.then( startBackupThread => {
-        startBackupThread("./storage.json", 60*60*1000, error => {
+        startBackupThread( ms("1h") , error => {
             notify(String(error));
         }, global.importedAtBoot ?? true)
     })
@@ -1012,12 +948,12 @@ client.on("messageDelete",async msg=>{
             if(emoji.posted.has(msg.id)){
 
                 try {
-                    if (emoji.posted[msg.id].startsWith("webhook")&&emoji.channel?.permissionsFor(client.user.id).has(PermissionFlagsBits.ManageMessages)){
-                        var c=await client.channels.cache.get(emoji.channel).messages.fetch(emoji.posted[msg.id].split("webhook")[1]);
+                    if (emoji.posted.get(msg.id).startsWith("webhook")&&emoji.channel?.permissionsFor(client.user.id).has(PermissionFlagsBits.ManageMessages)){
+                        var c=await client.channels.cache.get(emoji.channel).messages.fetch(emoji.posted.get(msg.id).split("webhook")[1]);
                         c.delete();
                     }
-                    else if(!emoji.posted[msg.id].startsWith("webhook")){
-                        var c=await client.channels.cache.get(emoji.channel).messages.fetch(emoji.posted[msg.id]);
+                    else if(!emoji.posted.get(msg.id).startsWith("webhook")){
+                        var c=await client.channels.cache.get(emoji.channel).messages.fetch(emoji.posted.get(msg.id));
                         c.edit({content:`I'm sorry, but it looks like this post by **${msg.author?.globalName||msg.author?.username}** was deleted.`,embeds:[],files:[]});
                     }
                 } catch(e) {
@@ -1112,58 +1048,58 @@ client.on("messageUpdate",async (msgO,msg)=>{
             }
         }
     }
+
+    guildStore.save();
 });
 
-client.on("guildMemberAdd",async member=>{
-    // Storage creators for new members... - TODO: can we handle this better? This is probably the most space in stewbot's database
-    if(!storage.hasOwnProperty(member.guild.id)){
-        storage[member.guild.id]=structuredClone(defaultGuild);
-    }
-    if(!storage[member.guild.id].users.hasOwnProperty(member.id)){
-        storage[member.guild.id].users[member.id]=structuredClone(defaultGuildUser);
-    }
-    if(!storage.hasOwnProperty(member.id)){
-        storage[member.id]=structuredClone(defaultUser);
-    }
+client.on("guildMemberAdd",async member => {
+    // Mark this user as in the server, if the user object exists already
+    await GuildUsers.updateOne(
+        { userId: member.user.id, guildId: member.guild.id },
+        { $set: { inServer: true } },
+        { upsert: false }
+    );
 
-    storage[member.guild.id].users[member.id].inServer=true;
+    const guildStore = await guildByObj(member.user);
 
     // Auto join messages
-    if(storage[member.guild.id].ajm.active){
+    if(guildStore.ajm.active){
         if(!member.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageWebhooks)){
-            storage[member.guild.id].ajm.dm=true;
+            // Swap to DMs if we don't have perms to message, but the join messages are active
+            guildStore.ajm.dm=true;
         }
-        if(storage[member.guild.id].ajm.message==="") storage[member.guild.id].ajm.message=defaultGuild.ajm.message;
-        if(storage[member.guild.id].ajm.dm){
-            try{
-                
-                member.send({embeds:[{
-                    type: "rich",
-                    title: member.guild.name,
-                    description: storage[member.guild.id].ajm.message.replaceAll("${@USER}", `<@${member.id}> ${member.user.username ? `(**${member.user.username}**)` : '' }`).replaceAll("\\n","\n"),
-                    color: 0x006400,
-                    thumbnail: {
-                        url: member.guild.iconURL(),
-                        height: 0,
-                        width: 0,
-                    },
-                    footer: {text:`This message was sent from ${member.guild.name}`},
-                }]}).catch(e=>{});
-            }catch(e){}
+
+        if (guildStore.ajm.dm) {
+            try {
+                member.send({
+                    embeds: [{
+                        type: "rich",
+                        title: member.guild.name,
+                        description: guildStore.ajm.message.replaceAll("${@USER}", `<@${member.id}> ${member.user.username ? `(**${member.user.username}**)` : ''}`).replaceAll("\\n", "\n"),
+                        color: 0x006400,
+                        thumbnail: {
+                            url: member.guild.iconURL(),
+                            height: 0,
+                            width: 0,
+                        },
+                        footer: { text: `This message was sent from ${member.guild.name}` },
+                    }]
+                }).catch(e => { });
+            } catch (e) { }
         }
         else{
             var resp={
-                content:storage[member.guild.id].ajm.message.replaceAll("${@USER}",`<@${member.id}> ${member.user.username ? `(**${member.user.username}**)` : '' }`).replaceAll("\\n","\n"),
+                content:guildStore.ajm.message.replaceAll("${@USER}",`<@${member.id}> ${member.user.username ? `(**${member.user.username}**)` : '' }`).replaceAll("\\n","\n"),
                 username:member.guild.name,
                 avatarURL:member.guild.iconURL()
             };
-            var hook=await client.channels.cache.get(storage[member.guild.id].ajm.channel).fetchWebhooks();
+            var hook=await client.channels.cache.get(guildStore.ajm.channel).fetchWebhooks();
             hook=hook.find(h=>h.token);
             if(hook){
                 hook.send(resp);
             }
             else{
-                client.channels.cache.get(storage[member.guild.id].ajm.channel).createWebhook({
+                client.channels.cache.get(guildStore.ajm.channel).createWebhook({
                     name: config.name,
                     avatar: config.pfp
                 }).then(d=>{
@@ -1175,12 +1111,12 @@ client.on("guildMemberAdd",async member=>{
 
     // Stick roles
     var addedStickyRoles=0;
-    if(storage[member.guild.id].stickyRoles){
+    if(guildStore.stickyRoles){
         if(!member.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageRoles)){
-            storage[member.guild.id].stickyRoles=false;
+            guildStore.stickyRoles=false;
         }
         else{
-            storage[member.guild.id].users[member.id].roles.forEach(role=>{
+            guildStore.users[member.id].roles.forEach(role=>{
                 try{
                     let myRole=member.guild.members.cache.get(client.user.id).roles.highest.position;
                     var role=member.guild.roles.cache.find(r=>r.id===role);
@@ -1195,12 +1131,12 @@ client.on("guildMemberAdd",async member=>{
             });
         }
     }
-    if(addedStickyRoles===0&&storage[member.guild.id].autoJoinRoles){
+    if(addedStickyRoles===0&&guildStore.autoJoinRoles){
         if(!member.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageRoles)){
-            storage[member.guild.id].autoJoinRoles=[];
+            guildStore.autoJoinRoles=[];
         }
-        if(storage[member.guild.id].autoJoinRoles.length>0){
-            storage[member.guild.id].autoJoinRoles.forEach(role=>{
+        if(guildStore.autoJoinRoles.length>0){
+            guildStore.autoJoinRoles.forEach(role=>{
                 let myRole=member.guild.members.cache.get(client.user.id).roles.highest.position;
                 var role=member.guild.roles.cache.find(r=>r.id===role);
                 if(role!==undefined&&role!==null){
@@ -1211,58 +1147,52 @@ client.on("guildMemberAdd",async member=>{
             });
         }
     }
-    if(storage[member.guild.id].logs.active&&storage[member.guild.id].logs.joining_and_leaving){
-        client.channels.cache.get(storage[member.guild.id].logs.channel).send({content:`**<@${member.id}> (${member.user.username}) has joined the server.**`,allowedMentions:{parse:[]}});
+    if(guildStore.logs.active&&guildStore.logs.joining_and_leaving){
+        client.channels.cache.get(guildStore.logs.channel).send({content:`**<@${member.id}> (${member.user.username}) has joined the server.**`,allowedMentions:{parse:[]}});
     }
+
+    guildStore.save();
 });
 
 client.on("guildMemberRemove",async member=>{
-    // Manage storage
-    if(!storage.hasOwnProperty(member.guild.id)){
-        storage[member.guild.id]=structuredClone(defaultGuild);
-    }
-    if(!storage[member.guild.id].users.hasOwnProperty(member.id)){
-        storage[member.guild.id].users[member.id]=structuredClone(defaultGuildUser);
-    }
-    if(!storage.hasOwnProperty(member.id)){
-        storage[member.id]=structuredClone(defaultUser);
-    }
-
-    // TODO - this can mess up logs if a user left while stewbot was offline... hmm... there's gotta be a better place we can put it
-    storage[member.guild.id].users[member.id].roles=member.roles.cache.map(r=>r.id);
-    storage[member.guild.id].users[member.id].inServer=false;
+    // Save all this user's roles
+    const guildUser = await guildUserByID(member.guild, member.id);
+    const guildStore = await guildByObj(member.guild);
+    
+    guildUser.roles = member.roles.cache.map(r => r.id);
+    guildUser.inServer = false;
     
     // Logs
-    if(storage[member.guild.id].logs.active&&storage[member.guild.id].logs.joining_and_leaving){
-        var bans=await member.guild.bans.fetch();
-        var c=client.channels.cache.get(storage[member.guild.id].logs.channel);
-        if(c.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
-            c.send({content:`**<@${member.id}> (${member.user.username}) has ${bans.find(b=>b.user.id===member.id)?"been banned from":"left"} the server.**${bans.find(b=>b.user.id===member.id)?.reason!==undefined?`\n${bans.find(b=>b.user.id===member.id)?.reason}`:""}`,allowedMentions:{parse:[]}});
+    if (guildStore.logs.active && guildStore.logs.joining_and_leaving) {
+        var bans = await member.guild.bans.fetch();
+        var c = client.channels.cache.get(guildStore.logs.channel);
+        if (c.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)) {
+            c.send({ content: `**<@${member.id}> (${member.user.username}) has ${bans.find(b => b.user.id === member.id) ? "been banned from" : "left"} the server.**${bans.find(b => b.user.id === member.id)?.reason !== undefined ? `\n${bans.find(b => b.user.id === member.id)?.reason}` : ""}`, allowedMentions: { parse: [] } });
         }
-        else{
-            storage[member.guild.id].logs.active=false;
+        else {
+            guildStore.logs.active = false;
         }
     }
 
     // Auto Leave Messages
-    if(storage[member.guild.id].alm?.active){
-        if(!member.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageWebhooks)){
-            storage[member.guild.id].alm.active=false;
+    if (guildStore.alm?.active) {
+        if (!member.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageWebhooks)) {
+            guildStore.alm.active = false;
             return;
         }
-        if(storage[member.guild.id].alm.message==="") storage[member.guild.id].alm.message=defaultGuild.alm.message;
-        var resp={
-            content:storage[member.guild.id].alm.message.replaceAll("${@USER}",`<@${member.id}> ${member.user.username ? `(**${member.user.username}**)` : '' }`),
+
+        var resp = {
+            content:guildStore.alm.message.replaceAll("${@USER}",`<@${member.id}> ${member.user.username ? `(**${member.user.username}**)` : '' }`),
             username:member.guild.name,
             avatarURL:member.guild.iconURL()
         };
-        var hook=await client.channels.cache.get(storage[member.guild.id].alm.channel).fetchWebhooks();
+        var hook=await client.channels.cache.get(guildStore.alm.channel).fetchWebhooks();
         hook=hook.find(h=>h.token);
         if(hook){
             hook.send(resp);
         }
         else{
-            client.channels.cache.get(storage[member.guild.id].alm.channel).createWebhook({
+            client.channels.cache.get(guildStore.alm.channel).createWebhook({
                 name: config.name,
                 avatar: config.pfp
             }).then(d=>{
@@ -1270,30 +1200,28 @@ client.on("guildMemberRemove",async member=>{
             });
         }
     }
+
+    guildStore.save();
 });
 
 //Strictly log-based events
 client.on("channelDelete",async channel=>{
-    if(!storage.hasOwnProperty(channel.guild.id)){
-        storage[channel.guild.id]=structuredClone(defaultGuild);
-    }
-
-    if(storage[channel.guild.id].logs.active&&storage[channel.guild.id].logs.channel_events){
-        var c=channel.guild.channels.cache.get(storage[channel.guild.id].logs.channel);
+    const guildStore = await guildByObj(channel.guild);
+    if(guildStore.logs.active&&guildStore.logs.channel_events){
+        var c=channel.guild.channels.cache.get(guildStore.logs.channel);
         if(c.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
             c.send(`**Channel \`${channel.name}\` Deleted**`);
         }
         else{
-            storage[channel.guild.id].logs.active=false;
+            guildStore.logs.active=false;
+            guildStore.save();
         }
     }
 });
 client.on("channelUpdate",async (channelO,channel)=>{
-    if (!storage.hasOwnProperty(channel.guild.id)){
-        storage[channel.guild.id]=structuredClone(defaultGuild);
-    }
+    const guildStore = await guildByObj(channel.guild);
 
-    if(storage[channel.guild.id].logs.active&&storage[channel.guild.id].logs.channel_events){
+    if (guildStore.logs.active && guildStore.logs.channel_events) {
         var diffs=[];
         var caredAboutDiffs=["name","nsfw","topic","parentId","rateLimitPerUser"];
         Object.keys(channelO).forEach(key=>{
@@ -1302,7 +1230,7 @@ client.on("channelUpdate",async (channelO,channel)=>{
             }
         });
         if(diffs.length>0){
-            var c=channel.guild.channels.cache.get(storage[channel.guild.id].logs.channel);
+            var c=channel.guild.channels.cache.get(guildStore.logs.channel);
             if(c.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
                 var rls={
                     "0":"None",
@@ -1361,92 +1289,86 @@ client.on("channelUpdate",async (channelO,channel)=>{
                 ]});
             }
             else{
-                storage[channel.guild.id].logs.active=false;
+                guildStore.logs.active=false;
+                guildStore.save();
             }
         }
     }
 });
 client.on("emojiCreate",async emoji=>{
-    if(!storage.hasOwnProperty(emoji.guild.id)){
-        storage[emoji.guild.id]=structuredClone(defaultGuild);
-    }
+    const guildStore = await guildByObj(emoji.guild);
 
-    if(storage[emoji.guild.id].logs.active&&storage[emoji.guild.id].logs.emoji_events){
-        var c=emoji.guild.channels.cache.get(storage[emoji.guild.id].logs.channel);
+    if(guildStore.logs.active&&guildStore.logs.emoji_events){
+        var c=emoji.guild.channels.cache.get(guildStore.logs.channel);
         if(c.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
             c.send(`**Emoji :\`${emoji.name}\`: created:** <:${emoji.name}:${emoji.id}>`);
         }
         else{
-            storage[channel.guild.id].logs.active=false;
+            guildStore.logs.active=false;
+            guildStore.save();
         }
     }
 });
 client.on("emojiDelete",async emoji=>{
-    if(!storage.hasOwnProperty(emoji.guild.id)){
-        storage[emoji.guild.id]=structuredClone(defaultGuild);
-    }
+    const guildStore = await guildByObj(emoji.guild);
 
-    if(storage[emoji.guild.id].logs.active&&storage[emoji.guild.id].logs.emoji_events){
-        var c=emoji.guild.channels.cache.get(storage[emoji.guild.id].logs.channel);
+    if(guildStore.logs.active&&guildStore.logs.emoji_events){
+        var c=emoji.guild.channels.cache.get(guildStore.logs.channel);
         if(c.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
             c.send(`**Emoji :\`${emoji.name}\`: deleted.**`);
         }
         else{
-            storage[channel.guild.id].logs.active=false;
+            guildStore.logs.active=false;
+            guildStore.save();
         }
     }
 });
 client.on("emojiUpdate",async (emojiO,emoji)=>{
-    if(!storage.hasOwnProperty(emoji.guild.id)){
-        storage[emoji.guild.id]=structuredClone(defaultGuild);
-    }
+    const guildStore = await guildByObj(emoji.guild);
 
-    if(storage[emoji.guild.id].logs.active&&storage[emoji.guild.id].logs.emoji_events){
-        var c=emoji.guild.channels.cache.get(storage[emoji.guild.id].logs.channel);
+    if(guildStore.logs.active&&guildStore.logs.emoji_events){
+        var c=emoji.guild.channels.cache.get(guildStore.logs.channel);
         if(c.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
             c.send(`**Emoji :\`${emojiO.name}\`: is now :\`${emoji.name}\`:** <:${emoji.name}:${emoji.id}>`);
         }
         else{
-            storage[emoji.guild.id].logs.active=false;
+            guildStore.logs.active=false;
+            guildStore.save();
         }
     }
 });
 client.on("stickerCreate",async sticker=>{
-    if(!storage.hasOwnProperty(sticker.guild.id)){
-        storage[sticker.guild.id]=structuredClone(defaultGuild);
-    }
+    const guildStore = await guildByObj(sticker.guild);
 
-    if(storage[sticker.guild.id].logs.active&&storage[sticker.guild.id].logs.emoji_events){
-        var c=sticker.guild.channels.cache.get(storage[sticker.guild.id].logs.channel);
+    if(guildStore.logs.active&&guildStore.logs.emoji_events){
+        var c=sticker.guild.channels.cache.get(guildStore.logs.channel);
         if(c.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
             c.send({content:`**Sticker \`${sticker.name}\` created**\n- **Name**: ${sticker.name}\n- **Related Emoji**: ${/^\d{19}$/.test(sticker.tags)?`<:${client.emojis.cache.get(sticker.tags).name}:${sticker.tags}>`:sticker.tags}\n- **Description**: ${sticker.description}`,stickers:[sticker]});
         }
         else{
-            storage[sticker.guild.id].logs.active=false;
+            guildStore.logs.active=false;
+            guildStore.save();
         }
     }
 });
 client.on("stickerDelete",async sticker=>{
-    if(!storage.hasOwnProperty(sticker.guild.id)){
-        storage[sticker.guild.id]=structuredClone(defaultGuild);
-    }
+    const guildStore = await guildByObj(sticker.guild);
 
-    if(storage[sticker.guild.id].logs.active&&storage[sticker.guild.id].logs.emoji_events){
-        var c=sticker.guild.channels.cache.get(storage[sticker.guild.id].logs.channel);
+    if(guildStore.logs.active&&guildStore.logs.emoji_events){
+        var c=sticker.guild.channels.cache.get(guildStore.logs.channel);
         if(c.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
             c.send(`**Sticker \`${sticker.name}\` Deleted**`);
         }
         else{
-            storage[sticker.guild.id].logs.active=false;
+            guildStore.logs.active=false;
+            guildStore.save();
         }
     }
 });
 client.on("stickerUpdate",async (stickerO,sticker)=>{
-    if(!storage.hasOwnProperty(sticker.guild.id)){
-        storage[sticker.guild.id]=structuredClone(defaultGuild);
-    }
+    const guildStore = await guildByObj(sticker.guild);
 
-    if(storage[sticker.guild.id].logs.active&&storage[sticker.guild.id].logs.emoji_events){
+    if(guildStore.logs.active&&guildStore.logs.emoji_events){
         let diffs=[];
         Object.keys(stickerO).forEach(key=>{
             if(stickerO[key]!==sticker.key){
@@ -1454,7 +1376,7 @@ client.on("stickerUpdate",async (stickerO,sticker)=>{
             }
         });
         if(diffs.length>0){
-            var c=sticker.guild.channels.cache.get(storage[sticker.guild.id].logs.channel);
+            var c=sticker.guild.channels.cache.get(guildStore.logs.channel);
             if(c.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
                 c.send({
                     content:
@@ -1474,77 +1396,72 @@ client.on("stickerUpdate",async (stickerO,sticker)=>{
                 });
             }
             else{
-                storage[sticker.guild.id].logs.active=false;
+                guildStore.logs.active=false;
+                guildStore.save();
             }
         }
     }
 });
 client.on("inviteCreate",async invite=>{
-    if(!storage.hasOwnProperty(invite.guild.id)){
-        storage[invite.guild.id]=structuredClone(defaultGuild);
-    }
+    const guildStore = await guildByObj(invite.guild);
 
-    if(storage[invite.guild.id].logs.active&&storage[invite.guild.id].logs.invite_events){
-        var c=invite.guild.channels.cache.get(storage[invite.guild.id].logs.channel);
+    if(guildStore.logs.active&&guildStore.logs.invite_events){
+        var c=invite.guild.channels.cache.get(guildStore.logs.channel);
         if(c.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
             c.send({content:`**Invite \`${invite.code}\` Created**\n- Code: ${invite.code}\n- Created by <@${invite.inviterId}>\n- Channel: <#${invite.channelId}>${invite._expiresTimestamp?`\n- Expires <t:${Math.round(invite._expiresTimestamp/1000)}:R>`:``}\n- Max uses: ${invite.maxUses>0?invite.maxUses:"Infinite"}`,allowedMentions:{parse:[]}});
         }
         else{
-            storage[invite.guild.id].logs.active=false;
+            guildStore.logs.active=false;
+            guildStore.save();
         }
     }
 });
 client.on("inviteDelete",async invite=>{
-    if(!storage.hasOwnProperty(invite.guild.id)){
-        storage[invite.guild.id]=structuredClone(defaultGuild);
-    }
+    const guildStore = await guildByObj(invite.guild);
 
-    if(storage[invite.guild.id].logs.active&&storage[invite.guild.id].logs.invite_events){
-        var c=invite.guild.channels.cache.get(storage[invite.guild.id].logs.channel);
+    if(guildStore.logs.active&&guildStore.logs.invite_events){
+        var c=invite.guild.channels.cache.get(guildStore.logs.channel);
         if(c.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
             c.send({content:`**Invite \`${invite.code}\` Deleted**`,allowedMentions:{parse:[]}});
         }
         else{
-            storage[invite.guild.id].logs.active=false;
+            guildStore.logs.active=false;
+            guildStore.save();
         }
     }
 });
 client.on("roleCreate",async role=>{
-    if(!storage.hasOwnProperty(role.guild.id)){
-        storage[role.guild.id]=structuredClone(defaultGuild);
-    }
+    const guildStore = await guildByObj(role.guild);
 
-    if(storage[role.guild.id].logs.active&&storage[role.guild.id].logs.role_events){
-        var c=role.guild.channels.cache.get(storage[role.guild.id].logs.channel);
+    if(guildStore.logs.active&&guildStore.logs.role_events){
+        var c=role.guild.channels.cache.get(guildStore.logs.channel);
         if(c.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
             c.send({content:`**Role <@&${role.id}> created**`,allowedMentions:{parse:[]}});
         }
         else{
-            storage[role.guild.id].logs.active=false;
+            guildStore.logs.active=false;
+            guildStore.save();
         }
     }
 });
 client.on("roleDelete",async role=>{
-    if(!storage.hasOwnProperty(role.guild.id)){
-        storage[role.guild.id]=structuredClone(defaultGuild);
-    }
+    const guildStore = await guildByObj(role.guild);
 
-    if(storage[role.guild.id].logs.active&&storage[role.guild.id].logs.role_events){
-        var c=role.guild.channels.cache.get(storage[role.guild.id].logs.channel);
+    if(guildStore.logs.active&&guildStore.logs.role_events){
+        var c=role.guild.channels.cache.get(guildStore.logs.channel);
         if(c.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
             c.send(`**Role \`${role.name}\` Deleted**`);
         }
         else{
-            storage[role.guild.id].logs.active=false;
+            guildStore.logs.active=false;
+            guildStore.save();
         }
     }
 });
 client.on("roleUpdate",async (roleO,role)=>{
-    if(!storage.hasOwnProperty(role.guild.id)){
-        storage[role.guild.id]=structuredClone(defaultGuild);
-    }
+    const guildStore = await guildByObj(role.guild);
 
-    if(storage[role.guild.id].logs.active&&storage[role.guild.id].logs.role_events){
+    if(guildStore.logs.active&&guildStore.logs.role_events){
         var diffs=[];
         var caredAboutDiffs=["name","hoist","mentionable","color"];
         Object.keys(roleO).forEach(key=>{
@@ -1553,7 +1470,7 @@ client.on("roleUpdate",async (roleO,role)=>{
             }
         });
         if(diffs.length>0){
-            var c=role.guild.channels.cache.get(storage[role.guild.id].logs.channel);
+            var c=role.guild.channels.cache.get(guildStore.logs.channel);
             if(c.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
                 var flds=[
                     {
@@ -1587,8 +1504,9 @@ client.on("roleUpdate",async (roleO,role)=>{
                     }
                   }],allowedMentions:{parse:[]}});
             }
-            else{
-                storage[role.guild.id].logs.active=false;
+            else {
+                guildStore.logs.active=false;
+                guildStore.save();
             }
         }
     }
@@ -1601,48 +1519,63 @@ client.on("userUpdate",async (userO, user)=>{
             diffs.push(key);
         }
     });
-    Object.keys(storage).forEach(entry=>{
-        if(storage[entry]?.users?.[user.id]?.inServer&&storage[entry].logs.active&&storage[entry].logs.user_change_events){
-            var c=client.channels.cache.get(storage[entry].logs.channel);
-            if(c?.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
-                var flds=[];
-                if(diffs.includes("avatar")){
-                    flds.push({
-                        "name": `Avatar`,
-                        "value": `Changed`,
-                        "inline": true
-                    });
-                }
-                if(diffs.includes("banner")){
-                    flds.push({
-                        "name": `Banner`,
-                        "value": `Changed`,
-                        "inline": true
-                    });
-                }
-                if (diffs.length == 0) return;
-                c.send({content:`**User <@${user.id}> Edited Globally**`,embeds:[{
-                        "type": "rich",
-                        "title": `${diffs.includes("globalName")?`${userO.globalName} -> `:""}${user.globalName}`,
-                        "description": `${diffs.includes("username")?`${userO.username} -> `:""}${user.username}`,
-                        "color": user.accentColor===undefined?0x006400:user.accentColor,
-                        "fields": flds,
-                        "thumbnail": {
-                            "url": user.displayAvatarURL(),
-                            "height": 0,
-                            "width": 0
-                        },
-                        "url":`https://discord.com/users/${user.id}`
-                    }],allowedMentions:{parse:[]}});
+
+    // Find servers where this user is - TODO_DB: index
+    const userStores = await GuildUsers.find({ 
+        userId: user.id,
+        inServer: true
+    }) .select("guildId").lean();
+
+    // Find the servers that have logs on - TODO_DB: index by id and logs active
+    const listeningGuilds = await Guilds.find({
+        id: { $in: userStores.map(u => u.guildId) },
+        "logs.active": true,
+        "logs.user_change_events": true,
+    })
+
+    listeningGuilds.forEach(guild => {
+        var channel=client.channels.cache.get(guild.logs.channel);
+        if(channel?.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
+            var flds=[];
+            if(diffs.includes("avatar")){
+                flds.push({
+                    "name": `Avatar`,
+                    "value": `Changed`,
+                    "inline": true
+                });
             }
-            else{
-                storage[entry].logs.active=false;
+            if(diffs.includes("banner")){
+                flds.push({
+                    "name": `Banner`,
+                    "value": `Changed`,
+                    "inline": true
+                });
             }
+            if (diffs.length == 0) return;
+            channel.send({content:`**User <@${user.id}> Edited Globally**`,embeds:[{
+                    "type": "rich",
+                    "title": `${diffs.includes("globalName")?`${userO.globalName} -> `:""}${user.globalName}`,
+                    "description": `${diffs.includes("username")?`${userO.username} -> `:""}${user.username}`,
+                    "color": user.accentColor===undefined?0x006400:user.accentColor,
+                    "fields": flds,
+                    "thumbnail": {
+                        "url": user.displayAvatarURL(),
+                        "height": 0,
+                        "width": 0
+                    },
+                    "url":`https://discord.com/users/${user.id}`
+                }],allowedMentions:{parse:[]}});
+        }
+        else{
+            guild.logs.active=false;
+            guild.save();
         }
     });
 });
 client.on("guildMemberUpdate",async (memberO,member)=>{
-    if(storage[member.guild.id]?.logs.active&&storage[member.guild.id]?.logs.user_change_events){
+    const guildStore = await guildByObj(member.guild);
+
+    if(guildStore.logs.active&&guildStore.logs.user_change_events){
         var diffs=[];
         var caredAboutDiffs=["nickname","avatar"];
         Object.keys(memberO).forEach(key=>{
@@ -1651,7 +1584,7 @@ client.on("guildMemberUpdate",async (memberO,member)=>{
             }
         });
         if(diffs.length>0){
-            var c=client.channels.cache.get(storage[member.guild.id].logs.channel);
+            var c=client.channels.cache.get(guildStore.logs.channel);
             if(c?.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
                 var flds=[];
                 if(diffs.includes("avatar")){
@@ -1676,10 +1609,12 @@ client.on("guildMemberUpdate",async (memberO,member)=>{
                 }],allowedMentions:{parse:[]}});
             }
             else{
-                storage[member.guild.id].logs.active=false;
+                guildStore.logs.active=false;
+                guildStore.save();
             }
         }
     }
+
 });
 
 // Bot events for staff notifications
@@ -1690,12 +1625,18 @@ client.on("error",async e=>{
     notify("Client emitted error:\n\n"+e.stack);
 });
 client.on("guildCreate",async guild=>{
-    storage[guild.id]=structuredClone(defaultGuild);
     notify(`Added to **a new server**!`);
     await sendWelcome(guild);
 });
 client.on("guildDelete",async guild=>{
-    delete storage[guild.id];
+    // Remove this guild from the store
+    await Guilds.deleteOne({ id: guild.id });
+
+    // Remove all guild users objects under this server
+    await GuildUsers.deleteMany({
+        guildId: guild.id
+    })
+
     notify(`Removed from **a server**.`);
 });
 //#endregion Listeners

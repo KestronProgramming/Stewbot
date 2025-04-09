@@ -8,7 +8,7 @@
         "paths": {
             "*": ["./*"] // Tells it to look for modules in project root.
         },
-        "typeRoots": ["./types", "./node_modules/@types"], // Include node_modules/@types for external type definitions
+        "typeRoots": ["./types"],//, "./node_modules/@types"], // Include node_modules/@types for external type definitions
         "esModuleInterop": true // Recommended for better compatibility with ES modules
     },
     "exclude": [

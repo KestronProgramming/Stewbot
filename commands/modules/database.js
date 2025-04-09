@@ -181,7 +181,6 @@ let guildSchema = new mongoose.Schema({
     sentWelcome: { type: Boolean, default: false },
     groupmute: String, // The emoji tied to an emojiboard with groupmute configs
     disableAntiHack: Boolean,
-    testProp: String,
     stickyRoles: Boolean,
 });
 
@@ -209,6 +208,7 @@ let guildUserSchema = new mongoose.Schema({
     lvl: { type: Number, default: 0 },
     exp: { type: Number, default: 0 },
     warnings: [ warningSchema ],
+    inServer: { type: Boolean, default: true }, // This is used for logs and such - we retain guild user objects for sticky roles but want to know they're not in the server anymore.
 })
 guildUserSchema.index({ userId: 1, guildId: 1 }, { unique: true }); // Compound unique index - only one user per guild
 //#endregion
