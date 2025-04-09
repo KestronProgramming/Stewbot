@@ -55,6 +55,10 @@ Emojiboards
 
 sendWelcome
 
+sudo perm status, config status
+
+Check for any execute's that need guildId to be "0" as a string...
+
 # Async
 make checkPersistentDeletion async -> might not be needed
 

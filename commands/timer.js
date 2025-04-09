@@ -9,6 +9,8 @@ function applyContext(context={}) {
 }
 // #endregion CommandBoilerplate
 
+const ms = require("ms")
+
 async function finTimer(userId,force){
     const user = await userByID(userId);
 
@@ -57,7 +59,7 @@ async function scheduleTimerEnds() {
     // TODO_DB: index
     const usersWTimersEnding = await Users.find({
         timer: { $exists: true },
-        "timer.time": { $gt: Date.now() } // Only in the future. This also means timers that ended over boot won't go off 
+        "timer.time": { $gt: Date.now() - ms("10 min") } // Retroactively finish timers from 10 min ago... too late for anything else
     });
 
     usersWTimersEnding.forEach(user => {

@@ -262,7 +262,7 @@ var uptime=0;
 const defaultGuild=require("./data/defaultGuild.json");
 const defaultGuildUser=require("./data/defaultGuildUser.json");
 const defaultUser=require("./data/defaultUser.json");
-const { guildByID, guildByObj, userByID, userByObj, Guilds } = require('./commands/modules/database');
+const { guildByID, guildByObj, userByID, userByObj, Guilds, GuildUsers, ConfigDB } = require('./commands/modules/database');
 
 // Build dynamic help pages
 var helpCommands=[];
@@ -717,20 +717,7 @@ client.once("ready",async ()=>{
 client.on("messageCreate",async msg => {
     if(msg.author.id===client.user.id) return;
 
-    // Create guild objects if they don't exist should stay up top
     msg.guildId=msg.guildId||"0";
-
-    if(msg.guildId!=="0"){
-        if(!storage.hasOwnProperty(msg.guildId)){
-            storage[msg.guildId]=structuredClone(defaultGuild);
-        }
-        if(!storage[msg.guildId].users.hasOwnProperty(msg.author.id)){
-            storage[msg.guildId].users[msg.author.id]=structuredClone(defaultGuildUser);
-        }
-    }
-    if(!storage.hasOwnProperty(msg.author.id)){
-        storage[msg.author.id]=structuredClone(defaultUser);
-    }
 
     if(msg.guild){
         // Disable features in the server that the bot does not have permissions for.
@@ -740,7 +727,6 @@ client.on("messageCreate",async msg => {
             }
         });
     }
-
     
     // Dispatch to listening modules
     for (const [name, module] of Object.entries(messageListenerModules)) {
@@ -770,14 +756,16 @@ client.on("messageCreate",async msg => {
         await devadminChannel.guild.members.fetch(msg.author.id);
 
         if(devadminChannel?.permissionsFor(msg.author.id)?.has(PermissionFlagsBits.SendMessages)){
+            const config = await ConfigDB.findOne({});
+            const guild = await guildByObj(msg.guild);
             switch(msg.content.split(" ")[1].replaceAll(".","")){
                 case "gemini":
-                    storage.useGlobalGemini = true;
+                    config.useGlobalGemini = true;
                     msg.reply("Using Google Gemini globally")
                     break;
                 case "ollama":
                     msg.reply("Using Ollama AI globally")
-                    storage.useGlobalGemini = false;
+                    config.useGlobalGemini = false;
                     break;
                 case "resetAI":
                     resetAIRequests();
@@ -802,36 +790,38 @@ client.on("messageCreate",async msg => {
                 case "configStatus":
                     switch(msg.content.split(" ")[2]){
                         case "filter":
-                            msg.reply(`As you command.\n- Active: ${storage[msg.guild.id].filter.active}\n- Censor: ${storage[msg.guild.id].filter.censor}\n- Log to a channel: ${storage[msg.guild.id].filter.log} <#${storage[msg.guild.id].filter.channel}>\n- Blocked words: ${storage[msg.guild.id].filter.blacklist.length}`);
+                            msg.reply(`As you command.\n- Active: ${guild.filter.active}\n- Censor: ${guild.filter.censor}\n- Log to a channel: ${guild.filter.log} <#${guild.filter.channel}>\n- Blocked words: ${guild.filter.blacklist.length}`);
                         break;
                         case "autoMessage":
-                            if(!storage[msg.guild.id].hasOwnProperty("alm")) storage[msg.guild.id].alm=structuredClone(defaultGuild.alm);
-                            msg.reply(`As you command.\n## Auto Join Messages\n- Active: ${storage[msg.guild.id].ajm.active}\n- Location: ${storage[msg.guild.id].ajm.location||storage[msg.guild.id].ajm.dm?"DM":"Channel"}\n- Channel: ${storage[msg.guild.id].ajm.channel}\n- Message: \n\`\`\`\n${storage[msg.guild.id].ajm.message}\n\`\`\`\n## Auto Leave Messages\n- Active: ${storage[msg.guild.id].alm.active}\n- Channel: ${storage[msg.guild.id].alm.channel}\n- Message: \n\`\`\`\n${storage[msg.guild.id].alm.message}\n\`\`\``);
+                            if(!guild.hasOwnProperty("alm")) guild.alm=structuredClone(defaultGuild.alm);
+                            msg.reply(`As you command.\n## Auto Join Messages\n- Active: ${guild.ajm.active}\n- Location: ${guild.ajm.location||guild.ajm.dm?"DM":"Channel"}\n- Channel: ${guild.ajm.channel}\n- Message: \n\`\`\`\n${guild.ajm.message}\n\`\`\`\n## Auto Leave Messages\n- Active: ${guild.alm.active}\n- Channel: ${guild.alm.channel}\n- Message: \n\`\`\`\n${guild.alm.message}\n\`\`\``);
                         break;
                     }
                 break;
                 case "countSet":
-                    storage[msg.guild.id].counting.nextNum=+msg.content.split(" ")[2];
-                    msg.reply(`The next number to enter is **${storage[msg.guild.id].counting.nextNum}**.`);
+                    guild.counting.nextNum=+msg.content.split(" ")[2];
+                    msg.reply(`The next number to enter is **${guild.counting.nextNum}**.`);
                 break;
                 case "runDaily":
                     await msg.reply(`Running the daily function...`);
                     daily(true);
                 break;
                 case "runWelcome":
-                    storage[msg.guild.id].sentWelcome=false;
+                    guild.sentWelcome=false;
                     sendWelcome(msg.guild);
                 break;
                 case "resetHackSafe":
-                    delete storage[msg.guild.id].users[msg.author.id].safeTimestamp;
+                    await GuildUsers.updateOne({ userId: msg.author.id, guildId: msg.guild.id }, {
+                        $unset: { "safeTimestamp": 1 }
+                    });
                     msg.reply("Removed your anti-hack safe time");
-                break
+                break;
                 case "echo":
                     msg.channel.send(msg.content.slice("~sudo echo ".length,msg.content.length));
                 break;
                 case "setWord":
-                    storage.wotd=msg.content.split(" ")[2].toLowerCase();
-                    msg.reply(storage.wotd);
+                    config.wotd=msg.content.split(" ")[2].toLowerCase();
+                    msg.reply(config.wotd);
                 break;
                 case "checkRSS":
                     Object.entries(commands).find(([name, module]) => name === 'rss')[1].daily(pseudoGlobals);
@@ -845,22 +835,9 @@ client.on("messageCreate",async msg => {
                     setTimeout(async die => { undefined.instructed_to_crash = instructed_to_crash })
                     undefined.instructed_to_crash = instructed_to_crash
                 break;
-                case "fixStorage":
-                    client.guilds.cache.forEach(guild=>{
-                        if(!storage.hasOwnProperty(guild)){
-                            storage[guild]=structuredClone(defaultGuild);
-                        }
-                        else{
-                            Object.keys(defaultGuild).forEach(key=>{
-                                if(!storage[guild].hasOwnProperty(key)){
-                                    storage[guild][key]=structuredClone(defaultGuild[key]);
-                                }
-                            });
-                        }
-                    });
-                    msg.reply(`Attempted to fix`);
-                break;
             }
+            config.save();
+            guild.save()
         }
         else{
             msg.reply("I was unable to verify you.");
@@ -894,25 +871,6 @@ client.on("interactionCreate", async cmd=>{
             });
         }
     }catch(e){}
-
-    try{
-        // NOTE: this is probably what is adding that null object to our DB
-        if(cmd.guildId!==0){
-            if(!storage.hasOwnProperty(cmd.guildId)){
-                storage[cmd.guildId]=structuredClone(defaultGuild);
-            }
-            if(!storage[cmd.guildId].users.hasOwnProperty(cmd.user.id)){
-                storage[cmd.guildId].users[cmd.user.id]=structuredClone(defaultGuildUser);
-            }
-        }
-    }
-    catch(e){
-        cmd.guild={"id":"0"};
-    }
-    if(!storage.hasOwnProperty(cmd.user.id)){
-        storage[cmd.user.id]=structuredClone(defaultUser);
-    }
-
 
     // Autocomplete
     if (cmd.isAutocomplete()) {
@@ -1003,27 +961,14 @@ client.on("interactionCreate", async cmd=>{
 client.on("messageReactionAdd",async (react,user)=>{
     if(react.message.guildId===null) return;
 
-    // Create storage objects if needed
-    if(react.message.guildId!=="0"){
-        if(!storage.hasOwnProperty(react.message.guildId)){
-            storage[react.message.guildId]=structuredClone(defaultGuild);
-            
-        }
-        if(!storage[react.message.guildId].users.hasOwnProperty(user.id)){
-            storage[react.message.guildId].users[user.id]=structuredClone(defaultGuildUser);
-            
-        }
-    }
-    if(!storage.hasOwnProperty(user.id)){
-        storage[user.id]=structuredClone(defaultUser);
-    }
+    const guild = await guildByObj(react.message.guild);
 
     // Reaction filters
-    if(storage[react.message.guild?.id]?.filter.active&&react.message.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageMessages)){
+    if(guild.filter.active&&react.message.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageMessages)){
         if(await checkDirty(react.message.guild.id,`${react._emoji}`)){
             react.remove();
-            if(storage[react.message.guild.id].filter.log){
-                var c=client.channels.cache.get(storage[react.message.guild.id].filter.channel);
+            if(guild.filter.log){
+                var c=client.channels.cache.get(guild.filter.channel);
                 if(c.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
                     c.send({
                         content: `I removed a ${react._emoji.id===null?react._emoji.name:`<:${react._emoji.name}:${react._emoji.id}>`} reaction from https://discord.com/channels/${react.message.guild.id}/${react.message.channel.id}/${react.message.id} added by <@${user.id}> due to being in the filter.`,
@@ -1031,14 +976,14 @@ client.on("messageReactionAdd",async (react,user)=>{
                     });
                 }
                 else{
-                    storage[react.message.guild.id].filter.log=false;
+                    guild.filter.log=false;
                 }
             }
             return;
         }
     }
-    else if(storage[react.message.guild?.id]?.filter.active){
-        storage[react.message.guild.id].filter.active=false;
+    else if(guild.filter.active){
+        guild.filter.active=false;
     }
 
     // Emojiboard reactions
@@ -1048,19 +993,17 @@ client.on("messageReactionAdd",async (react,user)=>{
 client.on("messageDelete",async msg=>{
     if(msg.guild?.id===undefined) return;
 
-    // Create needed storage objects
-    if(!storage.hasOwnProperty(msg.guild.id)){
-        storage[msg.guild.id]=structuredClone(defaultGuild);
-    }
+    const guildStore = await guildByObj(msg.guild);
 
-    if(storage[msg.guild.id]?.persistence?.[msg.channel.id]?.active&&storage[msg.guild.id]?.persistence?.[msg.channel.id]?.lastPost===msg.id){
+    if(guildStore.persistence?.[msg.channel.id]?.active&&guildStore.persistence?.[msg.channel.id]?.lastPost===msg.id){
         setTimeout(()=>{checkPersistentDeletion(msg.guild.id,msg.channel.id,msg.id)},1500);
     }
 
     // Emojiboard deleted handlers
-    if(Object.keys(storage[msg.guild.id].emojiboards).length>0){
-        Object.keys(storage[msg.guild.id].emojiboards).forEach(async emoji=>{
-            emoji=storage[msg.guild.id].emojiboards[emoji];
+    // TODO_DB: figure out what this is doing and aggrigate query it sometime when I'm not half asleep
+    if(Array.from(guildStore.emojiboards.keys()).length>0){
+        Array.from(guildStore.emojiboards.keys()).forEach(async emoji=>{
+            emoji=guildStore.emojiboards[emoji];
             if(emoji.isMute) return;
             if(emoji.posted.hasOwnProperty(msg.id)){
                 try {
