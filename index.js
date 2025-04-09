@@ -393,20 +393,21 @@ async function doEmojiboardReaction(react) {
         react.emoji.requiresColons ?
             `<:${react.emoji.name}:${react.emoji.id}>` :
             react.emoji.name
-    )
+    );
 
     const guild = await guildByID(react.message.guildId);
+    const emojiboards = guild.emojiboards;
 
     // exit if the emojiboard for this emoji is not setup
-    if (!guild.emojiboards.has(emoji)) return;
+    if (!emojiboards.has(emoji)) return;
 
-    const emojiboard = guild.emojiboards[emoji];
+    const emojiboard = emojiboards.get(emoji);
 
     if (!emojiboard.active) return;
 
     if (!emojiboard.isMute) {
         // exit if this message has already been posted
-        if (react.message.id in emojiboard.posted) return;
+        if (emojiboard.posted.has(react.message.id)) return;
 
         // Exit if the message is already an emojiboard post
         if (react.message.channel.id === emojiboard.channel) return;
@@ -1004,9 +1005,9 @@ client.on("messageDelete",async msg=>{
     // TODO_DB: figure out what this is doing and aggregate query it sometime when I'm not half asleep
     
     // Find which emojiboard contains this posted msg ID
-    if (guildStore.emojiboards.size() > 0){
+    if (guildStore.emojiboards.size > 0){
         Array.from(guildStore.emojiboards.keys()).forEach(async emoji=>{
-            emoji=guildStore.emojiboards.get(emoji);
+            emoji = guildStore.emojiboards.get(emoji);
             if(emoji.isMute) return;
             if(emoji.posted.has(msg.id)){
 
@@ -1102,58 +1103,12 @@ client.on("messageUpdate",async (msgO,msg)=>{
         }
     }
 
-    // Emojiboard edit handlers??
-    if(Object.keys(storage[msg.guild.id].emojiboards).length>0){
-        Object.keys(storage[msg.guild.id].emojiboards).forEach(async emote=>{
-            var emoji=storage[msg.guild.id].emojiboards[emote];
-            if(emoji.isMute) return;
-            if(emoji.posted.hasOwnProperty(msg.id)&&!emoji.posted[msg.id]?.startsWith("webhook")){
-                var resp={files:[]};
-                var replyBlip="";
-                if(msg.type===19){
-                    var rMsg=await msg.fetchReference();
-                    replyBlip=`_[Reply to **${rMsg.author.username}**: ${rMsg.content.slice(0,22).replace(/(https?\:\/\/|\n)/ig,"")}${rMsg.content.length>22?"...":""}](<https://discord.com/channels/${rMsg.guild.id}/${rMsg.channel.id}/${rMsg.id}>)_`;
-                }
-                msg.attachments.forEach((attached,i) => {
-                    let url=attached.url.toLowerCase();
-                    if(i!==0||(!url.includes(".jpg")&&!url.includes(".png")&&!url.includes(".jpeg")&&!url.includes(".gif"))||emoji.messType==="0"){
-                        resp.files.push(attached.url);
-                    }
-                });
-                if(emote.includes(":")){
-                    footer.iconURL=``;
-                }
-                resp.embeds=[new EmbedBuilder()
-                    .setColor(0x006400)
-                    .setTitle("(Jump to message)")
-                    .setURL(`https://www.discord.com/channels/${msg.guild.id}/${msg.channel.id}/${msg.id}`)
-                    .setAuthor({
-                        name: `${msg.author?.globalName||msg.author?.username}`,
-                        iconURL:msg.author?.displayAvatarURL(),
-                        url:`https://discord.com/users/${msg.author?.id}`
-                    })
-                    .setDescription(`${replyBlip?`${replyBlip}\n`:""}${msg.content?msg.content:"⠀"}`)
-                    .setTimestamp(new Date(msg.createdTimestamp))
-                    .setFooter({
-                        name:msg.channel.name
-                    })
-                    .setImage(msg.attachments.first()?msg.attachments.first().url:null)
-                ];
-                if(emoji.messType==="1"){
-                    resp.content=getStarMsg(msg);
-                }
-                var c=await client.channels.cache.get(emoji.channel).messages.fetch(emoji.posted[msg.id]);
-                c.edit(resp);
-            }
-        }); 
-    }
-
-    // Counting edit handlers...?? - TODO this needs to be ported to the new counting format
-    if(storage[msg.guild.id]?.counting.active&&storage[msg.guild.id]?.counting.channel===msg.channel.id){
-        var num=msgO.content?.match(/^(\d|,)+(?:\b)/i);
-        if(num!==null&&num!==undefined){
-            if(+num[0]===storage[msg.guild.id].counting.nextNum-1){
-                msg.channel.send(num[0]).then(m=>m.react("✅"));
+    // Counting edit handlers
+    if(guildStore.counting.active&&guildStore.counting.channel===msg.channel.id){
+        var num = msg.content ? processForNumber(msg.content) : null;
+        if (num !== null && num !== undefined) {
+            if(+num===guildStore.counting.nextNum-1){
+                msg.channel.send(String(num)).then(m=>m.react("✅"));
             }
         }
     }
