@@ -40,17 +40,11 @@ Make sure all onmessage listeners use cmd.author instead of cmd.user
 Ctrl+F for default stuff
 
 # Changed things to test:
-Emojiboards
-
-sendWelcome
-
-sudo perm status, config status
-
-Check for any execute's that need guildId to be "0" as a string...
-
-Test deleting original message to delete emojiboard
+Test /restart
 
 Check guild.users and guildStore.users to make sure we're not reading them wrong
+
+sticky roles
 
 Test filtering on deletion
 

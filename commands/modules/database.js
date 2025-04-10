@@ -211,6 +211,7 @@ let guildUserSchema = new mongoose.Schema({
     lvl: { type: Number, default: 0 },
     exp: { type: Number, default: 0 },
     warnings: [ warningSchema ],
+    roles: [ String ], // Roles stored on server leave, for sticky roles
     inServer: { type: Boolean, default: true }, // This is used for logs and such - we retain guild user objects for sticky roles but want to know they're not in the server anymore.
 })
 guildUserSchema.index({ userId: 1, guildId: 1 }, { unique: true }); // Compound unique index - only one user per guild

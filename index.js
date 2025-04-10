@@ -201,7 +201,7 @@ var uptime=0;
 const defaultGuild=require("./data/defaultGuild.json");
 const defaultGuildUser=require("./data/defaultGuildUser.json");
 const defaultUser=require("./data/defaultUser.json");
-const { guildByID, guildByObj, userByID, userByObj, Guilds, Users, GuildUsers, ConfigDB, guildUserByID } = require('./commands/modules/database');
+const { guildByID, guildByObj, userByID, userByObj, Guilds, Users, GuildUsers, ConfigDB, guildUserByID, guildUserByObj } = require('./commands/modules/database');
 
 // Build dynamic help pages
 var helpCommands=[];
@@ -1075,7 +1075,7 @@ client.on("guildMemberAdd",async member => {
         { upsert: false }
     );
 
-    const guildStore = await guildByObj(member.user);
+    const guildStore = await guildByObj(member.guild);
 
     // Auto join messages
     if(guildStore.ajm.active){
@@ -1131,7 +1131,8 @@ client.on("guildMemberAdd",async member => {
             guildStore.stickyRoles=false;
         }
         else{
-            guildStore.users[member.id].roles.forEach(role=>{
+            const guildUser = await guildUserByObj(member.guild, member.id);
+            guildUser.roles.forEach(role=>{
                 try{
                     let myRole=member.guild.members.cache.get(client.user.id).roles.highest.position;
                     var role=member.guild.roles.cache.find(r=>r.id===role);
@@ -1173,7 +1174,7 @@ client.on("guildMemberRemove",async member=>{
     if (member.user.id == client.user.id) return;
 
     // Save all this user's roles
-    const guildUser = await guildUserByID(member.guild, member.id);
+    const guildUser = await guildUserByID(member.guild.id, member.id, {}, true);
     const guildStore = await guildByObj(member.guild);
     
     guildUser.roles = member.roles.cache.map(r => r.id);
@@ -1219,6 +1220,7 @@ client.on("guildMemberRemove",async member=>{
     }
 
     guildStore.save();
+    guildUser.save();
 });
 
 //Strictly log-based events
