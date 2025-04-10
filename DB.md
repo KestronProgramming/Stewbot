@@ -42,10 +42,6 @@ Ctrl+F for default stuff
 # Changed things to test:
 Test /restart
 
-Check guild.users and guildStore.users to make sure we're not reading them wrong
-
-sticky roles
-
 Test filtering on deletion
 
 Find where .inServer is checked and what we break by checking it

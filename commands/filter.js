@@ -434,7 +434,7 @@ module.exports = {
                                         : "deleted"
                                 } due to the following word${foundWords.length > 1 ? "s" : ""} being in the filter: ` +
                                     `||${foundWords.join("||, ||")}||${
-                                        guild.config.returnFiltered
+                                        user.config.returnFiltered
                                             ?   "```\n" +
                                                 msg.ogContent.replaceAll("`", "\\`") +
                                                 "```"
