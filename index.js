@@ -1520,6 +1520,7 @@ client.on("userUpdate",async (userO, user)=>{
             diffs.push(key);
         }
     });
+    if (diffs.length < 1) return;
 
     // Find servers where this user is - TODO_DB: index
     const userStores = await GuildUsers.find({ 
@@ -1534,11 +1535,13 @@ client.on("userUpdate",async (userO, user)=>{
         "logs.user_change_events": true,
     })
 
-    listeningGuilds.forEach(guild => {
-        var channel=client.channels.cache.get(guild.logs.channel);
-        if(channel?.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
-            var flds=[];
-            if(diffs.includes("avatar")){
+    listeningGuilds.forEach(async guild => {
+        var channel = guild.logs.channel 
+            ? await client.channels.fetch(guild.logs.channel).catch(e => null)
+            : null;
+        if (channel?.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)) {
+            var flds = [];
+            if (diffs.includes("avatar")) {
                 flds.push({
                     "name": `Avatar`,
                     "value": `Changed`,

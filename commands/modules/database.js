@@ -60,6 +60,7 @@ let filterSchema = new mongoose.Schema({
 
 let guildLogsSchema = new mongoose.Schema({
     active: { type: Boolean, default: false },
+    channel: { type: String, default: "" },
     channel_events: { type: Boolean, default: false },
     emoji_events: { type: Boolean, default: false },
     user_change_events: { type: Boolean, default: false },
