@@ -41,7 +41,7 @@ module.exports = {
     async execute(cmd, context) {
 		applyContext(context);
 
-        const user = userByObj(cmd.user);
+        const user = await userByObj(cmd.user);
 		
         if (cmd.options.getString("link").toLowerCase() === "primed" && user.primedEmbed) {
             var primer=await getPrimedEmbed(cmd.user.id,cmd.guild?.id);
@@ -64,8 +64,8 @@ module.exports = {
                         (await checkDirty(cmd.guild?.id, mes.content, false, true)) ||
                         (await checkDirty(
                             cmd.guild?.id,
-                            mes.author.nickname || mes.author.globalName || mes.author.username
-                        ), false, true) ||
+                            mes.author.nickname || mes.author.globalName || mes.author.username, 
+                            false, true)) ||
                         (await checkDirty(cmd.guild?.id, mes.guild.name, false, true)) ||
                         (await checkDirty(cmd.guild?.id, mes.channel.name, false, true))
                     ) {
@@ -122,8 +122,6 @@ module.exports = {
     async onmessage(msg, context) {
 		applyContext(context);
 
-        
-        
         // Discord message embeds
         var links = msg.content.match(discordMessageRegex) || [];
         var progs = msg.content.match(kaProgramRegex) || [];
@@ -131,7 +129,10 @@ module.exports = {
             // Check for settings blocking
             await (async () => {
                 // Make sure we have perms to embed
-                if (!msg.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages) || !msg.channel.permissionsFor(msg.author.id)?.has(PermissionFlagsBits.EmbedLinks)) {
+                if (
+                    !msg.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages) || 
+                    !msg.channel.permissionsFor(msg.author.id)?.has(PermissionFlagsBits.EmbedLinks)
+                ) {
                     links = progs = [];
                     return;
                 }
@@ -139,10 +140,9 @@ module.exports = {
                 // If this message has links, check if the user blocked embeds
                 const user = await Users.findOrCreate({ id: msg.author.id })
                     .select("config.embedPreviews")
-                    .lean();
+                    .lean({ virtuals: true });
 
-                // .lean doesn't return unset defaults, and this prop defaults to true so consider undefined as true
-                if (!user?.config?.embedPreviews === false) { 
+                if (!user.config.embedPreviews) { 
                     links = progs = [];
                     return;
                 }
@@ -151,9 +151,9 @@ module.exports = {
                 if (!msg.guild) return;
                 const guild = await Guilds.findOrCreate({ id: msg.guild.id })
                     .select("config.embedPreviews")
-                    .lean();
+                    .lean({ virtuals: true });
 
-                if (!guild?.config?.embedPreviews === false) {
+                if (!guild.config.embedPreviews) {
                     links = progs = [];
                     return;
                 }

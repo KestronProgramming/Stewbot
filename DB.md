@@ -8,10 +8,10 @@ if (storage[msg.guild.id].levels.hasOwnProperty("channelOrDM")) {
 if ajm.message (or alm) is "", make it the default and disable ajms
 
 
+make transfer script mark all guilds as sentWelcome
 
 
 TODO:
-Once general_config is ported, test turning off embeds, chat, etc
 Once prime embed is ported, test embedding it with embed_message
 
 
@@ -42,13 +42,3 @@ Ctrl+F for default stuff
 # Changed things to test:
 Test /restart
 
-Test filtering on deletion
-
-Find where .inServer is checked and what we break by checking it
-
-Guild member add / remove
-
-# Async
-make checkPersistentDeletion async -> might not be needed
-
-make transfer script mark all guilds as sentWelcome
