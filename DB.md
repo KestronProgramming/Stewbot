@@ -28,7 +28,7 @@ CheckDirty needs aggressive caching... which needs to be invalidated when modifi
 
 On message handler should pass a read-only guild
 
-Ctrl+F for "TODO_DB
+Ctrl+F for TODO_DB
 
 Regex for:
 userBy.+\(.+\.guild

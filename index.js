@@ -634,7 +634,6 @@ client.once("ready",async ()=>{
             .catch(e => null);
 
         if(!knownGuild) {
-            // TODO_DB: confirm welcome does not *need* to run
             notify("Added to **new server** (detected on boot scan)")
             await guildByID(guild); // This will create the guild
             sendWelcome(guild);
@@ -936,31 +935,48 @@ client.on("messageDelete",async msg=>{
     }
 
     // Emojiboard deleted handlers
-    // TODO_DB: Port this efficiently with better queries 
-    // TODO_DB: figure out what this is doing and aggregate query it sometime when I'm not half asleep
-    
-    // Find which emojiboard contains this posted msg ID
-    if (guildStore.emojiboards.size > 0){
-        Array.from(guildStore.emojiboards.keys()).forEach(async emoji=>{
-            emoji = guildStore.emojiboards.get(emoji);
-            if(emoji.isMute) return;
-            if(emoji.posted.has(msg.id)){
-
-                try {
-                    if (emoji.posted.get(msg.id).startsWith("webhook")&&emoji.channel?.permissionsFor(client.user.id).has(PermissionFlagsBits.ManageMessages)){
-                        var c=await client.channels.cache.get(emoji.channel).messages.fetch(emoji.posted.get(msg.id).split("webhook")[1]);
-                        c.delete();
-                    }
-                    else if(!emoji.posted.get(msg.id).startsWith("webhook")){
-                        var c=await client.channels.cache.get(emoji.channel).messages.fetch(emoji.posted.get(msg.id));
-                        c.edit({content:`I'm sorry, but it looks like this post by **${msg.author?.globalName||msg.author?.username}** was deleted.`,embeds:[],files:[]});
-                    }
-                } catch(e) {
-                    // Cache issues, nothing we can do
+    const postToRedact = await Guilds.aggregate([
+        // Find which emojiboard contains this posted msg ID
+        {
+            $project: {
+                emojiboards: {
+                    $objectToArray: "$emojiboards"
                 }
             }
-        });
-    }
+        },
+        {
+            $unwind: "$emojiboards"
+        },
+        {
+            $match: {
+                [`emojiboards.v.posted.${msg.id}`]: {
+                    $exists: true
+                }
+            }
+        },
+        {
+            $project: {
+                emoji: "$emojiboards.k",
+                board: "$emojiboards.v"
+            }
+        }
+    ]) 
+    postToRedact.forEach(async ({emoji, board}) => {
+        if(emoji) {
+            try {
+                if (board.posted[msg.id].startsWith("webhook")&&board.channel?.permissionsFor(client.user.id).has(PermissionFlagsBits.ManageMessages)){
+                    var c=await client.channels.cache.get(board.channel).messages.fetch(board.posted[msg.id].split("webhook")[1]);
+                    c.delete();
+                }
+                else if(!board.posted[msg.id].startsWith("webhook")){
+                    var c=await client.channels.cache.get(board.channel).messages.fetch(board.posted[msg.id]);
+                    c.edit({content:`I'm sorry, but it looks like this post by **${msg.author?.globalName||msg.author?.username}** was deleted.`,embeds:[],files:[]});
+                }
+            } catch(e) {
+                // Cache issues, nothing we can do
+            }
+        }
+    })
 
     // Resend if the latest counting number was deleted
     if(guildStore.counting.active&&guildStore.counting.channel===msg.channel.id){
