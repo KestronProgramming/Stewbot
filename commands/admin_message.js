@@ -49,8 +49,8 @@ module.exports = {
                 await target.send({
                     embeds: [{
                         type: "rich",
-                        title: await checkDirty(config.homeServer,limitLength(cmd.guild.name, 80),true)[1],
-                        description: await checkDirty(config.homeServer,message.replaceAll("\\n", "\n"),true)[1],
+                        title: (await checkDirty(config.homeServer,limitLength(cmd.guild.name, 80),true))[1],
+                        description: (await checkDirty(config.homeServer,message.replaceAll("\\n", "\n"),true))[1],
                         color: 0x006400,
                         thumbnail: {
                             url: cmd.guild.iconURL(),
@@ -75,9 +75,9 @@ module.exports = {
         // If we're supposed to post something:
         else if (cmd.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.ManageWebhooks)) {
             var resp = {
-                "content": await checkDirty(config.homeServer,message.replaceAll("\\n", "\n"),true)[1],
+                "content": (await checkDirty(config.homeServer,message.replaceAll("\\n", "\n"),true))[1],
                 "avatarURL": cmd.guild.iconURL(),
-                "username": await checkDirty(config.homeServer,cmd.guild.name.slice(0, 80),true)[1]
+                "username": (await checkDirty(config.homeServer,cmd.guild.name.slice(0, 80),true))[1]
             };
             // Discord server name edge case
             if (resp?.username?.toLowerCase().includes("discord")) {

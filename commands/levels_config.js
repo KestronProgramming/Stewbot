@@ -57,7 +57,7 @@ module.exports = {
 		guild.levels.active=cmd.options.getBoolean("active");
 		if(cmd.options.getChannel("channel")!==null) guild.levels.channel=cmd.options.getChannel("channel").id;
 		if(cmd.options.getString("location")!==null) guild.levels.location=cmd.options.getString("location");
-		if(cmd.options.getString("message")!==null) guild.levels.msg=await checkDirty(config.homeServer,cmd.options.getString("message"),true)[1];
+		if(cmd.options.getString("message")!==null) guild.levels.msg=(await checkDirty(config.homeServer,cmd.options.getString("message"),true))[1];
 		var disclaimers=[];
 		if(guild.levels.channel===""&&guild.levels.location==="channel"){
 			guild.levels.location="DM";

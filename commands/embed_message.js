@@ -189,11 +189,11 @@ module.exports = {
                     .setTitle("(Jump to message)")
                     .setURL(links[i])
                     .setAuthor({
-                        name: await checkDirty(config.homeServer,mes.member?.nickname||mes.author.globalName||mes.author.username,true)[1],
+                        name: (await checkDirty(config.homeServer,mes.member?.nickname||mes.author.globalName||mes.author.username,true))[1],
                         iconURL: "" + mes.author.displayAvatarURL(),
                         url: "https://discord.com/users/" + mes.author.id,
                     })
-                    .setDescription(await checkDirty(config.homeServer,mes.content,true)[1]||null)
+                    .setDescription((await checkDirty(config.homeServer,mes.content,true))[1]||null)
                     .setTimestamp(new Date(mes.createdTimestamp))
                     .setFooter({
                         text: mes.guild?.name?mes.guild.name + " / " + mes.channel.name:`DM with ${client.user.username}`,

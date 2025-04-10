@@ -30,8 +30,6 @@ On message handler should pass a read-only guild
 
 Ctrl+F for "TODO_DB
 
-Double check all checkDirty calls with [1] after them, make sure await has parenths
-
 Regex for:
 userBy.+\(.+\.guild
 
