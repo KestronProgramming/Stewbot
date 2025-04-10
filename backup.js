@@ -399,9 +399,9 @@ const startBackupThreadPromise = new Promise(async (resolve, reject) => {
                     return false;
                 }
             } else {
-                errorCallback(`Backup error for "${filename}" (Attempt ${attempt + 1}): ${err.message}`);
+                errorCallback(`Backup error for "${database}" (Attempt ${attempt + 1}): ${err.message}`);
                 if (attempt >= 1 && isAuthError) {
-                    errorCallback(`Persistent auth error for "${filename}". Giving up this round.`);
+                    errorCallback(`Persistent auth error for "${database}". Giving up this round.`);
                 }
                 return false;
             }
