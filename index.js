@@ -198,9 +198,6 @@ global.notify = function(what, useWebhook=false) {
 
 // Other data
 var uptime=0;
-const defaultGuild=require("./data/defaultGuild.json");
-const defaultGuildUser=require("./data/defaultGuildUser.json");
-const defaultUser=require("./data/defaultUser.json");
 const { guildByID, guildByObj, userByID, userByObj, Guilds, Users, GuildUsers, ConfigDB, guildUserByID, guildUserByObj } = require('./commands/modules/database');
 
 // Build dynamic help pages
@@ -728,7 +725,6 @@ client.on("messageCreate",async msg => {
                             msg.reply(`As you command.\n- Active: ${guild.filter.active}\n- Censor: ${guild.filter.censor}\n- Log to a channel: ${guild.filter.log} <#${guild.filter.channel}>\n- Blocked words: ${guild.filter.blacklist.length}`);
                         break;
                         case "autoMessage":
-                            if(!guild.hasOwnProperty("alm")) guild.alm=structuredClone(defaultGuild.alm);
                             msg.reply(`As you command.\n## Auto Join Messages\n- Active: ${guild.ajm.active}\n- Location: ${guild.ajm.location||guild.ajm.dm?"DM":"Channel"}\n- Channel: ${guild.ajm.channel}\n- Message: \n\`\`\`\n${guild.ajm.message}\n\`\`\`\n## Auto Leave Messages\n- Active: ${guild.alm.active}\n- Channel: ${guild.alm.channel}\n- Message: \n\`\`\`\n${guild.alm.message}\n\`\`\``);
                         break;
                     }
