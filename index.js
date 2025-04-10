@@ -1538,13 +1538,13 @@ client.on("userUpdate",async (userO, user)=>{
     });
     if (diffs.length < 1) return;
 
-    // Find servers where this user is - TODO_DB: index
+    // Find servers where this user is
     const userStores = await GuildUsers.find({ 
         userId: user.id,
         inServer: true
     }) .select("guildId").lean();
 
-    // Find the servers that have logs on - TODO_DB: index by id and logs active
+    // Find the servers that have logs on
     const listeningGuilds = await Guilds.find({
         id: { $in: userStores.map(u => u.guildId) },
         "logs.active": true,

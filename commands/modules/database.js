@@ -184,6 +184,8 @@ let guildSchema = new mongoose.Schema({
     disableAntiHack: Boolean,
     stickyRoles: Boolean,
 });
+guildSchema.index({ id: 1, "logs.active": 1, "logs.user_change_events": 1 });
+guildSchema.index({ tempBans: 1 });
 
 let guildUserSchema = new mongoose.Schema({
     // See notes at the top
@@ -212,6 +214,9 @@ let guildUserSchema = new mongoose.Schema({
     inServer: { type: Boolean, default: true }, // This is used for logs and such - we retain guild user objects for sticky roles but want to know they're not in the server anymore.
 })
 guildUserSchema.index({ userId: 1, guildId: 1 }, { unique: true }); // Compound unique index - only one user per guild
+guildUserSchema.index({ userId: 1, inServer: 1 }); // logs
+guildUserSchema.index({ tempRoles: 1 }); // logs
+
 //#endregion
 
 //#region Users
@@ -288,6 +293,8 @@ let userSchema = new mongoose.Schema({
     timer: timerSchema,
     captcha: Boolean,
 });
+userSchema.index({"hat_pull.location": 1});
+userSchema.index({"timer": 1, "timer.time": 1});
 //#endregion
 
 //#region Config

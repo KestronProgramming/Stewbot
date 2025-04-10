@@ -35,7 +35,6 @@ async function finTempRole(guildId, userId, roleId) {
 }
 
 async function scheduleTodaysTemproles() {
-    // TODO_DB: index this
     const tempRoleUsers = await GuildUsers.find(
         { tempRoles: { $exists: 1, $ne: {} } }
     )    

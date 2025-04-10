@@ -393,7 +393,7 @@ module.exports = {
 					await config.save();
 				}
 				else {
-					// Remove this channel from all feeds - TODO_DB: make sure RSS is only checked if it has a channel
+					// Remove this channel from all feeds
 					const updates = {};
 					for (const key of config.rss.keys()) {
 						updates[`rss.${key}.channels`] = channelInput.id;

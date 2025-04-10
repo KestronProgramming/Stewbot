@@ -73,7 +73,6 @@ async function finTempBan(guildId, who, force) {
 }
 
 async function getUnbannedTodayUsers() {
-	// TODO_DB: index?
 	return await Guilds.aggregate([
 		{
 			// Get all guilds with temp bans
@@ -202,8 +201,7 @@ module.exports = {
 			return;
 		}
 		
-		// TODO_DB: uncomment
-		// targetInServer.ban({reason:`Instructed to ${temp?`temporarily `:``}ban by ${cmd.user.username}${reason ? ": "+reason: "."}`});
+		targetInServer.ban({reason:`Instructed to ${temp?`temporarily `:``}ban by ${cmd.user.username}${reason ? ": "+reason: "."}`});
 		
 		if(cmd.options.getBoolean("private")===null||!cmd.options.getBoolean("private")){
 			try{

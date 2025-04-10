@@ -62,7 +62,6 @@ async function finHatPull(userId, force){
 }
 
 async function scheduleTodaysHats() {
-    // TODO_DB: if this is scheduled by main *and* this daily thread that could be an issue...
     const needsSchedulingFilter = { 
         hat_pull: { $exists: true },
         "hat_pull.closes": { $lt: Date.now() + ms("1d") },
@@ -247,7 +246,6 @@ module.exports = {
                 await cmd.deferUpdate();
 
                 // Grab the hatPull for this command
-                // TODO_DB: index hat pull location
                 hatPullHost = await Users.findOne({
                     "hat_pull.location": `${cmd.guild.id}/${cmd.channel.id}/${cmd.message.id}`
                 });

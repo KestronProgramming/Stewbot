@@ -56,7 +56,6 @@ async function finTimer(userId,force){
 
 async function scheduleTimerEnds() {
     // Grab all timers and schedule
-    // TODO_DB: index
     const usersWTimersEnding = await Users.find({
         timer: { $exists: true },
         "timer.time": { $gt: Date.now() - ms("10 min") } // Retroactively finish timers from 10 min ago... too late for anything else

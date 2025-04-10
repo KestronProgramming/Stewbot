@@ -50,8 +50,6 @@ module.exports = {
     async execute(cmd, context) {
         applyContext(context);
 
-        // TODO_DB: test this module
-
         const guild = await guildByObj(cmd.guild);
 
         let requestedUser;
@@ -65,8 +63,6 @@ module.exports = {
 
         switch (cmd.options.getString("which")) {
             case "levels":
-                // TODO_DB: test this when levels are ported
-
                 if (!guild.levels.active) {
                     cmd.followUp(`This server doesn't use level ups at the moment. It can be configured using ${cmds.levels_config.mention}.`);
                     return;
@@ -166,8 +162,6 @@ module.exports = {
                 });
                 break;
             case "emojiboard":
-                // TODO_DB WIP: come back and fix this once I have actual emoji data to build aggregation queries on
-
                 if (guild.emojiboards.size < 1) {
                     cmd.followUp(`This server doesn't use any emojiboards at the moment. It can be configured using ${cmds.add_emojiboard.mention}.`);
                     break;
