@@ -537,7 +537,7 @@ function daily(dontLoop=false){
 async function sendWelcome(guild) {
     guild = await client.guilds.fetch(guild.id);
     guild.channels.cache.forEach(chan=>{
-        if(chan.permissionsFor(client.user.id).has(PermissionFlagsBits.ViewChannel)){
+        if(chan?.permissionsFor(client.user.id).has(PermissionFlagsBits.ViewChannel)){
             chan?.messages?.fetch({limit:3}).then(messages=>messages.forEach(msg=>{
                 if(!storage[guild.id].sentWelcome&&(msg.content?.toLowerCase().includes("stewbot")||msg.content?.includes(client.user.id)||msg.author.id===client.user.id)){
                     var errorFields=[];

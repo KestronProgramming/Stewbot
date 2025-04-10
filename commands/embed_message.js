@@ -104,7 +104,7 @@ module.exports = {
         // Discord message embeds
         var links=msg.content.match(discordMessageRegex)||[];
         var progs=msg.content.match(kaProgramRegex)||[];
-        if(!storage[msg.author.id].config.embedPreviews||!storage[msg.guildId]?.config.embedPreviews||!msg.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)||!msg.channel.permissionsFor(msg.author.id)?.has(PermissionFlagsBits.EmbedLinks)){
+        if(!storage[msg.author.id].config.embedPreviews||!storage[msg.guildId]?.config.embedPreviews||!msg.channel?.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)||!msg.channel.permissionsFor(msg.author.id)?.has(PermissionFlagsBits.EmbedLinks)){
             // If the embed shouldn't be posted, force set it to nothing
             links=[];
             progs=[];
