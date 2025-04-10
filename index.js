@@ -160,6 +160,35 @@ function hash(obj) {
     return crypto.createHash('md5').update(input).digest('hex');
 }
 
+var ints=Object.keys(GatewayIntentBits).map(a=>GatewayIntentBits[a]);
+ints.splice(ints.indexOf(GatewayIntentBits.GuildPresences),1);
+ints.splice(ints.indexOf("GuildPresences"),1);
+const client=new Client({
+    intents:ints,
+    partials:Object.keys(Partials).map(a=>Partials[a])
+});
+global.client = client;
+global.notify = function(what, useWebhook=false) {
+    console.beta(what);
+    try {
+        if (useWebhook) {
+            fetch(process.env.logWebhook, {
+                'method': 'POST',
+                'headers': {
+                    "Content-Type": "application/json"
+                },
+                'body': JSON.stringify({
+                    'username': "Stewbot Notify Webhook", 
+                    "content": limitLength(what)
+                })
+            })
+        }
+        else client.channels.cache.get(process.env.beta ? config.betaNoticeChannel : config.noticeChannel).send(limitLength(what));//Notify the staff of the Kestron Support server
+    }catch(e){
+        console.beta("Couldn't send notify()")
+    }
+}
+
 // Database stuff
 const storageLocations = ["./storage.json", "./storage2.json"];
 let storageCycleIndex = 0;
@@ -258,14 +287,7 @@ commandsLoadedPromise.finally( _ => {
     fs.writeFileSync("./data/helpPages.json", JSON.stringify(helpCommands, null, 4))
 })
 
-var ints=Object.keys(GatewayIntentBits).map(a=>GatewayIntentBits[a]);
-ints.splice(ints.indexOf(GatewayIntentBits.GuildPresences),1);
-ints.splice(ints.indexOf("GuildPresences"),1);
-const client=new Client({
-    intents:ints,
-    partials:Object.keys(Partials).map(a=>Partials[a])
-});
-global.client = client;
+
 
 // Now that setup is done, define data that should be passed to each module - 
 const pseudoGlobals = {
@@ -588,6 +610,35 @@ async function sendWelcome(guild) {
                         "thumbnail":{
                             "url":config.pfp
                         }
+                      },{
+                        title: "Stewbot is turning 3!!!",
+                        description: "Stewbot is turning 3!!! We're celebrating by running a giveaway! On Stewbot's birthday (April 19th), we'll be giving away free Nitro to 3 different users!",
+                        url:"https://stewbot.kestron.com",
+                        fields: [
+                          {
+                            name: "How to Enter",
+                            value: "You'll need to be in Stewbot's home server to enter: https://discord.gg/9yKkQFgv92. Once there, check the #announcements channel!",
+                            inline: true
+                          },
+                          {
+                            name: "Getting Extra Entries",
+                            value: "You'll get **1** extra entry for every server you share with Stewbot with **50** or more non-bot members! Tell your friends about what Stewbot can do!",
+                            inline: true
+                          },
+                          {
+                            name: "Stewbot's Invite Link",
+                            value: "The invite link is https://discord.com/oauth2/authorize?client_id=966167746243076136, and the website for more info is https://stewbot.kestron.com. Hint! If you install Stewbot to your profile to use everywhere, you can access these links and more at any time by running /links!",
+                            inline: true
+                          }
+                        ],
+                        thumbnail: {
+                          url: "https://stewbot.kestron.com/stewbot.jpg"
+                        },
+                        color: 0x006400,
+                        footer: {
+                          text: "Stewbot",
+                          icon_url: "https://stewbot.kestron.com/stewbot.jpg"
+                        }
                       }];
                     if(errorFields.length>0){
                         embs.push({
@@ -607,26 +658,7 @@ async function sendWelcome(guild) {
         }
     });
 }
-global.notify = function(what, useWebhook=false) {
-    console.beta(what);
-    try {
-        if (useWebhook) {
-            fetch(process.env.logWebhook, {
-                'method': 'POST',
-                'headers': {
-                    "Content-Type": "application/json"
-                },
-                'body': JSON.stringify({
-                    'username': "Stewbot Notify Webhook", 
-                    "content": limitLength(what)
-                })
-            })
-        }
-        else client.channels.cache.get(process.env.beta ? config.betaNoticeChannel : config.noticeChannel).send(limitLength(what));//Notify the staff of the Kestron Support server
-    }catch(e){
-        console.beta("Couldn't send notify()")
-    }
-}
+
 function checkPersistentDeletion(guild, channel, message){
     // If persistence is not active, or a new persistence message was posted, it was stewbot who deleted it.
     if(!storage[guild].persistence[channel].active || storage[guild].persistence[channel].lastPost!==message){
@@ -656,9 +688,9 @@ client.once("ready",async ()=>{
     console.beta(`Logged into ${client.user.tag}`);
     
     // Status
-    client.user.setActivity("𝐒teward 𝐓o 𝐄xpedite 𝐖ork",{type:ActivityType.Custom},1000*60*60*4);
+    client.user.setActivity("Celebrate my /birthday!",{type:ActivityType.Custom},1000*60*60*4);//𝐒teward 𝐓o 𝐄xpedite 𝐖ork
     setInterval(()=>{
-        client.user.setActivity("𝐒teward 𝐓o 𝐄xpedite 𝐖ork",{type:ActivityType.Custom},1000*60*60*4);
+        client.user.setActivity("Celebrate my /birthday!",{type:ActivityType.Custom},1000*60*60*4);
     },60000*5);
     var now=new Date();
     setTimeout(daily,((now.getHours()>11?11+24-now.getHours():11-now.getHours())*(60000*60))+((60-now.getMinutes())*60000));
@@ -1272,7 +1304,7 @@ client.on("guildMemberAdd",async member=>{
                 member.send({embeds:[{
                     type: "rich",
                     title: member.guild.name,
-                    description: storage[member.guild.id].ajm.message.replaceAll("${@USER}", `<@${member.id}> ${member.user.username ? `(**${member.user.username}**)` : '' }`),
+                    description: storage[member.guild.id].ajm.message.replaceAll("${@USER}", `<@${member.id}> ${member.user.username ? `(**${member.user.username}**)` : '' }`).replaceAll("\\n","\n"),
                     color: 0x006400,
                     thumbnail: {
                         url: member.guild.iconURL(),
@@ -1285,7 +1317,7 @@ client.on("guildMemberAdd",async member=>{
         }
         else{
             var resp={
-                content:storage[member.guild.id].ajm.message.replaceAll("${@USER}",`<@${member.id}> ${member.user.username ? `(**${member.user.username}**)` : '' }`),
+                content:storage[member.guild.id].ajm.message.replaceAll("${@USER}",`<@${member.id}> ${member.user.username ? `(**${member.user.username}**)` : '' }`).replaceAll("\\n","\n"),
                 username:member.guild.name,
                 avatarURL:member.guild.iconURL()
             };
