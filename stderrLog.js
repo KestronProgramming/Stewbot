@@ -1,4 +1,4 @@
-#!/usr/local/bin/node
+#!/usr/bin/env node
 
 // Info:
 // To make this file runable, run `chmod +x ./stderrLog.js`

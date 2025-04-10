@@ -583,18 +583,18 @@ async function sendWelcome(guild) {
     };
 }
 
-async function checkPersistentDeletion(guild, channel, message){
+async function checkPersistentDeletion(guildId, channelId, messageId){
     // If persistence is not active, or a new persistence message was posted, it was stewbot who deleted it.
-    const guildStore = await guildByID(guild);
-    if(!guild.persistence[channel].active || guild.persistence[channel].lastPost!==message){
+    const guildStore = await guildByID(guildId);
+    if(!guildId.persistence[channelId].active || guildId.persistence[channelId].lastPost!==messageId){
         return;
     }
     // If stewbot did not delete it, deactivate it.
-    guildStore.persistence[channel].active=false;
+    guildStore.persistence[channelId].active=false;
     await guildStore.save();
 
-    channel=client.channels.cache.get(channel);
-    if(channel.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)) channel.send(`I have detected that a moderator deleted the persistent message set for this channel, and as such I have deactivated it. To reactivate it, a moderator can run ${cmds.set_persistent_message.mention}.`);
+    channelId=client.channels.cache.get(channelId);
+    if(channelId.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)) channelId.send(`I have detected that a moderator deleted the persistent message set for this channel, and as such I have deactivated it. To reactivate it, a moderator can run ${cmds.set_persistent_message.mention}.`);
 }
 //#endregion Functions
 
@@ -632,7 +632,7 @@ client.once("ready",async ()=>{
 
         if(!knownGuild) {
             notify("Added to **new server** (detected on boot scan)")
-            await guildByID(guild); // This will create the guild
+            await guildByObj(guild); // This will create the guild
             sendWelcome(guild);
         }
     });

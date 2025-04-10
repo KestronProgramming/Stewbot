@@ -111,7 +111,7 @@
     },
     {
         "name": "birthday",
-        "mention": "</birthday:1356405784824643636>",
+        "mention": "`birthday` Module",
         "helpCategories": [
             "Information",
             "Entertainment",
