@@ -119,7 +119,7 @@ module.exports = {
 
     // Watch for discord message embeds
     /** @param {import('discord.js').Message} msg */
-    async onmessage(msg, context) {
+    async onmessage(msg, context, guildStore, guildUserStore) {
 		applyContext(context);
 
         // Discord message embeds
@@ -148,10 +148,11 @@ module.exports = {
                 }
 
                 // Now check guild
-                if (!msg.guild) return;
-                const guild = await Guilds.findOrCreate({ id: msg.guild.id })
-                    .select("config.embedPreviews")
-                    .lean({ virtuals: true });
+                // if (!msg.guild) return;
+                // const guild = await Guilds.findOrCreate({ id: msg.guild.id })
+                //     .select("config.embedPreviews")
+                //     .lean({ virtuals: true });
+                const guild = guildStore;
 
                 if (!guild.config.embedPreviews) {
                     links = progs = [];

@@ -29,7 +29,7 @@ const mongooseLeanVirtuals = require('mongoose-lean-virtuals');
 const mongooseLeanDefaults = require('mongoose-lean-defaults').default;
 mongoose.plugin(mongooseLeanDefaults)
 mongoose.plugin(mongooseLeanVirtuals)
-mongoose.set('setDefaultsOnInsert', true);
+mongoose.set('setDefaultsOnInsert', false);
 
 //#region Guild
 let persistenceSchema = new mongoose.Schema({
@@ -350,7 +350,7 @@ function findOrCreate(query, updates = {}) {
         {
             new: true,
             upsert: true,
-            setDefaultsOnInsert: true
+            setDefaultsOnInsert: false
         }
     );
 }
@@ -393,19 +393,19 @@ async function guildByObj(obj, updates={}) {
     return guild;
 }
 
-async function userByID(id, updates={}) {
+async function userByID(id, updates={}, upsert=true) {
     // Fetch a user from the DB, apply updates, and create it if it does not already exist
     const user = await Users.findOneAndUpdate({ id }, updates, {
         new: true,
-        upsert: true,
-        setDefaultsOnInsert: true
+        upsert,
+        setDefaultsOnInsert: false
     });
     
     return user;
 }
 
 /** @returns {Promise<import("mongoose").HydratedDocument<import("mongoose").InferSchemaType<typeof userSchema>>>} */
-async function userByObj(obj, updates={}) {
+async function userByObj(obj, updates={}, upsert=true) {
     // Beta prechecks for dev mistakes
     if (
         process.env.beta && (
@@ -417,7 +417,7 @@ async function userByObj(obj, updates={}) {
         notify(warning);
     }
 
-    const user = await userByID(obj.id, updates);
+    const user = await userByID(obj.id, updates, upsert);
 
     return user;
 }
@@ -429,7 +429,7 @@ async function guildUserByID(guildID, userID, updateData={}, upsert) {
     const user = await GuildUsers.findOneAndUpdate(
         { guildId: guildID, userId: userID },
         { $set: updateData },
-        { new: true, setDefaultsOnInsert: true, upsert }
+        { new: true, setDefaultsOnInsert: false, upsert }
     );
 
     return user;
@@ -464,6 +464,13 @@ async function guildUserByObj(guild, userID, updateData={}) {
     return user;
 }
 //#endregion
+
+
+// Cache invalidators
+guildSchema.post('save', doc => { global.messageDataCache.del(doc.id || "") });
+guildSchema.post('findOneAndUpdate', doc => { global.messageDataCache.del(doc.id || "") });
+guildUserSchema.post('save', doc => { global.messageDataCache.del(`${doc.guildId}>${doc.userId}` || "") });
+guildUserSchema.post('findOneAndUpdate', doc => { global.messageDataCache.del(`${doc.guildId}>${doc.userId}` || "") });
 
 
 // Set plugins and define docs

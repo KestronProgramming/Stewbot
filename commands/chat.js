@@ -437,18 +437,18 @@ module.exports = {
     },
 
     /** @param {import('discord.js').Message} msg */
-    async onmessage(msg, globals) {
+    async onmessage(msg, globals, guildStore, guildUserStore) {
         applyContext(globals);
 
-        const guild = await guildByObj(msg.guild);
-        const user = await userByObj(msg.author);
+        if (!msg.mentions.users.has(client.user.id)) return; // If the bot wasn't pinged
 
-        // If the bot is pinged
-        if (
-            msg.mentions.users.has(client.user.id)
-            && user?.config.aiPings !== false        // Check if the user has explicitly disabled AI pings
-            && !(guild?.config.ai === false)         // And as long as the guild has not explicitly disabled it
-        ) {
+        // Check the guild settings since we already have it first
+        const guild = guildStore;
+        if (!guild.config.ai) return; 
+
+        // Then as long as the user did not blacklist it
+        const user = await userByObj(msg.author);
+        if (user.config.aiPings) {
             const botSettings = await ConfigDB.findOne().lean();
 
             // Check for available servers before sending typing indicator (only for Ollama)

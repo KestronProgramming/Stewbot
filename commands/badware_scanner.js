@@ -267,10 +267,11 @@ module.exports = {
     },
 
 	/** @param {import('discord.js').Message} msg */
-    async onmessage(msg, context) {
+    async onmessage(msg, context, guildStore, guildUserStore) {
 		applyContext(context);
 
-        const guild = await guildByObj(msg.guild);
+        // const guild = await guildByObj(msg.guild);
+        const guild = guildStore;
 
         try {
             // Check domain

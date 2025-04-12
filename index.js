@@ -199,6 +199,7 @@ global.notify = function(what, useWebhook=false) {
 // Other data
 var uptime=0;
 const { guildByID, guildByObj, userByID, userByObj, Guilds, Users, GuildUsers, ConfigDB, guildUserByID, guildUserByObj } = require('./commands/modules/database');
+const NodeCache = require('node-cache');
 
 // Build dynamic help pages
 var helpCommands=[];
@@ -646,12 +647,64 @@ client.once("ready",async ()=>{
     scheduleTodaysSlowmode();
 });
 
+// Global message guild cache allows us to have less calls to the DB, and invalidate cache when we change settings
+const messageDataCache = global.messageDataCache = new NodeCache({ stdTTL: 5, checkperiod: 30 });
+// In order to update this cache, se would have to invalidate it on: block_command, ...
+
 client.on("messageCreate",async msg => {
     if(msg.author.id===client.user.id) return;
 
+    // Read-only storge objects
+    let readGuildUser;
+    let readGuild;
+    let readHomeGuild;
+
+    // Efficiently create, store, and update users
+    if (msg.guild) {
+        const guildKey = `${msg.guild.id}`;
+        const guildUserKey = `${msg.guild.id}>${msg.author.id}`;
+        const homeGuildKey = config.homeServer;
+
+        // As this is called every single message, we'll have a short cache
+        readGuild = messageDataCache.get(guildKey);
+        readGuildUser = messageDataCache.get(guildUserKey);
+        readHomeGuild = messageDataCache.get(homeGuildKey);
+        
+        if (!readGuild) {
+            readGuild = await Guilds.findOneAndUpdate( // Everything in guildByID, except I have more control to lean it since these are called super often
+                { id: msg.guild.id }, 
+                { },
+                { new: true, upsert: true, setDefaultsOnInsert: true }
+            ).lean({ virtuals: true });
+            // TODO: this one is large, ideally add a select to it
+
+            messageDataCache.set(guildKey, readGuild);
+        }
+
+        if (!readGuildUser) {
+            readGuildUser = await GuildUsers.findOneAndUpdate(
+                { guildId: msg.guild.id, userId: msg.author.id },
+                { },
+                { new: true, setDefaultsOnInsert: false, upsert: true }
+            ).lean({ virtuals: true });
+
+            messageDataCache.set(guildUserKey, readGuildUser);
+        }
+
+        if (!readHomeGuild) {
+            readHomeGuild = await Guilds.findOneAndUpdate(
+                { id: config.homeServer },
+                { },
+                { new: true, setDefaultsOnInsert: false, upsert: true }
+            ).lean({ virtuals: true });
+
+            messageDataCache.set(homeGuildKey, readHomeGuild, ms("5 min")/1000);
+        }
+    }
+
     msg.guildId=msg.guildId||"0";
 
-    if(msg.guild){
+    if(msg.guild) {
         // Disable features in the server that the bot does not have permissions for.
         Object.keys(PermissionFlagsBits).forEach(perm=>{
             if(!msg.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits[perm])){
@@ -664,22 +717,22 @@ client.on("messageCreate",async msg => {
     for (const [name, module] of Object.entries(messageListenerModules)) {
         // Check if this command is blocked with /block_module
         const commandPath = `${module.data?.command?.name || name}`; // ||name handles non-command modules
+        
         // If this is a guild, check for blocklist
         if (msg.guild?.id) {
-            
-            let guildBlocklist = (await guildByObj(msg.guild)).blockedCommands;
+            let guildBlocklist = readGuild.blockedCommands;
             guildBlocklist = guildBlocklist.map(blockCommand => blockCommand.replace(/^\//, '')) // Backwards compatability with block_command which had a leading /
             if (guildBlocklist.includes(commandPath)) {
                 continue; // Ignore this module
             }
         }
-        // Check global blacklist from home server
-        const globalBlocklist = (await guildByID(config.homeServer)).blockedCommands; // TODO: look into long cache for queries like this? A minute at least
+        // Check global blacklist from home server - TODO more aggressive caching on this one
+        const globalBlocklist = readHomeGuild.blockedCommands;
         if (globalBlocklist.includes(commandPath)) {
             continue;
         }
 
-        module.onmessage(msg, pseudoGlobals);
+        module.onmessage(msg, pseudoGlobals, readGuild, readGuildUser);
     }
 
     // The sudo handler uses so many globals, it can stay in index.js for now

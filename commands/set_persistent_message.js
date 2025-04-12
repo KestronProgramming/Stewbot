@@ -104,26 +104,23 @@ module.exports = {
 	},
 
     /** @param {import('discord.js').Message} msg */
-    async onmessage(msg, context) {
+    async onmessage(msg, context, guildStore, guildUserStore) {
         if (msg.webhookId) return;
 		applyContext(context);
 
-        // TODO_DB: this runs on every message, optimize
-
-        const guild = await guildByObj(msg.guild);
+        // const guild = await guildByObj(msg.guild);
+        const guild = guildStore;
 
         // Persistent messages, if the server has them enabled
-        if(guild.persistence.get(msg.channel.id)?.active) {
+        if(guild.persistence[msg.channel.id]?.active) {
             if(msg.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.ManageWebhooks) && msg.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.ManageMessages) && msg.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.ReadMessageHistory)){
-                if(guild.persistence.get(msg.channel.id).lastPost!==null){
-                    try{
-                        var mes=await msg.channel.messages.fetch(guild.persistence.get(msg.channel.id).lastPost).catch(e=>{});
-                        if(mes.content) mes.delete().catch(e=>{});
-                    }
-                    catch(e){}
+                if(guild.persistence[msg.channel.id].lastPost){
+                    msg.channel.messages.fetch(guild.persistence[msg.channel.id].lastPost).then(mes => {
+                        mes?.delete()?.catch(e=>{});
+                    }).catch(e=>{});
                 }
                 var resp={
-                    "content":guild.persistence.get(msg.channel.id).content,
+                    "content":guild.persistence[msg.channel.id].content,
                     "avatarURL":msg.guild.iconURL(),
                     "username":msg.guild.name
                 };
@@ -137,19 +134,25 @@ module.exports = {
                         avatar: config.pfp
                     });
                 }
-                const d = await hook.send(resp)
-                guild.persistence.get(msg.channel.id).lastPost=d.id;
+                const newMessage = await hook.send(resp)
+                
+                await guildByObj(msg.guild, {
+                    [`persistence.${msg.channel.id}.lastPost`]: newMessage.id
+                });
 
             }
             else {
                 if(msg.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
                     msg.channel.send(`I do not have sufficient permissions to manage persistent messages for this channel. Please make sure I can manage webhooks, read message history, and delete messages and then run ${cmds.set_persistent_message.mention}.`);
                 }
-                guild.persistence.get(msg.channel.id).active=false;
+
+                await guildByObj(msg.guild, {
+                    [`persistence.${msg.channel.id}.active`]: false
+                });
             }
 
             // Maybe save the new ID, then delete the old one? Might work better in high-traffic servers. Also timeout for 3 seconds before reposting
-            await guild.save();
+            // await guild.save();
         }
     }
 };

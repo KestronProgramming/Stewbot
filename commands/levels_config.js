@@ -73,12 +73,13 @@ module.exports = {
 	},
 
 	/** @param {import('discord.js').Message} msg */
-    async onmessage(msg, context) {
+    async onmessage(msg, context, guildStore, guildUserStore) {
 		applyContext(context);
 		if (!msg.guild) return;
 
 		// TODO_DB: this is run on every server with messages, so optimize.
-		const guild = await guildByObj(msg.guild);
+		// const guild = await guildByObj(msg.guild);
+		const guild = guildStore;
 
 		// Level-up XP
 		if (
@@ -142,7 +143,10 @@ module.exports = {
 						}
 						else {
 							// Change to DB if we don't have perms over webhooks
-							guild.levels.location="DM";
+							await guildByObj(msg.guild, {
+								"guild.levels.location": "DM"
+							})
+							
 							try{
 								msg.author.send({embeds:[{
 									"type": "rich",
@@ -165,7 +169,7 @@ module.exports = {
 			}
 			
 			guildUser.save();
-			guild.save();
+			// guild.save();
 		}
 		
 	}

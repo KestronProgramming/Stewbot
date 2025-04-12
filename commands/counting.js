@@ -248,15 +248,20 @@ module.exports = {
     },
 
     /** @param {import('discord.js').Message} msg */
-    async onmessage(msg, context) {
+    async onmessage(msg, context, guildStore, guildUserStore) {
         applyContext(context);
 
-        const guild = await guildByObj(msg.guild);
-        const guildCounting = guild.counting; // efficiency
+        let guild = guildStore; //await guildByObj(msg.guild);
+        let guildCounting = guild.counting;
+
         let guildUser;
 
         // Counting
         if (!msg.author.bot && guildCounting.active && msg.channel.id === guildCounting.channel) {
+
+            // Fetch the full guild object for simplicity - TODO_DB: this could be made more efficient
+            let guild = await guildByObj(msg.guild);
+            let guildCounting = guild.counting;
             
             // Fetch the guild user's doc if we're counting
             guildUser = await guildUserByObj(msg.guild, msg.author.id)
@@ -292,6 +297,7 @@ module.exports = {
                             { $inc: { countTurns: -1 } }
                         );
 
+                        // TODO_DB: increment instead of direct set
                         guildUser.count++;
                         guildUser.countTurns = guildCounting.takeTurns;
 

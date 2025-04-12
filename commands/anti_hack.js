@@ -61,8 +61,8 @@ module.exports = {
     },
     
     /** @param {import('discord.js').Message} msg */
-    async onmessage(msg, context) {
-        const guild = await guildByObj(msg.guild);
+    async onmessage(msg, context, guildStore, guildUserStore) {
+        const guild = guildStore;
 
         if (guild.disableAntiHack) return;
         applyContext(context);
@@ -76,7 +76,6 @@ module.exports = {
             ? guild.config.antihack_log_channel || false 
             : false;
         let autoDelete = guild.config.antihack_auto_delete;
-        if (autoDelete == null) autoDelete = true; // Default to true 
         
         const userIsAdmin = msg.member.permissions.has(PermissionFlagsBits.Administrator);
         const timeoutable = msg.member.manageable && !userIsAdmin;
@@ -109,7 +108,7 @@ module.exports = {
                     const toNotify = cache[msg.author.id].hashStreak == 3;
                     
                     const user = await userByObj(msg.author);
-                    const userInGuild = await guildUserByObj(msg.guild, msg.author.id);
+                    const userInGuild = guildUserStore; //await guildUserByObj(msg.guild, msg.author.id);
 
                     // Handle this user
                     user.captcha=true;
@@ -125,11 +124,12 @@ module.exports = {
                         }
 
                         const logChannel = logChannelId
-                            ? await msg.guild.channels.fetch(logChannelId).catch(() => {
+                            ? await msg.guild.channels.fetch(logChannelId).catch(async () => {
                                 // If this channel doesn't exist (was deleted), disable logging to it
-                                guild.config.antihack_log_channel = "";
-                                guild.config.antihack_to_log = false;
-                                guild.save();
+                                await guildByObj(msg.guild, {
+                                    "guild.config.antihack_log_channel": "",
+                                    "guild.config.antihack_to_log": false
+                                });
 
                                 toLog = false;
                                 return msg.channel;

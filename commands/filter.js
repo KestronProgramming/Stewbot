@@ -371,16 +371,17 @@ module.exports = {
     },
 
     /** @param {import('discord.js').Message} msg */
-    async onmessage(msg, context) {
+    async onmessage(msg, context, guildStore, guildUserStore) {
         if (!msg.guild) return;
 		applyContext(context);
 
         // const guild = await guildByObj(msg.guild);
 
         // TODO: look into major caching here too
-        const guild = await Guilds.findOrCreate({ id: msg.guildId })
-            .select("filter")
-            .lean({ virtuals: true });
+        // const guild = await Guilds.findOrCreate({ id: msg.guildId })
+        //     .select("filter")
+        //     .lean({ virtuals: true });
+        const guild = guildStore;
 
         // Filter
         if(guild?.filter?.active){
@@ -396,7 +397,7 @@ module.exports = {
                 await GuildUsers.updateOne(
                     { guildId: msg.guild.id, userId: msg.author.id },
                     { $inc: { infractions: 1 } },
-                    { upsert: true, setDefaultsOnInsert: true }
+                    { upsert: true, setDefaultsOnInsert: false }
                 );
 
                 // Send webhook

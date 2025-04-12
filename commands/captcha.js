@@ -76,9 +76,11 @@ module.exports = {
 					
 					const user = await userByObj(cmd.user);
 
+					// TODO_DB look into this
 					user.captcha=false;
 					user.lastHash="";
 					user.hashStreak=0;
+					
 					for(var to=0;to<user.timedOutIn.length;to++){
 						try{
 							client.guilds.fetch(user.timedOutIn[to]).then(guild=>{
