@@ -241,8 +241,7 @@ const startBackupThreadPromise = new Promise(async (resolve, reject) => {
     }
 
     async function deleteFileIfExists(drive, folderId, filePath) {
-        const baseFileName = path.basename(filePath);
-        const driveFileName = envs.beta ? "beta-" + baseFileName : baseFileName;
+        const driveFileName = path.basename(filePath);
 
         try {
             const { google } = await loadGoogleApis();
@@ -257,6 +256,7 @@ const startBackupThreadPromise = new Promise(async (resolve, reject) => {
             // Use >= to delete *down to* the desired number - 1
             while (files.length >= numberBackups) {
                 const fileToDelete = files.shift(); // Oldest
+                if (envs.beta) console.log("Deleting drive file " + fileToDelete.id + " ")
                 try {
                     await drive.files.delete({ fileId: fileToDelete.id });
                 } catch (deleteErr) {
@@ -380,7 +380,7 @@ const startBackupThreadPromise = new Promise(async (resolve, reject) => {
 
         // 4. Upload to Google Drive
         try {
-            await deleteFileIfExists(googleDrive, folderId, outputName);
+            await deleteFileIfExists(googleDrive, folderId, uploadName);
             await uploadZipFile(googleDrive, outputName, uploadName);
             // console.log(`Backup of "${filename}" successful.`); // Optional success log
         } catch (err) {
