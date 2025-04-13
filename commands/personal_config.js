@@ -34,6 +34,8 @@ module.exports = {
 				option.setName("level_up_messages").setDescription("Do you want to receive messages letting you know you leveled up?")
 			).addBooleanOption(option=>
 				option.setName("configure_timezone").setDescription("Open up a menu to configure your timezone?")
+			).addBooleanOption(option=>
+				option.setName("attachment_protection").setDescription("Protect you from leaking personal information in your message attachments")
 			),
 		
 		// Optional fields
@@ -62,7 +64,8 @@ module.exports = {
 		if (cmd.options.getBoolean("dm_infractions") !== null) user.config.dmOffenses = cmd.options.getBoolean("dm_infractions");
 		if (cmd.options.getBoolean("dm_infraction_content") !== null) user.config.returnFiltered = cmd.options.getBoolean("dm_infraction_content");
 		if (cmd.options.getBoolean("embeds") !== null) user.config.embedPreviews = cmd.options.getBoolean("embeds");
-		if (cmd.options.getBoolean("level_up_messages" !== null)) user.config.levelUpMsgs = cmd.options.getBoolean("level_up_messages");
+		if (cmd.options.getBoolean("level_up_messages") !== null) user.config.levelUpMsgs = cmd.options.getBoolean("level_up_messages");
+		if (cmd.options.getBoolean("attachment_protection") !== null) user.config.attachmentProtection = cmd.options.getBoolean("attachment_protection");
 		
 		// Timezone response is more complex so respond differently at the end if we're configuring that 
 		if(!cmd.options.getBoolean("configure_timezone")){
@@ -94,7 +97,7 @@ module.exports = {
             });
 		}
 
-		user.save();
+		await user.save();
 	},
 
 	subscribedButtons: ["tzUp", "tzDown", "tzSave"],

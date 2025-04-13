@@ -273,6 +273,7 @@ let userConfigSchema = new mongoose.Schema({
     levelUpMsgs: { type: Boolean, default: true },
     hasSetTZ: { type: Boolean, default: false },
     timeOffset: { type: Number, default: 0 },
+    attachmentProtection: { type: Boolean, default: true },
 })
 
 let userSchema = new mongoose.Schema({

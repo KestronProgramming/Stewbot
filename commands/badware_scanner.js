@@ -1,7 +1,7 @@
 // #region CommandBoilerplate
 const Categories = require("./modules/Categories");
 const { Guilds, Users, guildByID, userByID, guildByObj, userByObj } = require("./modules/database.js")
-const { ContextMenuCommandBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
+const { ContextMenuCommandBuilder, DiscordAPIError, InteractionContextType: IT, ApplicationIntegrationType: AT, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
 function applyContext(context={}) {
 	for (key in context) {
 		this[key] = context[key];
@@ -9,8 +9,40 @@ function applyContext(context={}) {
 }
 // #endregion CommandBoilerplate
 
+// const exif = require('exif-parser'); // We could check if it has sensitive data before
+// const sharp = require("sharp")
+const heicConvert = require('heic-convert');
 
+// Attachment leak-checkers
+const filetypeCleaners = {
+    'image/heic': async (attachment) => {
+        try {
+            const response = await fetch(attachment.url);
+            const buffer = await getBufferFromFetch(response);
 
+            // Sharp doesn't do heic apparently
+            // const convertedBuffer = await sharp(buffer)
+            //     .jpeg({ quality: 90 })
+            //     .toBuffer();
+
+            const convertedBuffer = await heicConvert({
+                buffer: buffer,
+                format: 'PNG',
+                quality: 0.8
+            });
+            
+            return {
+                filename: attachment.name.replace(/\.heic$/i, '.jpg'),
+                buffer: convertedBuffer,
+                leaked: true,
+            };
+        } catch {
+            return null;
+        }
+    }
+};
+
+// URL blockers
 const blocklistsLocation = `./data/filterCache/`
 const blocklists = [
 	{
@@ -207,6 +239,11 @@ function detectMismatchedDomains(markdown) {
     return null;
 }
 
+async function getBufferFromFetch(res) {
+    const buffer = await res.arrayBuffer();
+    return Buffer.from(buffer);
+}
+
 module.exports = {
     updateBlocklists, // This function will be called in the dailies
 
@@ -315,6 +352,81 @@ module.exports = {
                         return await msg.react(scamEmoji);
                     }
                 }
+            }
+
+            // Check for the user leaking their address via metadata
+            if (msg.attachments.size > 0) {
+                const user = await userByObj(msg.author);
+                if (user.config.attachmentProtection) {
+                    const blacklistedFileTypes = Object.keys(filetypeCleaners);
+                    const attachments = Array.from(msg.attachments.values());
+                
+                    const needsStripping = attachments.some(att => 
+                        blacklistedFileTypes.includes(att.contentType));
+                
+                    if (needsStripping) {
+
+                        // If we have permission to delete
+                        if (msg.channel.permissionsFor(client.user).has(PermissionFlagsBits.ManageMessages)) {
+                            let cleanedAttachments = [];
+                    
+                            for (const attachment of attachments) {
+                                const cleaner = filetypeCleaners[attachment.contentType];
+                                let cleaned = null;
+                    
+                                if (cleaner) {
+                                    cleaned = await cleaner(attachment);
+                                }
+
+                                if (cleaned) {
+                                    cleanedAttachments.push(cleaned);
+                                } else {
+                                    // Pass through non-cleaned or unsupported files
+                                    const res = await fetch(attachment.url);
+                                    const buffer = await getBufferFromFetch(res);
+                    
+                                    cleanedAttachments.push({
+                                        buffer,
+                                        filename: attachment.name
+                                    });
+                                }
+                            }
+                    
+                            await msg.delete();
+
+                            let message = 
+                                `<@${msg.author.id}> your attachments contained sensitive data (e.g. the GPS/location the photo was taken), I have cleaned them and reuploaded your attachments.\n`+
+                                `-# You can prevent this feature by running ${cmds.personal_config.mention}\n`
+                            
+                            if (msg.content) 
+                                message += 
+                                    `\n`+
+                                    `Below is the original message from <@${msg.author.id}>:\n`+ 
+                                    `>>> ` + limitLength(msg.content, 1700)
+                
+                            await msg.channel.send({
+                                content: message,
+                                files: cleanedAttachments.map(f => ({
+                                    attachment: f.buffer,
+                                    name: f.filename
+                                }))
+                            });
+                        }
+
+                        // if we can't delete, DM
+                        else {
+                            await msg.author.send({
+                                content:`⚠️ WARNING: \n`+
+                                        `The attachments you uploaded in <#${msg.channel.id}> are of a filetype that discord cannot process.\n`+
+                                        `These filetypes can contain data (e.g., the GPS/location the photo was taken). I suggest deleting your message and converting to a more standard format.\n` +
+                                        `\n` +
+                                        `I tried to clean them myself, but do not have sufficient permissions in the server (\`Manage_Messages\`).\n`+
+                                        `-# You can prevent this feature by running ${cmds.personal_config.mention}`
+                            });
+                        }
+                    }
+                }
+                
             }
 
         } catch (error) {
