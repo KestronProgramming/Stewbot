@@ -62,6 +62,8 @@ module.exports = {
     
     /** @param {import('discord.js').Message} msg */
     async onmessage(msg, context, guildStore, guildUserStore) {
+        if (!msg.guild) return;
+        
         const guild = guildStore;
 
         if (guild.disableAntiHack) return;

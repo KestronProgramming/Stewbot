@@ -662,14 +662,7 @@ client.on("messageCreate",async msg => {
     // Efficiently create, store, and update users
     if (msg.guild) {
         const guildKey = `${msg.guild.id}`;
-        const guildUserKey = `${msg.guild.id}>${msg.author.id}`;
-        const homeGuildKey = config.homeServer;
-
-        // As this is called every single message, we'll have a short cache
         readGuild = messageDataCache.get(guildKey);
-        readGuildUser = messageDataCache.get(guildUserKey);
-        readHomeGuild = messageDataCache.get(homeGuildKey);
-        
         if (!readGuild) {
             readGuild = await Guilds.findOneAndUpdate( // Everything in guildByID, except I have more control to lean it since these are called super often
                 { id: msg.guild.id }, 
@@ -681,6 +674,8 @@ client.on("messageCreate",async msg => {
             messageDataCache.set(guildKey, readGuild);
         }
 
+        const guildUserKey = `${msg.guild.id}>${msg.author.id}`;
+        readGuildUser = messageDataCache.get(guildUserKey);
         if (!readGuildUser) {
             readGuildUser = await GuildUsers.findOneAndUpdate(
                 { guildId: msg.guild.id, userId: msg.author.id },
@@ -690,16 +685,19 @@ client.on("messageCreate",async msg => {
 
             messageDataCache.set(guildUserKey, readGuildUser);
         }
+    }
 
-        if (!readHomeGuild) {
-            readHomeGuild = await Guilds.findOneAndUpdate(
-                { id: config.homeServer },
-                { },
-                { new: true, setDefaultsOnInsert: false, upsert: true }
-            ).lean({ virtuals: true });
+    // Always fetch the home guild
+    const homeGuildKey = config.homeServer;
+    readHomeGuild = messageDataCache.get(homeGuildKey);
+    if (!readHomeGuild) {
+        readHomeGuild = await Guilds.findOneAndUpdate(
+            { id: config.homeServer },
+            { },
+            { new: true, setDefaultsOnInsert: false, upsert: true }
+        ).lean({ virtuals: true });
 
-            messageDataCache.set(homeGuildKey, readHomeGuild, ms("5 min")/1000);
-        }
+        messageDataCache.set(homeGuildKey, readHomeGuild, ms("5 min")/1000);
     }
 
     msg.guildId=msg.guildId||"0";

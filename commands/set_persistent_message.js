@@ -106,6 +106,7 @@ module.exports = {
     /** @param {import('discord.js').Message} msg */
     async onmessage(msg, context, guildStore, guildUserStore) {
         if (msg.webhookId) return;
+        if (!msg.guild) return;
 		applyContext(context);
 
         // const guild = await guildByObj(msg.guild);
