@@ -286,7 +286,6 @@ module.exports = {
                                 `## :warning: WARNING :warning:\n` +
                                 `The link sent in this message was found in the blocklist [${triggerdBlocklist.title}](${triggerdBlocklist.url})\n` +
                                 `\n` +
-                                `-# This module is part of a new Stewbot feature. Use ${cmds.report_problem.mention} to report any issues.\n` +
                                 `-# If you need to disable this feature, run ${"`/badware_scanner domain_scanning:false`"}`
                             );
                         } else if (msg.channel.permissionsFor(client.user).has(PermissionFlagsBits.AddReactions)) {
@@ -307,7 +306,6 @@ module.exports = {
                                 `## :warning: WARNING :warning:\n` +
                                 `The link in this message links to **${fakeLink.real}**, NOT **${fakeLink.fake}**, which it looks like.\n` +
                                 `\n` +
-                                `-# This module is part of a new Stewbot feature. Use ${cmds.report_problem.mention} to report any issues.\n` +
                                 `-# If you need to disable this feature, run ${"`/badware_scanner fake_link_check:false`"}`,
                             allowedMentions:{parse:[]}
                         })
