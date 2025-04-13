@@ -177,6 +177,8 @@ async function launchCommands() {
 if (require.main == module) {
 	launchCommands().then( re => 
 		console.log(re)
+	).finally( _ => 
+		process.exit() // needed since mongo is connected and keeps it alive
 	)
 }
 else {

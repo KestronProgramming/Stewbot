@@ -111,7 +111,7 @@
     },
     {
         "name": "birthday",
-        "mention": "</birthday:1356405784824643636>",
+        "mention": "</birthday:1360876537955614734>",
         "helpCategories": [
             "Information",
             "Entertainment",
@@ -224,14 +224,13 @@
         "detailedDesc": "Delete the specified number of messages in bulk. Must be less than a hundred for each time this command is used."
     },
     {
-        "name": "delete_message",
-        "mention": "</delete_message:1289093272932974660>",
+        "name": "delete_until",
+        "mention": "</delete_until:1361038927879737515>",
         "helpCategories": [
-            "Bot",
             "Administration"
         ],
-        "shortDesc": "Delete the message, useful for Stewbot DMs",
-        "detailedDesc": "Deletes the specified message from the context menu. This command exists primarily to remove DMs with Stewbot."
+        "shortDesc": "Bulk delete up to a certain point",
+        "detailedDesc": "Delete all messages in the current thread until the selected message. This counts how many messages there are until the message you selected, and deletes all of those."
     },
     {
         "name": "donate",
