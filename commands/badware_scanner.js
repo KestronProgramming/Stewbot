@@ -367,7 +367,9 @@ module.exports = {
                     if (needsStripping) {
 
                         // If we have permission to delete
-                        if (msg.channel.permissionsFor(client.user).has(PermissionFlagsBits.ManageMessages)) {
+                        if ( msg.channel.permissionsFor(client.user).has(PermissionFlagsBits.ManageMessages) 
+                          && msg.channel.permissionsFor(client.user).has(PermissionFlagsBits.AttachFiles)
+                          && msg.channel.permissionsFor(client.user).has(PermissionFlagsBits.SendMessages)) {
                             let cleanedAttachments = [];
                     
                             for (const attachment of attachments) {
