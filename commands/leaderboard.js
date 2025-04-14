@@ -1,7 +1,7 @@
 // #region CommandBoilerplate
 const Categories = require("./modules/Categories");
 const { Guilds, Users, GuildUsers, guildByID, userByID, guildByObj, userByObj, guildUserByObj } = require("./modules/database.js")
-const { SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType, AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType } = require("discord.js");
+const { ContextMenuCommandBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType, AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType, Component } = require("discord.js");
 function applyContext(context = {}) {
     for (key in context) {
         this[key] = context[key];
@@ -50,15 +50,17 @@ module.exports = {
     async execute(cmd, context) {
         applyContext(context);
 
-        const guild = await guildByObj(cmd.guild);
-
+        let guild;
         let requestedUser;
         let emoji = cmd.options.getString("emoji")
 
         // Only some leaderboards are able to be used in servers
         if (cmd.guild?.id === undefined && cmd.options.getString("which") !== "counting") {
-            cmd.followUp(`I can't find leaderboard content for that board at the moment. Try in a server that uses it!`);
+            cmd.followUp(`This leaderboard can only be used in servers that have it enabled. Try in a server that uses it!`);
             return;
+        } else {
+            // Only create guild if we need it
+            guild = await guildByObj(cmd.guild);
         }
 
         switch (cmd.options.getString("which")) {
@@ -162,7 +164,7 @@ module.exports = {
                 });
                 break;
             case "emojiboard":
-                if (guild.emojiboards.size < 1) {
+                if (guild?.emojiboards.size < 1) {
                     cmd.followUp(`This server doesn't use any emojiboards at the moment. It can be configured using ${cmds.add_emojiboard.mention}.`);
                     break;
                 }

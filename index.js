@@ -300,6 +300,30 @@ global.limitLength = function(s, size=1999) { // Used everywhere, so global func
 global.escapeBackticks = function(text) { // This function is useful anywhere to properly escape backticks to prevent format escaping
     return text.replace(/(?<!\\)(?:\\\\)*`/g, "\\`");
 }
+global.requireServer = function(interaction, error) {
+    // This function takes in cmd.guild and an error message, 
+    //  and will reply with the error message if the bot is not installed in the server.
+    // Returns true if it had an error.
+    // 
+    // Usage:
+    // if (requireServer(cmd) return;
+    // if (requireServer(cmd, "Custom error here")) return;
+
+    if (!error) error = `I must be installed to this server to run this command. A moderator can install me with this link:\n<${config.install}>`;
+
+    if (!interaction.guild) {
+        let replyMethod = interaction.deferred 
+            ? (opts) => interaction.followUp(opts)
+            : (opts) => interaction.reply(opts);
+
+        replyMethod({
+            content: error,
+            ephemeral: true,
+        });
+        return true;
+    }
+    return false;
+}
 
 // Local functions
 function noPerms(guildId,what){

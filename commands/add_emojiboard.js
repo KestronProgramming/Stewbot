@@ -1,7 +1,7 @@
 // #region CommandBoilerplate
 const Categories = require("./modules/Categories");
 const { Guilds, Users, guildByID, userByID, guildByObj, userByObj } = require("./modules/database.js")
-const { SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType, AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType } = require("discord.js");
+const { ContextMenuCommandBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType, AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType, Component } = require("discord.js");
 function applyContext(context={}) {
 	for (key in context) {
 		this[key] = context[key];
@@ -28,7 +28,17 @@ module.exports = {
 	
 	data: {
 		// Slash command data
-		command: new SlashCommandBuilder().setName("add_emojiboard").setDescription("Create a new emojiboard")
+		command: new SlashCommandBuilder()
+		.setContexts(
+			IT.Guild,          // Server command
+			// IT.BotDM,          // Bot's DMs
+			// IT.PrivateChannel, // User commands
+		)
+		.setIntegrationTypes(
+			AT.GuildInstall,   // Install to servers
+			// AT.UserInstall     // Install to users
+		)
+		.setName("add_emojiboard").setDescription("Create a new emojiboard")
 			.addStringOption(option=>
 				option.setName("emoji").setDescription("The emoji to react with to trigger the emojiboard").setRequired(true)
 			).addChannelOption(option=>

@@ -34,6 +34,7 @@ module.exports = {
 
 	/** @param {import('discord.js').Interaction} cmd */
     async execute(cmd, context) {
+		if (!cmd.guild) cmd.followUp("This command must be run in a server")
 		applyContext(context);
 
 		var emoji = getEmojiFromMessage(cmd.options.getString("emoji"));

@@ -13,18 +13,28 @@ const crypto = require('crypto');
 
 module.exports = {
     data: {
-        command: new SlashCommandBuilder().setName("anti_hack").setDescription("Configure how hacked accounts are dealt with")
-        .addBooleanOption(option =>
-            option.setName("disable_anti_hack").setDescription("Do you want to disable the anti hack/spam account protection for this server?")
-        ).addBooleanOption(option=>
-            option.setName("log").setDescription("Whether to log incidents to a specific log channel instead of in public.")
-        ).addChannelOption(option=>
-            option.setName("log_channel").setDescription("The channel to log to")
-        ).addBooleanOption(option=>
-            option.setName("auto_delete").setDescription("Whether to automatically delete messages without moderator interaction.")
-        ).addBooleanOption(option=>
-            option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
-        ).setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers | PermissionFlagsBits.ManageMessages),
+        command: new SlashCommandBuilder()
+            .setContexts(
+                IT.Guild,          // Server command
+                // IT.BotDM,          // Bot's DMs
+                // IT.PrivateChannel, // User commands
+            )
+            .setIntegrationTypes(
+                AT.GuildInstall,   // Install to servers
+                // AT.UserInstall     // Install to users
+            )
+            .setName("anti_hack").setDescription("Configure how hacked accounts are dealt with")
+            .addBooleanOption(option =>
+                option.setName("disable_anti_hack").setDescription("Do you want to disable the anti hack/spam account protection for this server?")
+            ).addBooleanOption(option=>
+                option.setName("log").setDescription("Whether to log incidents to a specific log channel instead of in public.")
+            ).addChannelOption(option=>
+                option.setName("log_channel").setDescription("The channel to log to")
+            ).addBooleanOption(option=>
+                option.setName("auto_delete").setDescription("Whether to automatically delete messages without moderator interaction.")
+            ).addBooleanOption(option=>
+                option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
+            ).setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers | PermissionFlagsBits.ManageMessages),
         
         // Not all modules will have help commands, but they can in theory to showcase bot features.
         help: {
@@ -37,9 +47,10 @@ module.exports = {
     
     /** @param {import('discord.js').Interaction} cmd */
     async execute(cmd, context) {
+        if (requireServer(cmd)) return;
         applyContext(context);
         
-        const guild = await guildByObj(cmd.guild);
+        const guild = await guildByID(cmd.guildId);
 
         if (cmd.options.getBoolean("auto_delete") !== null) 
             guild.config.antihack_auto_delete = cmd.options.getBoolean("auto_delete");

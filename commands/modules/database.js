@@ -162,7 +162,7 @@ let guildSchema = new mongoose.Schema({
         unique: true,
         index: true,
         trim: true,
-        match: [/\d{5,}/, "Error: ServerID must be digits only, and longer than 5 chars"]
+        match: [/^\d{5,}$/, "Error: ServerID must be digits only, and longer than 5 chars"]
     },
     emojiboards: { type: Map, of: emojiboardSchema, default: {} },
     tempBans: { type: Map, of: tempBanSchema, default: {} },
@@ -368,7 +368,8 @@ async function guildByID(id, updates={}) {
         {
             new: true,
             upsert: true,
-            setDefaultsOnInsert: true
+            setDefaultsOnInsert: true,
+            runValidators: true
         }
     );
     
@@ -377,6 +378,8 @@ async function guildByID(id, updates={}) {
 
 /** @returns {Promise<import("mongoose").HydratedDocument<import("mongoose").InferSchemaType<typeof guildSchema>>>} */
 async function guildByObj(obj, updates={}) {
+    if (!obj) return null;
+    
     // Beta prechecks for dev mistakes
     if (
         process.env.beta && (
@@ -399,7 +402,8 @@ async function userByID(id, updates={}, upsert=true) {
     const user = await Users.findOneAndUpdate({ id }, updates, {
         new: true,
         upsert,
-        setDefaultsOnInsert: false
+        setDefaultsOnInsert: false,
+        runValidators: true
     });
     
     return user;
@@ -430,7 +434,12 @@ async function guildUserByID(guildID, userID, updateData={}, upsert) {
     const user = await GuildUsers.findOneAndUpdate(
         { guildId: guildID, userId: userID },
         { $set: updateData },
-        { new: true, setDefaultsOnInsert: false, upsert }
+        { 
+            new: true, 
+            setDefaultsOnInsert: false, 
+            upsert,
+            runValidators: true
+        }
     );
 
     return user;
