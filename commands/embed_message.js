@@ -43,7 +43,10 @@ module.exports = {
 
         const user = await userByObj(cmd.user);
 		
-        if (cmd.options.getString("link").toLowerCase() === "primed" && user.primedEmbed) {
+        if (cmd.options.getString("link").toLowerCase().trim() === "primed") {
+            if (!user.primedEmbed) {
+                return cmd.followUp("You don't have any primed embeds. Rightclick a message, go to Apps, and click prime_embed to set one.");
+            }
             var primer=await getPrimedEmbed(cmd.user.id,cmd.guild?.id);
             cmd.followUp({
                 "content":`-# Embedded primed message. Use the context menu command \`/prime_embed\` and type \`PRIMED\` into ${cmds.embed_message.mention} to do the same.`,
