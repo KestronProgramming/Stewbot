@@ -502,6 +502,17 @@
         "detailedDesc": "Configure options for your personal interactions with the bot. This includes options such as if the bot tells you when you're filtered, if it automatically embeds certain links you post, or if you want it to not ping you whenb you level up in a server. You can also set your timezone for use with </timestamp:1289093272823795815>"
     },
     {
+        "name": "pin",
+        "mention": "</pin:1361364664671535307>",
+        "helpCategories": [
+            "Configuration",
+            "Administration",
+            "Server_Only"
+        ],
+        "shortDesc": "Allow users to pin messages without giving them deletion permissions",
+        "detailedDesc": "On Discord, the `Manage Messages` permission allows users to pin messages, however it also allows them to delete messages.\n\n\t\t\t\tThis command allows users with a given role to pin messages without granting them permission to delete messages.\n\n\t\t\t\tRun the `config` subcommand to set it up."
+    },
+    {
         "name": "ping",
         "mention": "</ping:1289093271796322388>",
         "helpCategories": [

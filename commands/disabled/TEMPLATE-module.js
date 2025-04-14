@@ -23,7 +23,7 @@ module.exports = {
 
 		// Not all modules will have help commands, but they can in theory to showcase bot features.
 		help: {
-			helpCategories: [Categories.Module],
+			helpCategories: [ Categories.Module ],
 			shortDesc: "Jerry Jerry Jerry Jerry Yeah!!!",
 			detailedDesc: //Detailed on exactly what the command does and how to use it
 				`Jerry the Rope!\n
