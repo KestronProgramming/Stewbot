@@ -317,6 +317,8 @@ const configSchema = new mongoose.Schema({
     pfp: String,
     rss: { type: Map, of: rssFeedSchema, default: {} },
     wotd: { type: String, default: "jerry" },
+    bootedAt: { type: Number, default: 0 },   // Last time the boot booted *without* /reboot (i.e. power outtage)
+    restartedAt: { type: Number, default: 0 } // Last /reboot
 })
 
 const ConfigDB = mongoose.model("settings", configSchema)

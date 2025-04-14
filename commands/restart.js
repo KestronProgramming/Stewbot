@@ -1,6 +1,6 @@
 // #region CommandBoilerplate
 const Categories = require("./modules/Categories");
-const { Guilds, Users, guildByID, userByID, guildByObj, userByObj } = require("./modules/database.js")
+const { Guilds, Users, ConfigDB, guildByID, userByID, guildByObj, userByObj } = require("./modules/database.js")
 const { SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType, AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType } = require("discord.js");
 function applyContext(context = {}) {
     for (key in context) {
@@ -76,7 +76,7 @@ module.exports = {
 
             // Notify about restart
             notify(`Bot restarted by <@${cmd.user.id}>` + infoData);
-            cmd.followUp("Restarting..." + infoData);
+            await cmd.followUp("Restarting..." + infoData);
 
             try {
                 // Update code if requested
@@ -108,8 +108,13 @@ module.exports = {
 
             // Start the maintenance bot to handle commands during this time
             startMaintenanceHandler();
+
+            // Set the reboot time
+            const config = await ConfigDB.findOne();
+            config.restartedAt = Date.now();
+            await config.save();
             
-            setTimeout(() => { process.exit(0) }, 5000);
+            setTimeout(() => { process.exit(0) }, 500);
         }
     }
 };

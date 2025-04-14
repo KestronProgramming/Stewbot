@@ -635,8 +635,29 @@ client.once("ready",async ()=>{
         }, global.importedAtBoot ?? true)
     })
 
-    uptime=Math.round(Date.now()/1000);
-    notify(`Started <t:${uptime}:R> | Booting took ${Date.now()-bootedAt}ms`);
+    let bootMOTD = ``;
+
+    // Determine uptime
+    const bootedAtTimestamp = `<t:${Math.round(Date.now()/1000)}:R>`
+    const config = await ConfigDB.findOne({});
+    const rebootIntentional = Date.now() - config.restartedAt < ms("30s");
+    console.log(config.restartedAt - Date.now());
+    if (rebootIntentional) {
+        // The reboot was intentional
+        uptime = Math.round(config.bootedAt/1000);
+        bootMOTD += `Bot resumed after restart ${bootedAtTimestamp}`;
+    } else {
+        // The reboot was accidental, so reset our bootedAt time
+        config.bootedAt = Date.now();
+        uptime = Math.round(Date.now()/1000);
+        bootMOTD += `Started at ${bootedAtTimestamp}`;
+        config.save();
+    }
+
+    // Add boot time
+    bootMOTD += ` | Booting took ${Date.now()-bootedAt}ms`;
+    notify(bootMOTD);
+
     console.beta(`Logged into ${client.user.tag}`);
     
     // Status
