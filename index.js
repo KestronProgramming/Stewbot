@@ -690,9 +690,9 @@ client.once("ready",async ()=>{
     console.beta(`Logged into ${client.user.tag}`);
     
     // Status
-    client.user.setActivity("Celebrate my /birthday!",{type:ActivityType.Custom},1000*60*60*4);//𝐒teward 𝐓o 𝐄xpedite 𝐖ork
+    client.user.setActivity("🔥 Nitro Giveaway! /birthday",{type:ActivityType.Custom},1000*60*60*4);//𝐒teward 𝐓o 𝐄xpedite 𝐖ork
     setInterval(()=>{
-        client.user.setActivity("Celebrate my /birthday!",{type:ActivityType.Custom},1000*60*60*4);
+        client.user.setActivity("🔥 Nitro Giveaway! /birthday",{type:ActivityType.Custom},1000*60*60*4);
     },60000*5);
     var now=new Date();
     setTimeout(daily,((now.getHours()>11?11+24-now.getHours():11-now.getHours())*(60000*60))+((60-now.getMinutes())*60000));
