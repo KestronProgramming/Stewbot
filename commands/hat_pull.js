@@ -37,7 +37,7 @@ async function finHatPull(userId, force){
         // TODO: use secure random here, just because we can
         winners.push(user.hat_pull.entered[Math.floor(Math.random()*user.hat_pull.entered.length)]);
     }
-    var chan = await client.channels.fetch(user.hat_pull.location.split("/")[1]);
+    var chan = await client.channels.fetch(user.hat_pull.location.split("/")[1]).catch(e => null);
     if(chan===null||chan===undefined){
         (await client.users.fetch(userId)).send(
             `I could not end the hat pull.\n`+
