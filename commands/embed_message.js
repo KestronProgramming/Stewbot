@@ -133,7 +133,7 @@ module.exports = {
             await (async () => {
                 // Make sure we have perms to embed
                 if (
-                    !msg.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages) || 
+                    !msg.channel?.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages) || 
                     !msg.channel.permissionsFor(msg.author.id)?.has(PermissionFlagsBits.EmbedLinks)
                 ) {
                     links = progs = [];
