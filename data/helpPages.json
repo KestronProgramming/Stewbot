@@ -1,7 +1,7 @@
 [
     {
         "name": "add_emojiboard",
-        "mention": "</add_emojiboard:1361156055446589580>",
+        "mention": "</add_emojiboard:1289093271796322392>",
         "helpCategories": [
             "General",
             "Configuration",
@@ -111,7 +111,7 @@
     },
     {
         "name": "birthday",
-        "mention": "</birthday:1360876537955614734>",
+        "mention": "`birthday` Module",
         "helpCategories": [
             "General",
             "Bot",
@@ -226,7 +226,7 @@
     },
     {
         "name": "delete_until",
-        "mention": "</delete_until:1361038927879737515>",
+        "mention": "`delete_until` Module",
         "helpCategories": [
             "Administration"
         ],
@@ -504,7 +504,7 @@
     },
     {
         "name": "pin",
-        "mention": "</pin:1361364664671535307>",
+        "mention": "`pin` Module",
         "helpCategories": [
             "Configuration",
             "Administration",
