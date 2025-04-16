@@ -875,7 +875,7 @@ client.on("interactionCreate", async cmd=>{
         const [ blocked, errorMsg ] = isModuleBlocked(listeningModule, 
             (await guildByObj(cmd.guild)), 
             (await guildByID(config.homeServer)),
-            cmd.member?.permissions?.has('Administrator')
+            cmd?.member?.permissions?.has?.('Administrator')
         )
         if (blocked) return cmd.followUp(errorMsg);
         
