@@ -225,7 +225,6 @@ module.exports = {
 
 				// Finally save the poll
 				guild.polls.set(msg.id, poll);
-				guild.save();
 				
 				// Clear original poll
 				cmd.update({ "content": "\u200b", components: [] });
