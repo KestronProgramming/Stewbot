@@ -145,7 +145,7 @@ module.exports = {
                     .select("config.embedPreviews")
                     .lean({ virtuals: true });
 
-                if (!user.config.embedPreviews) { 
+                if (!user.config?.embedPreviews) { 
                     links = progs = [];
                     return;
                 }

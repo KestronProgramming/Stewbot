@@ -13,17 +13,19 @@ const dgram = require('dgram');
 const os = require('os');
 const { Ollama } = require('ollama');
 const fs = require("fs");
+const { ApplicationCommandOptionType } = require("discord.js")
 console.beta = (...args) => process.env.beta && console.log(...args);
 
 const config = require("../data/config")
 const INTERFACES = config.aiNodeInterfaces;
 const BROADCAST_PORT = config.aiNodePort;
-    
+
 let activeAIRequests = {};
 let convoCache = {}; // Stored here instead of database, since it does not need persistent
 
+
 // Setup Gemini
-const { GoogleGenerativeAI } = require("@google/generative-ai");
+const { GoogleGenerativeAI, SchemaType } = require("@google/generative-ai");
 const genAI = new GoogleGenerativeAI(process.env.geminiAPIKey);
 
 function resetAIRequests() {
@@ -31,6 +33,167 @@ function resetAIRequests() {
     activeAIRequests = {}
 }
 
+//#region Tools
+
+// Setup discord -> tool calling functions
+const GeminiType = {
+    STRING: 'STRING',
+    NUMBER: 'NUMBER',
+    INTEGER: 'INTEGER',
+    BOOLEAN: 'BOOLEAN',
+    ARRAY: 'ARRAY',
+    OBJECT: 'OBJECT',
+};
+
+// Mapping from Discord ApplicationCommandOptionType enum values
+// https://discord-api-types.dev/api/discord-api-types-v10/enum/ApplicationCommandOptionType
+function discordTypeToGeminiType(discordType) {
+    switch (discordType) {
+        case 3: return SchemaType.STRING; // STRING
+        case 4: return SchemaType.INTEGER; // INTEGER
+        case 5: return SchemaType.BOOLEAN; // BOOLEAN
+        case 6: return SchemaType.STRING; // USER (ID or mention)
+        case 7: return SchemaType.STRING; // CHANNEL (ID or mention)
+        case 8: return SchemaType.STRING; // ROLE (ID or mention)
+        case 9: return SchemaType.STRING; // MENTIONABLE
+        case 10: return SchemaType.NUMBER; // NUMBER
+        case 11: return SchemaType.STRING; // ATTACHMENT (ID or URL placeholder)
+        default:
+            console.warn(`Unknown Discord option type: ${discordType}. Defaulting to STRING.`);
+            return GeminiType.STRING; // Fallback
+    }
+}
+
+function processParameterOptions(discordOptions) {
+    const parameters = {
+        type: GeminiType.OBJECT, // Or Type.OBJECT
+        properties: {},
+        required: [],
+    };
+
+    if (!discordOptions || !Array.isArray(discordOptions)) {
+        // No parameters, return empty structure
+        // Gemini requires 'parameters', even if empty
+        delete parameters.required;
+        return parameters;
+    }
+
+    for (const paramOption of discordOptions) {
+        const paramName = paramOption.name;
+        // Fallback description if none provided
+        const paramDesc = paramOption.description || `Parameter ${paramName}`;
+
+        // Enhance description with constraints
+        let enhancedDesc = paramDesc;
+        if (paramOption.channel_types) {
+            enhancedDesc += ` (Channel types: ${paramOption.channel_types.join(', ')})`; // You might map numbers to names
+        }
+        if (paramOption.min_length !== undefined) {
+            enhancedDesc += ` (Min length: ${paramOption.min_length})`;
+        }
+        if (paramOption.max_length !== undefined) {
+            enhancedDesc += ` (Max length: ${paramOption.max_length})`;
+        }
+        if (paramOption.choices && Array.isArray(paramOption.choices)) {
+            const choiceList = paramOption.choices.map(c => `'${c.name}' (${c.value})`).join(', ');
+            enhancedDesc += ` (Choices: ${choiceList})`;
+        }
+        // Add min/max value if applicable (for NUMBER/INTEGER types if present in your data)
+
+        parameters.properties[paramName] = {
+            type: discordTypeToGeminiType(paramOption.type),
+            description: enhancedDesc,
+        };
+
+        if (paramOption.required) {
+            parameters.required.push(paramName);
+        }
+    }
+
+    // If there are no required parameters, Gemini might prefer omitting the 'required' array
+    if (parameters.required.length === 0) {
+        delete parameters.required;
+    }
+    
+    // Keep properties object even if empty, Gemini seems to require it.
+    // if (Object.keys(parameters.properties).length === 0) {
+    //    delete parameters.properties;
+    //}
+
+    return parameters;
+}
+
+function convertCommandsToTools(commandsLoaded) {
+    const tools = [];
+
+    for (const commandName in commandsLoaded) {
+        const commandDefinition = commandsLoaded[commandName];
+        if (!commandDefinition?.data?.command) continue; // Skip malformed
+
+        const commandData = commandDefinition.data;
+        const mainCommand = commandData.command;
+        const helpData = commandData.help || {};
+
+        const hasOptions = mainCommand.options && Array.isArray(mainCommand.options) && mainCommand.options.length > 0;
+        let isSubcommandBased = false;
+
+        if (hasOptions) {
+            // Check if the *first* option looks like a subcommand (has nested options or specific type)
+            // Relying on nested 'options' seems most reliable based on your examples.
+            const firstOption = mainCommand.options[0];
+            // Type 1 = SUB_COMMAND, Type 2 = SUB_COMMAND_GROUP
+            // if (firstOption.type === 1 || firstOption.type === 2 || (firstOption.options && Array.isArray(firstOption.options))) {
+            if (firstOption.options && Array.isArray(firstOption.options)) { // Simplified check based on examples
+                isSubcommandBased = true;
+            }
+        }
+
+        if (isSubcommandBased) {
+            // --- Process Subcommands ---
+            for (const subCommandOption of mainCommand.options) {
+                // Ensure it's definitely a subcommand structure before processing
+                if (subCommandOption.options && Array.isArray(subCommandOption.options)) {
+                    const toolName = `${commandName}_${subCommandOption.name}`;
+                    // Use specific help description if available, otherwise subcommand description
+                    const toolDescription = helpData[subCommandOption.name]?.detailedDesc || subCommandOption.description || `Executes the ${toolName} action.`;
+
+                    const parameters = processParameterOptions(subCommandOption.options); // Process its parameters
+
+                    const tool = {
+                        name: toolName,
+                        description: toolDescription,
+                        parameters: parameters,
+                    };
+                    tools.push(tool);
+                } else {
+                    // Handle cases where a command might unexpectedly mix subcommands and direct parameters
+                    console.warn(`Command '${commandName}' has an option '${subCommandOption.name}' that looks like a direct parameter mixed with subcommands. Skipping.`);
+                }
+            }
+        } else {
+            // --- Process as Main Command (with or without parameters) ---
+            const toolName = commandName;
+            // For non-subcommand commands, the 'help' object directly contains the details (if structured like admin_message)
+            // Or fallback to main command description
+            const toolDescription = helpData?.detailedDesc || mainCommand.description || `Executes the ${toolName} command.`;
+
+            // Process the main command's options (which are direct parameters)
+            const parameters = processParameterOptions(mainCommand.options); // Pass options directly
+
+            const tool = {
+                name: toolName,
+                description: toolDescription,
+                parameters: parameters, // Contains parameters if mainCommand.options existed, empty otherwise
+            };
+            tools.push(tool);
+        }
+    }
+
+    return tools;
+}
+//#endregion
+
+//#region Networking
 // Function to get IP and broadcast address for specified interfaces
 function getInterfaceDetails(interfaceName) {
     const interfaces = os.networkInterfaces();
@@ -124,6 +287,74 @@ async function getAvailableOllamaServers() {
     ollamaInstances = ollamaInstances.filter((instance) => !activeAIRequests[instance.config.host]);
 
     return ollamaInstances;
+}
+//#endregion
+
+//#region AI
+async function postprocessUserMessage(message, guild) {
+    message = message.replace(/<@!?(\d+)>/g, (match, userId) => {
+        const username = guild?.members.cache.get(userId)?.user?.username;
+        return username ? `@${username}` : match;
+    });
+
+    // Convert role mentions to their raw format
+    message = message.replace(/<@&(\d+)>/g, (match, roleId) => {
+        const rolename = guild?.roles.cache.get(roleId)?.name;
+        return rolename ? `<${rolename} (discord role mention)>` : match;
+    });
+
+    // Convert channel mentions to their raw format
+    message = message.replace(/<#(\d+)>/g, (match, channelId) => {
+        const channelname = guild?.channels.cache.get(channelId)?.name;
+        return channelname ? `<#${channelname} (discord channel)>` : match;
+    });
+
+    return message;
+}
+
+async function postprocessAIMessage(message, guild) {
+    // Replace @username with <@id-of-username>
+    message = message.replace(/@([\w_\.]+)/g, (match, username) => {
+        const user = guild?.members.cache.find((member) => member.user.username === username);
+        return user ? `<@${user.id}>` : match;
+    });
+
+    // qwen2.5 overuses the blush and star emojis (and trim the other one to prevent starboard abuse)
+    message = message.replaceAll(/🌟/g, "");
+    message = message.replaceAll(/⭐/g, "");
+    message = message.replaceAll(/😊/g, "");
+
+    //// Post process AI thinking block
+    // Require newlines after thought process
+    let thinkingRegexNewline = /^Here is my thought process:[^\w]*/m;
+    let responseRegexNewline = /^Here is my response:[^\w]*/m;
+    if (thinkingRegexNewline.test(message)) {
+        message = message.replace(thinkingRegexNewline, '$&\n');
+    }
+    if (responseRegexNewline.test(message)) {
+        message = message.replace(responseRegexNewline, '$&\n');
+    }
+
+    // Make thought process smaller text
+    let thinkingRegex = /^Here is my thought process:\s*$/m;
+    let responseRegex = /^Here is my response:\s*$/m;
+    if (thinkingRegex.test(message) && responseRegex.test(message)) {
+        let thinkingStart = message.match(thinkingRegex).index;
+        const responseMatch = message.match(responseRegex);
+        let responseStart = responseMatch.index + responseMatch[0].length;
+        let thinkingBlock = message.substring(thinkingStart, responseStart);
+        let processedThinkingBlock = thinkingBlock
+            .split('\n')
+            .map(line => {
+                if (line.length === 0) return line;
+                return '-# ' + line;
+            }).join('\n');
+
+        message = message.substring(0, thinkingStart) + processedThinkingBlock + message.substring(responseStart);
+    }
+
+
+    return message
 }
 
 async function getAiResponseGemini(threadID, message, thinking = null, contextualData = {}, notify = null, retryAttempt = 0) {
@@ -293,75 +524,11 @@ async function getAiResponseOllama(threadID, message, thinking = null, contextua
 
     return [response, true];
 }
-
-async function postprocessUserMessage(message, guild) {
-    message = message.replace(/<@!?(\d+)>/g, (match, userId) => {
-        const username = guild?.members.cache.get(userId)?.user?.username;
-        return username ? `@${username}` : match;
-    });
-
-    // Convert role mentions to their raw format
-    message = message.replace(/<@&(\d+)>/g, (match, roleId) => {
-        const rolename = guild?.roles.cache.get(roleId)?.name;
-        return rolename ? `<${rolename} (discord role mention)>` : match;
-    });
-
-    // Convert channel mentions to their raw format
-    message = message.replace(/<#(\d+)>/g, (match, channelId) => {
-        const channelname = guild?.channels.cache.get(channelId)?.name;
-        return channelname ? `<#${channelname} (discord channel)>` : match;
-    });
-
-    return message;
-}
-
-async function postprocessAIMessage(message, guild) {
-    // Replace @username with <@id-of-username>
-    message = message.replace(/@([\w_\.]+)/g, (match, username) => {
-        const user = guild?.members.cache.find((member) => member.user.username === username);
-        return user ? `<@${user.id}>` : match;
-    });
-
-    // qwen2.5 overuses the blush and star emojis (and trim the other one to prevent starboard abuse)
-    message = message.replaceAll(/🌟/g, "");
-    message = message.replaceAll(/⭐/g, "");
-    message = message.replaceAll(/😊/g, "");
-
-    //// Post process AI thinking block
-    // Require newlines after thought process
-    let thinkingRegexNewline = /^Here is my thought process:[^\w]*/m;
-    let responseRegexNewline = /^Here is my response:[^\w]*/m;
-    if (thinkingRegexNewline.test(message)) {
-        message = message.replace(thinkingRegexNewline, '$&\n');
-    }
-    if (responseRegexNewline.test(message)) {
-        message = message.replace(responseRegexNewline, '$&\n');
-    }
-
-    // Make thought process smaller text
-    let thinkingRegex = /^Here is my thought process:\s*$/m;
-    let responseRegex = /^Here is my response:\s*$/m;
-    if (thinkingRegex.test(message) && responseRegex.test(message)) {
-        let thinkingStart = message.match(thinkingRegex).index;
-        const responseMatch = message.match(responseRegex);
-        let responseStart = responseMatch.index + responseMatch[0].length;
-        let thinkingBlock = message.substring(thinkingStart, responseStart);
-        let processedThinkingBlock = thinkingBlock
-            .split('\n')
-            .map(line => {
-                if (line.length === 0) return line;
-                return '-# ' + line;
-            }).join('\n');
-
-        message = message.substring(0, thinkingStart) + processedThinkingBlock + message.substring(responseStart);
-    }
-
-
-    return message
-}
+//#endregion
 
 module.exports = {
     resetAIRequests,
+    convertCommandsToTools,
 
     data: {
         command: new SlashCommandBuilder().setName('chat').setDescription('Chat with Stewbot')
@@ -451,7 +618,7 @@ module.exports = {
         if (user.config.aiPings) {
             const botSettings = await ConfigDB.findOne().lean();
 
-            // Check for available servers before sending typing indicator (only for Ollama)
+            // Check for available servers before sending typing indicator
             let ollamaInstances = null;
             if (!botSettings.useGlobalGemini) ollamaInstances = await getAvailableOllamaServers();
             if (!botSettings.useGlobalGemini && ollamaInstances?.length === 0) return; // Don't send typing if no ollama servers and not using gemini

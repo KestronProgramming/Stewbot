@@ -46,7 +46,7 @@ const { finTimer, scheduleTimerEnds } = require("./commands/timer.js")
 const { getStarMsg } = require("./commands/add_emojiboard.js")
 const { processForNumber } = require("./commands/counting.js")
 const { killMaintenanceBot } = require("./commands/restart.js")
-const { resetAIRequests } = require("./commands/chat.js")
+const { resetAIRequests, convertCommandsToTools } = require("./commands/chat.js")
 
 //#endregion Imports
 
@@ -67,17 +67,21 @@ function getSubscribedCommands(commands, subscription) {
     )
 }
 
+let aiToolsCommands = { }
 let commands = { }
 let messageListenerModules = [ ];
 let dailyListenerModules   = [ ];
 let buttonListenerModules  = [ ];
 
+
+
 commandsLoadedPromise.then( commandsLoaded => {
-    const promiseAttachTime = Date.now();
     commands = commandsLoaded;
     messageListenerModules = getSubscribedCommands(commands, "onmessage");
     dailyListenerModules = getSubscribedCommands(commands, "daily");
     buttonListenerModules = getSubscribedCommands(commands, "onbutton");
+
+    aiToolsCommands = convertCommandsToTools(commandsLoaded);
 });
 
 // Utility functions needed for processing some data blocks 
@@ -86,12 +90,13 @@ function hash(obj) {
     return crypto.createHash('md5').update(input).digest('hex');
 }
 
-var ints=Object.keys(GatewayIntentBits).map(a=>GatewayIntentBits[a]);
-ints.splice(ints.indexOf(GatewayIntentBits.GuildPresences),1);
-ints.splice(ints.indexOf("GuildPresences"),1);
-const client=new Client({
-    intents:ints,
-    partials:Object.keys(Partials).map(a=>Partials[a])
+// Log in with all intents expect guild presence
+var ints = Object.keys(GatewayIntentBits).map(a => GatewayIntentBits[a]);
+ints.splice(ints.indexOf(GatewayIntentBits.GuildPresences), 1);
+ints.splice(ints.indexOf("GuildPresences"), 1);
+const client = new Client({
+    intents: ints,
+    partials: Object.keys(Partials).map(a => Partials[a])
 });
 global.client = client;
 global.notify = function(what, useWebhook=false) {
