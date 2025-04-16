@@ -347,8 +347,6 @@ module.exports = {
 				if(Object.keys(finalResults).length>1) ctx.stroke();
 			});
 
-			// fs.writeFileSync("./tempPoll.png",canvas.toBuffer("image/png"));
-
 			const pollImage = new AttachmentBuilder(canvas.toBuffer("image/png"), { name: "poll.png" });
 
 			cmd.update({

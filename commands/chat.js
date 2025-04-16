@@ -620,11 +620,11 @@ module.exports = {
 
         // Check the guild settings since we already have it first
         const guild = guildStore;
-        if (!guild.config.ai) return; 
+        if (!guild?.config?.ai) return; 
 
         // Then as long as the user did not blacklist it
         const user = await userByObj(msg.author);
-        if (user.config.aiPings) {
+        if (user?.config?.aiPings) {
             const botSettings = await ConfigDB.findOne().lean();
 
             // Check for available servers before sending typing indicator
@@ -679,7 +679,7 @@ module.exports = {
                     response += emoji;
                 }
 
-                if (!user.config.beenAIDisclaimered) {
+                if (!user.config?.beenAIDisclaimered) {
                     user.config.beenAIDisclaimered = true;
                     user.save();
                     response += `\n-# This is part of a Stewbot feature. If you wish to disable it, a user can run /personal_config to disable it for them personally, or a moderator can run /general_config.`;

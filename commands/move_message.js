@@ -1,7 +1,7 @@
 // #region CommandBoilerplate
 const Categories = require("./modules/Categories");
 const { Guilds, Users, guildByID, userByID, guildByObj, userByObj } = require("./modules/database.js")
-const { ContextMenuCommandBuilder, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType, AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType } = require("discord.js");
+const { ContextMenuCommandBuilder, AttachmentBuilder, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType, AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType } = require("discord.js");
 function applyContext(context = {}) {
 	for (key in context) {
 		this[key] = context[key];
@@ -85,23 +85,23 @@ module.exports = {
 		resp.username=msg.member?.nickname||msg.author.globalName||msg.author.username;
 		resp.avatarURL=msg.author.displayAvatarURL();
 		var p=0;
+		let files = [ ]
 		for(a of msg.attachments){
 			var dots=a[1].url.split("?")[0].split(".");
 			dots=dots[dots.length-1];
 			await fetch(a[1].url).then(d=>d.arrayBuffer()).then(d=>{
-				fs.writeFileSync(`./tempMove/${p}.${dots}`,Buffer.from(d));
+				const fileName = `./tempMove/${p}.${dots}`;
+				const moveAttachment = new AttachmentBuilder(Buffer.from(d), { name: fileName });
+				files.push(moveAttachment)
 			});
 			p++;
 		}
-		resp.files=fs.readdirSync("tempMove").map(a=>`./tempMove/${a}`);
+		resp.files = files;
 		var hook=await client.channels.cache.get(cmd.values[0]).fetchWebhooks();
 		hook=hook.find(h=>h.token);
 		if(hook){
 			hook.send(resp).then(()=>{
 				msg.delete();
-				fs.readdirSync("./tempMove").forEach(file=>{
-					fs.unlinkSync("./tempMove/"+file);
-				});
 			});
 		}
 		else{
@@ -111,9 +111,6 @@ module.exports = {
 			}).then(d=>{
 				d.send(resp).then(()=>{
 					msg.delete();
-					fs.readdirSync("./tempMove").forEach(file=>{
-						fs.unlinkSync("./tempMove/"+file);
-					});
 				});
 			});
 		}
