@@ -1,7 +1,7 @@
 // #region CommandBoilerplate
 const Categories = require("./modules/Categories");
 const { Guilds, Users, guildByID, userByID, guildByObj, userByObj } = require("./modules/database.js")
-const { ContextMenuCommandBuilder, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType, AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType } = require("discord.js");
+const { ContextMenuCommandBuilder, AttachmentBuilder, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType, AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType } = require("discord.js");
 function applyContext(context = {}) {
     for (key in context) {
         this[key] = context[key];
@@ -54,6 +54,7 @@ module.exports = {
         }
         cmd.followUp({ content: `Submitted for evaluation`, ephemeral: true });
         let i = 0;
+        let files = [ ]
         for (a of cmd.targetMessage.attachments) {
             var dots = a[1].url.split("?")[0].split(".");
             dots = dots[dots.length - 1];
@@ -62,18 +63,15 @@ module.exports = {
                 return;
             }
             await fetch(a[1].url).then(d => d.arrayBuffer()).then(d => {
-                fs.writeFileSync(`./tempMemes/${i}.${dots}`, Buffer.from(d));
+                const tempMeme = new AttachmentBuilder(Buffer.from(d), { name: `./tempMemes/${i}.${dots}` });
+                files.push(tempMeme);
             });
             i++;
         }
         await client.channels.cache.get(process.env.beta ? config.betaNoticeChannel : config.noticeChannel).send({ 
             content: limitLength(`User ${cmd.user.username} submitted a meme for evaluation.`), 
-            files: fs.readdirSync("./tempMemes").map(a => `./tempMemes/${a}`), 
+            files: files, 
             components: components 
-        });
-
-        fs.readdirSync("./tempMemes").forEach(file => {
-            fs.unlinkSync("./tempMemes/" + file);
         });
     },
 
@@ -83,17 +81,18 @@ module.exports = {
     async onbutton(cmd, context) {
 		applyContext(context);
 
-        cmd.message.attachments.forEach(a=>{
+        for (const [name, a] of cmd.message.attachments) {
             var dots=a.url.split("?")[0].split(".");
             dots=dots[dots.length-1];
             if(!["mov","png","jpg","jpeg","gif","mp4","mp3","wav","webm","ogg"].includes(dots)){
                 cmd.reply({content:`I don't support or recognize that format (\`.${dots}\`)`,ephemeral:true});
                 return;
             }
-            fetch(a.url).then(d=>d.arrayBuffer()).then(d=>{
-                fs.writeFileSync(`./memes/${fs.readdirSync("./memes").length}.${dots}`,Buffer.from(d));
-            });
-        });
+            const c = await fetch(a.url);
+            const d = await c.arrayBuffer();
+            const memeNum = (await fs.promises.readdir("./memes")).length;
+            await fs.promises.writeFile(`./memes/${memeNum}.${dots}`,Buffer.from(d));
+        };
         cmd.update({components:[]});
         cmd.message.react("✅");
 	}
