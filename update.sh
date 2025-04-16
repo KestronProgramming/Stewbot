@@ -25,7 +25,7 @@ git fetch origin 2>&1 | grep -v "From github.com"
 git reset --hard origin/main
 
 # Install new deps
-/usr/local/bin/npm install
+npm ci
 
 # The bot will quit itself and restart which will apply the new code
 exit
