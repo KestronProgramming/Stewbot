@@ -423,5 +423,19 @@ module.exports = {
             guildUser.save();
             guild.save();
         }
+    },
+
+    async onedit(msgO, msg, readGuild, guildUserStore) {
+        if (!readGuild?.counting?.active) return;
+
+        // Counting edit handlers
+        if(readGuild.counting.channel===msg.channel.id){
+            var num = msg.content ? processForNumber(msg.content) : null;
+            if (num !== null && num !== undefined) {
+                if(+num===readGuild.counting.nextNum-1){
+                    msg.channel.send(String(num)).then(m=>m.react("✅"));
+                }
+            }
+        }
     }
 };

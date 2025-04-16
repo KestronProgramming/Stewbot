@@ -13,7 +13,7 @@ console.beta = (...args) => process.env.beta && console.log(...args)
 
 global.config = require("./data/config.json");
 console.beta("Importing discord");
-const {Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType, TeamMemberMembershipState}=require("discord.js");
+const {Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType, TeamMemberMembershipState, Message}=require("discord.js");
 console.beta("Importing commands");
 const { getCommands } = require("./Scripts/launchCommands.js"); // Note: current setup requires this to be before the commands.json import (the cmd.globals setting)
 const commandsLoadedPromise = getCommands();
@@ -245,6 +245,67 @@ global.requireServer = function(interaction, error) {
         return true;
     }
     return false;
+}
+
+
+// Global message guild cache allows us to have less calls to the DB, and invalidate cache when we save DB changes
+const messageDataCache = global.messageDataCache = new NodeCache({ stdTTL: 5, checkperiod: 30 });
+
+// Database handlers for high-traffic events (messageCreate, messageUpdate, TODO_DB: (look into) guild profile changes?)
+async function getReadOnlyDBs(int) {
+    // returns [ readGuildUser, readGuild, readHomeGuild ]
+
+    let readGuildUser;
+    let readGuild;
+    let readHomeGuild;
+
+    // Efficiently create, store, and update users
+    if (int.guild) {
+        let authorId = int.author.id;
+
+        const guildKey = `${int.guild.id}`;
+        const guildUserKey = `${int.guild.id}>${authorId}`;
+        const homeGuildKey = config.homeServer;
+
+        // Run all three DB queries in parallel
+        const [cachedGuildUser, cachedGuild, cachedHomeGuild] = await Promise.all([
+            // Get guild user
+            messageDataCache.get(guildUserKey) || GuildUsers.findOneAndUpdate(
+                { guildId: int.guild.id, userId: authorId },
+                { },
+                { new: true, setDefaultsOnInsert: false, upsert: true }
+            ).lean({ virtuals: true }).then(data => {
+                messageDataCache.set(guildUserKey, data);
+                return data;
+            }),
+            
+            // Get guild
+            messageDataCache.get(guildKey) || Guilds.findOneAndUpdate(
+                { id: int.guild.id },
+                { },
+                { new: true, upsert: true, setDefaultsOnInsert: true }
+            ).lean({ virtuals: true }).then(data => {
+                messageDataCache.set(guildKey, data);
+                return data;
+            }),
+
+            // Get home guild (mainly for blocklist)
+            messageDataCache.get(homeGuildKey) || Guilds.findOneAndUpdate(
+                { id: config.homeServer },
+                { },
+                { new: true, setDefaultsOnInsert: false, upsert: true }
+            ).lean({ virtuals: true }).then(data => {
+                messageDataCache.set(homeGuildKey, data, ms("5 min") / 1000);
+                return data;
+            })
+        ]);
+
+        readGuildUser = cachedGuildUser;
+        readGuild = cachedGuild;
+        readHomeGuild = cachedHomeGuild;
+    }
+
+    return [ readGuildUser, readGuild, readHomeGuild ];
 }
 
 // Local functions
@@ -643,58 +704,12 @@ client.once("ready",async ()=>{
     scheduleTodaysSlowmode();
 });
 
-// Global message guild cache allows us to have less calls to the DB, and invalidate cache when we change settings
-const messageDataCache = global.messageDataCache = new NodeCache({ stdTTL: 5, checkperiod: 30 });
-// In order to update this cache, se would have to invalidate it on: block_command, ...
 
 client.on("messageCreate",async msg => {
     if(msg.author.id===client.user.id) return;
 
-    // Read-only storge objects
-    let readGuildUser;
-    let readGuild;
-    let readHomeGuild;
-
-    // Efficiently create, store, and update users
-    if (msg.guild) {
-        const guildKey = `${msg.guild.id}`;
-        readGuild = messageDataCache.get(guildKey);
-        if (!readGuild) {
-            readGuild = await Guilds.findOneAndUpdate( // Everything in guildByID, except I have more control to lean it since these are called super often
-                { id: msg.guild.id }, 
-                { },
-                { new: true, upsert: true, setDefaultsOnInsert: true }
-            ).lean({ virtuals: true });
-            // TODO: this one is large, ideally add a select to it
-
-            messageDataCache.set(guildKey, readGuild);
-        }
-
-        const guildUserKey = `${msg.guild.id}>${msg.author.id}`;
-        readGuildUser = messageDataCache.get(guildUserKey);
-        if (!readGuildUser) {
-            readGuildUser = await GuildUsers.findOneAndUpdate(
-                { guildId: msg.guild.id, userId: msg.author.id },
-                { },
-                { new: true, setDefaultsOnInsert: false, upsert: true }
-            ).lean({ virtuals: true });
-
-            messageDataCache.set(guildUserKey, readGuildUser);
-        }
-    }
-
-    // Always fetch the home guild
-    const homeGuildKey = config.homeServer;
-    readHomeGuild = messageDataCache.get(homeGuildKey);
-    if (!readHomeGuild) {
-        readHomeGuild = await Guilds.findOneAndUpdate(
-            { id: config.homeServer },
-            { },
-            { new: true, setDefaultsOnInsert: false, upsert: true }
-        ).lean({ virtuals: true });
-
-        messageDataCache.set(homeGuildKey, readHomeGuild, ms("5 min")/1000);
-    }
+    // Read-only stodge objects
+    const [ readGuildUser, readGuild, readHomeGuild ] = await getReadOnlyDBs(msg);
 
     msg.guildId=msg.guildId||"0";
 
@@ -1034,49 +1049,13 @@ client.on("messageUpdate",async (msgO,msg)=>{
     // Currently there's no use for messageUpdate in DMs, only in servers. If this ever changes, remove the guildId check and add more further down
     if(msg.guild?.id===undefined||client.user.id===msg.author?.id) return;
     
-    const guildStore = await guildByObj(msg.guild);
+    const [ readGuildUser, readGuild, readHomeGuild ] = await getReadOnlyDBs(msg);
 
-    // Filter edit handler
-    if(guildStore.filter.active){
-        let [filtered, filteredContent, foundWords] = await checkDirty(msg.guildId, msg.content, true)
-
-        if(filtered) {
-            msg.delete();
-
-            Users.updateOne({id: msg.author.id}, {
-                $inc: { infractions: 1 }
-            });
-
-            if(guildStore.filter.censor){
-                msg.channel.send({content:`A post by <@${msg.author.id}> sent at <t:${Math.round(msg.createdTimestamp/1000)}:f> <t:${Math.round(msg.createdTimestamp/1000)}:R> has been deleted due to retroactively editing a blocked word into the message.`,allowedMentions:{parse:[]}});
-            }
-
-            if(guildStore.config.dmOffenses&&!msg.author.bot){
-                const userSettings = await Users.find({id: msg.author.id})
-                    .select("config.returnFiltered")
-                    .lean({virtuals: true});
-                msg.author.send(limitLength(`Your message in **${msg.guild.name}** was deleted due to editing in the following word${foundWords.length>1?"s":""} that are in the filter: ||${foundWords.join("||, ||")}||${userSettings.config.returnFiltered?"```\n"+msg.content.replaceAll("`","\\`")+"```":""}`)).catch(e=>{});
-            }
-
-            if(guildStore.filter.log&&guildStore.filter.channel){
-                client.channels.cache.get(guildStore.filter.channel).send(limitLength(`I have deleted a message from **${msg.author.username}** in <#${msg.channel.id}> for editing in the following blocked word${foundWords.length>1?"s":""}: ||${foundWords.join("||, ||")}||\`\`\`\n${msg.content.replaceAll("`","\\`")}\`\`\``));
-            }
-            
-            return;
-        }
+    // Dispatch to listening modules
+    for (const command of Object.entries(editListenerModules)) {
+        const [ blocked, _ ] = isModuleBlocked(command, readGuild, readHomeGuild)
+        if (!blocked) command[1].onedit(msgO, msg, readGuild, readGuildUser);
     }
-
-    // Counting edit handlers
-    if(guildStore.counting.active&&guildStore.counting.channel===msg.channel.id){
-        var num = msg.content ? processForNumber(msg.content) : null;
-        if (num !== null && num !== undefined) {
-            if(+num===guildStore.counting.nextNum-1){
-                msg.channel.send(String(num)).then(m=>m.react("✅"));
-            }
-        }
-    }
-
-    guildStore.save();
 });
 
 client.on("guildMemberAdd",async member => {

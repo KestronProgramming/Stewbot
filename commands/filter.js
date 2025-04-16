@@ -472,5 +472,37 @@ module.exports = {
         // Set a flag for other modules to reference
         const messageFiltered = Boolean(msg.ogContent);
         msg.filtered = messageFiltered;
+    },
+
+    async onedit(msgO, msg, readGuild, readGuildUser) {
+        if (!readGuild?.filter?.active) return;
+
+        // Filter edit handler
+        let [filtered, filteredContent, foundWords] = await checkDirty(msg.guildId, msg.content, true)
+
+        if(filtered) {
+            msg.delete();
+
+            Users.updateOne({id: msg.author.id}, {
+                $inc: { infractions: 1 }
+            });
+
+            if(readGuild.filter.censor){
+                msg.channel.send({content:`A post by <@${msg.author.id}> sent at <t:${Math.round(msg.createdTimestamp/1000)}:f> <t:${Math.round(msg.createdTimestamp/1000)}:R> has been deleted due to retroactively editing a blocked word into the message.`,allowedMentions:{parse:[]}});
+            }
+
+            if(readGuild.config.dmOffenses&&!msg.author.bot){
+                const userSettings = await Users.find({id: msg.author.id})
+                    .select("config.returnFiltered")
+                    .lean({virtuals: true});
+                msg.author.send(limitLength(`Your message in **${msg.guild.name}** was deleted due to editing in the following word${foundWords.length>1?"s":""} that are in the filter: ||${foundWords.join("||, ||")}||${userSettings.config.returnFiltered?"```\n"+msg.content.replaceAll("`","\\`")+"```":""}`)).catch(e=>{});
+            }
+
+            if(readGuild.filter.log&&readGuild.filter.channel){
+                client.channels.cache.get(readGuild.filter.channel).send(limitLength(`I have deleted a message from **${msg.author.username}** in <#${msg.channel.id}> for editing in the following blocked word${foundWords.length>1?"s":""}: ||${foundWords.join("||, ||")}||\`\`\`\n${msg.content.replaceAll("`","\\`")}\`\`\``));
+            }
+            
+            return;
+        }
     }
 };
