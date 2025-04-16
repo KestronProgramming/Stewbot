@@ -73,6 +73,18 @@ module.exports = {
 		// `context` currently does not respect requested globals
 	},
 
+	/**
+	 * @param {import('discord.js').PartialMessage | import('discord.js').Message} msgO
+	 * @param {import('discord.js').PartialMessage | import('discord.js').Message} msg
+	 */
+    async onedit(msgO, msg, context) {
+		applyContext(context);
+		// `context` currently does not respect requested globals
+
+		// WARNING: not implemented yet
+		// TODO: implement this handler
+	},
+
 	async autocomplete(cmd) {
 
 	},

@@ -72,14 +72,14 @@ let commands = { }
 let messageListenerModules = [ ];
 let dailyListenerModules   = [ ];
 let buttonListenerModules  = [ ];
-
-
+let editListenerModules  = [ ];
 
 commandsLoadedPromise.then( commandsLoaded => {
     commands = commandsLoaded;
     messageListenerModules = getSubscribedCommands(commands, "onmessage");
     dailyListenerModules = getSubscribedCommands(commands, "daily");
     buttonListenerModules = getSubscribedCommands(commands, "onbutton");
+    editListenerModules = getSubscribedCommands(commands, "onedit");
 
     aiToolsCommands = convertCommandsToTools(commandsLoaded);
 });
@@ -1065,7 +1065,8 @@ client.on("messageDelete",async msg=>{
 });
 
 client.on("messageUpdate",async (msgO,msg)=>{
-    if(msg.guild?.id===undefined||client.user.id===msg.author?.id) return;//Currently there's no use for messageUpdate in DMs, only in servers. If this ever changes, remove the guildId check and add more further down
+    // Currently there's no use for messageUpdate in DMs, only in servers. If this ever changes, remove the guildId check and add more further down
+    if(msg.guild?.id===undefined||client.user.id===msg.author?.id) return;
     
     const guildStore = await guildByObj(msg.guild);
 
