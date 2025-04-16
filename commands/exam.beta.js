@@ -7,6 +7,11 @@ function applyContext(context = {}) {
         this[key] = context[key];
     }
 }
+/**
+ * @typedef {import("./modules/database").GuildDoc} GuildDoc
+ * @typedef {import("./modules/database").GuildUserDoc} GuildUserDoc
+ * @typedef {import("./modules/database").UserDoc} UserDoc
+ */
 // #endregion CommandBoilerplate
 
 function formatMilliseconds(milliseconds) {
@@ -64,7 +69,7 @@ module.exports = {
         },
     },
 
-    /** @param {import('discord.js').Interaction} cmd */
+    /** @param {import('discord.js').ChatInputCommandInteraction} cmd */
     async execute(cmd, context) {
         applyContext(context);
         if (!cmd.user.id === "724416180097384498") return cmd.deferUpdate();
@@ -135,7 +140,11 @@ module.exports = {
         }
     },
 
-    /** @param {import('discord.js').Message} msg */
+    /** 
+     * @param {import('discord.js').Message} msg 
+     * @param {GuildDoc} guildStore 
+     * @param {UserDoc} guildUserStore 
+     * */
     async onmessage(msg, context) {
         applyContext(context);
         // `context` currently does not respect requested globals

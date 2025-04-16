@@ -7,6 +7,11 @@ function applyContext(context={}) {
 		this[key] = context[key];
 	}
 }
+/**
+ * @typedef {import("./modules/database").GuildDoc} GuildDoc
+ * @typedef {import("./modules/database").GuildUserDoc} GuildUserDoc
+ * @typedef {import("./modules/database").UserDoc} UserDoc
+ */
 // #endregion CommandBoilerplate
 
 // If a custom emoji exists in the message, extract it's name and URL.
@@ -88,7 +93,7 @@ module.exports = {
 		},
 	},
 
-	/** @param {import('discord.js').Interaction} cmd */
+    /** @param {import('discord.js').ChatInputCommandInteraction} cmd */
     async execute(cmd, context) {
 		applyContext(context);
 		

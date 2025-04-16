@@ -7,6 +7,11 @@ function applyContext(context={}) {
 		this[key] = context[key];
 	}
 }
+/**
+ * @typedef {import("./modules/database").GuildDoc} GuildDoc
+ * @typedef {import("./modules/database").GuildUserDoc} GuildUserDoc
+ * @typedef {import("./modules/database").UserDoc} UserDoc
+ */
 // #endregion CommandBoilerplate
 
 const dgram = require('dgram');
@@ -563,7 +568,7 @@ module.exports = {
             detailedDesc: "Have a fun chat with Stewbot's self-hosted AI"
         },
     },
-
+    /** @param {import('discord.js').ChatInputCommandInteraction} cmd */
     async execute(cmd, globalsContext) {
         applyContext(globalsContext);
 
@@ -603,7 +608,11 @@ module.exports = {
         });
     },
 
-    /** @param {import('discord.js').Message} msg */
+    /** 
+     * @param {import('discord.js').Message} msg 
+     * @param {GuildDoc} guildStore 
+     * @param {UserDoc} guildUserStore 
+     * */
     async onmessage(msg, globals, guildStore, guildUserStore) {
         applyContext(globals);
 

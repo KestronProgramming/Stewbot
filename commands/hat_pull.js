@@ -8,6 +8,11 @@ function applyContext(context={}) {
 		this[key] = context[key];
 	}
 }
+/**
+ * @typedef {import("./modules/database").GuildDoc} GuildDoc
+ * @typedef {import("./modules/database").GuildUserDoc} GuildUserDoc
+ * @typedef {import("./modules/database").UserDoc} UserDoc
+ */
 // #endregion CommandBoilerplate
 
 // TODO: allow each user to have more than one giveaways?
@@ -133,7 +138,7 @@ module.exports = {
 		},
 	},
 
-	/** @param {import('discord.js').Interaction} cmd */
+    /** @param {import('discord.js').ChatInputCommandInteraction} cmd */
     async execute(cmd, context) {
 		applyContext(context);
 

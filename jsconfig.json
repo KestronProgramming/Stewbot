@@ -1,7 +1,7 @@
 {
     "compilerOptions": {
         "module": "commonjs", // Or "esnext", "es2015", etc., depending on your module system
-        "target": "es6", // Or "es5", "es2017", etc.
+        "target": "es2022", // Or "es5", "es2017", etc.
         "checkJs": true, // Enable type checking of JavaScript files
         "allowJs": true, // Allow JavaScript files to be included in the project
         "baseUrl": ".", // Important: Sets the base directory for module resolution.  "." means project root.
@@ -13,6 +13,10 @@
     },
     "exclude": [
         "node_modules", // Exclude node_modules from type checking
-        "**/*.d.ts" // Exclude any missing or unnecessary `.d.ts` files
+    ],
+    "include": [
+        "index.js",
+        "commands/**/*.js",
+        "types/**/*.d.ts"
     ]
 }

@@ -225,7 +225,7 @@ module.exports = {
 		},
 	},
 
-	/** @param {import('discord.js').Interaction} cmd */
+    /** @param {import('discord.js').ChatInputCommandInteraction} cmd */
     async execute(cmd, context) {
 		applyContext(context);
 
@@ -370,7 +370,11 @@ module.exports = {
         guild.save();
     },
 
-    /** @param {import('discord.js').Message} msg */
+    /** 
+     * @param {import('discord.js').Message} msg 
+     * @param {GuildDoc} guildStore 
+     * @param {UserDoc} guildUserStore 
+     * */
     async onmessage(msg, context, guildStore, guildUserStore) {
         if (!msg.guild) return;
 		applyContext(context);

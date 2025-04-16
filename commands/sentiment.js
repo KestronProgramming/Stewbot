@@ -7,6 +7,11 @@ function applyContext(context={}) {
 		this[key] = context[key];
 	}
 }
+/**
+ * @typedef {import("./modules/database").GuildDoc} GuildDoc
+ * @typedef {import("./modules/database").GuildUserDoc} GuildUserDoc
+ * @typedef {import("./modules/database").UserDoc} UserDoc
+ */
 // #endregion CommandBoilerplate
 
 const Sentiment = require('sentiment');
@@ -63,7 +68,11 @@ module.exports = {
 		},
 	},
 
-	/** @param {import('discord.js').Message} msg */
+    /** 
+     * @param {import('discord.js').Message} msg 
+     * @param {GuildDoc} guildStore 
+     * @param {UserDoc} guildUserStore 
+     * */
     async onmessage(msg, context) {
         // Sentiment Analysis reactions
         if (!msg.filtered && !msg.author.bot && /\bstewbot\'?s?\b/i.test(msg.content)) {

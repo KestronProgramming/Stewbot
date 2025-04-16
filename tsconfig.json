@@ -1,6 +1,6 @@
 {
     "compilerOptions": {
-        "target": "ES2021",
+        "target": "ES2022",
         "module": "commonjs",
         "strict": true,
         "esModuleInterop": true,
@@ -10,10 +10,14 @@
         "allowJs": true,
         "declaration": true,
         "emitDeclarationOnly": true,
-        "outDir": "./types",
+        "outDir": "./types"
     },
     "include": [
-        "commands/**/*.js", "modules/**/*.js", "scripts/**/*.js", "index.js",
-        "commands/modules/**/*.js"
-    ]
+        "commands/**/*.js",
+        "modules/**/*.js",
+        "scripts/**/*.js",
+        "index.js",
+        "commands/modules/**/*.js",
+    ],
+    "exclude": ["node_modules"]
 }

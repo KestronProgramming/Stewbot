@@ -7,6 +7,11 @@ function applyContext(context={}) {
 		this[key] = context[key];
 	}
 }
+/**
+ * @typedef {import("./modules/database").GuildDoc} GuildDoc
+ * @typedef {import("./modules/database").GuildUserDoc} GuildUserDoc
+ * @typedef {import("./modules/database").UserDoc} UserDoc
+ */
 // #endregion CommandBoilerplate
 
 const translate = require("@vitalets/google-translate-api").translate; // Import requires, even though it's greyed out
@@ -33,7 +38,7 @@ module.exports = {
 		},
 	},
 
-	/** @param {import('discord.js').Interaction} cmd */
+    /** @param {import('discord.js').ChatInputCommandInteraction} cmd */
     async execute(cmd, context) {
 		applyContext(context);
 

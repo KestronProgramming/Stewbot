@@ -6,6 +6,11 @@ function applyContext(context={}) {
 		this[key] = context[key];
 	}
 }
+/**
+ * @typedef {import("./modules/database").GuildDoc} GuildDoc
+ * @typedef {import("./modules/database").GuildUserDoc} GuildUserDoc
+ * @typedef {import("./modules/database").UserDoc} UserDoc
+ */
 // #endregion CommandBoilerplate
 
 // 
@@ -54,8 +59,8 @@ module.exports = {
 			// block_module_message: "Discord requires bot avatars to be set globally, so we cannot be blocked this module in this server.",
 		},
 	},
-
-	async execute(cmd, context) {
+    /** @param {import('discord.js').ChatInputCommandInteraction} cmd */
+    async execute(cmd, context) {
 		applyContext(context);
 		
 		cmd.followUp({content:`**Celebrate Stewbot's Birthday with us!**`,embeds:[{
@@ -89,8 +94,12 @@ module.exports = {
             }
           }]});
 	},
-
-	async onmessage(msg, context) {
+    /** 
+     * @param {import('discord.js').Message} msg 
+     * @param {GuildDoc} guildStore 
+     * @param {UserDoc} guildUserStore 
+     * */
+    async onmessage(msg, context) {
 		applyContext(context);
 		// `context` currently does not respect requested globals
 	},

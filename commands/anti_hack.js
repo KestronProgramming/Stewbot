@@ -7,6 +7,11 @@ function applyContext(context={}) {
         this[key] = context[key];
     }
 }
+/**
+ * @typedef {import("./modules/database").GuildDoc} GuildDoc
+ * @typedef {import("./modules/database").GuildUserDoc} GuildUserDoc
+ * @typedef {import("./modules/database").UserDoc} UserDoc
+ */
 // #endregion CommandBoilerplate
 
 const crypto = require('crypto');
@@ -45,7 +50,7 @@ module.exports = {
         },
     },
     
-    /** @param {import('discord.js').Interaction} cmd */
+    /** @param {import('discord.js').ChatInputCommandInteraction} cmd */
     async execute(cmd, context) {
         if (requireServer(cmd)) return;
         applyContext(context);
@@ -71,7 +76,11 @@ module.exports = {
         cmd.followUp("Anti-Hack response configured.");
     },
     
-    /** @param {import('discord.js').Message} msg */
+    /** 
+     * @param {import('discord.js').Message} msg 
+     * @param {GuildDoc} guildStore 
+     * @param {UserDoc} guildUserStore 
+     * */
     async onmessage(msg, context, guildStore, guildUserStore) {
         if (!msg.guild) return;
         

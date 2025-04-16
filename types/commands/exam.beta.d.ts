@@ -7,8 +7,8 @@ export namespace data {
         let detailedDesc: string;
     }
 }
-/** @param {import('discord.js').Interaction} cmd */
-export function execute(cmd: import("discord.js").Interaction, context: any): Promise<any>;
+/** @param {import('discord.js').ChatInputCommandInteraction} cmd */
+export function execute(cmd: import("discord.js").ChatInputCommandInteraction, context: any): Promise<any>;
 /** @param {import('discord.js').Message} msg */
 export function onmessage(msg: import("discord.js").Message, context: any): Promise<void>;
 export function autocomplete(cmd: any): Promise<void>;

@@ -11,5 +11,5 @@ export namespace data {
         let detailedDesc: string;
     }
 }
-/** @param {import('discord.js').Interaction} cmd */
-export function execute(cmd: import("discord.js").Interaction, context: any): Promise<any>;
+/** @param {import('discord.js').ChatInputCommandInteraction} cmd */
+export function execute(cmd: import("discord.js").ChatInputCommandInteraction, context: any): Promise<import("discord.js").Message<boolean> | undefined>;

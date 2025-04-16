@@ -40,7 +40,8 @@ export namespace data {
         export { _import as import };
     }
 }
-/** @param {import('discord.js').Interaction} cmd */
-export function execute(cmd: import("discord.js").Interaction, context: any): Promise<void>;
+/** @param {import('discord.js').ChatInputCommandInteraction} cmd */
+export function execute(cmd: import("discord.js").ChatInputCommandInteraction, context: any): Promise<void>;
 /** @param {import('discord.js').Message} msg */
-export function onmessage(msg: import("discord.js").Message, context: any): Promise<void>;
+export function onmessage(msg: import("discord.js").Message, context: any, guildStore: any, guildUserStore: any): Promise<void>;
+export function onedit(msgO: any, msg: any, readGuild: any, readGuildUser: any): Promise<void>;

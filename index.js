@@ -25,8 +25,14 @@ const { getEmojiFromMessage, parseEmoji } = require('./util');
 const fs = require("fs");
 const crypto = require('crypto');
 const mongoose = require("mongoose");
-
 const ms = require("ms");
+
+// Typedefs for DB
+/**
+ * @typedef {import("./commands/modules/database").GuildDoc} GuildDoc
+ * @typedef {import("./commands/modules/database").GuildUserDoc} GuildUserDoc
+ * @typedef {import("./commands/modules/database").UserDoc} UserDoc
+ */
 
 const DBConnectPromise = new Promise((resolve, reject) => {
     // Start the to the DB connection now, so it runs in the background and is ready later
@@ -151,7 +157,7 @@ commandsLoadedPromise.finally( _ => {
     });
 
     // Dump the help pages so we can import on websites and stuff
-    fs.writeFileSync("./data/helpPages.json", JSON.stringify(helpCommands, null, 4))
+    fs.promises.writeFile("./data/helpPages.json", JSON.stringify(helpCommands, null, 4))
 })
 
 
@@ -252,6 +258,7 @@ global.requireServer = function(interaction, error) {
 const messageDataCache = global.messageDataCache = new NodeCache({ stdTTL: 5, checkperiod: 30 });
 
 // Database handlers for high-traffic events (messageCreate, messageUpdate, TODO_DB: (look into) guild profile changes?)
+/** @returns {[GuildUserDoc, GuildDoc, GuildDoc]} */
 async function getReadOnlyDBs(int) {
     // returns [ readGuildUser, readGuild, readHomeGuild ]
 

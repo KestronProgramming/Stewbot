@@ -13,8 +13,8 @@ export declare namespace data {
         let detailedDesc: string;
     }
 }
-/** @param {import('discord.js').Interaction} cmd */
-export declare function execute(cmd: import("discord.js").Interaction, context: any): Promise<void>;
+/** @param {import('discord.js').ChatInputCommandInteraction} cmd */
+export declare function execute(cmd: import("discord.js").ChatInputCommandInteraction, context: any): Promise<void>;
 /** @param {import('discord.js').Message} msg */
-export declare function onmessage(msg: import("discord.js").Message, context: any): Promise<MessageReaction | import("discord.js").OmitPartialGroupDMChannel<import("discord.js").Message<boolean>> | undefined>;
+export declare function onmessage(msg: import("discord.js").Message, context: any, guildStore: any, guildUserStore: any): Promise<MessageReaction | import("discord.js").OmitPartialGroupDMChannel<import("discord.js").Message<boolean>> | undefined>;
 export declare function daily(context: any): Promise<void>;

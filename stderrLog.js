@@ -5,11 +5,7 @@
 // Example useage: `node crash.js 2>&1 | ./stderrLog.js`
 // Requires logWebhook in env.json
 
-// Using fetch instead of discord.js, less libraries means less chance this script fails
-const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
-
 const fs = require("node:fs")
-
 const logWebhook = require("./env.json").logWebhook;
 
 // Collect stdin here

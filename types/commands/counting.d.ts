@@ -22,7 +22,8 @@ export declare namespace data {
         }
     }
 }
-/** @param {import('discord.js').Interaction} cmd */
-export declare function execute(cmd: import("discord.js").Interaction, context: any): Promise<any>;
+/** @param {import('discord.js').ChatInputCommandInteraction} cmd */
+export declare function execute(cmd: import("discord.js").ChatInputCommandInteraction, context: any): Promise<import("discord.js").Message<boolean> | undefined>;
 /** @param {import('discord.js').Message} msg */
-export declare function onmessage(msg: import("discord.js").Message, context: any): Promise<void>;
+export declare function onmessage(msg: import("discord.js").Message, context: any, guildStore: any, guildUserStore: any): Promise<void>;
+export declare function onedit(msgO: any, msg: any, readGuild: any, guildUserStore: any): Promise<void>;

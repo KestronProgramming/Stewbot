@@ -6,12 +6,21 @@ function applyContext(context={}) {
 		this[key] = context[key];
 	}
 }
+/**
+ * @typedef {import("./modules/database").GuildDoc} GuildDoc
+ * @typedef {import("./modules/database").GuildUserDoc} GuildUserDoc
+ * @typedef {import("./modules/database").UserDoc} UserDoc
+ */
 // #endregion CommandBoilerplate
 
 module.exports = {
 	data: { command: null },
-
-	async onmessage(msg, context) {
+    /** 
+     * @param {import('discord.js').Message} msg 
+     * @param {GuildDoc} guildStore 
+     * @param {UserDoc} guildUserStore 
+     * */
+    async onmessage(msg, context) {
 		applyContext(context);
 		// `context` currently does not respect requested globals
 		if (!msg.content.startsWith("~retrieve ")) return;

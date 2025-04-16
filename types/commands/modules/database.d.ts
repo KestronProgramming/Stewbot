@@ -1,19 +1,22 @@
+export type GuildDoc = import("mongoose").HydratedDocument<import("mongoose").InferSchemaType<typeof guildSchema>>;
+export type UserDoc = import("mongoose").HydratedDocument<import("mongoose").InferSchemaType<typeof userSchema>>;
+export type GuildUserDoc = import("mongoose").HydratedDocument<import("mongoose").InferSchemaType<typeof guildUserSchema>>;
 export const Guilds: mongoose.Model<{
     filter: {
-        active: boolean;
         channel: string;
+        active: boolean;
         censor: boolean;
         log: boolean;
         blacklist: string[];
     };
     id: string;
     emojiboards: Map<string, {
+        posted: Map<string, string>;
+        posters: Map<string, number>;
+        channel?: string | null | undefined;
         messType?: string | null | undefined;
         threshold?: number | null | undefined;
         active?: boolean | null | undefined;
-        channel?: string | null | undefined;
-        posted?: Map<string, number> | null | undefined;
-        posters?: Map<string, string> | null | undefined;
     }>;
     tempBans: Map<string, {
         private: boolean;
@@ -22,30 +25,30 @@ export const Guilds: mongoose.Model<{
         ends?: number | null | undefined;
     }>;
     tempSlow: Map<string, {
+        guild?: string | null | undefined;
+        private?: boolean | null | undefined;
         invoker?: string | null | undefined;
         ends?: number | null | undefined;
-        private?: boolean | null | undefined;
         origMode?: number | null | undefined;
-        guild?: string | null | undefined;
     }>;
     polls: Map<string, {
         options: Map<string, string[]>;
         title?: string | null | undefined;
     }>;
     persistence: Map<string, {
-        active: boolean;
         content: string;
+        active: boolean;
         lastPost: string;
     }>;
     alm: {
+        channel: string;
         message: string;
         active: boolean;
-        channel: string;
     };
     ajm: {
+        channel: string;
         message: string;
         active: boolean;
-        channel: string;
         dm: boolean;
     };
     config: {
@@ -59,42 +62,41 @@ export const Guilds: mongoose.Model<{
         levelUpMsgs: boolean;
     };
     levels: {
+        location: string;
+        channel: string;
         msg: string;
         active: boolean;
-        channel: string;
-        location: string;
     };
-    autoJoinRoles: string[];
-    blockedCommands: string[];
     daily: {
         memes: {
-            active: boolean;
             channel: string;
+            active: boolean;
         };
         devos: {
-            active: boolean;
             channel: string;
+            active: boolean;
         };
         verses: {
-            active: boolean;
             channel: string;
+            active: boolean;
         };
     };
     counting: {
-        active: boolean;
-        channel: string;
         public: boolean;
+        channel: string;
+        reset: boolean;
+        active: boolean;
         takeTurns: number;
         failRoleActive: boolean;
         warnRoleActive: boolean;
         failRole: string;
         warnRole: string;
         legit: boolean;
-        reset: boolean;
         nextNum: number;
         highestNum: number;
     };
     logs: {
+        channel: string;
         active: boolean;
         channel_events: boolean;
         emoji_events: boolean;
@@ -104,26 +106,29 @@ export const Guilds: mongoose.Model<{
         role_events: boolean;
         mod_actions: boolean;
     };
+    sentWelcome: boolean;
+    autoJoinRoles: string[];
+    blockedCommands: string[];
+    pinners?: string | null | undefined;
     groupmute?: string | null | undefined;
     disableAntiHack?: boolean | null | undefined;
-    testProp?: string | null | undefined;
     stickyRoles?: boolean | null | undefined;
 }, {}, {}, {}, mongoose.Document<unknown, {}, {
     filter: {
-        active: boolean;
         channel: string;
+        active: boolean;
         censor: boolean;
         log: boolean;
         blacklist: string[];
     };
     id: string;
     emojiboards: Map<string, {
+        posted: Map<string, string>;
+        posters: Map<string, number>;
+        channel?: string | null | undefined;
         messType?: string | null | undefined;
         threshold?: number | null | undefined;
         active?: boolean | null | undefined;
-        channel?: string | null | undefined;
-        posted?: Map<string, number> | null | undefined;
-        posters?: Map<string, string> | null | undefined;
     }>;
     tempBans: Map<string, {
         private: boolean;
@@ -132,30 +137,30 @@ export const Guilds: mongoose.Model<{
         ends?: number | null | undefined;
     }>;
     tempSlow: Map<string, {
+        guild?: string | null | undefined;
+        private?: boolean | null | undefined;
         invoker?: string | null | undefined;
         ends?: number | null | undefined;
-        private?: boolean | null | undefined;
         origMode?: number | null | undefined;
-        guild?: string | null | undefined;
     }>;
     polls: Map<string, {
         options: Map<string, string[]>;
         title?: string | null | undefined;
     }>;
     persistence: Map<string, {
-        active: boolean;
         content: string;
+        active: boolean;
         lastPost: string;
     }>;
     alm: {
+        channel: string;
         message: string;
         active: boolean;
-        channel: string;
     };
     ajm: {
+        channel: string;
         message: string;
         active: boolean;
-        channel: string;
         dm: boolean;
     };
     config: {
@@ -169,42 +174,41 @@ export const Guilds: mongoose.Model<{
         levelUpMsgs: boolean;
     };
     levels: {
+        location: string;
+        channel: string;
         msg: string;
         active: boolean;
-        channel: string;
-        location: string;
     };
-    autoJoinRoles: string[];
-    blockedCommands: string[];
     daily: {
         memes: {
-            active: boolean;
             channel: string;
+            active: boolean;
         };
         devos: {
-            active: boolean;
             channel: string;
+            active: boolean;
         };
         verses: {
-            active: boolean;
             channel: string;
+            active: boolean;
         };
     };
     counting: {
-        active: boolean;
-        channel: string;
         public: boolean;
+        channel: string;
+        reset: boolean;
+        active: boolean;
         takeTurns: number;
         failRoleActive: boolean;
         warnRoleActive: boolean;
         failRole: string;
         warnRole: string;
         legit: boolean;
-        reset: boolean;
         nextNum: number;
         highestNum: number;
     };
     logs: {
+        channel: string;
         active: boolean;
         channel_events: boolean;
         emoji_events: boolean;
@@ -214,26 +218,29 @@ export const Guilds: mongoose.Model<{
         role_events: boolean;
         mod_actions: boolean;
     };
+    sentWelcome: boolean;
+    autoJoinRoles: string[];
+    blockedCommands: string[];
+    pinners?: string | null | undefined;
     groupmute?: string | null | undefined;
     disableAntiHack?: boolean | null | undefined;
-    testProp?: string | null | undefined;
     stickyRoles?: boolean | null | undefined;
 }> & {
     filter: {
-        active: boolean;
         channel: string;
+        active: boolean;
         censor: boolean;
         log: boolean;
         blacklist: string[];
     };
     id: string;
     emojiboards: Map<string, {
+        posted: Map<string, string>;
+        posters: Map<string, number>;
+        channel?: string | null | undefined;
         messType?: string | null | undefined;
         threshold?: number | null | undefined;
         active?: boolean | null | undefined;
-        channel?: string | null | undefined;
-        posted?: Map<string, number> | null | undefined;
-        posters?: Map<string, string> | null | undefined;
     }>;
     tempBans: Map<string, {
         private: boolean;
@@ -242,30 +249,30 @@ export const Guilds: mongoose.Model<{
         ends?: number | null | undefined;
     }>;
     tempSlow: Map<string, {
+        guild?: string | null | undefined;
+        private?: boolean | null | undefined;
         invoker?: string | null | undefined;
         ends?: number | null | undefined;
-        private?: boolean | null | undefined;
         origMode?: number | null | undefined;
-        guild?: string | null | undefined;
     }>;
     polls: Map<string, {
         options: Map<string, string[]>;
         title?: string | null | undefined;
     }>;
     persistence: Map<string, {
-        active: boolean;
         content: string;
+        active: boolean;
         lastPost: string;
     }>;
     alm: {
+        channel: string;
         message: string;
         active: boolean;
-        channel: string;
     };
     ajm: {
+        channel: string;
         message: string;
         active: boolean;
-        channel: string;
         dm: boolean;
     };
     config: {
@@ -279,42 +286,41 @@ export const Guilds: mongoose.Model<{
         levelUpMsgs: boolean;
     };
     levels: {
+        location: string;
+        channel: string;
         msg: string;
         active: boolean;
-        channel: string;
-        location: string;
     };
-    autoJoinRoles: string[];
-    blockedCommands: string[];
     daily: {
         memes: {
-            active: boolean;
             channel: string;
+            active: boolean;
         };
         devos: {
-            active: boolean;
             channel: string;
+            active: boolean;
         };
         verses: {
-            active: boolean;
             channel: string;
+            active: boolean;
         };
     };
     counting: {
-        active: boolean;
-        channel: string;
         public: boolean;
+        channel: string;
+        reset: boolean;
+        active: boolean;
         takeTurns: number;
         failRoleActive: boolean;
         warnRoleActive: boolean;
         failRole: string;
         warnRole: string;
         legit: boolean;
-        reset: boolean;
         nextNum: number;
         highestNum: number;
     };
     logs: {
+        channel: string;
         active: boolean;
         channel_events: boolean;
         emoji_events: boolean;
@@ -324,9 +330,12 @@ export const Guilds: mongoose.Model<{
         role_events: boolean;
         mod_actions: boolean;
     };
+    sentWelcome: boolean;
+    autoJoinRoles: string[];
+    blockedCommands: string[];
+    pinners?: string | null | undefined;
     groupmute?: string | null | undefined;
     disableAntiHack?: boolean | null | undefined;
-    testProp?: string | null | undefined;
     stickyRoles?: boolean | null | undefined;
 } & {
     _id: mongoose.Types.ObjectId;
@@ -334,20 +343,20 @@ export const Guilds: mongoose.Model<{
     __v: number;
 }, mongoose.Schema<any, mongoose.Model<any, any, any, any, any, any>, {}, {}, {}, {}, mongoose.DefaultSchemaOptions, {
     filter: {
-        active: boolean;
         channel: string;
+        active: boolean;
         censor: boolean;
         log: boolean;
         blacklist: string[];
     };
     id: string;
     emojiboards: Map<string, {
+        posted: Map<string, string>;
+        posters: Map<string, number>;
+        channel?: string | null | undefined;
         messType?: string | null | undefined;
         threshold?: number | null | undefined;
         active?: boolean | null | undefined;
-        channel?: string | null | undefined;
-        posted?: Map<string, number> | null | undefined;
-        posters?: Map<string, string> | null | undefined;
     }>;
     tempBans: Map<string, {
         private: boolean;
@@ -356,30 +365,30 @@ export const Guilds: mongoose.Model<{
         ends?: number | null | undefined;
     }>;
     tempSlow: Map<string, {
+        guild?: string | null | undefined;
+        private?: boolean | null | undefined;
         invoker?: string | null | undefined;
         ends?: number | null | undefined;
-        private?: boolean | null | undefined;
         origMode?: number | null | undefined;
-        guild?: string | null | undefined;
     }>;
     polls: Map<string, {
         options: Map<string, string[]>;
         title?: string | null | undefined;
     }>;
     persistence: Map<string, {
-        active: boolean;
         content: string;
+        active: boolean;
         lastPost: string;
     }>;
     alm: {
+        channel: string;
         message: string;
         active: boolean;
-        channel: string;
     };
     ajm: {
+        channel: string;
         message: string;
         active: boolean;
-        channel: string;
         dm: boolean;
     };
     config: {
@@ -393,42 +402,41 @@ export const Guilds: mongoose.Model<{
         levelUpMsgs: boolean;
     };
     levels: {
+        location: string;
+        channel: string;
         msg: string;
         active: boolean;
-        channel: string;
-        location: string;
     };
-    autoJoinRoles: string[];
-    blockedCommands: string[];
     daily: {
         memes: {
-            active: boolean;
             channel: string;
+            active: boolean;
         };
         devos: {
-            active: boolean;
             channel: string;
+            active: boolean;
         };
         verses: {
-            active: boolean;
             channel: string;
+            active: boolean;
         };
     };
     counting: {
-        active: boolean;
-        channel: string;
         public: boolean;
+        channel: string;
+        reset: boolean;
+        active: boolean;
         takeTurns: number;
         failRoleActive: boolean;
         warnRoleActive: boolean;
         failRole: string;
         warnRole: string;
         legit: boolean;
-        reset: boolean;
         nextNum: number;
         highestNum: number;
     };
     logs: {
+        channel: string;
         active: boolean;
         channel_events: boolean;
         emoji_events: boolean;
@@ -438,26 +446,29 @@ export const Guilds: mongoose.Model<{
         role_events: boolean;
         mod_actions: boolean;
     };
+    sentWelcome: boolean;
+    autoJoinRoles: string[];
+    blockedCommands: string[];
+    pinners?: string | null | undefined;
     groupmute?: string | null | undefined;
     disableAntiHack?: boolean | null | undefined;
-    testProp?: string | null | undefined;
     stickyRoles?: boolean | null | undefined;
 }, mongoose.Document<unknown, {}, mongoose.FlatRecord<{
     filter: {
-        active: boolean;
         channel: string;
+        active: boolean;
         censor: boolean;
         log: boolean;
         blacklist: string[];
     };
     id: string;
     emojiboards: Map<string, {
+        posted: Map<string, string>;
+        posters: Map<string, number>;
+        channel?: string | null | undefined;
         messType?: string | null | undefined;
         threshold?: number | null | undefined;
         active?: boolean | null | undefined;
-        channel?: string | null | undefined;
-        posted?: Map<string, number> | null | undefined;
-        posters?: Map<string, string> | null | undefined;
     }>;
     tempBans: Map<string, {
         private: boolean;
@@ -466,30 +477,30 @@ export const Guilds: mongoose.Model<{
         ends?: number | null | undefined;
     }>;
     tempSlow: Map<string, {
+        guild?: string | null | undefined;
+        private?: boolean | null | undefined;
         invoker?: string | null | undefined;
         ends?: number | null | undefined;
-        private?: boolean | null | undefined;
         origMode?: number | null | undefined;
-        guild?: string | null | undefined;
     }>;
     polls: Map<string, {
         options: Map<string, string[]>;
         title?: string | null | undefined;
     }>;
     persistence: Map<string, {
-        active: boolean;
         content: string;
+        active: boolean;
         lastPost: string;
     }>;
     alm: {
+        channel: string;
         message: string;
         active: boolean;
-        channel: string;
     };
     ajm: {
+        channel: string;
         message: string;
         active: boolean;
-        channel: string;
         dm: boolean;
     };
     config: {
@@ -503,42 +514,41 @@ export const Guilds: mongoose.Model<{
         levelUpMsgs: boolean;
     };
     levels: {
+        location: string;
+        channel: string;
         msg: string;
         active: boolean;
-        channel: string;
-        location: string;
     };
-    autoJoinRoles: string[];
-    blockedCommands: string[];
     daily: {
         memes: {
-            active: boolean;
             channel: string;
+            active: boolean;
         };
         devos: {
-            active: boolean;
             channel: string;
+            active: boolean;
         };
         verses: {
-            active: boolean;
             channel: string;
+            active: boolean;
         };
     };
     counting: {
-        active: boolean;
-        channel: string;
         public: boolean;
+        channel: string;
+        reset: boolean;
+        active: boolean;
         takeTurns: number;
         failRoleActive: boolean;
         warnRoleActive: boolean;
         failRole: string;
         warnRole: string;
         legit: boolean;
-        reset: boolean;
         nextNum: number;
         highestNum: number;
     };
     logs: {
+        channel: string;
         active: boolean;
         channel_events: boolean;
         emoji_events: boolean;
@@ -548,26 +558,29 @@ export const Guilds: mongoose.Model<{
         role_events: boolean;
         mod_actions: boolean;
     };
+    sentWelcome: boolean;
+    autoJoinRoles: string[];
+    blockedCommands: string[];
+    pinners?: string | null | undefined;
     groupmute?: string | null | undefined;
     disableAntiHack?: boolean | null | undefined;
-    testProp?: string | null | undefined;
     stickyRoles?: boolean | null | undefined;
 }>> & mongoose.FlatRecord<{
     filter: {
-        active: boolean;
         channel: string;
+        active: boolean;
         censor: boolean;
         log: boolean;
         blacklist: string[];
     };
     id: string;
     emojiboards: Map<string, {
+        posted: Map<string, string>;
+        posters: Map<string, number>;
+        channel?: string | null | undefined;
         messType?: string | null | undefined;
         threshold?: number | null | undefined;
         active?: boolean | null | undefined;
-        channel?: string | null | undefined;
-        posted?: Map<string, number> | null | undefined;
-        posters?: Map<string, string> | null | undefined;
     }>;
     tempBans: Map<string, {
         private: boolean;
@@ -576,30 +589,30 @@ export const Guilds: mongoose.Model<{
         ends?: number | null | undefined;
     }>;
     tempSlow: Map<string, {
+        guild?: string | null | undefined;
+        private?: boolean | null | undefined;
         invoker?: string | null | undefined;
         ends?: number | null | undefined;
-        private?: boolean | null | undefined;
         origMode?: number | null | undefined;
-        guild?: string | null | undefined;
     }>;
     polls: Map<string, {
         options: Map<string, string[]>;
         title?: string | null | undefined;
     }>;
     persistence: Map<string, {
-        active: boolean;
         content: string;
+        active: boolean;
         lastPost: string;
     }>;
     alm: {
+        channel: string;
         message: string;
         active: boolean;
-        channel: string;
     };
     ajm: {
+        channel: string;
         message: string;
         active: boolean;
-        channel: string;
         dm: boolean;
     };
     config: {
@@ -613,42 +626,41 @@ export const Guilds: mongoose.Model<{
         levelUpMsgs: boolean;
     };
     levels: {
+        location: string;
+        channel: string;
         msg: string;
         active: boolean;
-        channel: string;
-        location: string;
     };
-    autoJoinRoles: string[];
-    blockedCommands: string[];
     daily: {
         memes: {
-            active: boolean;
             channel: string;
+            active: boolean;
         };
         devos: {
-            active: boolean;
             channel: string;
+            active: boolean;
         };
         verses: {
-            active: boolean;
             channel: string;
+            active: boolean;
         };
     };
     counting: {
-        active: boolean;
-        channel: string;
         public: boolean;
+        channel: string;
+        reset: boolean;
+        active: boolean;
         takeTurns: number;
         failRoleActive: boolean;
         warnRoleActive: boolean;
         failRole: string;
         warnRole: string;
         legit: boolean;
-        reset: boolean;
         nextNum: number;
         highestNum: number;
     };
     logs: {
+        channel: string;
         active: boolean;
         channel_events: boolean;
         emoji_events: boolean;
@@ -658,9 +670,12 @@ export const Guilds: mongoose.Model<{
         role_events: boolean;
         mod_actions: boolean;
     };
+    sentWelcome: boolean;
+    autoJoinRoles: string[];
+    blockedCommands: string[];
+    pinners?: string | null | undefined;
     groupmute?: string | null | undefined;
     disableAntiHack?: boolean | null | undefined;
-    testProp?: string | null | undefined;
     stickyRoles?: boolean | null | undefined;
 }> & {
     _id: mongoose.Types.ObjectId;
@@ -669,20 +684,20 @@ export const Guilds: mongoose.Model<{
 }>>;
 export function guildByID(id: any, updates?: {}): Promise<mongoose.Document<unknown, {}, {
     filter: {
-        active: boolean;
         channel: string;
+        active: boolean;
         censor: boolean;
         log: boolean;
         blacklist: string[];
     };
     id: string;
     emojiboards: Map<string, {
+        posted: Map<string, string>;
+        posters: Map<string, number>;
+        channel?: string | null | undefined;
         messType?: string | null | undefined;
         threshold?: number | null | undefined;
         active?: boolean | null | undefined;
-        channel?: string | null | undefined;
-        posted?: Map<string, number> | null | undefined;
-        posters?: Map<string, string> | null | undefined;
     }>;
     tempBans: Map<string, {
         private: boolean;
@@ -691,30 +706,30 @@ export function guildByID(id: any, updates?: {}): Promise<mongoose.Document<unkn
         ends?: number | null | undefined;
     }>;
     tempSlow: Map<string, {
+        guild?: string | null | undefined;
+        private?: boolean | null | undefined;
         invoker?: string | null | undefined;
         ends?: number | null | undefined;
-        private?: boolean | null | undefined;
         origMode?: number | null | undefined;
-        guild?: string | null | undefined;
     }>;
     polls: Map<string, {
         options: Map<string, string[]>;
         title?: string | null | undefined;
     }>;
     persistence: Map<string, {
-        active: boolean;
         content: string;
+        active: boolean;
         lastPost: string;
     }>;
     alm: {
+        channel: string;
         message: string;
         active: boolean;
-        channel: string;
     };
     ajm: {
+        channel: string;
         message: string;
         active: boolean;
-        channel: string;
         dm: boolean;
     };
     config: {
@@ -728,42 +743,41 @@ export function guildByID(id: any, updates?: {}): Promise<mongoose.Document<unkn
         levelUpMsgs: boolean;
     };
     levels: {
+        location: string;
+        channel: string;
         msg: string;
         active: boolean;
-        channel: string;
-        location: string;
     };
-    autoJoinRoles: string[];
-    blockedCommands: string[];
     daily: {
         memes: {
-            active: boolean;
             channel: string;
+            active: boolean;
         };
         devos: {
-            active: boolean;
             channel: string;
+            active: boolean;
         };
         verses: {
-            active: boolean;
             channel: string;
+            active: boolean;
         };
     };
     counting: {
-        active: boolean;
-        channel: string;
         public: boolean;
+        channel: string;
+        reset: boolean;
+        active: boolean;
         takeTurns: number;
         failRoleActive: boolean;
         warnRoleActive: boolean;
         failRole: string;
         warnRole: string;
         legit: boolean;
-        reset: boolean;
         nextNum: number;
         highestNum: number;
     };
     logs: {
+        channel: string;
         active: boolean;
         channel_events: boolean;
         emoji_events: boolean;
@@ -773,26 +787,29 @@ export function guildByID(id: any, updates?: {}): Promise<mongoose.Document<unkn
         role_events: boolean;
         mod_actions: boolean;
     };
+    sentWelcome: boolean;
+    autoJoinRoles: string[];
+    blockedCommands: string[];
+    pinners?: string | null | undefined;
     groupmute?: string | null | undefined;
     disableAntiHack?: boolean | null | undefined;
-    testProp?: string | null | undefined;
     stickyRoles?: boolean | null | undefined;
 }> & {
     filter: {
-        active: boolean;
         channel: string;
+        active: boolean;
         censor: boolean;
         log: boolean;
         blacklist: string[];
     };
     id: string;
     emojiboards: Map<string, {
+        posted: Map<string, string>;
+        posters: Map<string, number>;
+        channel?: string | null | undefined;
         messType?: string | null | undefined;
         threshold?: number | null | undefined;
         active?: boolean | null | undefined;
-        channel?: string | null | undefined;
-        posted?: Map<string, number> | null | undefined;
-        posters?: Map<string, string> | null | undefined;
     }>;
     tempBans: Map<string, {
         private: boolean;
@@ -801,30 +818,30 @@ export function guildByID(id: any, updates?: {}): Promise<mongoose.Document<unkn
         ends?: number | null | undefined;
     }>;
     tempSlow: Map<string, {
+        guild?: string | null | undefined;
+        private?: boolean | null | undefined;
         invoker?: string | null | undefined;
         ends?: number | null | undefined;
-        private?: boolean | null | undefined;
         origMode?: number | null | undefined;
-        guild?: string | null | undefined;
     }>;
     polls: Map<string, {
         options: Map<string, string[]>;
         title?: string | null | undefined;
     }>;
     persistence: Map<string, {
-        active: boolean;
         content: string;
+        active: boolean;
         lastPost: string;
     }>;
     alm: {
+        channel: string;
         message: string;
         active: boolean;
-        channel: string;
     };
     ajm: {
+        channel: string;
         message: string;
         active: boolean;
-        channel: string;
         dm: boolean;
     };
     config: {
@@ -838,42 +855,41 @@ export function guildByID(id: any, updates?: {}): Promise<mongoose.Document<unkn
         levelUpMsgs: boolean;
     };
     levels: {
+        location: string;
+        channel: string;
         msg: string;
         active: boolean;
-        channel: string;
-        location: string;
     };
-    autoJoinRoles: string[];
-    blockedCommands: string[];
     daily: {
         memes: {
-            active: boolean;
             channel: string;
+            active: boolean;
         };
         devos: {
-            active: boolean;
             channel: string;
+            active: boolean;
         };
         verses: {
-            active: boolean;
             channel: string;
+            active: boolean;
         };
     };
     counting: {
-        active: boolean;
-        channel: string;
         public: boolean;
+        channel: string;
+        reset: boolean;
+        active: boolean;
         takeTurns: number;
         failRoleActive: boolean;
         warnRoleActive: boolean;
         failRole: string;
         warnRole: string;
         legit: boolean;
-        reset: boolean;
         nextNum: number;
         highestNum: number;
     };
     logs: {
+        channel: string;
         active: boolean;
         channel_events: boolean;
         emoji_events: boolean;
@@ -883,17 +899,20 @@ export function guildByID(id: any, updates?: {}): Promise<mongoose.Document<unkn
         role_events: boolean;
         mod_actions: boolean;
     };
+    sentWelcome: boolean;
+    autoJoinRoles: string[];
+    blockedCommands: string[];
+    pinners?: string | null | undefined;
     groupmute?: string | null | undefined;
     disableAntiHack?: boolean | null | undefined;
-    testProp?: string | null | undefined;
     stickyRoles?: boolean | null | undefined;
 } & {
     _id: mongoose.Types.ObjectId;
 } & {
     __v: number;
 }>;
-/** @returns {Promise<import("mongoose").HydratedDocument<import("mongoose").InferSchemaType<typeof guildSchema>>>} */
-export function guildByObj(obj: any, updates?: {}): Promise<import("mongoose").HydratedDocument<import("mongoose").InferSchemaType<typeof guildSchema>>>;
+/** @returns {Promise<GuildDoc>} */
+export function guildByObj(obj: any, updates?: {}): Promise<GuildDoc>;
 export const Users: mongoose.Model<{
     id: string;
     config: {
@@ -905,6 +924,7 @@ export const Users: mongoose.Model<{
         returnFiltered: boolean;
         hasSetTZ: boolean;
         timeOffset: number;
+        attachmentProtection: boolean;
     };
     primedEmojiURL: string;
     primedName: string;
@@ -914,10 +934,11 @@ export const Users: mongoose.Model<{
         limit: number;
         winCount: number;
         entered: string[];
+        scheduled: boolean;
+        user?: string | null | undefined;
         location?: string | null | undefined;
         closes?: number | null | undefined;
         registered?: boolean | null | undefined;
-        user?: string | null | undefined;
     } | null | undefined;
     timer?: {
         time?: number | null | undefined;
@@ -939,8 +960,8 @@ export const Users: mongoose.Model<{
             id: string;
             name: string;
             icon: string;
-            channelName: string;
             channelId: string;
+            channelName: string;
         } | null | undefined;
     } | null | undefined;
 }, {}, {}, {}, mongoose.Document<unknown, {}, {
@@ -954,6 +975,7 @@ export const Users: mongoose.Model<{
         returnFiltered: boolean;
         hasSetTZ: boolean;
         timeOffset: number;
+        attachmentProtection: boolean;
     };
     primedEmojiURL: string;
     primedName: string;
@@ -963,10 +985,11 @@ export const Users: mongoose.Model<{
         limit: number;
         winCount: number;
         entered: string[];
+        scheduled: boolean;
+        user?: string | null | undefined;
         location?: string | null | undefined;
         closes?: number | null | undefined;
         registered?: boolean | null | undefined;
-        user?: string | null | undefined;
     } | null | undefined;
     timer?: {
         time?: number | null | undefined;
@@ -988,8 +1011,8 @@ export const Users: mongoose.Model<{
             id: string;
             name: string;
             icon: string;
-            channelName: string;
             channelId: string;
+            channelName: string;
         } | null | undefined;
     } | null | undefined;
 }> & {
@@ -1003,6 +1026,7 @@ export const Users: mongoose.Model<{
         returnFiltered: boolean;
         hasSetTZ: boolean;
         timeOffset: number;
+        attachmentProtection: boolean;
     };
     primedEmojiURL: string;
     primedName: string;
@@ -1012,10 +1036,11 @@ export const Users: mongoose.Model<{
         limit: number;
         winCount: number;
         entered: string[];
+        scheduled: boolean;
+        user?: string | null | undefined;
         location?: string | null | undefined;
         closes?: number | null | undefined;
         registered?: boolean | null | undefined;
-        user?: string | null | undefined;
     } | null | undefined;
     timer?: {
         time?: number | null | undefined;
@@ -1037,8 +1062,8 @@ export const Users: mongoose.Model<{
             id: string;
             name: string;
             icon: string;
-            channelName: string;
             channelId: string;
+            channelName: string;
         } | null | undefined;
     } | null | undefined;
 } & {
@@ -1056,6 +1081,7 @@ export const Users: mongoose.Model<{
         returnFiltered: boolean;
         hasSetTZ: boolean;
         timeOffset: number;
+        attachmentProtection: boolean;
     };
     primedEmojiURL: string;
     primedName: string;
@@ -1065,10 +1091,11 @@ export const Users: mongoose.Model<{
         limit: number;
         winCount: number;
         entered: string[];
+        scheduled: boolean;
+        user?: string | null | undefined;
         location?: string | null | undefined;
         closes?: number | null | undefined;
         registered?: boolean | null | undefined;
-        user?: string | null | undefined;
     } | null | undefined;
     timer?: {
         time?: number | null | undefined;
@@ -1090,8 +1117,8 @@ export const Users: mongoose.Model<{
             id: string;
             name: string;
             icon: string;
-            channelName: string;
             channelId: string;
+            channelName: string;
         } | null | undefined;
     } | null | undefined;
 }, mongoose.Document<unknown, {}, mongoose.FlatRecord<{
@@ -1105,6 +1132,7 @@ export const Users: mongoose.Model<{
         returnFiltered: boolean;
         hasSetTZ: boolean;
         timeOffset: number;
+        attachmentProtection: boolean;
     };
     primedEmojiURL: string;
     primedName: string;
@@ -1114,10 +1142,11 @@ export const Users: mongoose.Model<{
         limit: number;
         winCount: number;
         entered: string[];
+        scheduled: boolean;
+        user?: string | null | undefined;
         location?: string | null | undefined;
         closes?: number | null | undefined;
         registered?: boolean | null | undefined;
-        user?: string | null | undefined;
     } | null | undefined;
     timer?: {
         time?: number | null | undefined;
@@ -1139,8 +1168,8 @@ export const Users: mongoose.Model<{
             id: string;
             name: string;
             icon: string;
-            channelName: string;
             channelId: string;
+            channelName: string;
         } | null | undefined;
     } | null | undefined;
 }>> & mongoose.FlatRecord<{
@@ -1154,6 +1183,7 @@ export const Users: mongoose.Model<{
         returnFiltered: boolean;
         hasSetTZ: boolean;
         timeOffset: number;
+        attachmentProtection: boolean;
     };
     primedEmojiURL: string;
     primedName: string;
@@ -1163,10 +1193,11 @@ export const Users: mongoose.Model<{
         limit: number;
         winCount: number;
         entered: string[];
+        scheduled: boolean;
+        user?: string | null | undefined;
         location?: string | null | undefined;
         closes?: number | null | undefined;
         registered?: boolean | null | undefined;
-        user?: string | null | undefined;
     } | null | undefined;
     timer?: {
         time?: number | null | undefined;
@@ -1188,8 +1219,8 @@ export const Users: mongoose.Model<{
             id: string;
             name: string;
             icon: string;
-            channelName: string;
             channelId: string;
+            channelName: string;
         } | null | undefined;
     } | null | undefined;
 }> & {
@@ -1197,7 +1228,7 @@ export const Users: mongoose.Model<{
 } & {
     __v: number;
 }>>;
-export function userByID(id: any, updates?: {}): Promise<mongoose.Document<unknown, {}, {
+export function userByID(id: any, updates?: {}, upsert?: boolean): Promise<(mongoose.Document<unknown, {}, {
     id: string;
     config: {
         embedPreviews: boolean;
@@ -1208,6 +1239,7 @@ export function userByID(id: any, updates?: {}): Promise<mongoose.Document<unkno
         returnFiltered: boolean;
         hasSetTZ: boolean;
         timeOffset: number;
+        attachmentProtection: boolean;
     };
     primedEmojiURL: string;
     primedName: string;
@@ -1217,10 +1249,11 @@ export function userByID(id: any, updates?: {}): Promise<mongoose.Document<unkno
         limit: number;
         winCount: number;
         entered: string[];
+        scheduled: boolean;
+        user?: string | null | undefined;
         location?: string | null | undefined;
         closes?: number | null | undefined;
         registered?: boolean | null | undefined;
-        user?: string | null | undefined;
     } | null | undefined;
     timer?: {
         time?: number | null | undefined;
@@ -1242,8 +1275,8 @@ export function userByID(id: any, updates?: {}): Promise<mongoose.Document<unkno
             id: string;
             name: string;
             icon: string;
-            channelName: string;
             channelId: string;
+            channelName: string;
         } | null | undefined;
     } | null | undefined;
 }> & {
@@ -1257,6 +1290,7 @@ export function userByID(id: any, updates?: {}): Promise<mongoose.Document<unkno
         returnFiltered: boolean;
         hasSetTZ: boolean;
         timeOffset: number;
+        attachmentProtection: boolean;
     };
     primedEmojiURL: string;
     primedName: string;
@@ -1266,10 +1300,11 @@ export function userByID(id: any, updates?: {}): Promise<mongoose.Document<unkno
         limit: number;
         winCount: number;
         entered: string[];
+        scheduled: boolean;
+        user?: string | null | undefined;
         location?: string | null | undefined;
         closes?: number | null | undefined;
         registered?: boolean | null | undefined;
-        user?: string | null | undefined;
     } | null | undefined;
     timer?: {
         time?: number | null | undefined;
@@ -1291,20 +1326,21 @@ export function userByID(id: any, updates?: {}): Promise<mongoose.Document<unkno
             id: string;
             name: string;
             icon: string;
-            channelName: string;
             channelId: string;
+            channelName: string;
         } | null | undefined;
     } | null | undefined;
 } & {
     _id: mongoose.Types.ObjectId;
 } & {
     __v: number;
-}>;
-/** @returns {Promise<import("mongoose").HydratedDocument<import("mongoose").InferSchemaType<typeof userSchema>>>} */
-export function userByObj(obj: any, updates?: {}): Promise<import("mongoose").HydratedDocument<import("mongoose").InferSchemaType<typeof userSchema>>>;
+}) | null>;
+/** @returns {Promise<UserDoc>} */
+export function userByObj(obj: any, updates?: {}, upsert?: boolean): Promise<UserDoc>;
 export const GuildUsers: mongoose.Model<{
-    userId: string;
+    roles: string[];
     guildId: string;
+    userId: string;
     tempRoles: Map<string, number>;
     safeTimestamp: number;
     countTurns: number;
@@ -1312,25 +1348,27 @@ export const GuildUsers: mongoose.Model<{
     lvl: number;
     exp: number;
     warnings: mongoose.Types.DocumentArray<{
-        moderator?: string | null | undefined;
         reason?: string | null | undefined;
+        moderator?: string | null | undefined;
         severity?: number | null | undefined;
         when?: number | null | undefined;
     }, mongoose.Types.Subdocument<mongoose.Types.ObjectId, any, {
-        moderator?: string | null | undefined;
         reason?: string | null | undefined;
+        moderator?: string | null | undefined;
         severity?: number | null | undefined;
         when?: number | null | undefined;
     }> & {
-        moderator?: string | null | undefined;
         reason?: string | null | undefined;
+        moderator?: string | null | undefined;
         severity?: number | null | undefined;
         when?: number | null | undefined;
     }>;
+    inServer: boolean;
     infractions?: number | null | undefined;
 }, {}, {}, {}, mongoose.Document<unknown, {}, {
-    userId: string;
+    roles: string[];
     guildId: string;
+    userId: string;
     tempRoles: Map<string, number>;
     safeTimestamp: number;
     countTurns: number;
@@ -1338,25 +1376,27 @@ export const GuildUsers: mongoose.Model<{
     lvl: number;
     exp: number;
     warnings: mongoose.Types.DocumentArray<{
-        moderator?: string | null | undefined;
         reason?: string | null | undefined;
+        moderator?: string | null | undefined;
         severity?: number | null | undefined;
         when?: number | null | undefined;
     }, mongoose.Types.Subdocument<mongoose.Types.ObjectId, any, {
-        moderator?: string | null | undefined;
         reason?: string | null | undefined;
+        moderator?: string | null | undefined;
         severity?: number | null | undefined;
         when?: number | null | undefined;
     }> & {
-        moderator?: string | null | undefined;
         reason?: string | null | undefined;
+        moderator?: string | null | undefined;
         severity?: number | null | undefined;
         when?: number | null | undefined;
     }>;
+    inServer: boolean;
     infractions?: number | null | undefined;
 }> & {
-    userId: string;
+    roles: string[];
     guildId: string;
+    userId: string;
     tempRoles: Map<string, number>;
     safeTimestamp: number;
     countTurns: number;
@@ -1364,29 +1404,31 @@ export const GuildUsers: mongoose.Model<{
     lvl: number;
     exp: number;
     warnings: mongoose.Types.DocumentArray<{
-        moderator?: string | null | undefined;
         reason?: string | null | undefined;
+        moderator?: string | null | undefined;
         severity?: number | null | undefined;
         when?: number | null | undefined;
     }, mongoose.Types.Subdocument<mongoose.Types.ObjectId, any, {
-        moderator?: string | null | undefined;
         reason?: string | null | undefined;
+        moderator?: string | null | undefined;
         severity?: number | null | undefined;
         when?: number | null | undefined;
     }> & {
-        moderator?: string | null | undefined;
         reason?: string | null | undefined;
+        moderator?: string | null | undefined;
         severity?: number | null | undefined;
         when?: number | null | undefined;
     }>;
+    inServer: boolean;
     infractions?: number | null | undefined;
 } & {
     _id: mongoose.Types.ObjectId;
 } & {
     __v: number;
 }, mongoose.Schema<any, mongoose.Model<any, any, any, any, any, any>, {}, {}, {}, {}, mongoose.DefaultSchemaOptions, {
-    userId: string;
+    roles: string[];
     guildId: string;
+    userId: string;
     tempRoles: Map<string, number>;
     safeTimestamp: number;
     countTurns: number;
@@ -1394,25 +1436,27 @@ export const GuildUsers: mongoose.Model<{
     lvl: number;
     exp: number;
     warnings: mongoose.Types.DocumentArray<{
-        moderator?: string | null | undefined;
         reason?: string | null | undefined;
+        moderator?: string | null | undefined;
         severity?: number | null | undefined;
         when?: number | null | undefined;
     }, mongoose.Types.Subdocument<mongoose.Types.ObjectId, any, {
-        moderator?: string | null | undefined;
         reason?: string | null | undefined;
+        moderator?: string | null | undefined;
         severity?: number | null | undefined;
         when?: number | null | undefined;
     }> & {
-        moderator?: string | null | undefined;
         reason?: string | null | undefined;
+        moderator?: string | null | undefined;
         severity?: number | null | undefined;
         when?: number | null | undefined;
     }>;
+    inServer: boolean;
     infractions?: number | null | undefined;
 }, mongoose.Document<unknown, {}, mongoose.FlatRecord<{
-    userId: string;
+    roles: string[];
     guildId: string;
+    userId: string;
     tempRoles: Map<string, number>;
     safeTimestamp: number;
     countTurns: number;
@@ -1420,25 +1464,27 @@ export const GuildUsers: mongoose.Model<{
     lvl: number;
     exp: number;
     warnings: mongoose.Types.DocumentArray<{
-        moderator?: string | null | undefined;
         reason?: string | null | undefined;
+        moderator?: string | null | undefined;
         severity?: number | null | undefined;
         when?: number | null | undefined;
     }, mongoose.Types.Subdocument<mongoose.Types.ObjectId, any, {
-        moderator?: string | null | undefined;
         reason?: string | null | undefined;
+        moderator?: string | null | undefined;
         severity?: number | null | undefined;
         when?: number | null | undefined;
     }> & {
-        moderator?: string | null | undefined;
         reason?: string | null | undefined;
+        moderator?: string | null | undefined;
         severity?: number | null | undefined;
         when?: number | null | undefined;
     }>;
+    inServer: boolean;
     infractions?: number | null | undefined;
 }>> & mongoose.FlatRecord<{
-    userId: string;
+    roles: string[];
     guildId: string;
+    userId: string;
     tempRoles: Map<string, number>;
     safeTimestamp: number;
     countTurns: number;
@@ -1446,21 +1492,22 @@ export const GuildUsers: mongoose.Model<{
     lvl: number;
     exp: number;
     warnings: mongoose.Types.DocumentArray<{
-        moderator?: string | null | undefined;
         reason?: string | null | undefined;
+        moderator?: string | null | undefined;
         severity?: number | null | undefined;
         when?: number | null | undefined;
     }, mongoose.Types.Subdocument<mongoose.Types.ObjectId, any, {
-        moderator?: string | null | undefined;
         reason?: string | null | undefined;
+        moderator?: string | null | undefined;
         severity?: number | null | undefined;
         when?: number | null | undefined;
     }> & {
-        moderator?: string | null | undefined;
         reason?: string | null | undefined;
+        moderator?: string | null | undefined;
         severity?: number | null | undefined;
         when?: number | null | undefined;
     }>;
+    inServer: boolean;
     infractions?: number | null | undefined;
 }> & {
     _id: mongoose.Types.ObjectId;
@@ -1468,8 +1515,9 @@ export const GuildUsers: mongoose.Model<{
     __v: number;
 }>>;
 export function guildUserByID(guildID: any, userID: any, updateData: {} | undefined, upsert: any): Promise<mongoose.Document<unknown, {}, {
-    userId: string;
+    roles: string[];
     guildId: string;
+    userId: string;
     tempRoles: Map<string, number>;
     safeTimestamp: number;
     countTurns: number;
@@ -1477,25 +1525,27 @@ export function guildUserByID(guildID: any, userID: any, updateData: {} | undefi
     lvl: number;
     exp: number;
     warnings: mongoose.Types.DocumentArray<{
-        moderator?: string | null | undefined;
         reason?: string | null | undefined;
+        moderator?: string | null | undefined;
         severity?: number | null | undefined;
         when?: number | null | undefined;
     }, mongoose.Types.Subdocument<mongoose.Types.ObjectId, any, {
-        moderator?: string | null | undefined;
         reason?: string | null | undefined;
+        moderator?: string | null | undefined;
         severity?: number | null | undefined;
         when?: number | null | undefined;
     }> & {
-        moderator?: string | null | undefined;
         reason?: string | null | undefined;
+        moderator?: string | null | undefined;
         severity?: number | null | undefined;
         when?: number | null | undefined;
     }>;
+    inServer: boolean;
     infractions?: number | null | undefined;
 }> & {
-    userId: string;
+    roles: string[];
     guildId: string;
+    userId: string;
     tempRoles: Map<string, number>;
     safeTimestamp: number;
     countTurns: number;
@@ -1503,29 +1553,30 @@ export function guildUserByID(guildID: any, userID: any, updateData: {} | undefi
     lvl: number;
     exp: number;
     warnings: mongoose.Types.DocumentArray<{
-        moderator?: string | null | undefined;
         reason?: string | null | undefined;
+        moderator?: string | null | undefined;
         severity?: number | null | undefined;
         when?: number | null | undefined;
     }, mongoose.Types.Subdocument<mongoose.Types.ObjectId, any, {
-        moderator?: string | null | undefined;
         reason?: string | null | undefined;
+        moderator?: string | null | undefined;
         severity?: number | null | undefined;
         when?: number | null | undefined;
     }> & {
-        moderator?: string | null | undefined;
         reason?: string | null | undefined;
+        moderator?: string | null | undefined;
         severity?: number | null | undefined;
         when?: number | null | undefined;
     }>;
+    inServer: boolean;
     infractions?: number | null | undefined;
 } & {
     _id: mongoose.Types.ObjectId;
 } & {
     __v: number;
 }>;
-/** @returns {Promise<import("mongoose").HydratedDocument<import("mongoose").InferSchemaType<typeof guildUserSchema>>>} */
-export function guildUserByObj(guild: any, userID: any, updateData?: {}): Promise<import("mongoose").HydratedDocument<import("mongoose").InferSchemaType<typeof guildUserSchema>>>;
+/** @returns {Promise<GuildUserDoc>} */
+export function guildUserByObj(guild: any, userID: any, updateData?: {}): Promise<GuildUserDoc>;
 export const ConfigDB: mongoose.Model<{
     useGlobalGemini: boolean;
     dailyMeme: number;
@@ -1533,10 +1584,12 @@ export const ConfigDB: mongoose.Model<{
         channels: string[];
         lastSent: NativeDate;
         fails: number;
-        hash?: string | null | undefined;
         url?: string | null | undefined;
+        hash?: string | null | undefined;
     }>;
     wotd: string;
+    bootedAt: number;
+    restartedAt: number;
     pfp?: string | null | undefined;
 }, {}, {}, {}, mongoose.Document<unknown, {}, {
     useGlobalGemini: boolean;
@@ -1545,10 +1598,12 @@ export const ConfigDB: mongoose.Model<{
         channels: string[];
         lastSent: NativeDate;
         fails: number;
-        hash?: string | null | undefined;
         url?: string | null | undefined;
+        hash?: string | null | undefined;
     }>;
     wotd: string;
+    bootedAt: number;
+    restartedAt: number;
     pfp?: string | null | undefined;
 }> & {
     useGlobalGemini: boolean;
@@ -1557,10 +1612,12 @@ export const ConfigDB: mongoose.Model<{
         channels: string[];
         lastSent: NativeDate;
         fails: number;
-        hash?: string | null | undefined;
         url?: string | null | undefined;
+        hash?: string | null | undefined;
     }>;
     wotd: string;
+    bootedAt: number;
+    restartedAt: number;
     pfp?: string | null | undefined;
 } & {
     _id: mongoose.Types.ObjectId;
@@ -1573,10 +1630,12 @@ export const ConfigDB: mongoose.Model<{
         channels: string[];
         lastSent: NativeDate;
         fails: number;
-        hash?: string | null | undefined;
         url?: string | null | undefined;
+        hash?: string | null | undefined;
     }>;
     wotd: string;
+    bootedAt: number;
+    restartedAt: number;
     pfp?: string | null | undefined;
 }, mongoose.Document<unknown, {}, mongoose.FlatRecord<{
     useGlobalGemini: boolean;
@@ -1585,10 +1644,12 @@ export const ConfigDB: mongoose.Model<{
         channels: string[];
         lastSent: NativeDate;
         fails: number;
-        hash?: string | null | undefined;
         url?: string | null | undefined;
+        hash?: string | null | undefined;
     }>;
     wotd: string;
+    bootedAt: number;
+    restartedAt: number;
     pfp?: string | null | undefined;
 }>> & mongoose.FlatRecord<{
     useGlobalGemini: boolean;
@@ -1597,33 +1658,34 @@ export const ConfigDB: mongoose.Model<{
         channels: string[];
         lastSent: NativeDate;
         fails: number;
-        hash?: string | null | undefined;
         url?: string | null | undefined;
+        hash?: string | null | undefined;
     }>;
     wotd: string;
+    bootedAt: number;
+    restartedAt: number;
     pfp?: string | null | undefined;
 }> & {
     _id: mongoose.Types.ObjectId;
 } & {
     __v: number;
 }>>;
-import mongoose = require("mongoose");
 declare let guildSchema: mongoose.Schema<any, mongoose.Model<any, any, any, any, any, any>, {}, {}, {}, {}, mongoose.DefaultSchemaOptions, {
     filter: {
-        active: boolean;
         channel: string;
+        active: boolean;
         censor: boolean;
         log: boolean;
         blacklist: string[];
     };
     id: string;
     emojiboards: Map<string, {
+        posted: Map<string, string>;
+        posters: Map<string, number>;
+        channel?: string | null | undefined;
         messType?: string | null | undefined;
         threshold?: number | null | undefined;
         active?: boolean | null | undefined;
-        channel?: string | null | undefined;
-        posted?: Map<string, number> | null | undefined;
-        posters?: Map<string, string> | null | undefined;
     }>;
     tempBans: Map<string, {
         private: boolean;
@@ -1632,30 +1694,30 @@ declare let guildSchema: mongoose.Schema<any, mongoose.Model<any, any, any, any,
         ends?: number | null | undefined;
     }>;
     tempSlow: Map<string, {
+        guild?: string | null | undefined;
+        private?: boolean | null | undefined;
         invoker?: string | null | undefined;
         ends?: number | null | undefined;
-        private?: boolean | null | undefined;
         origMode?: number | null | undefined;
-        guild?: string | null | undefined;
     }>;
     polls: Map<string, {
         options: Map<string, string[]>;
         title?: string | null | undefined;
     }>;
     persistence: Map<string, {
-        active: boolean;
         content: string;
+        active: boolean;
         lastPost: string;
     }>;
     alm: {
+        channel: string;
         message: string;
         active: boolean;
-        channel: string;
     };
     ajm: {
+        channel: string;
         message: string;
         active: boolean;
-        channel: string;
         dm: boolean;
     };
     config: {
@@ -1669,42 +1731,41 @@ declare let guildSchema: mongoose.Schema<any, mongoose.Model<any, any, any, any,
         levelUpMsgs: boolean;
     };
     levels: {
+        location: string;
+        channel: string;
         msg: string;
         active: boolean;
-        channel: string;
-        location: string;
     };
-    autoJoinRoles: string[];
-    blockedCommands: string[];
     daily: {
         memes: {
-            active: boolean;
             channel: string;
+            active: boolean;
         };
         devos: {
-            active: boolean;
             channel: string;
+            active: boolean;
         };
         verses: {
-            active: boolean;
             channel: string;
+            active: boolean;
         };
     };
     counting: {
-        active: boolean;
-        channel: string;
         public: boolean;
+        channel: string;
+        reset: boolean;
+        active: boolean;
         takeTurns: number;
         failRoleActive: boolean;
         warnRoleActive: boolean;
         failRole: string;
         warnRole: string;
         legit: boolean;
-        reset: boolean;
         nextNum: number;
         highestNum: number;
     };
     logs: {
+        channel: string;
         active: boolean;
         channel_events: boolean;
         emoji_events: boolean;
@@ -1714,26 +1775,29 @@ declare let guildSchema: mongoose.Schema<any, mongoose.Model<any, any, any, any,
         role_events: boolean;
         mod_actions: boolean;
     };
+    sentWelcome: boolean;
+    autoJoinRoles: string[];
+    blockedCommands: string[];
+    pinners?: string | null | undefined;
     groupmute?: string | null | undefined;
     disableAntiHack?: boolean | null | undefined;
-    testProp?: string | null | undefined;
     stickyRoles?: boolean | null | undefined;
 }, mongoose.Document<unknown, {}, mongoose.FlatRecord<{
     filter: {
-        active: boolean;
         channel: string;
+        active: boolean;
         censor: boolean;
         log: boolean;
         blacklist: string[];
     };
     id: string;
     emojiboards: Map<string, {
+        posted: Map<string, string>;
+        posters: Map<string, number>;
+        channel?: string | null | undefined;
         messType?: string | null | undefined;
         threshold?: number | null | undefined;
         active?: boolean | null | undefined;
-        channel?: string | null | undefined;
-        posted?: Map<string, number> | null | undefined;
-        posters?: Map<string, string> | null | undefined;
     }>;
     tempBans: Map<string, {
         private: boolean;
@@ -1742,30 +1806,30 @@ declare let guildSchema: mongoose.Schema<any, mongoose.Model<any, any, any, any,
         ends?: number | null | undefined;
     }>;
     tempSlow: Map<string, {
+        guild?: string | null | undefined;
+        private?: boolean | null | undefined;
         invoker?: string | null | undefined;
         ends?: number | null | undefined;
-        private?: boolean | null | undefined;
         origMode?: number | null | undefined;
-        guild?: string | null | undefined;
     }>;
     polls: Map<string, {
         options: Map<string, string[]>;
         title?: string | null | undefined;
     }>;
     persistence: Map<string, {
-        active: boolean;
         content: string;
+        active: boolean;
         lastPost: string;
     }>;
     alm: {
+        channel: string;
         message: string;
         active: boolean;
-        channel: string;
     };
     ajm: {
+        channel: string;
         message: string;
         active: boolean;
-        channel: string;
         dm: boolean;
     };
     config: {
@@ -1779,42 +1843,41 @@ declare let guildSchema: mongoose.Schema<any, mongoose.Model<any, any, any, any,
         levelUpMsgs: boolean;
     };
     levels: {
+        location: string;
+        channel: string;
         msg: string;
         active: boolean;
-        channel: string;
-        location: string;
     };
-    autoJoinRoles: string[];
-    blockedCommands: string[];
     daily: {
         memes: {
-            active: boolean;
             channel: string;
+            active: boolean;
         };
         devos: {
-            active: boolean;
             channel: string;
+            active: boolean;
         };
         verses: {
-            active: boolean;
             channel: string;
+            active: boolean;
         };
     };
     counting: {
-        active: boolean;
-        channel: string;
         public: boolean;
+        channel: string;
+        reset: boolean;
+        active: boolean;
         takeTurns: number;
         failRoleActive: boolean;
         warnRoleActive: boolean;
         failRole: string;
         warnRole: string;
         legit: boolean;
-        reset: boolean;
         nextNum: number;
         highestNum: number;
     };
     logs: {
+        channel: string;
         active: boolean;
         channel_events: boolean;
         emoji_events: boolean;
@@ -1824,26 +1887,29 @@ declare let guildSchema: mongoose.Schema<any, mongoose.Model<any, any, any, any,
         role_events: boolean;
         mod_actions: boolean;
     };
+    sentWelcome: boolean;
+    autoJoinRoles: string[];
+    blockedCommands: string[];
+    pinners?: string | null | undefined;
     groupmute?: string | null | undefined;
     disableAntiHack?: boolean | null | undefined;
-    testProp?: string | null | undefined;
     stickyRoles?: boolean | null | undefined;
 }>> & mongoose.FlatRecord<{
     filter: {
-        active: boolean;
         channel: string;
+        active: boolean;
         censor: boolean;
         log: boolean;
         blacklist: string[];
     };
     id: string;
     emojiboards: Map<string, {
+        posted: Map<string, string>;
+        posters: Map<string, number>;
+        channel?: string | null | undefined;
         messType?: string | null | undefined;
         threshold?: number | null | undefined;
         active?: boolean | null | undefined;
-        channel?: string | null | undefined;
-        posted?: Map<string, number> | null | undefined;
-        posters?: Map<string, string> | null | undefined;
     }>;
     tempBans: Map<string, {
         private: boolean;
@@ -1852,30 +1918,30 @@ declare let guildSchema: mongoose.Schema<any, mongoose.Model<any, any, any, any,
         ends?: number | null | undefined;
     }>;
     tempSlow: Map<string, {
+        guild?: string | null | undefined;
+        private?: boolean | null | undefined;
         invoker?: string | null | undefined;
         ends?: number | null | undefined;
-        private?: boolean | null | undefined;
         origMode?: number | null | undefined;
-        guild?: string | null | undefined;
     }>;
     polls: Map<string, {
         options: Map<string, string[]>;
         title?: string | null | undefined;
     }>;
     persistence: Map<string, {
-        active: boolean;
         content: string;
+        active: boolean;
         lastPost: string;
     }>;
     alm: {
+        channel: string;
         message: string;
         active: boolean;
-        channel: string;
     };
     ajm: {
+        channel: string;
         message: string;
         active: boolean;
-        channel: string;
         dm: boolean;
     };
     config: {
@@ -1889,42 +1955,41 @@ declare let guildSchema: mongoose.Schema<any, mongoose.Model<any, any, any, any,
         levelUpMsgs: boolean;
     };
     levels: {
+        location: string;
+        channel: string;
         msg: string;
         active: boolean;
-        channel: string;
-        location: string;
     };
-    autoJoinRoles: string[];
-    blockedCommands: string[];
     daily: {
         memes: {
-            active: boolean;
             channel: string;
+            active: boolean;
         };
         devos: {
-            active: boolean;
             channel: string;
+            active: boolean;
         };
         verses: {
-            active: boolean;
             channel: string;
+            active: boolean;
         };
     };
     counting: {
-        active: boolean;
-        channel: string;
         public: boolean;
+        channel: string;
+        reset: boolean;
+        active: boolean;
         takeTurns: number;
         failRoleActive: boolean;
         warnRoleActive: boolean;
         failRole: string;
         warnRole: string;
         legit: boolean;
-        reset: boolean;
         nextNum: number;
         highestNum: number;
     };
     logs: {
+        channel: string;
         active: boolean;
         channel_events: boolean;
         emoji_events: boolean;
@@ -1934,9 +1999,12 @@ declare let guildSchema: mongoose.Schema<any, mongoose.Model<any, any, any, any,
         role_events: boolean;
         mod_actions: boolean;
     };
+    sentWelcome: boolean;
+    autoJoinRoles: string[];
+    blockedCommands: string[];
+    pinners?: string | null | undefined;
     groupmute?: string | null | undefined;
     disableAntiHack?: boolean | null | undefined;
-    testProp?: string | null | undefined;
     stickyRoles?: boolean | null | undefined;
 }> & {
     _id: mongoose.Types.ObjectId;
@@ -1954,6 +2022,7 @@ declare let userSchema: mongoose.Schema<any, mongoose.Model<any, any, any, any, 
         returnFiltered: boolean;
         hasSetTZ: boolean;
         timeOffset: number;
+        attachmentProtection: boolean;
     };
     primedEmojiURL: string;
     primedName: string;
@@ -1963,10 +2032,11 @@ declare let userSchema: mongoose.Schema<any, mongoose.Model<any, any, any, any, 
         limit: number;
         winCount: number;
         entered: string[];
+        scheduled: boolean;
+        user?: string | null | undefined;
         location?: string | null | undefined;
         closes?: number | null | undefined;
         registered?: boolean | null | undefined;
-        user?: string | null | undefined;
     } | null | undefined;
     timer?: {
         time?: number | null | undefined;
@@ -1988,8 +2058,8 @@ declare let userSchema: mongoose.Schema<any, mongoose.Model<any, any, any, any, 
             id: string;
             name: string;
             icon: string;
-            channelName: string;
             channelId: string;
+            channelName: string;
         } | null | undefined;
     } | null | undefined;
 }, mongoose.Document<unknown, {}, mongoose.FlatRecord<{
@@ -2003,6 +2073,7 @@ declare let userSchema: mongoose.Schema<any, mongoose.Model<any, any, any, any, 
         returnFiltered: boolean;
         hasSetTZ: boolean;
         timeOffset: number;
+        attachmentProtection: boolean;
     };
     primedEmojiURL: string;
     primedName: string;
@@ -2012,10 +2083,11 @@ declare let userSchema: mongoose.Schema<any, mongoose.Model<any, any, any, any, 
         limit: number;
         winCount: number;
         entered: string[];
+        scheduled: boolean;
+        user?: string | null | undefined;
         location?: string | null | undefined;
         closes?: number | null | undefined;
         registered?: boolean | null | undefined;
-        user?: string | null | undefined;
     } | null | undefined;
     timer?: {
         time?: number | null | undefined;
@@ -2037,8 +2109,8 @@ declare let userSchema: mongoose.Schema<any, mongoose.Model<any, any, any, any, 
             id: string;
             name: string;
             icon: string;
-            channelName: string;
             channelId: string;
+            channelName: string;
         } | null | undefined;
     } | null | undefined;
 }>> & mongoose.FlatRecord<{
@@ -2052,6 +2124,7 @@ declare let userSchema: mongoose.Schema<any, mongoose.Model<any, any, any, any, 
         returnFiltered: boolean;
         hasSetTZ: boolean;
         timeOffset: number;
+        attachmentProtection: boolean;
     };
     primedEmojiURL: string;
     primedName: string;
@@ -2061,10 +2134,11 @@ declare let userSchema: mongoose.Schema<any, mongoose.Model<any, any, any, any, 
         limit: number;
         winCount: number;
         entered: string[];
+        scheduled: boolean;
+        user?: string | null | undefined;
         location?: string | null | undefined;
         closes?: number | null | undefined;
         registered?: boolean | null | undefined;
-        user?: string | null | undefined;
     } | null | undefined;
     timer?: {
         time?: number | null | undefined;
@@ -2086,8 +2160,8 @@ declare let userSchema: mongoose.Schema<any, mongoose.Model<any, any, any, any, 
             id: string;
             name: string;
             icon: string;
-            channelName: string;
             channelId: string;
+            channelName: string;
         } | null | undefined;
     } | null | undefined;
 }> & {
@@ -2096,8 +2170,9 @@ declare let userSchema: mongoose.Schema<any, mongoose.Model<any, any, any, any, 
     __v: number;
 }>;
 declare let guildUserSchema: mongoose.Schema<any, mongoose.Model<any, any, any, any, any, any>, {}, {}, {}, {}, mongoose.DefaultSchemaOptions, {
-    userId: string;
+    roles: string[];
     guildId: string;
+    userId: string;
     tempRoles: Map<string, number>;
     safeTimestamp: number;
     countTurns: number;
@@ -2105,25 +2180,27 @@ declare let guildUserSchema: mongoose.Schema<any, mongoose.Model<any, any, any, 
     lvl: number;
     exp: number;
     warnings: mongoose.Types.DocumentArray<{
-        moderator?: string | null | undefined;
         reason?: string | null | undefined;
+        moderator?: string | null | undefined;
         severity?: number | null | undefined;
         when?: number | null | undefined;
     }, mongoose.Types.Subdocument<mongoose.Types.ObjectId, any, {
-        moderator?: string | null | undefined;
         reason?: string | null | undefined;
+        moderator?: string | null | undefined;
         severity?: number | null | undefined;
         when?: number | null | undefined;
     }> & {
-        moderator?: string | null | undefined;
         reason?: string | null | undefined;
+        moderator?: string | null | undefined;
         severity?: number | null | undefined;
         when?: number | null | undefined;
     }>;
+    inServer: boolean;
     infractions?: number | null | undefined;
 }, mongoose.Document<unknown, {}, mongoose.FlatRecord<{
-    userId: string;
+    roles: string[];
     guildId: string;
+    userId: string;
     tempRoles: Map<string, number>;
     safeTimestamp: number;
     countTurns: number;
@@ -2131,25 +2208,27 @@ declare let guildUserSchema: mongoose.Schema<any, mongoose.Model<any, any, any, 
     lvl: number;
     exp: number;
     warnings: mongoose.Types.DocumentArray<{
-        moderator?: string | null | undefined;
         reason?: string | null | undefined;
+        moderator?: string | null | undefined;
         severity?: number | null | undefined;
         when?: number | null | undefined;
     }, mongoose.Types.Subdocument<mongoose.Types.ObjectId, any, {
-        moderator?: string | null | undefined;
         reason?: string | null | undefined;
+        moderator?: string | null | undefined;
         severity?: number | null | undefined;
         when?: number | null | undefined;
     }> & {
-        moderator?: string | null | undefined;
         reason?: string | null | undefined;
+        moderator?: string | null | undefined;
         severity?: number | null | undefined;
         when?: number | null | undefined;
     }>;
+    inServer: boolean;
     infractions?: number | null | undefined;
 }>> & mongoose.FlatRecord<{
-    userId: string;
+    roles: string[];
     guildId: string;
+    userId: string;
     tempRoles: Map<string, number>;
     safeTimestamp: number;
     countTurns: number;
@@ -2157,25 +2236,27 @@ declare let guildUserSchema: mongoose.Schema<any, mongoose.Model<any, any, any, 
     lvl: number;
     exp: number;
     warnings: mongoose.Types.DocumentArray<{
-        moderator?: string | null | undefined;
         reason?: string | null | undefined;
+        moderator?: string | null | undefined;
         severity?: number | null | undefined;
         when?: number | null | undefined;
     }, mongoose.Types.Subdocument<mongoose.Types.ObjectId, any, {
-        moderator?: string | null | undefined;
         reason?: string | null | undefined;
+        moderator?: string | null | undefined;
         severity?: number | null | undefined;
         when?: number | null | undefined;
     }> & {
-        moderator?: string | null | undefined;
         reason?: string | null | undefined;
+        moderator?: string | null | undefined;
         severity?: number | null | undefined;
         when?: number | null | undefined;
     }>;
+    inServer: boolean;
     infractions?: number | null | undefined;
 }> & {
     _id: mongoose.Types.ObjectId;
 } & {
     __v: number;
 }>;
+import mongoose = require("mongoose");
 export {};

@@ -2,15 +2,20 @@ export namespace data {
     let command: import("discord.js").SlashCommandOptionsOnlyBuilder;
     let requiredGlobals: never[];
     namespace help {
-        let helpCategories: string[];
+        let helpCategories: any[];
         let shortDesc: string;
         let detailedDesc: string;
     }
 }
-/** @param {import('discord.js').Interaction} cmd */
-export function execute(cmd: import("discord.js").Interaction, context: any): Promise<void>;
+/** @param {import('discord.js').ChatInputCommandInteraction} cmd */
+export function execute(cmd: import("discord.js").ChatInputCommandInteraction, context: any): Promise<void>;
 /** @param {import('discord.js').Message} msg */
 export function onmessage(msg: import("discord.js").Message, context: any): Promise<void>;
+/**
+ * @param {import('discord.js').PartialMessage | import('discord.js').Message} msgO
+ * @param {import('discord.js').PartialMessage | import('discord.js').Message} msg
+ */
+export function onedit(msgO: import("discord.js").PartialMessage | import("discord.js").Message, msg: import("discord.js").PartialMessage | import("discord.js").Message, readGuild: any, guildUserStore: any): Promise<void>;
 export function autocomplete(cmd: any): Promise<void>;
 export function daily(context: any): Promise<void>;
 export let subscribedButtons: (string | RegExp)[];

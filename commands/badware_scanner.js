@@ -7,6 +7,11 @@ function applyContext(context={}) {
 		this[key] = context[key];
 	}
 }
+/**
+ * @typedef {import("./modules/database").GuildDoc} GuildDoc
+ * @typedef {import("./modules/database").GuildUserDoc} GuildUserDoc
+ * @typedef {import("./modules/database").UserDoc} UserDoc
+ */
 // #endregion CommandBoilerplate
 
 // const exif = require('exif-parser'); // We could check if it has sensitive data before
@@ -181,11 +186,11 @@ async function checkURL(inputUrl, overrideCache=false) {
 		if (overrideCache || !fs.existsSync(blocklistLoc)) {
 			// Download if we don't have it already
 			blocklistContent = await loadBlocklist(blocklist.url);
-            if (!fs.existsSync(blocklistsLocation)) fs.mkdirSync(blocklistsLocation)
-			fs.writeFileSync(blocklistLoc, blocklistContent);
+            if (!fs.existsSync(blocklistsLocation)) fs.mkdirSync(blocklistsLocation);
+			await fs.promises.writeFile(blocklistLoc, blocklistContent);
 		}
 		else {
-			blocklistContent = fs.readFileSync(blocklistLoc).toString();
+			blocklistContent = await fs.promises.readFile(blocklistLoc, 'utf-8');
 		}
 
 		// Now check against it
@@ -281,7 +286,7 @@ module.exports = {
 		},
 	},
 
-    /** @param {import('discord.js').Interaction} cmd */
+    /** @param {import('discord.js').ChatInputCommandInteraction} cmd */
     async execute(cmd, context) {
         applyContext(context);
 
@@ -303,7 +308,11 @@ module.exports = {
         cmd.followUp("Badware Scanner configured.");
     },
 
-	/** @param {import('discord.js').Message} msg */
+    /** 
+     * @param {import('discord.js').Message} msg 
+     * @param {GuildDoc} guildStore 
+     * @param {UserDoc} guildUserStore 
+     * */
     async onmessage(msg, context, guildStore, guildUserStore) {
 		applyContext(context);
 

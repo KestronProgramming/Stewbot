@@ -334,6 +334,15 @@ ConfigDB.findOne().then(async (config) => {
 
 //#endregion
 
+//#region Types
+/**
+ * @typedef {import("mongoose").HydratedDocument<import("mongoose").InferSchemaType<typeof guildSchema>>} GuildDoc
+ * @typedef {import("mongoose").HydratedDocument<import("mongoose").InferSchemaType<typeof userSchema>>} UserDoc
+ * @typedef {import("mongoose").HydratedDocument<import("mongoose").InferSchemaType<typeof guildUserSchema>>} GuildUserDoc
+ */
+
+//#endregion
+
 //#region Functions
 
 /**
@@ -379,7 +388,7 @@ async function guildByID(id, updates={}) {
     return guild;
 }
 
-/** @returns {Promise<import("mongoose").HydratedDocument<import("mongoose").InferSchemaType<typeof guildSchema>>>} */
+/** @returns {Promise<GuildDoc>} */
 async function guildByObj(obj, updates={}) {
     if (!obj) return null;
     
@@ -412,7 +421,7 @@ async function userByID(id, updates={}, upsert=true) {
     return user;
 }
 
-/** @returns {Promise<import("mongoose").HydratedDocument<import("mongoose").InferSchemaType<typeof userSchema>>>} */
+/** @returns {Promise<UserDoc>} */
 async function userByObj(obj, updates={}, upsert=true) {
     // Beta prechecks for dev mistakes
     if (
@@ -448,7 +457,7 @@ async function guildUserByID(guildID, userID, updateData={}, upsert) {
     return user;
 }
 
-/** @returns {Promise<import("mongoose").HydratedDocument<import("mongoose").InferSchemaType<typeof guildUserSchema>>>} */
+/** @returns {Promise<GuildUserDoc>} */
 async function guildUserByObj(guild, userID, updateData={}) {
     // Beta prechecks for dev mistakes
     if (
