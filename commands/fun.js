@@ -142,6 +142,16 @@ function tallyRac() {
 
     return `**Rows & Columns**\n${resultsMessage}`;
 }
+function randomName(){
+	var letters="abcdefghiklmnopqrstuvwxyz";
+	var vowels="aeiouy";//Y is considered a vowel here because the idea is just a janky "does this sound work"
+	let nameR='';
+	for(var k=0;k<2;k++){
+		nameR+=letters[Math.floor(Math.random()*letters.length)]+letters[Math.floor(Math.random()*letters.length)]+vowels[Math.floor(Math.random()*vowels.length)];
+	}
+	nameR+=letters[Math.floor(Math.random()*letters.length)];
+	return nameR[0].toUpperCase()+nameR.slice(1);
+}
 
 module.exports = {
 	data: {
@@ -168,6 +178,10 @@ module.exports = {
 					option.setName("help").setDescription("View the rules instead of playing?")
 				).addIntegerOption(option=>
 					option.setName("size").setDescription("Set your amount of rows and start playing!").setMinValue(process.env.beta ? 1 : 3).setMaxValue(26)
+				)
+			).addSubcommand(command=>
+				command.setName("name_me").setDescription("Generate a random set of letters in an attempt to make an original name").addBooleanOption(option=>
+					option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 				)
 			).addSubcommand(command=>
 				command.setName("rock_paper_scissors").setDescription("Play Rock Paper Scissors with the bot").addStringOption(option=>
@@ -225,6 +239,11 @@ module.exports = {
 				detailedDesc: //Detailed on exactly what the command does and how to use it
 					`Posts one of the memes Stewbot's staff have approved for the bot to display. You can use the /submit_meme context menu command (holding down the message on mobile, right clicking on desktop, and then pressing Apps) to submit a meme for the Stewbot staff to review.`
 			},
+			"name_me":{
+				helpCategories:[Categories.Entertainment],
+				shortDesc:"Generate a random set of letters in an attempt to make an original name",
+				detailedDesc:"Generate a random set of letters in an attempt to make an original name"
+			}
 			// helpSortPriority: 1
 		},
 		
@@ -266,6 +285,9 @@ module.exports = {
 						msg.react("🅰️").then(msg.react("🅱️"));
 					}
 				});
+			break;
+			case 'name_me':
+				cmd.followUp(`A possible name could be \`${randomName()}\`.`);
 			break;
 			case 'joke':
 				fetch("https://v2.jokeapi.dev/joke/Pun?blacklistFlags=nsfw,religious,political,racist,sexist,explicit&safe-mode").then(d=>d.json()).then(d=>{

@@ -357,6 +357,15 @@
         "detailedDesc": "Posts one of the memes Stewbot's staff have approved for the bot to display. You can use the /submit_meme context menu command (holding down the message on mobile, right clicking on desktop, and then pressing Apps) to submit a meme for the Stewbot staff to review."
     },
     {
+        "name": "fun name_me",
+        "mention": "</fun name_me:1289093271796322395>",
+        "helpCategories": [
+            "Entertainment"
+        ],
+        "shortDesc": "Generate a random set of letters in an attempt to make an original name",
+        "detailedDesc": "Generate a random set of letters in an attempt to make an original name"
+    },
+    {
         "name": "general_config",
         "mention": "</general_config:1289093272375132188>",
         "helpCategories": [
@@ -411,6 +420,15 @@
         "shortDesc": "Keep Stewbot's avatar seasonal",
         "detailedDesc": "This module sets Stewbot's profile picture to various presets on national holidays.",
         "block_module_message": "Discord requires bot avatars to be set globally, so I cannot block this module."
+    },
+    {
+        "name": "keywords",
+        "mention": "`keywords` Module",
+        "helpCategories": [
+            "Module"
+        ],
+        "shortDesc": "Keywords from back in Kestron-Tron's day",
+        "detailedDesc": "Bringing back some of the more fun and less professional features from back in Kestron-Tron's day."
     },
     {
         "name": "kick",
