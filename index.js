@@ -47,6 +47,7 @@ const { getStarMsg } = require("./commands/add_emojiboard.js")
 const { processForNumber } = require("./commands/counting.js")
 const { killMaintenanceBot } = require("./commands/restart.js")
 const { resetAIRequests, convertCommandsToTools } = require("./commands/chat.js")
+const { isModuleBlocked } = require("./commands/block_module.js")
 
 //#endregion Imports
 
@@ -54,9 +55,6 @@ const { resetAIRequests, convertCommandsToTools } = require("./commands/chat.js"
 // Preliminary setup (TODO: move to a setup.sh?)
 if (!fs.existsSync("tempMove")) fs.mkdirSync('tempMove');
 if (!fs.existsSync("tempMemes")) fs.mkdirSync('tempMemes');
-if (!fs.existsSync("./data/usage.json")) fs.writeFileSync('./data/usage.json', '{}');
-
-const usage=require("./data/usage.json");
 
 // Load commands modules
 function getSubscribedCommands(commands, subscription) {
@@ -710,25 +708,9 @@ client.on("messageCreate",async msg => {
     }
     
     // Dispatch to listening modules
-    for (const [name, module] of Object.entries(messageListenerModules)) {
-        // Check if this command is blocked with /block_module
-        const commandPath = `${module.data?.command?.name || name}`; // ||name handles non-command modules
-        
-        // If this is a guild, check for blocklist
-        if (msg.guild?.id) {
-            let guildBlocklist = readGuild.blockedCommands;
-            guildBlocklist = guildBlocklist.map(blockCommand => blockCommand.replace(/^\//, '')) // Backwards compatability with block_command which had a leading /
-            if (guildBlocklist.includes(commandPath)) {
-                continue; // Ignore this module
-            }
-        }
-        // Check global blacklist from home server - TODO more aggressive caching on this one
-        const globalBlocklist = readHomeGuild.blockedCommands;
-        if (globalBlocklist.includes(commandPath)) {
-            continue;
-        }
-
-        module.onmessage(msg, pseudoGlobals, readGuild, readGuildUser);
+    for (const command of Object.entries(messageListenerModules)) {
+        const [ blocked, _ ] = isModuleBlocked(command, readGuild, readHomeGuild)
+        if (!blocked) command[1].onmessage(msg, pseudoGlobals, readGuild, readGuildUser);
     }
 
     // The sudo handler uses so many globals, it can stay in index.js for now
@@ -830,7 +812,7 @@ client.on("interactionCreate", async cmd=>{
     const commandScript = commands[cmd.commandName];
     if (!commandScript && (cmd.isCommand() || cmd.isAutocomplete())) return; // Ignore any potential cache issues 
 
-    // Manage deferring
+    //// Manage deferring
     try{
         if(
             !cmd.isButton() &&
@@ -852,7 +834,7 @@ client.on("interactionCreate", async cmd=>{
         }
     }catch(e){}
 
-    // Autocomplete
+    //// Autocomplete
     if (cmd.isAutocomplete()) {
         const providedGlobals = { ...pseudoGlobals };
         requestedGlobals = commandScript.data?.requiredGlobals || commandScript.requestGlobals?.() || [];
@@ -864,29 +846,16 @@ client.on("interactionCreate", async cmd=>{
         return;
     }
 
-    // Slash commands
+    //// Slash commands
     if (cmd.isCommand() && commands.hasOwnProperty(cmd.commandName)) {
-        // If this is a guild, check for blocklist
-        const commandPathWithSubcommand = `${cmd.commandName} ${cmd.options._subcommand ? cmd.options.getSubcommand() : "<none>"}`; //meh but it works
-        const commandPath = `${cmd.commandName}`;
-        if (cmd.guild?.id) {
-            let guildBlocklist = (await guildByObj(cmd.guild)).blockedCommands;
-            guildBlocklist = guildBlocklist.map(blockedCommand => blockedCommand.replace(/^\//, '')) // Backwards compatability with block_command which had a leading /
-
-            if (guildBlocklist.includes(commandPath) || guildBlocklist.includes(commandPathWithSubcommand)) {
-                let response = "This command has been blocked by this server.";
-                if (cmd.member.permissions.has('Administrator')) {
-                    response += `\nYou can use ${cmds.block_module.mention} to unblock it.`
-                }
-                return cmd.followUp(response);
-            }
-        }
-        
-        // Check global blacklist from home server
-        const globalBlocklist = (await guildByID(config.homeServer)).blockedCommands;
-        if (globalBlocklist.includes(commandPath) || globalBlocklist.includes(commandPathWithSubcommand)) {
-            return cmd.followUp("This command has temporarily been blocked by Stewbot admins.");
-        }
+        const listeningModule = [ `${cmd.commandName} ${cmd.options.getSubcommand(false)}`.trim(), commandScript ]; // Here we artificially provide the full path since slash commands can have subcommands
+        // TODO_DB: this could be made more efficient by passing in the readonly guilds as objects
+        const [ blocked, errorMsg ] = isModuleBlocked(listeningModule, 
+            (await guildByObj(cmd.guild)), 
+            (await guildByID(config.homeServer)),
+            cmd.member.permissions.has('Administrator')
+        )
+        if (blocked) return cmd.followUp(errorMsg);
         
         // Checks passed, gather requested data
         const providedGlobals = { ...pseudoGlobals };
@@ -913,9 +882,6 @@ client.on("interactionCreate", async cmd=>{
             throw e; // Throw it so that it hits the error notifiers
         }
 
-        // Command frequency stats 
-        if(!(usage[commandPathWithSubcommand] ?? false)) usage[commandPathWithSubcommand] = 0;
-        usage[commandPathWithSubcommand]++;
         return;
     }
 

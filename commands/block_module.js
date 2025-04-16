@@ -67,7 +67,40 @@ function getCommandBlockMessageFromPath(cmdPath) { // Subcommands make this hard
     return help?.block_module_message;
 }
 
+function isModuleBlocked(listener, guild, globalGuild, isAdmin) {
+    // returns: [ blocked, error ]
+    // isadmin signifies whether this user has perms to unblock the server command block
+    const [ name, module ] = listener;
+
+    // Check if this command is blocked with /block_module
+    const commandPath = `${module.data?.command?.name || name}`; //  handles non-command modules
+        
+    // If this is a guild, check for blocklist
+    if (guild) {
+        let guildBlocklist = guild.blockedCommands;
+        guildBlocklist = guildBlocklist.map(blockCommand => blockCommand.replace(/^\//, '')) // Backwards compatibility with block_command which had a leading /
+        if (guildBlocklist.includes(name) || guildBlocklist.includes(commandPath)) {
+            let err = "This command has been blocked by this server.";
+            if (isAdmin) err += `\nYou can use ${cmds.block_module.mention} to unblock it.`;
+            return [ true, err ];
+        }
+    }
+
+    // If given a guild blacklist
+    if (globalGuild) {
+        // Check global blacklist from home server - TODO more aggressive caching on this one
+        const globalBlocklist = globalGuild.blockedCommands;
+        if (globalBlocklist.includes(name) || globalBlocklist.includes(commandPath)) {
+            return [ true, "This command has temporarily been blocked by Stewbot admins." ];
+        }
+    }
+
+    return [ false ]
+}
+
 module.exports = {
+    isModuleBlocked,
+
 	data: {
 		// Slash command data
 		command: new SlashCommandBuilder()
