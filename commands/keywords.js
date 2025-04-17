@@ -203,11 +203,12 @@ module.exports = {
      * @param {GuildDoc} guildStore 
      * @param {UserDoc} guildUserStore 
      * */
-    async onmessage(msg, context) {
+    async onmessage(msg, context, guildStore, guildUserStore) {
         applyContext(context);
 
         if (msg.guild?.id) {
-            if (!(await guildByObj(msg.guild)).config.keywords) {
+            // In guilds, return if not set. DMs can always run these.
+            if (!guildStore.config.keywords) {
                 return;
             }
         }
@@ -226,7 +227,7 @@ module.exports = {
                     }
                     catch (e) { }
                 }
-                console.log("Told " + msg.author.tag + " " + keyword[i].response + " after they said " + msg.content);
+                // console.log("Told " + msg.author.tag + " " + keyword[i].response + " after they said " + msg.content);
             }
             let keyWord = true;
             if (!keyword[i].only) {
@@ -243,9 +244,9 @@ module.exports = {
                         }
                         catch (e) { }
                     }
-                    console.log("Told " + msg.author.tag + " " + keyword[i].response + " after they said " + msg.content);
+                    // console.log("Told " + msg.author.tag + " " + keyword[i].response + " after they said " + msg.content);
                     keyword[i].timeout = 12;
-                    console.log(keyword[i].timeout);
+                    // console.log(keyword[i].timeout);
                 }
             }
         }

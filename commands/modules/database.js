@@ -156,7 +156,7 @@ let guildConfigSchema = new mongoose.Schema({
     ai: { type: Boolean, default: true},
     embedPreviews: { type: Boolean, default: true },
     levelUpMsgs: { type: Boolean, default: false },
-    keywords:{type: Boolean, default:false}
+    keywords: { type: Boolean, default: false }
 });
 
 let guildSchema = new mongoose.Schema({
