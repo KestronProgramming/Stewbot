@@ -204,9 +204,13 @@ module.exports = {
      * @param {UserDoc} guildUserStore 
      * */
     async onmessage(msg, context) {
-		applyContext(context);
+	applyContext(context);
 
-        if(!(await guildByObj(msg.guild)).config.keywords) return;
+	if(msg.guild?.id){
+        	if(!(await guildByObj(msg.guild)).config.keywords){
+			return;
+		}
+	}
 
         capsT--;
         for(var i=0;i<keyword.length;i++){
