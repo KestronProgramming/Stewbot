@@ -760,7 +760,7 @@ client.on("messageCreate",async msg => {
                 case "setBanner":
                     const bannerName = msg.content.split(" ")[2];
                     const bannerPath = `./pfps/${bannerName}`;
-                    const bannerBuffer = fs.readFileSync(bannerPath)
+                    const bannerBuffer = await fs.promises.readFile(bannerPath)
                     client.user.setBanner(bannerBuffer)
                     msg.reply("Done")
                     break;

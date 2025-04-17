@@ -371,7 +371,7 @@ async function getAiResponseGemini(threadID, message, thinking = null, contextua
         Date.now() - convoCache[threadID].lastMessage > 1000 * 60 * 60 ||
         JSON.stringify(contextualData) !== JSON.stringify(convoCache[threadID].contextualData)
     ) {
-        let systemPrompt = fs.readFileSync("./data/system.prompt").toString();
+        let systemPrompt = (await fs.promises.readFile("./data/system.prompt")).toString();
         if (process.env.beta) systemPrompt = systemPrompt.replaceAll("Stewbot", "Stewbeta");
         Object.keys(contextualData).forEach((key) => {
             systemPrompt = systemPrompt.replaceAll(`{${key}}`, contextualData[key]);
@@ -448,7 +448,7 @@ async function getAiResponseOllama(threadID, message, thinking = null, contextua
         ) {
             const context = [];
 
-            let systemPrompt = fs.readFileSync("./data/system.prompt").toString();
+            let systemPrompt = (await fs.promises.readFile("./data/system.prompt")).toString();
             if (process.env.beta) systemPrompt = systemPrompt.replaceAll("Stewbot", "Stewbeta");
             Object.keys(contextualData).forEach((key) => {
                 systemPrompt = systemPrompt.replaceAll(`{${key}}`, contextualData[key]);
