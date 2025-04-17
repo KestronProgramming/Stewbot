@@ -9,6 +9,8 @@ const ms = require("ms")
 
 function initInflux() {
     try {
+        if (!influxToken) throw new Error("No influx token set in env.json");
+        
         influxClient = new InfluxDB({ url: influx.url, token: influxToken })
         writeApi = influxClient.getWriteApi(influx.org, influx.bucket, 's')
         connected = true
