@@ -41,6 +41,8 @@ let persistenceSchema = new mongoose.Schema({
 let pollSchema = new mongoose.Schema({
     options: { type: Map, of: [ String ], default: {} }, // The key is the option, the string is the userID
     title: String,
+    legend: Boolean,
+    labels: Boolean,
 })
 
 let levelsSchema = new mongoose.Schema({

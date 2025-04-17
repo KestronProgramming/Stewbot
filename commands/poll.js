@@ -14,10 +14,188 @@ function applyContext(context={}) {
  */
 // #endregion CommandBoilerplate
 
-const { createCanvas } = require('canvas');
-const fs = require("node:fs")
-const pieCols=require("../data/pieCols.json");
+const pieCols = require("../data/pieCols.json");
+const ChartDataLabels = require('chartjs-plugin-datalabels');
+// const Chart = require("chart.js")
 
+const { ChartJSNodeCanvas } = require('chartjs-node-canvas');
+
+
+const CHART_WIDTH = 600;
+const CHART_HEIGHT = 600;
+const chartJSNodeCanvas = new ChartJSNodeCanvas({
+    width: CHART_WIDTH,
+    height: CHART_HEIGHT,
+    backgroundColour: 'rgba(0,0,0,180)', // Dark theme background, adjust as needed
+    // backgroundColour: 'rgba(0,0,0)', // Dark theme background, adjust as needed
+    // plugins: [ ChartDataLabels ]
+    plugins: {
+		modern: [require('chartjs-plugin-datalabels')]
+	}
+});
+
+/**
+ * Generates the poll chart image using Chart.js.
+ * @param {Map<string, number>} results - Map of option names to vote counts.
+ * @param {string[]} orderedChoices - The original order of choices for color mapping.
+ * @param {Array<[string, string]>} colorPalette - The pieCols array.
+ * @returns {Promise<AttachmentBuilder | null>} - The attachment or null if no votes.
+ */
+async function generatePollChart(results, orderedChoices, colorPalette, 
+	{
+		showLegend=true, 
+		showLabels=false,
+		title="Poll Results",
+	}) {
+	
+    if (results.size === 0) {
+        return null; // No votes, no chart
+    }
+
+    let labels = orderedChoices
+		.filter(choice => results.has(choice) && results.get(choice) > 0);
+	
+    const data = labels.map(label => results.get(label));
+	
+    const backgroundColors = labels.map(label => {
+        const index = orderedChoices.indexOf(label);
+        return `#${colorPalette[index]?.[0] || "2C2F33"}`;
+    });
+
+	// Limit length of labels to render better
+	labels = labels.map(option => limitLength(option, 20));
+
+	const configuration = {
+        type: 'pie',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Votes',
+                data: data,
+                backgroundColor: backgroundColors,
+                borderColor: '#000000', // White border for segments
+                borderWidth: data.length > 1 ? 1 : 0 // Only show border if multiple segments
+                // borderWidth: 1,
+            }]
+        },
+        options: {
+            responsive: false, // Important for node canvas
+            animation: false,  // Important for node canvas
+            plugins: {				
+                legend: {
+                    display: showLegend,
+                    align: "center",
+                    position: "top",
+                    labels: {
+                        color: '#FFFFFF',
+                        font: {
+                            size: 16,
+                            weight: 'bold'
+                        },
+                        textStrokeColor: '#000000',
+                        textStrokeWidth: 2
+                    }
+                },
+				datalabels: {
+					formatter: (value, ctx) => {
+						// const total = ctx.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+						// const percentage = ((value / total) * 100).toFixed(1) + '%';
+						const label = ctx.chart.data.labels[ctx.dataIndex];
+						return `${label} - ${value} vote${value==1?"":"s"}`;
+					},
+					color: (ctx) => {
+						const bgColor = ctx.chart.data.datasets[0].backgroundColor[ctx.dataIndex];
+						// Convert hex to RGB and calculate luminance
+						const hex = bgColor.replace('#', '');
+						const r = parseInt(hex.substring(0, 2), 16);
+						const g = parseInt(hex.substring(2, 4), 16);
+						const b = parseInt(hex.substring(4, 6), 16);
+						const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+						return luminance > 0.5 ? '#000000' : '#FFFFFF';
+					},
+					font: {
+						weight: 'bold',
+						size: 14,
+					},
+					textShadow: {
+						color: 'rgba(0,0,0,0.7)',
+						strokeWidth: 3
+					},
+					align: 'center',
+					anchor: 'center',
+					display: showLabels
+				},
+                title: {
+                    display: true,
+                    text: limitLength(title, 100),
+                    color: '#FFFFFF',
+                    font: {
+                        size: 20
+                    }
+                }
+            }
+        }
+    };
+
+    try {
+        const buffer = await chartJSNodeCanvas.renderToBuffer(configuration);
+        return new AttachmentBuilder(buffer, { name: 'poll_results.png' });
+    } catch (error) {
+        console.error("Error generating poll chart:", error);
+        return null; // Return null if chart generation fails
+    }
+}
+
+/**
+ * Calculates poll results from the database entry.
+ * @param {Map<string, string[]>} pollOptionsMap - The Map from pollDB.options.
+ * @returns {{ results: Map<string, number>, totalVotes: number }}
+ */
+function calculatePollResults(pollOptionsMap) {
+    const results = new Map();
+    let totalVotes = 0;
+    for (const [option, voters] of pollOptionsMap.entries()) {
+        const voteCount = voters.length;
+        results.set(option, voteCount);
+        totalVotes += voteCount;
+    }
+    return { results, totalVotes };
+}
+
+/**
+ * Formats the main content string for the poll message.
+ * @param {object} parsedPoll - The result of parsePoll(..., true).
+ * @param {Map<string, number>} results - Map of option names to vote counts.
+ * @param {Array<[string, string]>} colorPalette - The pieCols array.
+ * @param {string} titlePrefix - e.g., "" or "Poll Closed\n"
+ * @returns {string} - The formatted message content.
+ */
+function formatPollMessageContent(parsedPoll, results, colorPalette, titlePrefix = "") {
+    let content = `${titlePrefix}<@${parsedPoll.starter}> asks: **${parsedPoll.title}**`;
+    content += parsedPoll.choices.map((choice, i) => {
+        const voteCount = results.get(choice) || 0;
+        const colorInfo = (voteCount > 0 && colorPalette[i]) ? ` - ${colorPalette[i][1]}` : ""; // Show color name if votes exist
+        return `\n${i}. ${choice} **${voteCount}**${colorInfo}`;
+    }).join("");
+    return content;
+}
+
+/**
+ * Formats the voter list string.
+ * @param {Map<string, string[]>} pollOptionsMap - The Map from pollDB.options.
+ * @returns {string}
+ */
+function formatVoterList(pollOptionsMap) {
+    let voterList = "\n\n**Voters**";
+    let hasVoters = false;
+    for (const [option, voters] of pollOptionsMap.entries()) {
+        if (voters.length > 0) {
+            hasVoters = true;
+            voterList += `\n${option}${voters.map(userId => `\n- <@${userId}>`).join("")}`;
+        }
+    }
+    return hasVoters ? voterList : ""; // Return empty string if no voters at all
+}
 
 /**
  * Parses a poll message content and extracts poll details.
@@ -48,17 +226,31 @@ function parsePoll(c, published){
             ret.options=structuredClone(temp);
             ret.starter=c.split("<@")[1].split(">")[0];
         }
+
+		// Tack on additional data not in the string
+
+
         return ret;
     }
     catch(e){}
 }
 
+const NodeCache = require("node-cache")
+const pollSettingsCache = new NodeCache({ stdTTL: 60 * 60 }); // 1 hour
+
 module.exports = {
 	data: {
 		// Slash command data
-		command: new SlashCommandBuilder().setName("poll").setDescription("Make a poll with automatically tracked options").addStringOption(option=>
-			option.setName("prompt").setDescription("The prompt (We'll set options in a minute)").setRequired(true)
-		),
+		command: new SlashCommandBuilder().setName("poll").setDescription("Make a poll with automatically tracked options")
+			.addStringOption(option=>
+				option.setName("prompt").setDescription("The prompt (We'll set options in a minute)").setRequired(true)
+			)
+			.addBooleanOption(option=>
+				option.setName("legend").setDescription("Should this chart include a legend?").setRequired(false)
+			)
+			.addBooleanOption(option=>
+				option.setName("labels").setDescription("Should this chart include labels?").setRequired(false)
+			),
 		
 		// Optional fields
 		
@@ -79,16 +271,21 @@ module.exports = {
     /** @param {import('discord.js').ChatInputCommandInteraction} cmd */
     async execute(cmd, context) {
 		applyContext(context);
-		
+
 		if(await checkDirty(cmd.guild?.id,cmd.options.getString("prompt"))){
 			cmd.followUp({content:"This server doesn't want me to process that prompt.","ephemeral":true});
 			return;
 		}
-		cmd.followUp({ "content": `**${(await checkDirty(config.homeServer, cmd.options.getString("prompt"), true))[1]}**`, "ephemeral": true, "components": [new ActionRowBuilder().addComponents(
+		const configurationMessage = await cmd.followUp({ "content": `**${(await checkDirty(config.homeServer, cmd.options.getString("prompt"), true))[1]}**`, "ephemeral": true, "components": [new ActionRowBuilder().addComponents(
 			new ButtonBuilder().setCustomId("poll-addOption").setLabel("Add a poll option").setStyle(ButtonStyle.Primary), 
 			new ButtonBuilder().setCustomId("poll-delOption").setLabel("Remove a poll option").setStyle(ButtonStyle.Danger), 
 			new ButtonBuilder().setCustomId("poll-publish").setLabel("Publish the poll").setStyle(ButtonStyle.Success)
 		)] });
+
+		pollSettingsCache.set(configurationMessage.id, {
+			labels: cmd.options.getBoolean("labels"),
+			legend: cmd.options.getBoolean("legend"),
+		})
 	},
 
 	subscribedButtons: [/poll-.+/, /voted.*/],
@@ -99,6 +296,31 @@ module.exports = {
 
 		const guild = await guildByObj(cmd.guild);
 		const pollDB = guild.polls.get(cmd.message.id);
+
+		const title = pollDB?.title;
+		const labels = pollDB?.labels;
+		const legend = pollDB?.legend;
+
+		// Embedded helper to update a poll
+		const updateActivePoll = async (interaction, currentPollDB, currentParsedPoll) => {
+            const { results, totalVotes } = calculatePollResults(currentPollDB.options);
+            const chartAttachment = totalVotes > 0
+                ? await generatePollChart(results, currentParsedPoll.choices, pieCols, {
+					title,
+					showLegend: legend,
+					showLabels: labels,
+				})
+                : null; // Generate chart only if there are votes
+
+            const content = formatPollMessageContent(currentParsedPoll, results, pieCols);
+            const files = chartAttachment ? [chartAttachment] : [];
+
+            try {
+                await interaction.message.edit({ content, files });
+            } catch (error) {
+                notify("Failed to update poll message:\n" + error.stack);
+            }
+        };
 
 		switch (cmd.customId) {
 			case 'poll-addOption':
@@ -124,66 +346,46 @@ module.exports = {
 			break;
 
 			case 'poll-voters':
-				cmd.reply({
-					content: limitLength(`**Voters**\n${
-						Array.from(pollDB.options.keys())
-							.map(opt=>`\n${opt}${
-								pollDB.options.get(opt)
-									.map(a=>`\n- <@${a}>`)
-									.join("")
-						}`)
-						.join("")}`),
-					ephemeral:true,
-					allowedMentions:{ parse:[] }
+				const voterListString = formatVoterList(pollDB.options);
+				await cmd.reply({
+					content: limitLength(`**Voters**${voterListString || "\nNo votes yet."}`), // Handle no voters
+					ephemeral: true,
+					allowedMentions: { parse: [] }
 				});
-			break;
+				break;
 
 			case 'poll-removeVote':
-				var poll=parsePoll(cmd.message.content,true);
-				var options=Array.from(pollDB.options.keys());
-				for(var i=0;i<options.length;i++){
-					if(pollDB.options.get(options[i]).includes(cmd.user.id)){
-						pollDB.options.get(options[i]).splice(pollDB.options.get(options[i]).indexOf(cmd.user.id),1);
-						i--;
+				let voteRemoved = false;
+				for (const voters of pollDB.options.values()) {
+					const userIndex = voters.indexOf(cmd.user.id);
+					if (userIndex > -1) {
+						voters.splice(userIndex, 1);
+						voteRemoved = true;
 					}
 				}
-				var finalResults={};
-				var totalVotes=0;
-				options.forEach(a=>{
-					totalVotes+=pollDB.options.get(a).length;
-				});
-				options.forEach(a=>{
-					if(pollDB.options.get(a).length>0) finalResults[a]=((360/totalVotes)*pollDB.options.get(a).length);
-				});
-				let canvas = createCanvas(600, 600);
-				let ctx = canvas.getContext('2d');
-				ctx.fillStyle = "black";
-				ctx.strokeStyle = "black";
-				ctx.fillRect(0, 0, canvas.width, canvas.height);
-				var t=0;
-				Object.keys(finalResults).forEach((key,i)=>{
-					ctx.beginPath();
-					ctx.fillStyle="#"+pieCols[poll.choices.indexOf(key)][0];
-					ctx.arc(canvas.width/2,canvas.height/2,canvas.width/2-50,(t)*(Math.PI/180),(finalResults[key]+t)*(Math.PI/180));
-					ctx.lineTo(300, 300);
-					t+=finalResults[key];
-					ctx.fill();
-					if(Object.keys(finalResults).length>1) ctx.stroke();
-				});
-				const pollImage = new AttachmentBuilder(canvas.toBuffer("image/png"), { name: "poll.png" });
 
-				cmd.update({
-					content:`<@${poll.starter}> asks: **${poll.title}**${poll.choices.map((a,i)=>`\n${i}. ${a} **${pollDB.options.get(a).length}**${finalResults.hasOwnProperty(a)?` - ${pieCols[i][1]}`:""}`).join("")}`,
-					files:[pollImage]
-				});
-			break;
+				if (voteRemoved) {
+					const parsedPoll = parsePoll(cmd.message.content, true); // Parse active poll message
+					updateActivePoll(cmd, pollDB, parsedPoll);
+					await cmd.deferUpdate();
+					// await guild.save(); // Save after modification
+				} else {
+					await cmd.reply({ content: "You haven't voted in this poll.", ephemeral: true });
+				}
+				break;
 
 			case 'poll-publish':
 				if (!cmd.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)) {
 					cmd.reply({ content: `I can't send messages in this channel.`, ephemeral: true });
 					break;
 				}
+
 				var poll = parsePoll(cmd.message.content);
+				
+				// Poll options not stored in the config message
+				const otherPollOptions = pollSettingsCache.get(cmd.message.id)
+				Object.assign(poll, otherPollOptions);
+
 				var comp = [];
 				var comp2 = [];
 				for (var i = 0; i < poll.options.length; i++) {
@@ -264,95 +466,84 @@ module.exports = {
 				cmd.update(`**${poll.title}**${poll.options.map((a,i)=>`\n${i}. ${a}`).join("")}`);
 			break;
 			
-		}
+			default:
+				// All other (dynamic) buttons
 
-		if(cmd.customId?.startsWith("poll-closeOption")){
-			if(cmd.user.id===cmd.customId.split("poll-closeOption")[1]||cmd.member.permissions.has(PermissionFlagsBits.ManageMessages)){
-				var poll=parsePoll(cmd.message.content,true);
-				var options=Array.from(pollDB.options.keys());
-				var finalResults={};
-				var totalVotes=0;
-				options.forEach(a=>{
-					totalVotes+=pollDB.options.get(a).length;
-				});
-				options.forEach(a=>{
-					if(pollDB.options.get(a).length>0) finalResults[a]=((360/totalVotes)*pollDB.options.get(a).length);
-				});
-				let canvas = createCanvas(600, 600);
-				let ctx = canvas.getContext('2d');
-				ctx.fillStyle = "black";
-				ctx.strokeStyle = "black";
-				ctx.fillRect(0, 0, canvas.width, canvas.height);
-				var t=0;
-				Object.keys(finalResults).forEach((key,i)=>{
-					ctx.beginPath();
-					ctx.fillStyle="#"+pieCols[poll.choices.indexOf(key)][0];
-					ctx.arc(canvas.width/2,canvas.height/2,canvas.width/2-50,(t)*(Math.PI/180),(finalResults[key]+t)*(Math.PI/180));
-					ctx.lineTo(300, 300);
-					t+=finalResults[key];
-					ctx.fill();
-					if(Object.keys(finalResults).length>1) ctx.stroke();
-				});
-
-				const pollImage = new AttachmentBuilder(canvas.toBuffer("image/png"), { name: "poll.png" });
-
-				cmd.update({
-					content:limitLength(`**Poll Closed**\n<@${poll.starter}> asked: **${poll.title}**${poll.choices.map((a,i)=>`\n${i}. ${a} **${pollDB.options.get(a).length}** - ${pieCols[i][1]}`).join("")}\n\n**Voters**${Array.from(pollDB.options.keys()).map(opt=>`\n${opt}${pollDB.options.get(opt).map(a=>`\n- <@${a}>`).join("")}`).join("")}`),
-					components:[],
-					allowedMentions:{"parse":[]},
-					files:[pollImage]
-				});
-				
-				guild.polls.delete(cmd.message.id);				
-			}
-			else{
-				cmd.reply({"ephemeral":true,"content":"You didn't start this poll and you don't have sufficient permissions to override this."});
-			}
-		}
+				// Close poll
+				if(cmd.customId?.startsWith("poll-closeOption")){
+					const starterId = cmd.customId.substring("poll-closeOption".length);
+					const canClose = cmd.user.id === starterId || cmd.member?.permissions.has(PermissionFlagsBits.ManageMessages);
 		
-		if(cmd.customId?.startsWith("voted")){
-			var poll=parsePoll(cmd.message.content,true);
-			var choice=poll.choices[+cmd.customId.split('voted').slice(1).join("")];
-			var options = Array.from(pollDB.options.keys());
-			for(var i=0;i<options.length;i++){
-				if(pollDB.options.get(options[i]).includes(cmd.user.id)){
-					pollDB.options.get(options[i]).splice(pollDB.options.get(options[i]).indexOf(cmd.user.id),1);
-					i--;
+					if (!canClose) {
+						await cmd.reply({ content: "You didn't start this poll and you don't have sufficient permissions to override this", ephemeral: true });
+						break;
+					}
+		
+					const parsedPoll = parsePoll(cmd.message.content, true);
+					const { results, totalVotes } = calculatePollResults(pollDB.options);
+					const chartAttachment = totalVotes > 0
+							? await generatePollChart(results, parsedPoll.choices, pieCols, {
+								title,
+								showLegend: legend,
+								showLabels: labels,
+							})
+							: null;
+
+					let finalContent = formatPollMessageContent(parsedPoll, results, pieCols, "**Poll Closed**\n");
+					finalContent += formatVoterList(pollDB.options); // Add voter list
+
+					const files = chartAttachment ? [chartAttachment] : [];
+
+					await cmd.update({
+						content: limitLength(finalContent, 4000), // Limit final message length
+						components: [], // Remove buttons
+						allowedMentions: { parse: [] },
+						files: files
+					});
+
+					// Delete poll data from DB
+					guild.polls.delete(cmd.message.id);
 				}
-			}
-			pollDB.options.get(choice).push(cmd.user.id);
-	
-			var finalResults={};
-			var totalVotes=0;
-			options.forEach(a=>{
-				totalVotes+=pollDB.options.get(a).length;
-			});
-			options.forEach(a=>{
-				if(pollDB.options.get(a).length>0) finalResults[a]=((360/totalVotes)*pollDB.options.get(a).length);
-			});
-			let canvas = createCanvas(600, 600);
-			let ctx = canvas.getContext('2d');
-			ctx.fillStyle = "black";
-			ctx.strokeStyle="black";
-			ctx.fillRect(0, 0, canvas.width, canvas.height);
-			var t=0;
-			Object.keys(finalResults).forEach((key,i)=>{
-				ctx.beginPath();
-				ctx.fillStyle="#"+pieCols[poll.choices.indexOf(key)][0];
-				ctx.arc(canvas.width/2,canvas.height/2,canvas.width/2-50,(t)*(Math.PI/180),(finalResults[key]+t)*(Math.PI/180));
-				ctx.lineTo(300, 300);
-				t+=finalResults[key];
-				ctx.fill();
-				if(Object.keys(finalResults).length>1) ctx.stroke();
-			});
 
-			const pollImage = new AttachmentBuilder(canvas.toBuffer("image/png"), { name: "poll.png" });
+				// Vote
+				if (cmd.customId?.startsWith("voted")) {
 
-			cmd.update({
-				content:`<@${poll.starter}> asks: **${poll.title}**${poll.choices.map((a,i)=>`\n${i}. ${a} **${pollDB.options.get(a).length}**${finalResults.hasOwnProperty(a)?` - ${pieCols[i][1]}`:""}`).join("")}`,
-				files:[ pollImage ]
-			});
+					const voteIndexStr = cmd.customId.substring("voted".length);
+					const voteIndex = parseInt(voteIndexStr, 10);
 
+					const parsedPoll = parsePoll(cmd.message.content, true);
+					if (voteIndex < 0 || voteIndex >= parsedPoll.choices.length) {
+						console.warn(`Vote index out of bounds: ${voteIndex} for poll ${cmd.message.id}`);
+						await cmd.reply({ content: "Invalid vote option selected.", ephemeral: true });
+						break;
+					}
+					const chosenOption = parsedPoll.choices[voteIndex];
+
+					// Remove existing vote(s) first
+					let alreadyVotedForThis = false;
+					for (const [option, voters] of pollDB.options.entries()) {
+						const userIndex = voters.indexOf(cmd.user.id);
+						if (userIndex > -1) {
+							if (option === chosenOption) {
+								alreadyVotedForThis = true;
+							}
+							voters.splice(userIndex, 1);
+						}
+					}
+
+					// Add the new vote
+					if (alreadyVotedForThis) {
+						// User clicked the same option they already voted for - treat as removing vote
+						await cmd.reply({ content: "Your vote for this option has been removed.", ephemeral: true });
+					} else {
+						pollDB.options.get(chosenOption).push(cmd.user.id);
+						await cmd.deferUpdate();
+					}
+
+					await updateActivePoll(cmd, pollDB, parsedPoll);
+				}
+
+				break;
 		}
 		
 		// Save if changed

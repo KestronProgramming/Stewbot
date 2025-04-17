@@ -47,6 +47,7 @@ async function getCommands() {
 
 						returnCommands[commandName] = command?.default || command; // `import` throws the module under the `default` tag
 					} catch (importError) {
+						notify(`Command ${commandName} failed to load`, true)
 						console.error(`Error importing command "${commandName}":`, importError);
 					}
 				}
