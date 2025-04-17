@@ -26,6 +26,8 @@ const fs = require("fs");
 const crypto = require('crypto');
 const mongoose = require("mongoose");
 const ms = require("ms");
+const { initInflux, queueCommandMetric } = require('./commands/modules/metrics')
+initInflux()
 
 // Typedefs for DB
 /**
@@ -831,6 +833,9 @@ client.on("messageCreate",async msg => {
 });
 
 client.on("interactionCreate", async cmd=>{
+    const asyncTasks = [ ]; // Any non-awaited functions go here to fully known when this command is done executing for metrics
+    const intStartTime = Date.now();
+    
     const commandScript = commands[cmd.commandName];
     if (!commandScript && (cmd.isCommand() || cmd.isAutocomplete())) return; // Ignore any potential cache issues 
 
@@ -864,8 +869,9 @@ client.on("interactionCreate", async cmd=>{
             providedGlobals[name] = eval(name.match(/[\w-]+/)[0]);
         }
 
-        commands?.[cmd.commandName]?.autocomplete?.(cmd, providedGlobals);
-        return;
+        asyncTasks.push(
+            commands?.[cmd.commandName]?.autocomplete?.(cmd, providedGlobals)
+        )
     }
 
     //// Slash commands
@@ -892,7 +898,7 @@ client.on("interactionCreate", async cmd=>{
         } catch(e) {
             // Catch blocked by automod
             if (e.code === 200000) {
-                return cmd.followUp(`Sorry, something in this reply was blocked by AutoMod.`)
+                cmd.followUp(`Sorry, something in this reply was blocked by AutoMod.`)
             }
 
             try {
@@ -903,8 +909,6 @@ client.on("interactionCreate", async cmd=>{
             } catch {}
             throw e; // Throw it so that it hits the error notifiers
         }
-
-        return;
     }
 
     //// Buttons, Modals, and Select Menu
@@ -922,8 +926,14 @@ client.on("interactionCreate", async cmd=>{
             }
         }
 
-        if (subbed) module.onbutton(cmd, pseudoGlobals)
+        if (subbed) asyncTasks.push(module.onbutton(cmd, pseudoGlobals))
     })
+
+    // Wait for everything to complete
+    await Promise.allSettled(asyncTasks);
+    const intEndTime = Date.now();
+
+    queueCommandMetric(cmd.commandName, intEndTime - intStartTime);
 });
 
 client.on("messageReactionAdd",async (react,user)=>{
