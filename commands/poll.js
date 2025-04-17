@@ -21,12 +21,14 @@ const ChartDataLabels = require('chartjs-plugin-datalabels');
 const { ChartJSNodeCanvas } = require('chartjs-node-canvas');
 
 
-const CHART_WIDTH = 600;
-const CHART_HEIGHT = 600;
+const CHART_WIDTH = 1200;
+const CHART_HEIGHT = 1200;
+const BACKGROUND = 'rgba(16, 16, 16)'
 const chartJSNodeCanvas = new ChartJSNodeCanvas({
     width: CHART_WIDTH,
     height: CHART_HEIGHT,
-    backgroundColour: 'rgba(0,0,0,180)', // Dark theme background, adjust as needed
+	// type: "svg",
+    backgroundColour: BACKGROUND, // Dark theme background, adjust as needed
     // backgroundColour: 'rgba(0,0,0)', // Dark theme background, adjust as needed
     // plugins: [ ChartDataLabels ]
     plugins: {
@@ -48,6 +50,7 @@ async function generatePollChart(results, orderedChoices, colorPalette,
 		title="Poll Results",
 		chartType="pie"
 	}) {
+	chartType ??= "pie"; // in case null
 	
     if (results.size === 0) {
         return null; // No votes, no chart
@@ -74,15 +77,15 @@ async function generatePollChart(results, orderedChoices, colorPalette,
                 label: 'Votes',
                 data: data,
                 backgroundColor: backgroundColors,
-                borderColor: '#000000', // White border for segments
-                borderWidth: data.length > 1 ? 1 : 0 // Only show border if multiple segments
+                borderColor: BACKGROUND, // White border for segments
+                borderWidth: data.length > 1 ? 5 : 0 // Only show border if multiple segments
                 // borderWidth: 1,
             }]
         },
         options: {
             responsive: false, // Important for node canvas
             animation: false,  // Important for node canvas
-            plugins: {				
+            plugins: {
                 legend: {
                     display: showLegend,
                     align: "center",
@@ -90,10 +93,10 @@ async function generatePollChart(results, orderedChoices, colorPalette,
                     labels: {
                         color: '#FFFFFF',
                         font: {
-                            size: 16,
+                            size: 32,
                             weight: 'bold'
                         },
-                        textStrokeColor: '#000000',
+                        textStrokeColor: '#ff0000ff',
                         textStrokeWidth: 2
                     }
                 },
@@ -116,11 +119,11 @@ async function generatePollChart(results, orderedChoices, colorPalette,
 					},
 					font: {
 						weight: 'bold',
-						size: 14,
+						size: 24,
 					},
 					textShadow: {
 						color: 'rgba(0,0,0,0.7)',
-						strokeWidth: 3
+						strokeWidth: 6
 					},
 					align: 'center',
 					anchor: 'center',
@@ -131,7 +134,7 @@ async function generatePollChart(results, orderedChoices, colorPalette,
                     text: limitLength(title, 100),
                     color: '#FFFFFF',
                     font: {
-                        size: 20
+                        size: 40
                     }
                 }
             }
