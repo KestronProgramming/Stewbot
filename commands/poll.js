@@ -46,6 +46,7 @@ async function generatePollChart(results, orderedChoices, colorPalette,
 		showLegend=true, 
 		showLabels=false,
 		title="Poll Results",
+		chartType="pie"
 	}) {
 	
     if (results.size === 0) {
@@ -66,7 +67,7 @@ async function generatePollChart(results, orderedChoices, colorPalette,
 	labels = labels.map(option => limitLength(option, 20));
 
 	const configuration = {
-        type: 'pie',
+        type: chartType,
         data: {
             labels: labels,
             datasets: [{
@@ -250,6 +251,14 @@ module.exports = {
 			)
 			.addBooleanOption(option=>
 				option.setName("labels").setDescription("Should this chart include labels?").setRequired(false)
+			)
+			.addStringOption(option=>
+				option.setName("chart").setDescription("What type of chart should I use?").setRequired(false).addChoices(
+					{ name: 'Pie Chart', value: 'pie' },
+					{ name: 'Doughnut Chart', value: 'doughnut' },
+					{ name: 'Bar Chart', value: 'bar' },
+					{ name: 'Polar Area Chart', value: 'polarArea' }, // polarArea charts do have a bug with the labels always rendering, and behind the area
+				)
 			),
 		
 		// Optional fields
@@ -285,6 +294,7 @@ module.exports = {
 		pollSettingsCache.set(configurationMessage.id, {
 			labels: cmd.options.getBoolean("labels"),
 			legend: cmd.options.getBoolean("legend"),
+			chart: cmd.options.getString("chart"),
 		})
 	},
 
@@ -300,6 +310,7 @@ module.exports = {
 		const title = pollDB?.title;
 		const labels = pollDB?.labels;
 		const legend = pollDB?.legend;
+		const chart = pollDB?.chart;
 
 		// Embedded helper to update a poll
 		const updateActivePoll = async (interaction, currentPollDB, currentParsedPoll) => {
@@ -307,6 +318,7 @@ module.exports = {
             const chartAttachment = totalVotes > 0
                 ? await generatePollChart(results, currentParsedPoll.choices, pieCols, {
 					title,
+					chartType: chart,
 					showLegend: legend,
 					showLabels: labels,
 				})
@@ -484,6 +496,7 @@ module.exports = {
 					const chartAttachment = totalVotes > 0
 							? await generatePollChart(results, parsedPoll.choices, pieCols, {
 								title,
+								chartType: chart,
 								showLegend: legend,
 								showLabels: labels,
 							})

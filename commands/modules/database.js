@@ -43,6 +43,7 @@ let pollSchema = new mongoose.Schema({
     title: String,
     legend: Boolean,
     labels: Boolean,
+    chart: String,
 })
 
 let levelsSchema = new mongoose.Schema({
