@@ -90,7 +90,7 @@ module.exports = {
 			var dots=a[1].url.split("?")[0].split(".");
 			dots=dots[dots.length-1];
 			await fetch(a[1].url).then(d=>d.arrayBuffer()).then(d=>{
-				const fileName = `./tempMove/${p}.${dots}`;
+				const fileName = `${p}.${dots}`;
 				const moveAttachment = new AttachmentBuilder(Buffer.from(d), { name: fileName });
 				files.push(moveAttachment)
 			});

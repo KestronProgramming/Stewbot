@@ -63,7 +63,7 @@ module.exports = {
                 return;
             }
             await fetch(a[1].url).then(d => d.arrayBuffer()).then(d => {
-                const tempMeme = new AttachmentBuilder(Buffer.from(d), { name: `./tempMemes/${i}.${dots}` });
+                const tempMeme = new AttachmentBuilder(Buffer.from(d), { name: `${i}.${dots}` });
                 files.push(tempMeme);
             });
             i++;

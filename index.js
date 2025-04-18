@@ -60,9 +60,6 @@ const { isModuleBlocked } = require("./commands/block_module.js")
 //#endregion Imports
 
 //#region Setup
-// Preliminary setup (TODO: move to a setup.sh?)
-if (!fs.existsSync("tempMove")) fs.mkdirSync('tempMove');
-if (!fs.existsSync("tempMemes")) fs.mkdirSync('tempMemes');
 
 // Load commands modules
 function getSubscribedCommands(commands, subscription) {
