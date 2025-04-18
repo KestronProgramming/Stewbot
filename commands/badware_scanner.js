@@ -32,14 +32,14 @@ const filetypeCleaners = {
 
             const convertedBuffer = await heicConvert({
                 buffer: buffer,
-                format: 'PNG',
-                quality: 0.8
+                format: 'JPEG',
+                quality: 0.7
             });
             
             return {
                 filename: attachment.name.replace(/\.heic$/i, '.jpg'),
                 buffer: convertedBuffer,
-                leaked: true,
+                leaked: true, // this needs further support...
             };
         } catch {
             return null;
@@ -374,47 +374,75 @@ module.exports = {
                         blacklistedFileTypes.includes(att.contentType));
                 
                     if (needsStripping) {
-
                         // If we have permission to delete
-                        if ( msg.channel.permissionsFor(client.user).has(PermissionFlagsBits.ManageMessages) 
-                          && msg.channel.permissionsFor(client.user).has(PermissionFlagsBits.AttachFiles)
-                          && msg.channel.permissionsFor(client.user).has(PermissionFlagsBits.SendMessages)) {
+                        if (msg.channel.permissionsFor(client.user).has(PermissionFlagsBits.ManageMessages) 
+                            && msg.channel.permissionsFor(client.user).has(PermissionFlagsBits.AttachFiles)
+                            && msg.channel.permissionsFor(client.user).has(PermissionFlagsBits.SendMessages)) {
+                            
                             let cleanedAttachments = [];
+                            let tooLargeAttachments = [];
+                            const MAX_SIZE = 8 * 1024 * 1024; // 8MB in bytes
                     
                             for (const attachment of attachments) {
                                 const cleaner = filetypeCleaners[attachment.contentType];
                                 let cleaned = null;
-                    
+                        
                                 if (cleaner) {
-                                    cleaned = await cleaner(attachment);
+                                    try {
+                                        cleaned = await cleaner(attachment);
+                                        
+                                        // Check if the cleaned attachment is too large
+                                        if (cleaned && cleaned.buffer.length > MAX_SIZE) {
+                                            tooLargeAttachments.push(attachment.name);
+                                            cleaned = null; // Don't include this attachment
+                                        }
+                                    } catch (error) {
+                                        console.error(`Error cleaning attachment ${attachment.name}:`, error);
+                                        tooLargeAttachments.push(attachment.name);
+                                    }
                                 }
 
                                 if (cleaned) {
                                     cleanedAttachments.push(cleaned);
-                                } else {
-                                    // Pass through non-cleaned or unsupported files
-                                    const res = await fetch(attachment.url);
-                                    const buffer = await getBufferFromFetch(res);
-                    
-                                    cleanedAttachments.push({
-                                        buffer,
-                                        filename: attachment.name
-                                    });
+                                } else if (!blacklistedFileTypes.includes(attachment.contentType)) {
+                                    // Pass through non-cleaned or unsupported files that don't need stripping
+                                    try {
+                                        const res = await fetch(attachment.url);
+                                        const buffer = await getBufferFromFetch(res);
+                                        
+                                        // Check if the non-cleaned attachment is too large
+                                        if (buffer.length <= MAX_SIZE) {
+                                            cleanedAttachments.push({
+                                                buffer,
+                                                filename: attachment.name
+                                            });
+                                        } else {
+                                            tooLargeAttachments.push(attachment.name);
+                                        }
+                                    } catch (error) {
+                                        console.error(`Error fetching attachment ${attachment.name}:`, error);
+                                        tooLargeAttachments.push(attachment.name);
+                                    }
                                 }
                             }
                     
-                            await msg.delete();
+                            await msg.delete().catch(e => {});
 
                             let message = 
-                                `<@${msg.author.id}> your attachments contained sensitive data (e.g. the GPS/location the photo was taken), I have cleaned them and reuploaded your attachments.\n`+
-                                `-# You can prevent this feature by running ${cmds.personal_config.mention}\n`
+                                `<@${msg.author.id}> your attachments contained sensitive data (e.g. the GPS/location the photo was taken), I have cleaned them and reuploaded your attachments.\n` +
+                                `-# You can prevent this feature by running ${cmds.personal_config.mention}\n`;
+                            
+                            // Add warning about files that were too large
+                            if (tooLargeAttachments.length > 0) {
+                                message += `\n⚠️ The following files were too large to process automatically (>8MB) and need to be converted manually: ${tooLargeAttachments.join(', ')}\n`;
+                            }
                             
                             if (msg.content) 
                                 message += 
-                                    `\n`+
-                                    `Below is the original message from <@${msg.author.id}>:\n`+ 
-                                    `>>> ` + limitLength(msg.content, 1700)
-                
+                                    `\n` +
+                                    `Below is the original message from <@${msg.author.id}>:\n` + 
+                                    `>>> ` + limitLength(msg.content, 1700);
+
                             await msg.channel.send({
                                 content: message,
                                 files: cleanedAttachments.map(f => ({
@@ -427,17 +455,16 @@ module.exports = {
                         // if we can't delete, DM
                         else {
                             await msg.author.send({
-                                content:`⚠️ WARNING: \n`+
-                                        `The attachments you uploaded in <#${msg.channel.id}> are of a filetype that discord cannot process.\n`+
+                                content: `⚠️ WARNING: \n` +
+                                        `The attachments you uploaded in <#${msg.channel.id}> are of a filetype that discord cannot process.\n` +
                                         `These filetypes can contain data (e.g., the GPS/location the photo was taken). I suggest deleting your message and converting to a more standard format.\n` +
                                         `\n` +
-                                        `I tried to clean them myself, but do not have sufficient permissions in the server (\`Manage_Messages\`).\n`+
+                                        `I tried to clean them myself, but do not have sufficient permissions in the server (\`Manage_Messages\`).\n` +
                                         `-# You can prevent this feature by running ${cmds.personal_config.mention}`
                             });
                         }
                     }
                 }
-                
             }
 
         } catch (error) {
