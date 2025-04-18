@@ -160,6 +160,8 @@ const components = {
 }
 
 module.exports = {
+	parseTextDateIfValid_Version,
+	
 	data: {
 		// Slash command data
 		command: new SlashCommandBuilder().setName("timestamp").setDescription("Generate a timestamp for use in your message").addStringOption(option=>

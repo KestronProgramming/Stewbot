@@ -16,6 +16,8 @@ function applyContext(context={}) {
 // #endregion CommandBoilerplate
 
 
+const { parseTextDateIfValid_Version } = require("./timestamp");
+
 const tzConfig = [new ActionRowBuilder().addComponents(
 	new ButtonBuilder().setCustomId("tzUp").setEmoji("⬆️").setStyle(ButtonStyle.Primary),
 	new ButtonBuilder().setCustomId("tzDown").setEmoji("⬇️").setStyle(ButtonStyle.Primary),
@@ -37,8 +39,8 @@ module.exports = {
 				option.setName("embeds").setDescription("If you link a Discord message, should I embed a preview for you?")
 			).addBooleanOption(option=>
 				option.setName("level_up_messages").setDescription("Do you want to receive messages letting you know you leveled up?")
-			).addBooleanOption(option=>
-				option.setName("configure_timezone").setDescription("Open up a menu to configure your timezone?")
+			).addStringOption(option=>
+				option.setName("configure_timezone").setDescription("What time is it for you right now?")
 			).addBooleanOption(option=>
 				option.setName("attachment_protection").setDescription("Protect you from leaking personal information in your message attachments")
 			),
@@ -72,36 +74,64 @@ module.exports = {
 		if (cmd.options.getBoolean("level_up_messages") !== null) user.config.levelUpMsgs = cmd.options.getBoolean("level_up_messages");
 		if (cmd.options.getBoolean("attachment_protection") !== null) user.config.attachmentProtection = cmd.options.getBoolean("attachment_protection");
 		
-		// Timezone response is more complex so respond differently at the end if we're configuring that 
-		if(!cmd.options.getBoolean("configure_timezone")){
-			cmd.followUp("Configured your personal setup");
-		}
-		else {
-			const cur = new Date();
-			const curHour = cur.getUTCHours();
-			const curMinute = cur.getUTCMinutes();
+		let response = "Configured your personal setup";
 
-			if(!user.config.hasSetTZ) user.config.timeOffset=0;
-			cmd.followUp({
-                content: `## Timezone Configuration\n\nPlease use the buttons to make the following number your current time (you can ignore minutes)\n${
-                    curHour + user.config.timeOffset === 0
-                        ? "12"
-                        : curHour +
-                              user.config.timeOffset > 12
-                        	? curHour + user.config.timeOffset - 12
-                        	: curHour + user.config.timeOffset
-                }:${(curMinute + "").padStart(2, "0")} ${
-                    curHour + user.config.timeOffset > 11
-                        ? "PM"
-                        : "AM"
-                }\n${(
-                    curHour + user.config.timeOffset + ""
-                ).padStart(2, "0")}${(curMinute + "").padStart(2, "0")}`,
+		// Parse out timezone
+		if (cmd.options.getString("configure_timezone") !== null) {
+			const inputDate = parseTextDateIfValid_Version(cmd.options.getString("configure_timezone"), 0)
+
+			if (inputDate) {
+				// Calculate timezone based off how far this is from UTC
+				const now = new Date();
+				const utcHour = now.getUTCHours();
+				const inputHour = inputDate.getUTCHours();
+				let offset = inputHour - utcHour;
+
+				// Handle wrap-around (e.g., -23 should be +1, 13-23 = -10, etc.)
+				if (offset > 12) offset -= 24;
+				if (offset < -12) offset += 24;
+
+				user.config.timeOffset = offset;
+				user.config.hasSetTZ = true;
+				response += `\n\nSet your timezone to UTC${offset >= 0 ? "+" : ""}${offset}`;
+			} 
+			else {
+				response += "\n\nSorry, I couldn't parse your timezone. Try again?"
+			}
+		}
+
+
+		// // Timezone response is more complex so respond differently at the end if we're configuring that 
+		// if(!cmd.options.getBoolean("configure_timezone")){
+		// 	cmd.followUp("Configured your personal setup");
+		// }
+		// else {
+		// 	const cur = new Date();
+		// 	const curHour = cur.getUTCHours();
+		// 	const curMinute = cur.getUTCMinutes();
+
+		// 	if(!user.config.hasSetTZ) user.config.timeOffset=0;
+		// 	cmd.followUp({
+        //         content: `## Timezone Configuration\n\nPlease use the buttons to make the following number your current time (you can ignore minutes)\n${
+        //             curHour + user.config.timeOffset === 0
+        //                 ? "12"
+        //                 : curHour +
+        //                       user.config.timeOffset > 12
+        //                 	? curHour + user.config.timeOffset - 12
+        //                 	: curHour + user.config.timeOffset
+        //         }:${(curMinute + "").padStart(2, "0")} ${
+        //             curHour + user.config.timeOffset > 11
+        //                 ? "PM"
+        //                 : "AM"
+        //         }\n${(
+        //             curHour + user.config.timeOffset + ""
+        //         ).padStart(2, "0")}${(curMinute + "").padStart(2, "0")}`,
                 
-				components: tzConfig,
-            });
-		}
+		// 		components: tzConfig,
+        //     });
+		// }
 
+		cmd.followUp(response);
 		await user.save();
 	},
 
