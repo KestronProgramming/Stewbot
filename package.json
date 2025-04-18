@@ -12,7 +12,6 @@
     "chartjs-node-canvas": "^5.0.0",
     "chartjs-plugin-datalabels": "^2.2.0",
     "cheerio": "^1.0.0",
-    "chrono-node": "^2.8.0",
     "compromise": "^14.14.4",
     "discord.js": "^14.18.0",
     "fuse.js": "^7.1.0",
@@ -29,6 +28,7 @@
     "rss-parser": "^3.13.0",
     "safe-regex": "^2.1.1",
     "sentiment": "^5.0.2",
+    "sherlockjs": "^1.4.2",
     "turndown": "^7.2.0",
     "unzipper": "^0.12.3"
   },

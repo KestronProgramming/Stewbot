@@ -14,7 +14,74 @@ function applyContext(context={}) {
  */
 // #endregion CommandBoilerplate
 
-const chrono = require('chrono-node');
+// const chrono = require('chrono-node');
+function parseTextDateIfValid_Chrono(text, myTimezone) {
+	// returns null if invalid
+	if (!text) return null;
+
+	startingTime = chrono.parseDate(text);
+	if (isNaN(startingTime?.getTime())) return null;
+	
+	startingTime = getOffsetDateByUTCOffset(startingTime, myTimezone);
+	if (isNaN(startingTime?.getTime())) return null;
+
+	return startingTime;
+}
+
+const sherlock = require('sherlockjs');
+function parseTextDateIfValid_Sherlock(text, myTimezone) {
+	if (!text) return null;
+
+	const result = sherlock.parse(text);
+	if (!result.startDate || isNaN(result.startDate.getTime())) return null;
+
+	const startingTime = getOffsetDateByUTCOffset(result.startDate, myTimezone);
+	return isNaN(startingTime?.getTime()) ? null : startingTime;
+}
+
+// require('sugar');
+function parseTextDateIfValid_Sugar(text, myTimezone) {
+	if (!text) return null;
+
+	const date = Date.create(text); // Sugar’s date parsing
+	if (!date || isNaN(date.getTime())) return null;
+
+	const startingTime = getOffsetDateByUTCOffset(date, myTimezone);
+	return isNaN(startingTime?.getTime()) ? null : startingTime;
+}
+
+// require('datejs');
+function parseTextDateIfValid_DateJS(text, myTimezone) {
+	if (!text) return null;
+
+	const date = Date.parse(text); // returns Date object
+	if (!date || isNaN(date.getTime())) return null;
+
+	const startingTime = getOffsetDateByUTCOffset(date, myTimezone);
+	return isNaN(startingTime?.getTime()) ? null : startingTime;
+}
+
+// const nlp = require('compromise');
+// require('compromise-dates')(nlp);
+function parseTextDateIfValid_Compromise(text, myTimezone) {
+	if (!text) return null;
+
+	const doc = nlp(text);
+	const dates = doc.dates().get();
+	if (!dates.length || !dates[0].data?.length) return null;
+
+	const parsed = dates[0].data[0];
+	const date = new Date(parsed.date || parsed.start);
+	if (isNaN(date.getTime())) return null;
+
+	const startingTime = getOffsetDateByUTCOffset(date, myTimezone);
+	return isNaN(startingTime?.getTime()) ? null : startingTime;
+}
+
+
+
+// Select which lib to use
+const parseTextDateIfValid_Version = parseTextDateIfValid_Sherlock;
 
 function getOffsetDateByUTCOffset(timestamp, targetOffset) {
 	const date = new Date(timestamp);
@@ -24,20 +91,6 @@ function getOffsetDateByUTCOffset(timestamp, targetOffset) {
 	return new Date(date.getTime() + (offsetDiff * 60 * 1000));
 }
 
-function parseTextDateIfValid(text, myTimezone) {
-	// returns null if invalid
-	if (!text) return null;
-
-	startingTime = chrono.parseDate(text);
-
-	if (isNaN(startingTime?.getTime())) return null;
-	
-	startingTime = getOffsetDateByUTCOffset(startingTime, myTimezone);
-
-	if (isNaN(startingTime?.getTime())) return null;
-
-	return startingTime;
-}
 
 const components = {
 	timestamp: [
@@ -139,7 +192,7 @@ module.exports = {
 		if(user.config.hasSetTZ){
 			const myTimezone = user.config.timeOffset;
 			const quickInput = cmd.options.getString("quick-input");
-			let startingTime = parseTextDateIfValid(quickInput, myTimezone)
+			let startingTime = parseTextDateIfValid_Version(quickInput, myTimezone)
 			if (!startingTime) startingTime = new Date();
 			
 			cmd.followUp({
