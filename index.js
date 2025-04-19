@@ -258,7 +258,7 @@ const messageDataCache = global.messageDataCache = new NodeCache({ stdTTL: 5, ch
 
 // Database handlers for high-traffic events (messageCreate, messageUpdate, TODO_DB: (look into) guild profile changes?)
 /** @returns {[GuildUserDoc, GuildDoc, GuildDoc]} */
-async function getReadOnlyDBs(int) {
+async function getReadOnlyDBs(int, createGuildUser=true) {
     // returns [ readGuildUser, readGuild, readHomeGuild ]
 
     let readGuildUser;
@@ -278,7 +278,7 @@ async function getReadOnlyDBs(int) {
             // Get guild user
             messageDataCache.get(guildUserKey) || GuildUsers.findOneAndUpdate(
                 { guildId: int.guild.id, userId: authorId },
-                { },
+                (createGuildUser ? { inServer: true } : { }), // set inServer since we're fetching them
                 { new: true, setDefaultsOnInsert: false, upsert: true }
             ).lean({ virtuals: true }).then(data => {
                 messageDataCache.set(guildUserKey, data);
