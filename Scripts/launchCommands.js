@@ -49,7 +49,7 @@ async function getCommands(autoRelaunch=true) { // launching runs getCommands, s
 
 						returnCommands[commandName] = command?.default || command; // `import` throws the module under the `default` tag
 					} catch (importError) {
-						notify(`Command ${commandName} failed to load`, true)
+						try { notify(`Command ${commandName} failed to load`, true) } catch{}
 						console.error(`Error importing command "${commandName}":`, importError);
 					}
 				}
@@ -188,7 +188,10 @@ async function launchCommands(hash) {
 			),
 		new SlashCommandBuilder()
 			.setName('launch_commands')
-			.setDescription('Relaunch commands')
+			.setDescription('Relaunch commands'),
+		new SlashCommandBuilder()
+			.setName('update_in_server')
+			.setDescription('API heavy - sync our storage database with up to date information by scanning every single guild')
 	]
 	rest.put(
 		Routes.applicationGuildCommands(process.env.beta ? process.env.betaClientId : process.env.clientId, config.homeServer),
