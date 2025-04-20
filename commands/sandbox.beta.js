@@ -38,7 +38,7 @@ module.exports = {
                 AT.GuildInstall,   // Install to servers
                 AT.UserInstall     // Install to users
             )
-            .setName('exam').setDescription('Beta code testing playground').addBooleanOption(option =>
+            .setName('sandbox').setDescription('Beta code testing playground').addBooleanOption(option =>
                 option.setName("private").setDescription("Make the response ephemeral?")//Do not remove private option unless the command is REQUIRED to be ephemeral or non-ephemeral.
             ).addStringOption(option =>
                 option.setName("input").setDescription("Input")
