@@ -573,36 +573,7 @@ async function sendWelcome(guild) {
                         "thumbnail":{
                             "url":config.pfp
                         }
-                      },{
-                        title: "Stewbot is turning 3!!!",
-                        description: "Stewbot is turning 3!!! We're celebrating by running a giveaway! On Stewbot's birthday (April 19th), we'll be giving away free Nitro to 3 different users!",
-                        url:"https://stewbot.kestron.com",
-                        fields: [
-                          {
-                            name: "How to Enter",
-                            value: "You'll need to be in Stewbot's home server to enter: https://discord.gg/9yKkQFgv92. Once there, check the #announcements channel!",
-                            inline: true
-                          },
-                          {
-                            name: "Getting Extra Entries",
-                            value: "You'll get **1** extra entry for every server you share with Stewbot with **50** or more non-bot members! Tell your friends about what Stewbot can do!",
-                            inline: true
-                          },
-                          {
-                            name: "Stewbot's Invite Link",
-                            value: "The invite link is https://discord.com/oauth2/authorize?client_id=966167746243076136, and the website for more info is https://stewbot.kestron.com. Hint! If you install Stewbot to your profile to use everywhere, you can access these links and more at any time by running /links!",
-                            inline: true
-                          }
-                        ],
-                        thumbnail: {
-                          url: "https://stewbot.kestron.com/stewbot.jpg"
-                        },
-                        color: 0x006400,
-                        footer: {
-                          text: "Stewbot",
-                          icon_url: "https://stewbot.kestron.com/stewbot.jpg"
-                        }
-                    }];
+                      }];
                     if(errorFields.length>0){
                         embs.push({
                             "description": "I ran some diagnostics, there are some permissions I am missing. This isn't urgent, but without some of these permissions I will not be able to run some of my functions. Consider allowing Administrator permission, while not required it will make all of these errors irrelevant at once.",
@@ -679,9 +650,9 @@ client.once("ready",async ()=>{
     console.beta(`Logged into ${client.user.tag}`);
     
     // Status
-    client.user.setActivity("🔥 Nitro Giveaway! /birthday",{type:ActivityType.Custom},1000*60*60*4);//𝐒teward 𝐓o 𝐄xpedite 𝐖ork
+    client.user.setActivity("𝐒teward 𝐓o 𝐄xpedite 𝐖ork",{type:ActivityType.Custom},1000*60*60*4);
     setInterval(()=>{
-        client.user.setActivity("🔥 Nitro Giveaway! /birthday",{type:ActivityType.Custom},1000*60*60*4);
+        client.user.setActivity("𝐒teward 𝐓o 𝐄xpedite 𝐖ork",{type:ActivityType.Custom},1000*60*60*4);
     },60000*5);
     var now=new Date();
     setTimeout(daily,((now.getHours()>11?11+24-now.getHours():11-now.getHours())*(60000*60))+((60-now.getMinutes())*60000));
