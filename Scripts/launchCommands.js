@@ -4,11 +4,13 @@ const fs = require("fs");
 const fsPromises = require("fs/promises");
 const path = require("path")
 const config = require("../data/config.json");
-
-// Command permissions should be set to the level you would need to do it manually (so if the bot is deleting messages, the permission to set it up would be the permission to delete messages)
+const crypto = require('crypto');
+function md5(str) {
+	return crypto.createHash('md5').update(str).digest('hex');
+}
 
 // Function to build command files, handle beta/production
-async function getCommands() {
+async function getCommands(autoRelaunch=true) { // launching runs getCommands, so we need to pass false to avoid infinite recursion
 	const returnCommands = {};
 	try {
 		const files = await fsPromises.readdir("./commands");
@@ -47,11 +49,27 @@ async function getCommands() {
 
 						returnCommands[commandName] = command?.default || command; // `import` throws the module under the `default` tag
 					} catch (importError) {
+						try { notify(`Command ${commandName} failed to load`, true) } catch{}
 						console.error(`Error importing command "${commandName}":`, importError);
 					}
 				}
 			})
 		);
+
+		// If beta, relaunch commands if they changed
+		if (autoRelaunch && process.env.beta) {
+			const currentCommandsHash = md5(
+				JSON.stringify(
+					Object.entries(returnCommands)
+						.map(c => c[1].data.command)
+						.filter(c=>c)
+				)
+			);
+			if (global.cmds._hash !== currentCommandsHash) {
+				console.beta("Command data change detected, relaunching")
+				launchCommands(currentCommandsHash);
+			};
+		}
 
 		return returnCommands;
 	} catch (err) {
@@ -77,12 +95,11 @@ function getCommandAndExtraData() {
 	});
 
 	// Build commands for API in a promise
-	let commands = []
 	const commandsPromise = new Promise(async (resolve, reject) =>{
 		try {
 			// Build command info from slash commands
 			const extraInfo = {};
-			const migratedCommands = await getCommands();   // commands
+			const migratedCommands = await getCommands(false);   // commands
 			let commands = [];                        // list we're gonna build into data needed for discord API
 			for (let commandName in migratedCommands) {
 				const command = migratedCommands[commandName];
@@ -112,13 +129,13 @@ function getCommandAndExtraData() {
 	return commandsPromise;
 }
 
-async function launchCommands() {
+async function launchCommands(hash) {
 	const commands = await getCommandAndExtraData();
 
 	// Register
 	const rest = new REST({ version: '9' }).setToken(process.env.beta ? process.env.betaToken : process.env.token );
 	var comms={};
-	await rest.put(Routes.applicationCommands(process.env.clientId),{body:commands}).then(d=>{
+	await rest.put(Routes.applicationCommands(process.env.beta ? process.env.betaClientId || process.env.clientId : process.env.clientId),{body:commands}).then(d=>{
 		d.forEach(c=>{
 			comms[c.name]={
 				mention:`</${c.name}:${c.id}>`,
@@ -147,7 +164,15 @@ async function launchCommands() {
 				});
 			}
 		});
-		fs.writeFileSync("./data/commands.json",JSON.stringify(comms));
+		// const commandsHash = md5(
+		// 	JSON.stringify(
+		// 		Object.entries(commands)
+		// 			.map(c => c[1])
+		// 			.filter(c=>c)
+		// 	)
+		// )
+		if (hash) comms._hash = hash;
+		fs.writeFileSync("./data/commands.json", JSON.stringify(comms, null, 4));
 	}).catch(console.error);
 
 	// Register stewbot-devadmin-only commands
@@ -163,10 +188,13 @@ async function launchCommands() {
 			),
 		new SlashCommandBuilder()
 			.setName('launch_commands')
-			.setDescription('Relaunch commands')
+			.setDescription('Relaunch commands'),
+		new SlashCommandBuilder()
+			.setName('update_in_server')
+			.setDescription('API heavy - sync our storage database with up to date information by scanning every single guild')
 	]
 	rest.put(
-		Routes.applicationGuildCommands(process.env.clientId, config.homeServer),
+		Routes.applicationGuildCommands(process.env.beta ? process.env.betaClientId : process.env.clientId, config.homeServer),
 		{ body: devadminCommands },
 	);
 

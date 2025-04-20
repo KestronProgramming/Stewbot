@@ -26,6 +26,8 @@ const fs = require("fs");
 const crypto = require('crypto');
 const mongoose = require("mongoose");
 const ms = require("ms");
+const { initInflux, queueCommandMetric } = require('./commands/modules/metrics')
+initInflux()
 
 // Typedefs for DB
 /**
@@ -58,9 +60,6 @@ const { isModuleBlocked } = require("./commands/block_module.js")
 //#endregion Imports
 
 //#region Setup
-// Preliminary setup (TODO: move to a setup.sh?)
-if (!fs.existsSync("tempMove")) fs.mkdirSync('tempMove');
-if (!fs.existsSync("tempMemes")) fs.mkdirSync('tempMemes');
 
 // Load commands modules
 function getSubscribedCommands(commands, subscription) {
@@ -259,7 +258,7 @@ const messageDataCache = global.messageDataCache = new NodeCache({ stdTTL: 5, ch
 
 // Database handlers for high-traffic events (messageCreate, messageUpdate, TODO_DB: (look into) guild profile changes?)
 /** @returns {[GuildUserDoc, GuildDoc, GuildDoc]} */
-async function getReadOnlyDBs(int) {
+async function getReadOnlyDBs(int, createGuildUser=true) {
     // returns [ readGuildUser, readGuild, readHomeGuild ]
 
     let readGuildUser;
@@ -279,7 +278,7 @@ async function getReadOnlyDBs(int) {
             // Get guild user
             messageDataCache.get(guildUserKey) || GuildUsers.findOneAndUpdate(
                 { guildId: int.guild.id, userId: authorId },
-                { },
+                (createGuildUser ? { inServer: true } : { }), // set inServer since we're fetching them
                 { new: true, setDefaultsOnInsert: false, upsert: true }
             ).lean({ virtuals: true }).then(data => {
                 messageDataCache.set(guildUserKey, data);
@@ -758,7 +757,7 @@ client.on("messageCreate",async msg => {
                 case "setBanner":
                     const bannerName = msg.content.split(" ")[2];
                     const bannerPath = `./pfps/${bannerName}`;
-                    const bannerBuffer = fs.readFileSync(bannerPath)
+                    const bannerBuffer = await fs.promises.readFile(bannerPath)
                     client.user.setBanner(bannerBuffer)
                     msg.reply("Done")
                     break;
@@ -831,6 +830,9 @@ client.on("messageCreate",async msg => {
 });
 
 client.on("interactionCreate", async cmd=>{
+    const asyncTasks = [ ]; // Any non-awaited functions go here to fully known when this command is done executing for metrics
+    const intStartTime = Date.now();
+    
     const commandScript = commands[cmd.commandName];
     if (!commandScript && (cmd.isCommand() || cmd.isAutocomplete())) return; // Ignore any potential cache issues 
 
@@ -864,8 +866,9 @@ client.on("interactionCreate", async cmd=>{
             providedGlobals[name] = eval(name.match(/[\w-]+/)[0]);
         }
 
-        commands?.[cmd.commandName]?.autocomplete?.(cmd, providedGlobals);
-        return;
+        asyncTasks.push(
+            commands?.[cmd.commandName]?.autocomplete?.(cmd, providedGlobals)
+        )
     }
 
     //// Slash commands
@@ -892,7 +895,7 @@ client.on("interactionCreate", async cmd=>{
         } catch(e) {
             // Catch blocked by automod
             if (e.code === 200000) {
-                return cmd.followUp(`Sorry, something in this reply was blocked by AutoMod.`)
+                cmd.followUp(`Sorry, something in this reply was blocked by AutoMod.`)
             }
 
             try {
@@ -903,8 +906,6 @@ client.on("interactionCreate", async cmd=>{
             } catch {}
             throw e; // Throw it so that it hits the error notifiers
         }
-
-        return;
     }
 
     //// Buttons, Modals, and Select Menu
@@ -922,8 +923,14 @@ client.on("interactionCreate", async cmd=>{
             }
         }
 
-        if (subbed) module.onbutton(cmd, pseudoGlobals)
+        if (subbed) asyncTasks.push(module.onbutton(cmd, pseudoGlobals))
     })
+
+    // Wait for everything to complete
+    await Promise.allSettled(asyncTasks);
+    const intEndTime = Date.now();
+
+    queueCommandMetric(cmd.commandName, intEndTime - intStartTime);
 });
 
 client.on("messageReactionAdd",async (react,user)=>{

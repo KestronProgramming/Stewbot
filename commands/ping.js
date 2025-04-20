@@ -46,15 +46,17 @@ module.exports = {
     async execute(cmd, context) {
 		applyContext(context);
 
-		const app = await client.application.fetch();
-
-		// Send database ping
-		const db = mongoose.connection.db;
-		const start = performance.now();
-		await db.command({ ping: 1 });
-		const dbPingInMillis = +(performance.now() - start).toFixed(2);
+		const [app, dbPingInMillis] = await Promise.all([
+			client.application.fetch(),
+			
+			(async () => {
+				const db = mongoose.connection.db;
+				const start = performance.now();
+				await db.command({ ping: 1 });
+				return +(performance.now() - start).toFixed(2);
+			})()
+		]);
 	
-
 		cmd.followUp(
 			`**Online**\n`+
 			`- Discord latency: ${ms(client.ws.ping, { long: true })}\n`+

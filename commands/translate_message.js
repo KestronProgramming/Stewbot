@@ -46,7 +46,7 @@ module.exports = {
 		
 		const t = await translate(cmd.targetMessage.content,{to:cmd.locale.slice(0,2)});
 		t.text = (await checkDirty(config.homeServer, t.text, true))[1];
-		if (cmd.guildId && guild.filter.active) t.text = (await checkDirty(cmd.guildId, t.text, true))[1];
+		if (cmd.guildId && guild?.filter?.active) t.text = (await checkDirty(cmd.guildId, t.text, true))[1];
 		cmd.followUp(
 			`Attempted to translate${t.text !== cmd.targetMessage.content 
 				? `:\n`+

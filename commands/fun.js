@@ -295,7 +295,7 @@ module.exports = {
 				});
 			break;
 			case 'meme':
-				var memes=fs.readdirSync("./memes");
+				var memes = await fs.promises.readdir("./memes");
 				if(memes.length===0){
 					cmd.followUp("I'm sorry, but I don't appear to have any at the moment.");
 					break;

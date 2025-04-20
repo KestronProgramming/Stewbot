@@ -10,5 +10,10 @@
     "aiNodeInterfaces": ["eth0"],
     "aiNodePort": 12345,
     "aiModel": "granite3.2:latest",
-    "aiTemp": 1
+    "aiTemp": 1,
+    "influx": {
+        "url": "http://localhost:8086",
+        "org": "my-org",
+        "bucket": "my-bucket"
+    }
 }
