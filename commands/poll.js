@@ -1,6 +1,6 @@
 // #region CommandBoilerplate
 const Categories = require("./modules/Categories");
-const { Guilds, Users, guildByID, userByID, guildByObj, userByObj } = require("./modules/database.js")
+const { Guilds, Users, guildByID, userByID, guildByObj, userByObj, keyEncode, keyDecode } = require("./modules/database.js")
 const { ContextMenuCommandBuilder, AttachmentBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
 function applyContext(context={}) {
 	for (key in context) {
@@ -51,6 +51,7 @@ async function generatePollChart(results, orderedChoices, colorPalette,
 		chartType="pie"
 	}) {
 	chartType ??= "pie"; // in case null
+	showLegend ??= true;
 	
     if (results.size === 0) {
         return null; // No votes, no chart
@@ -160,7 +161,7 @@ function calculatePollResults(pollOptionsMap) {
     let totalVotes = 0;
     for (const [option, voters] of pollOptionsMap.entries()) {
         const voteCount = voters.length;
-        results.set(option, voteCount);
+        results.set(keyDecode(option), voteCount);
         totalVotes += voteCount;
     }
     return { results, totalVotes };
@@ -413,7 +414,8 @@ module.exports = {
 				if (comp2.length > 0) comp.push(new ActionRowBuilder().addComponents(...comp2));
 				
 				const msg = await cmd.channel.send({
-					content: `<@${cmd.user.id}> asks: **${poll.title}**${poll.options.map((a, i) => `\n${i}. ${a} **0**`).join("")}`,
+					content: `<@${cmd.user.id}> asks: **${poll.title}**${
+						poll.options.map((a, i) => `\n${i}. ${keyDecode(a)} **0**`).join("")}`,
 					components: [
 						...comp,
 						new ActionRowBuilder().addComponents(
@@ -436,7 +438,7 @@ module.exports = {
 				// Compile these options on top of the poll object or smth like that
 				var t = {};
 				poll.options.forEach((option) => {
-					t[option] = [];
+					t[keyEncode(option)] = [];
 				});
 				poll.options = structuredClone(t);
 
@@ -533,11 +535,12 @@ module.exports = {
 						await cmd.reply({ content: "Invalid vote option selected.", ephemeral: true });
 						break;
 					}
-					const chosenOption = parsedPoll.choices[voteIndex];
+					const chosenOption = keyEncode(parsedPoll.choices[voteIndex]);
 
 					// Remove existing vote(s) first
 					let alreadyVotedForThis = false;
 					for (const [option, voters] of pollDB.options.entries()) {
+					// for (const [option, voters] of Object.entries(pollDB.options)) {
 						const userIndex = voters.indexOf(cmd.user.id);
 						if (userIndex > -1) {
 							if (option === chosenOption) {
@@ -553,6 +556,7 @@ module.exports = {
 						await cmd.reply({ content: "Your vote for this option has been removed.", ephemeral: true });
 					} else {
 						pollDB.options.get(chosenOption).push(cmd.user.id);
+						// pollDB.options[chosenOption].push(cmd.user.id);
 						await cmd.deferUpdate();
 					}
 

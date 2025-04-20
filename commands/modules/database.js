@@ -40,6 +40,10 @@ let persistenceSchema = new mongoose.Schema({
 
 let pollSchema = new mongoose.Schema({
     options: { type: Map, of: [ String ], default: {} }, // The key is the option, the string is the userID
+    // options: {
+    //     type: Object,
+    //     default: {}
+    // },
     title: String,
     legend: Boolean,
     labels: Boolean,
@@ -350,6 +354,30 @@ ConfigDB.findOne().then(async (config) => {
 //#region Functions
 
 /**
+ * Escapes special characters in MongoDB field names
+ * @param {string} key - The key containing special characters
+ * @return {string} - MongoDB-safe encoded key
+ */
+function keyEncode(key) {
+    // return key;
+    return key
+        .replace(/\./g, '\\u002e')  // Escape dots
+        .replace(/\$/g, '\\u0024'); // Escape dollar signs
+}
+
+/**
+ * Decodes a MongoDB-escaped key back to its original form
+ * @param {string} encodedKey - The MongoDB-safe encoded key
+ * @return {string} - Original key with special characters restored
+ */
+function keyDecode(encodedKey) {
+    // return encodedKey;
+    return encodedKey
+        .replace(/\\u002e/g, '.')   // Restore dots
+        .replace(/\\u0024/g, '$');  // Restore dollar signs
+}
+
+/**
  * Returns a document matching the query or creates a new one, filling in unset default values.
  * Updates can be provided with the provided as a json map of key to new value.
  * 
@@ -543,5 +571,9 @@ module.exports = {
     guildUserByID, // This function is less preferred, as it does not check for guild member existence first 
     guildUserByObj,
 
-    ConfigDB
+    ConfigDB,
+
+    // Utilities
+    keyDecode,
+    keyEncode
 }
