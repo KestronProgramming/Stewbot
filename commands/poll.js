@@ -196,7 +196,7 @@ function formatVoterList(pollOptionsMap) {
     for (const [option, voters] of pollOptionsMap.entries()) {
         if (voters.length > 0) {
             hasVoters = true;
-            voterList += `\n${option}${voters.map(userId => `\n- <@${userId}>`).join("")}`;
+            voterList += `\n${keyDecode(option)}${voters.map(userId => `\n- <@${userId}>`).join("")}`;
         }
     }
     return hasVoters ? voterList : ""; // Return empty string if no voters at all
