@@ -33,7 +33,7 @@ async function getPrimedEmbed(userId, guildIn){
 			iconURL: "" + mes.author.icon,
 			url: "https://discord.com/users/" + mes.author.id
 		})
-		.setDescription(await checkDirty(config.homeServer,mes.content,true)[1]||null)
+		.setDescription((await checkDirty(config.homeServer,mes.content,true))[1]||null)
 		.setTimestamp(new Date(mes.timestamp))
 		.setFooter({
 			text: mes.server.name + " / " + mes.server.channelName,
