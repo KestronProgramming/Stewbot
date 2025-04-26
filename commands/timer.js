@@ -134,7 +134,7 @@ module.exports = {
                 reminder=(await checkDirty(config.homeServer,cmd.options.getString("reminder"),true))[1];
 
                 const guild = await guildByObj(cmd.guild);
-                if(cmd.guildId&&guild.filter.active){
+                if(cmd.guildId&&guild?.filter.active){
                     reminder=(await checkDirty(cmd.guildId,reminder,true))[1];
                 }
             }
