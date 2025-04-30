@@ -19,14 +19,19 @@ const os = require('os');
 const { Ollama } = require('ollama');
 const fs = require("fs");
 const { ApplicationCommandOptionType } = require("discord.js")
+const ms = require("ms");
+const NodeCache = require("node-cache");
 console.beta = (...args) => process.env.beta && console.log(...args);
 
 const config = require("../data/config")
 const INTERFACES = config.aiNodeInterfaces;
 const BROADCAST_PORT = config.aiNodePort;
 
-let activeAIRequests = {};
-let convoCache = {}; // Stored here instead of database, since it does not need persistent
+// Server IPs and User IDs who need to wait for the requests to finish - this clears after 2 min in case of an error
+let activeAIRequests = new NodeCache({ stdTTL: ms("5m")/1000, checkperiod: 120 });
+
+// Non-persistent store of convos with users 
+let convoCache = {};
 
 
 // Setup Gemini
@@ -35,7 +40,7 @@ const genAI = new GoogleGenerativeAI(process.env.geminiAPIKey);
 
 function resetAIRequests() {
     // Sometimes this can get off - TODO: use ollama.ps to reset when the model is unloaded
-    activeAIRequests = {}
+    activeAIRequests.flushAll()
 }
 
 //#region Tools
@@ -289,7 +294,7 @@ async function getAvailableOllamaServers() {
     console.beta(`${ollamaInstances.length} available servers`);
 
     // Remove servers with active requests
-    ollamaInstances = ollamaInstances.filter((instance) => !activeAIRequests[instance.config.host]);
+    ollamaInstances = ollamaInstances.filter((instance) => !activeAIRequests.get(instance.config.host));
 
     return ollamaInstances;
 }
@@ -432,8 +437,8 @@ async function getAiResponseOllama(threadID, message, thinking = null, contextua
     const randomIndex = Math.floor(Math.random() * ollamaInstances.length);
     const chosenInstance = ollamaInstances[randomIndex];
 
-    // Mark the server as busy
-    activeAIRequests[chosenInstance.config.host] = true;
+    // Mark as busy
+    activeAIRequests.set(chosenInstance.config.host, true);
 
     let response = null;
 
@@ -524,7 +529,7 @@ async function getAiResponseOllama(threadID, message, thinking = null, contextua
     }
     finally {
         // Mark the server as available
-        delete activeAIRequests[chosenInstance.config.host];
+        activeAIRequests.del(chosenInstance.config.host);
     }
 
     return [response, true];
@@ -572,6 +577,15 @@ module.exports = {
     async execute(cmd, globalsContext) {
         applyContext(globalsContext);
 
+        // Check if this user is allowed to message again
+        if(activeAIRequests.has(cmd.user.id)) {
+            cmd.followUp({
+                content: "You already have an active chat request. Please wait for that one to finish before requesting another.",
+                ephemeral: true
+            })
+        }
+        activeAIRequests.set(cmd.user.id, true) 
+
         let message = cmd.options.getString("message");
         let thinking = cmd.options.getBoolean("thinking");
         let gemini = cmd.options.getBoolean("gemini") ?? true;
@@ -606,6 +620,8 @@ module.exports = {
             content: await postprocessAIMessage(limitLength(response), cmd.guild),
             allowedMentions: { parse: [] }
         });
+
+        activeAIRequests.del(cmd.user.id); 
     },
 
     /** 
@@ -632,8 +648,14 @@ module.exports = {
             if (!botSettings.useGlobalGemini) ollamaInstances = await getAvailableOllamaServers();
             if (!botSettings.useGlobalGemini && ollamaInstances?.length === 0) return; // Don't send typing if no ollama servers and not using gemini
             
-            msg.channel.sendTyping();
+            // Check if this user is allowed to message again
+            if(activeAIRequests.has(msg.author.id)) {
+                // For onmessage, just ignore.
+                return;
+            }
 
+            msg.channel.sendTyping();
+            activeAIRequests.set(msg.author.id, true) // Don't allow this user to send another request until this one finishes
 
             let message = await postprocessUserMessage(msg.content, msg.guild);
             let threadID = msg.author.id;
@@ -691,10 +713,7 @@ module.exports = {
                     response = response.slice(2000 - 3);
                     if (response.length > 0) chunk += "...";
 
-                    // await ((stillExists ? msg.reply : msg.channel.send)({
-                    //     content: chunk,
-                    //     allowedMentions: { parse: [] }
-                    // }));
+                    // If the user deleted their message, send without replying
                     if (stillExists) {
                         await msg.reply({
                             content: chunk,
@@ -708,6 +727,8 @@ module.exports = {
                     }
 
                 }
+
+                activeAIRequests.del(msg.author.id, true);
 
                 // if (response) msg.reply({
                 //     content: await postprocessAIMessage(response, msg.guild),
