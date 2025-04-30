@@ -394,6 +394,7 @@ async function getAiResponseGemini(threadID, message, thinking = null, contextua
     }
 
     let response = null;
+    let success = true;
 
     try {
         const geminiResult = await convoCache[threadID].geminiChat.sendMessage(message);
@@ -413,11 +414,12 @@ async function getAiResponseGemini(threadID, message, thinking = null, contextua
         notify && notify(`Gemini API error: \n${e.stack}`);
         console.error("Gemini API error:", e);
         response = `Sorry, there was an error with the AI response. It has already been reported. Try again later.`;
+        success = false;
     } finally {
         convoCache[threadID].lastMessage = Date.now();
     }
 
-    return [response, true];
+    return [response, success];
 }
 
 async function getAiResponseOllama(threadID, message, thinking = null, contextualData = {}, notify = null, retryAttempt = 0, ollamaInstances = null) {

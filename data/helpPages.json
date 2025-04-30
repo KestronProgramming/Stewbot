@@ -1,7 +1,7 @@
 [
     {
         "name": "add_emojiboard",
-        "mention": "</add_emojiboard:1363253073744498698>",
+        "mention": "</add_emojiboard:1280230703283310664>",
         "helpCategories": [
             "General",
             "Configuration",
@@ -13,7 +13,7 @@
     },
     {
         "name": "admin_message",
-        "mention": "</admin_message:1363253073744498699>",
+        "mention": "</admin_message:1094457915118723182>",
         "helpCategories": [
             "Administration",
             "Server_Only"
@@ -23,7 +23,7 @@
     },
     {
         "name": "anti_hack",
-        "mention": "</anti_hack:1363253073744498700>",
+        "mention": "</anti_hack:1355982107511619664>",
         "helpCategories": [
             "Server_Only",
             "Safety"
@@ -33,7 +33,7 @@
     },
     {
         "name": "auto-join-message",
-        "mention": "</auto-join-message:1363253073744498701>",
+        "mention": "</auto-join-message:1176764851406782527>",
         "helpCategories": [
             "Administration",
             "Configuration",
@@ -44,7 +44,7 @@
     },
     {
         "name": "auto-join-roles",
-        "mention": "</auto-join-roles:1363253073744498702>",
+        "mention": "</auto-join-roles:1185001717465620511>",
         "helpCategories": [
             "Administration",
             "Configuration",
@@ -55,7 +55,7 @@
     },
     {
         "name": "auto-leave-message",
-        "mention": "</auto-leave-message:1363253073744498703>",
+        "mention": "</auto-leave-message:1226818765417742336>",
         "helpCategories": [
             "Configuration",
             "Administration",
@@ -66,7 +66,7 @@
     },
     {
         "name": "auto_roles",
-        "mention": "</auto_roles:1363253073744498704>",
+        "mention": "</auto_roles:1176764851406782528>",
         "helpCategories": [
             "General",
             "Administration",
@@ -78,7 +78,7 @@
     },
     {
         "name": "badware_scanner",
-        "mention": "</badware_scanner:1363253073744498705>",
+        "mention": "</badware_scanner:1330397935254372454>",
         "helpCategories": [
             "Administration",
             "Server_Only",
@@ -90,7 +90,7 @@
     },
     {
         "name": "ban",
-        "mention": "</ban:1363253073744498706>",
+        "mention": "</ban:1176764851146739726>",
         "helpCategories": [
             "General",
             "Administration",
@@ -101,7 +101,7 @@
     },
     {
         "name": "bible",
-        "mention": "</bible:1363253073744498707>",
+        "mention": "</bible:1190182837203255339>",
         "helpCategories": [
             "General",
             "Information"
@@ -111,7 +111,7 @@
     },
     {
         "name": "block_module",
-        "mention": "</block_module:1363253073853812979>",
+        "mention": "</block_module:1330397935254372455>",
         "helpCategories": [
             "Bot",
             "Administration",
@@ -124,7 +124,7 @@
     },
     {
         "name": "captcha",
-        "mention": "</captcha:1363253073853812980>",
+        "mention": "</captcha:1227721747596312697>",
         "helpCategories": [
             ""
         ],
@@ -133,7 +133,7 @@
     },
     {
         "name": "chat",
-        "mention": "</chat:1363253073853812981>",
+        "mention": "</chat:1329292337821519893>",
         "helpCategories": [
             "General",
             "Bot",
@@ -145,7 +145,7 @@
     },
     {
         "name": "clone_emoji",
-        "mention": "</clone_emoji:1363253073853812982>",
+        "mention": "</clone_emoji:1297051273748680766>",
         "helpCategories": [
             "General",
             "Entertainment",
@@ -156,7 +156,7 @@
     },
     {
         "name": "counting config",
-        "mention": "</counting config:1363253073853812983>",
+        "mention": "</counting config:1176764851146739728>",
         "helpCategories": [
             "General",
             "Entertainment",
@@ -168,7 +168,7 @@
     },
     {
         "name": "counting set_number",
-        "mention": "</counting set_number:1363253073853812983>",
+        "mention": "</counting set_number:1176764851146739728>",
         "helpCategories": [
             "General",
             "Entertainment",
@@ -180,7 +180,7 @@
     },
     {
         "name": "daily-config",
-        "mention": "</daily-config:1363253073853812984>",
+        "mention": "</daily-config:1226975222234878063>",
         "helpCategories": [
             "Information",
             "Entertainment",
@@ -193,7 +193,7 @@
     },
     {
         "name": "define",
-        "mention": "</define:1363253073853812985>",
+        "mention": "</define:1071659594557948025>",
         "helpCategories": [
             "Information",
             "General"
@@ -203,7 +203,7 @@
     },
     {
         "name": "delete",
-        "mention": "</delete:1363253073853812986>",
+        "mention": "</delete:1283520823503880244>",
         "helpCategories": [
             "General",
             "Administration",
@@ -214,7 +214,7 @@
     },
     {
         "name": "delete_until",
-        "mention": "</delete_until:1363253073853812987>",
+        "mention": "</delete_until:1361769402294603776>",
         "helpCategories": [
             "Administration"
         ],
@@ -223,7 +223,7 @@
     },
     {
         "name": "donate",
-        "mention": "</donate:1363253073941762138>",
+        "mention": "</donate:1331554046586130537>",
         "helpCategories": [
             "General",
             "Bot"
@@ -233,7 +233,7 @@
     },
     {
         "name": "edit_emojiboard",
-        "mention": "</edit_emojiboard:1363253073941762139>",
+        "mention": "</edit_emojiboard:1280230703283310666>",
         "helpCategories": [
             "Configuration",
             "Entertainment",
@@ -244,7 +244,7 @@
     },
     {
         "name": "embed_message",
-        "mention": "</embed_message:1363253073941762140>",
+        "mention": "</embed_message:1219453592017309830>",
         "helpCategories": [
             "General",
             "Information",
@@ -255,7 +255,7 @@
     },
     {
         "name": "filter config",
-        "mention": "</filter config:1363253073941762142>",
+        "mention": "</filter config:1176764851146739723>",
         "helpCategories": [
             "General",
             "Administration",
@@ -268,7 +268,7 @@
     },
     {
         "name": "filter add",
-        "mention": "</filter add:1363253073941762142>",
+        "mention": "</filter add:1176764851146739723>",
         "helpCategories": [
             "Administration",
             "Configuration",
@@ -279,7 +279,7 @@
     },
     {
         "name": "filter remove",
-        "mention": "</filter remove:1363253073941762142>",
+        "mention": "</filter remove:1176764851146739723>",
         "helpCategories": [
             "Administration",
             "Configuration",
@@ -290,18 +290,18 @@
     },
     {
         "name": "filter import",
-        "mention": "</filter import:1363253073941762142>",
+        "mention": "</filter import:1176764851146739723>",
         "helpCategories": [
             "Administration",
             "Configuration",
             "Server_Only"
         ],
         "shortDesc": "Import a CSV wordlist",
-        "detailedDesc": "Import a .csv file containing a list of words seperated by commas to block. You can generate one from another server's filter using the </view_filter:1363253074214260878> command."
+        "detailedDesc": "Import a .csv file containing a list of words seperated by commas to block. You can generate one from another server's filter using the </view_filter:1071659594557948027> command."
     },
     {
         "name": "fun dne",
-        "mention": "</fun dne:1363253073941762143>",
+        "mention": "</fun dne:1176764851146739724>",
         "helpCategories": [
             "Entertainment"
         ],
@@ -310,7 +310,7 @@
     },
     {
         "name": "fun rac",
-        "mention": "</fun rac:1363253073941762143>",
+        "mention": "</fun rac:1176764851146739724>",
         "helpCategories": [
             "Entertainment"
         ],
@@ -319,7 +319,7 @@
     },
     {
         "name": "fun wyr",
-        "mention": "</fun wyr:1363253073941762143>",
+        "mention": "</fun wyr:1176764851146739724>",
         "helpCategories": [
             "Entertainment"
         ],
@@ -328,7 +328,7 @@
     },
     {
         "name": "fun joke",
-        "mention": "</fun joke:1363253073941762143>",
+        "mention": "</fun joke:1176764851146739724>",
         "helpCategories": [
             "Entertainment"
         ],
@@ -337,7 +337,7 @@
     },
     {
         "name": "fun meme",
-        "mention": "</fun meme:1363253073941762143>",
+        "mention": "</fun meme:1176764851146739724>",
         "helpCategories": [
             "Entertainment"
         ],
@@ -346,7 +346,7 @@
     },
     {
         "name": "fun name_me",
-        "mention": "</fun name_me:1363253073941762143>",
+        "mention": "</fun name_me:1176764851146739724>",
         "helpCategories": [
             "Entertainment"
         ],
@@ -355,7 +355,7 @@
     },
     {
         "name": "general_config",
-        "mention": "</general_config:1363253073941762144>",
+        "mention": "</general_config:1176764851146739731>",
         "helpCategories": [
             "General",
             "Bot",
@@ -368,7 +368,7 @@
     },
     {
         "name": "groupmute_config",
-        "mention": "</groupmute_config:1363253073941762145>",
+        "mention": "</groupmute_config:1294428288525008977>",
         "helpCategories": [
             "Administration",
             "Configuration",
@@ -380,7 +380,7 @@
     },
     {
         "name": "hat_pull",
-        "mention": "</hat_pull:1363253073941762146>",
+        "mention": "</hat_pull:1294105906078023722>",
         "helpCategories": [
             "Entertainment",
             "Server_Only"
@@ -390,7 +390,7 @@
     },
     {
         "name": "help",
-        "mention": "</help:1363253073941762147>",
+        "mention": "</help:1176764851146739722>",
         "helpCategories": [
             "General",
             "Bot",
@@ -420,7 +420,7 @@
     },
     {
         "name": "kick",
-        "mention": "</kick:1363253074033901668>",
+        "mention": "</kick:1176764851146739725>",
         "helpCategories": [
             "General",
             "Administration",
@@ -431,7 +431,7 @@
     },
     {
         "name": "leaderboard",
-        "mention": "</leaderboard:1363253074033901669>",
+        "mention": "</leaderboard:1204717920303718431>",
         "helpCategories": [
             "Information",
             "Entertainment"
@@ -441,7 +441,7 @@
     },
     {
         "name": "levels_config",
-        "mention": "</levels_config:1363253074033901670>",
+        "mention": "</levels_config:1200578848694226976>",
         "helpCategories": [
             "Administration",
             "Configuration",
@@ -454,7 +454,7 @@
     },
     {
         "name": "links",
-        "mention": "</links:1363253074033901671>",
+        "mention": "</links:1219453592017309828>",
         "helpCategories": [
             "General",
             "Bot",
@@ -465,7 +465,7 @@
     },
     {
         "name": "log_config",
-        "mention": "</log_config:1363253074033901672>",
+        "mention": "</log_config:1071659595006742634>",
         "helpCategories": [
             "Information",
             "Administration",
@@ -477,7 +477,7 @@
     },
     {
         "name": "move_message",
-        "mention": "</move_message:1363253074033901673>",
+        "mention": "</move_message:1176764851612287049>",
         "helpCategories": [
             "Administration",
             "Server_Only",
@@ -488,7 +488,7 @@
     },
     {
         "name": "next_counting_number",
-        "mention": "</next_counting_number:1363253074033901674>",
+        "mention": "</next_counting_number:1176764851146739729>",
         "helpCategories": [
             "Information",
             "Entertainment",
@@ -499,18 +499,18 @@
     },
     {
         "name": "personal_config",
-        "mention": "</personal_config:1363253074033901675>",
+        "mention": "</personal_config:1176764851406782524>",
         "helpCategories": [
             "General",
             "Bot",
             "Configuration"
         ],
         "shortDesc": "Configure the bot for you personally",
-        "detailedDesc": "Configure options for your personal interactions with the bot. This includes options such as if the bot tells you when you're filtered, if it automatically embeds certain links you post, or if you want it to not ping you whenb you level up in a server. You can also set your timezone for use with </timestamp:1363253074214260874>"
+        "detailedDesc": "Configure options for your personal interactions with the bot. This includes options such as if the bot tells you when you're filtered, if it automatically embeds certain links you post, or if you want it to not ping you whenb you level up in a server. You can also set your timezone for use with </timestamp:1225607496115159040>"
     },
     {
         "name": "pin",
-        "mention": "</pin:1363253074033901676>",
+        "mention": "</pin:1361769402294603777>",
         "helpCategories": [
             "Configuration",
             "Administration",
@@ -521,7 +521,7 @@
     },
     {
         "name": "ping",
-        "mention": "</ping:1363253074033901677>",
+        "mention": "</ping:984905230997147660>",
         "helpCategories": [
             "General",
             "Bot",
@@ -532,7 +532,7 @@
     },
     {
         "name": "poll",
-        "mention": "</poll:1363371151916662955>",
+        "mention": "</poll:1176764851406782525>",
         "helpCategories": [
             "Entertainment",
             "Server_Only"
@@ -542,7 +542,7 @@
     },
     {
         "name": "prime_embed",
-        "mention": "</prime_embed:1363253074126442778>",
+        "mention": "</prime_embed:1233137607207026710>",
         "helpCategories": [
             "Information",
             "General",
@@ -550,11 +550,11 @@
             "Context_Menu"
         ],
         "shortDesc": "Get a message ready to be embedded with /embed_message",
-        "detailedDesc": "After using this command on a message, you can type PRIMED into </embed_message:1363253073941762140> to have the bot embed it. This can be used for DMs, or servers the bot doesn't share with you if you install it to use anywhere. (Press the bot's PFP, then select \"Add App\", and then \"Use it Everywhere\"). This is a context menu command, which can be accessed by holding down on a message on mobile, or right clicking on desktop, and then selecting \"Apps\"."
+        "detailedDesc": "After using this command on a message, you can type PRIMED into </embed_message:1219453592017309830> to have the bot embed it. This can be used for DMs, or servers the bot doesn't share with you if you install it to use anywhere. (Press the bot's PFP, then select \"Add App\", and then \"Use it Everywhere\"). This is a context menu command, which can be accessed by holding down on a message on mobile, or right clicking on desktop, and then selecting \"Apps\"."
     },
     {
         "name": "random rng",
-        "mention": "</random rng:1363253074126442779>",
+        "mention": "</random rng:1219453592017309827>",
         "helpCategories": [
             "Entertainment"
         ],
@@ -563,7 +563,7 @@
     },
     {
         "name": "random coin-flip",
-        "mention": "</random coin-flip:1363253074126442779>",
+        "mention": "</random coin-flip:1219453592017309827>",
         "helpCategories": [
             "Entertainment"
         ],
@@ -572,7 +572,7 @@
     },
     {
         "name": "random 8-ball",
-        "mention": "</random 8-ball:1363253074126442779>",
+        "mention": "</random 8-ball:1219453592017309827>",
         "helpCategories": [
             "Entertainment"
         ],
@@ -581,7 +581,7 @@
     },
     {
         "name": "random dice-roll",
-        "mention": "</random dice-roll:1363253074126442779>",
+        "mention": "</random dice-roll:1219453592017309827>",
         "helpCategories": [
             "Entertainment"
         ],
@@ -590,7 +590,7 @@
     },
     {
         "name": "rank",
-        "mention": "</rank:1363253074126442780>",
+        "mention": "</rank:1200578848694226978>",
         "helpCategories": [
             "Information",
             "General",
@@ -602,7 +602,7 @@
     },
     {
         "name": "remove_emojiboard",
-        "mention": "</remove_emojiboard:1363253074126442781>",
+        "mention": "</remove_emojiboard:1280230703283310665>",
         "helpCategories": [
             "Entertainment",
             "Configuration",
@@ -613,7 +613,7 @@
     },
     {
         "name": "report_problem",
-        "mention": "</report_problem:1363253074126442782>",
+        "mention": "</report_problem:1176764851406782529>",
         "helpCategories": [
             "Bot"
         ],
@@ -622,7 +622,7 @@
     },
     {
         "name": "rss follow",
-        "mention": "</rss follow:1363253074126442783>",
+        "mention": "</rss follow:1232560128017043598>",
         "helpCategories": [
             "Information",
             "Configuration",
@@ -634,18 +634,18 @@
     },
     {
         "name": "rss unfollow",
-        "mention": "</rss unfollow:1363253074126442783>",
+        "mention": "</rss unfollow:1232560128017043598>",
         "helpCategories": [
             "Configuration",
             "Administration",
             "Server_Only"
         ],
         "shortDesc": "Unfollow an RSS feed",
-        "detailedDesc": "Specify the channel the feed is followed in, and the URL of the feed to unfollow, and Stewbot will no longer post RSS updates for that feed there. You can use </rss check:1363253074126442783> to get the URL needed for this command."
+        "detailedDesc": "Specify the channel the feed is followed in, and the URL of the feed to unfollow, and Stewbot will no longer post RSS updates for that feed there. You can use </rss check:1232560128017043598> to get the URL needed for this command."
     },
     {
         "name": "rss check",
-        "mention": "</rss check:1363253074126442783>",
+        "mention": "</rss check:1232560128017043598>",
         "helpCategories": [
             "Information",
             "Administration",
@@ -668,7 +668,7 @@
     },
     {
         "name": "set_persistent_message",
-        "mention": "</set_persistent_message:1363253074126442784>",
+        "mention": "</set_persistent_message:1280709077797830737>",
         "helpCategories": [
             "General",
             "Information",
@@ -681,7 +681,7 @@
     },
     {
         "name": "slowmode",
-        "mention": "</slowmode:1363253074126442785>",
+        "mention": "</slowmode:1294940598587097118>",
         "helpCategories": [
             "Configuration",
             "Administration",
@@ -692,7 +692,7 @@
     },
     {
         "name": "sticky-roles",
-        "mention": "</sticky-roles:1363253074126442786>",
+        "mention": "</sticky-roles:1176764851406782530>",
         "helpCategories": [
             "General",
             "Administration",
@@ -705,18 +705,18 @@
     },
     {
         "name": "submit_meme",
-        "mention": "</submit_meme:1363253074214260869>",
+        "mention": "</submit_meme:1176764851406782531>",
         "helpCategories": [
             "Bot",
             "Entertainment",
             "Context_Menu"
         ],
         "shortDesc": "Submit a meme to the Stewbot moderators for verification to show up in `/fun meme`",
-        "detailedDesc": "Using this command on a message with an image or video will submit it to the Stewbot moderators to verify to begin showing up in the </fun meme:1363253073941762143> command. This is a context menu command, and is accessed by holding down on a message on mobile, or right clicking on desktop, and then selecting \"Apps\"."
+        "detailedDesc": "Using this command on a message with an image or video will submit it to the Stewbot moderators to verify to begin showing up in the </fun meme:1176764851146739724> command. This is a context menu command, and is accessed by holding down on a message on mobile, or right clicking on desktop, and then selecting \"Apps\"."
     },
     {
         "name": "temp_role",
-        "mention": "</temp_role:1363253074214260870>",
+        "mention": "</temp_role:1328678205187428382>",
         "helpCategories": [
             "Administration",
             "Server_Only"
@@ -726,7 +726,7 @@
     },
     {
         "name": "ticket",
-        "mention": "</ticket:1363253074214260871>",
+        "mention": "</ticket:1176764851406782526>",
         "helpCategories": [
             "Administration",
             "Configuration",
@@ -737,7 +737,7 @@
     },
     {
         "name": "timeout",
-        "mention": "</timeout:1363253074214260872>",
+        "mention": "</timeout:1176764851146739727>",
         "helpCategories": [
             "Administration",
             "General",
@@ -748,7 +748,7 @@
     },
     {
         "name": "timer",
-        "mention": "</timer:1363253074214260873>",
+        "mention": "</timer:1291959828993806427>",
         "helpCategories": [
             "General",
             "Information",
@@ -759,7 +759,7 @@
     },
     {
         "name": "timestamp",
-        "mention": "</timestamp:1363253074214260874>",
+        "mention": "</timestamp:1225607496115159040>",
         "helpCategories": [
             "General",
             "Information",
@@ -770,7 +770,7 @@
     },
     {
         "name": "translate",
-        "mention": "</translate:1363253074214260875>",
+        "mention": "</translate:1071701240897097808>",
         "helpCategories": [
             "Information"
         ],
@@ -779,7 +779,7 @@
     },
     {
         "name": "translate_message",
-        "mention": "</translate_message:1363253074214260876>",
+        "mention": "</translate_message:1176764851612287048>",
         "helpCategories": [
             "Information",
             "Context_Menu"
@@ -789,7 +789,7 @@
     },
     {
         "name": "user",
-        "mention": "</user:1363253074214260877>",
+        "mention": "</user:1228808178414780468>",
         "helpCategories": [
             "General",
             "Information",
@@ -801,7 +801,7 @@
     },
     {
         "name": "view_filter",
-        "mention": "</view_filter:1363253074214260878>",
+        "mention": "</view_filter:1071659594557948027>",
         "helpCategories": [
             "Information",
             "Server_Only"
@@ -811,18 +811,18 @@
     },
     {
         "name": "warn",
-        "mention": "</warn:1363253074298273956>",
+        "mention": "</warn:1285698420585009205>",
         "helpCategories": [
             "General",
             "Administration",
             "Server_Only"
         ],
         "shortDesc": "Warn a user for bad behaviour",
-        "detailedDesc": "Moderators can use this command to send a user a warning for doing something wrong anonymously in the server's name, with a severity scale from 1 to 10. You can then use </warnings:1363253074298273957> to check a list of all warnings dealt."
+        "detailedDesc": "Moderators can use this command to send a user a warning for doing something wrong anonymously in the server's name, with a severity scale from 1 to 10. You can then use </warnings:1285698420585009206> to check a list of all warnings dealt."
     },
     {
         "name": "warnings",
-        "mention": "</warnings:1363253074298273957>",
+        "mention": "</warnings:1285698420585009206>",
         "helpCategories": [
             "Administration",
             "Information",
@@ -833,7 +833,7 @@
     },
     {
         "name": "wotd",
-        "mention": "</wotd:1363253074298273958>",
+        "mention": "</wotd:1294940598587097119>",
         "helpCategories": [
             "Entertainment"
         ],
