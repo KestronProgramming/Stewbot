@@ -17,6 +17,8 @@
     "fuse.js": "^7.1.0",
     "googleapis": "^148.0.0",
     "heic-convert": "^2.1.0",
+    "katex": "^0.16.22",
+    "mathjax": "^3.2.2",
     "mathjs": "^14.4.0",
     "mongoose": "^8.13.2",
     "mongoose-lean-defaults": "^2.2.1",
@@ -28,6 +30,7 @@
     "rss-parser": "^3.13.0",
     "safe-regex": "^2.1.1",
     "sentiment": "^5.0.2",
+    "sharp": "^0.34.1",
     "sherlockjs": "^1.4.2",
     "turndown": "^7.2.0",
     "unzipper": "^0.12.3"
