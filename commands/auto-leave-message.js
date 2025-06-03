@@ -32,7 +32,7 @@ module.exports = {
 		
 		extra: {"contexts":[0],"integration_types":[0]},
 
-		requiredGlobals: ["defaultGuild"],
+		requiredGlobals: [],
 
 		help: {
 			helpCategories: [Categories.Configuration, Categories.Administration, Categories.Server_Only],

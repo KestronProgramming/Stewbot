@@ -62,7 +62,7 @@ module.exports = {
         */
 
 		
-		requiredGlobals: ["defaultUser"],
+		requiredGlobals: [],
 
 		// help: {
 		// 	helpCategory: "General",

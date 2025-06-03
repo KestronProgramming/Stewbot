@@ -68,7 +68,7 @@ module.exports = {
         */
 
 		
-		requiredGlobals: ["defaultUser"],
+		requiredGlobals: [],
 
 		help: {
 			helpCategories: [Categories.Information, Categories.Entertainment, Categories.Configuration],
