@@ -105,7 +105,7 @@ module.exports = {
                     "icon_url": discordUser.displayAvatarURL()
                 },
                 "footer": {
-                    "text": `Next rank up at ${(getLvl(targetUser.exp) + "").replace(/\B(?=(\d{3})+(?!\d))/g, ",")}`
+                    "text": `Next rank up at ${(getLvl(targetUser.lvl) + "").replace(/\B(?=(\d{3})+(?!\d))/g, ",")}`
                 }
             }], 
             allowedMentions: { parse: [] }
