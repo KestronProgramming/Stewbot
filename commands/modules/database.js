@@ -172,6 +172,7 @@ let guildSchema = new mongoose.Schema({
         trim: true,
         match: [/^\d{5,}$/, "Error: ServerID must be digits only, and longer than 5 chars"]
     },
+    guildTagRole: { type: String, default: "" },
     emojiboards: { type: Map, of: emojiboardSchema, default: {} },
     tempBans: { type: Map, of: tempBanSchema, default: {} },
     tempSlow: { type: Map, of: tempSlowmodeSchema, default: {} },

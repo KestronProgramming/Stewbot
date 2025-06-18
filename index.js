@@ -13,7 +13,7 @@ console.beta = (...args) => process.env.beta && console.log(...args)
 
 global.config = require("./data/config.json");
 console.beta("Importing discord");
-const {Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType, TeamMemberMembershipState, Message}=require("discord.js");
+const {Client, Events, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType, TeamMemberMembershipState, Message}=require("discord.js");
 console.beta("Importing commands");
 const { getCommands } = require("./Scripts/launchCommands.js"); // Note: current setup requires this to be before the commands.json import (the cmd.globals setting)
 const commandsLoadedPromise = getCommands();
@@ -1615,6 +1615,39 @@ client.on("guildMemberUpdate",async (memberO,member)=>{
 
 });
 
+client.on(Events.Raw, async (packet) => {
+    if (packet.t !== 'GUILD_MEMBER_UPDATE') return;
+
+    // Monitor guild tags to apply a given role to all users who apply the tag. This is not yet supported by discord.js so we have to do it ourself
+    const guildFromPacket = packet.d.guild_id;
+    const clan = packet?.d?.user?.clan || packet?.d?.user?.primary_guild;
+    const tagInUse = clan?.identity_guild_id;
+    const isGuildsTag = guildFromPacket == tagInUse;
+
+    // If this user has a tag - TODO: ideally we would check here if any tag was taken.
+    if (tagInUse) {
+        const guild = await guildByID(guildFromPacket);
+        if (guild.guildTagRole) {
+            const discordGuild = await client.guilds.fetch(guildFromPacket).catch(e => null);
+            if (discordGuild) {
+                try {
+                    const member = await discordGuild.members.fetch(packet.d.user.id);
+                    const role = discordGuild.roles.cache.get(guild.guildTagRole);
+                    const memberHasRole = member.roles.cache.get(role.id);
+                    if (member && role) {
+                        if (isGuildsTag && !memberHasRole) 
+                            await member.roles.add(role, "Applied for adopting Guild Tag");
+                        
+                        if (!isGuildsTag && memberHasRole)
+                            await member.roles.remove(role, "Removed for removing Guild Tag");
+                    }
+                } catch (e) { console.log(e); }
+            }
+        }
+    }
+});
+
+
 // Bot events for staff notifications
 client.on("rateLimit",async d=>{
     notify("Ratelimited -\n\n"+d);
@@ -1642,8 +1675,8 @@ client.on("guildDelete",async guild=>{
 //Error handling
 process.on('unhandledRejection', e=>notify(e.stack));
 process.on('unhandledException', e=>notify(e.stack));
-process.on('uncaughtException', e=>notify(e.stack));
-process.on('uncaughtRejection', e=>notify(e.stack));
+process.on('uncaughtException',  e=>notify(e.stack));
+process.on('uncaughtRejection',  e=>notify(e.stack));
 
 // Connect to the DB before logging in
 console.beta("Connecting to database")

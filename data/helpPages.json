@@ -715,6 +715,16 @@
         "detailedDesc": "Using this command on a message with an image or video will submit it to the Stewbot moderators to verify to begin showing up in the </fun meme:1363253073941762143> command. This is a context menu command, and is accessed by holding down on a message on mobile, or right clicking on desktop, and then selecting \"Apps\"."
     },
     {
+        "name": "tag_role",
+        "mention": "</tag_role:1384719385385500744>",
+        "helpCategories": [
+            "Server_Only",
+            "Administration"
+        ],
+        "shortDesc": "Configure the role that gets applied when someone sets your Guild Tag",
+        "detailedDesc": "Lets you set or clear a role that is automatically applied to users who apply your server tag. \nYou can disable the feature using the `active` flag."
+    },
+    {
         "name": "temp_role",
         "mention": "</temp_role:1363253074214260870>",
         "helpCategories": [
