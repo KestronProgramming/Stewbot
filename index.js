@@ -1626,25 +1626,24 @@ client.on(Events.Raw, async (packet) => {
     const tagInUse = clan?.identity_guild_id;
     const isGuildsTag = guildFromPacket == tagInUse;
 
-    // If this user has a tag - TODO: ideally we would check here if any tag was taken.
-    if (tagInUse) {
-        const guild = await guildByID(guildFromPacket);
-        if (guild.guildTagRole) {
-            const discordGuild = await client.guilds.fetch(guildFromPacket).catch(e => null);
-            if (discordGuild) {
-                try {
-                    const member = await discordGuild.members.fetch(packet.d.user.id);
-                    const role = discordGuild.roles.cache.get(guild.guildTagRole);
-                    const memberHasRole = member.roles.cache.get(role.id);
-                    if (member && role) {
-                        if (isGuildsTag && !memberHasRole) 
-                            await member.roles.add(role, "Applied for adopting Guild Tag");
-                        
-                        if (!isGuildsTag && memberHasRole)
-                            await member.roles.remove(role, "Removed for removing Guild Tag");
-                    }
-                } catch (e) { console.log(e); }
-            }
+    const guild = await guildByID(guildFromPacket);
+    if (guild.guildTagRole) {
+        // If the guild is set to apply tags
+        
+        const discordGuild = await client.guilds.fetch(guildFromPacket).catch(e => null);
+        if (discordGuild) {
+            try {
+                const member = await discordGuild.members.fetch(packet.d.user.id);
+                const role = discordGuild.roles.cache.get(guild.guildTagRole);
+                const memberHasRole = member.roles.cache.get(role.id);
+                if (member && role) {
+                    if (isGuildsTag && !memberHasRole) 
+                        await member.roles.add(role, "Applied for adopting Guild Tag");
+                    
+                    if (!isGuildsTag && memberHasRole)
+                        await member.roles.remove(role, "Removed for removing Guild Tag");
+                }
+            } catch (e) { console.log(e); }
         }
     }
 });
