@@ -26,6 +26,8 @@ const fs = require("fs");
 const crypto = require('crypto');
 const mongoose = require("mongoose");
 const ms = require("ms");
+const LRUCache = require("lru-cache").LRUCache;
+console.beta("Importing InfluxDB");
 const { initInflux, queueCommandMetric } = require('./commands/modules/metrics')
 initInflux()
 
@@ -94,11 +96,10 @@ function hash(obj) {
 }
 
 // Log in with all intents expect guild presence
-var ints = Object.keys(GatewayIntentBits).map(a => GatewayIntentBits[a]);
-ints.splice(ints.indexOf(GatewayIntentBits.GuildPresences), 1);
-ints.splice(ints.indexOf("GuildPresences"), 1);
 const client = new Client({
-    intents: ints,
+    intents: Object.values(GatewayIntentBits)
+        .filter(i => typeof(i) == 'number')
+        .filter(i => i !== GatewayIntentBits.GuildPresences),
     partials: Object.keys(Partials).map(a => Partials[a])
 });
 global.client = client;
@@ -1554,6 +1555,13 @@ client.on("guildMemberUpdate",async (memberO,member)=>{
 
 });
 
+// To log global changes, we use the user updated event in which discord sends the old member. 
+//   We then wait for raw guild user update events, which send the server the user was updated in, but not the old user object.
+const oldProfileCache = new LRUCache({ ttl: ms("30s") })
+client.on(Events.UserUpdate, (oldUser, newUser) => {
+    oldProfileCache.set(`${oldUser.id}`, structuredClone(oldUser));
+});
+
 async function checkTagUpdate(packet) {
     if (packet.t !== 'GUILD_MEMBER_UPDATE') return;
 
@@ -1585,14 +1593,20 @@ async function checkTagUpdate(packet) {
     }
 }
 
-async function logGuildMemberUpdate(packet, cachedUser) {
+async function logGuildMemberUpdate(packet) {
     // This function takes a `GUILD_MEMBER_UPDATE` packet,
     //   and posts about diffs between what the user is and what the user was
     //   *globally*. Only global diffs are posted about by this function.
     // Guild-user diffs are handled by the `guildMemberUpdate` function.
     // This function is here because discord.js does not pass `guildMemberUpdate` update
     // events when the event is global.
+    if (packet.t !== 'GUILD_MEMBER_UPDATE') return;
+
+    // Wait for 5 seconds to make sure we have the old profile from other events
+    await new Promise(resolve => setTimeout(resolve, ms("5s")));
+
     const packetUser = packet.d?.user;
+    const cachedUser = oldProfileCache.get(packetUser.id)
     const guildId = packet.d?.guild_id;
     if (!packetUser || !guildId) return;
 
@@ -1655,7 +1669,7 @@ async function logGuildMemberUpdate(packet, cachedUser) {
         const newUrl = avatarURL(packetUser.id, newData.avatar);
         diffs.push({
             name: "Avatar",
-            value: `${oldUrl ? `[Old](${oldUrl})` : "`[None]`"} → ${newUrl ? `[New](${newUrl})` : "`[None]`"}`,
+            value: `${oldUrl ? `[Old](${oldUrl})` : "`[None\\Unknown]`"} → ${newUrl ? `[New](${newUrl})` : "`[None]`"}`,
             inline: false
         });
     }
@@ -1699,16 +1713,8 @@ async function logGuildMemberUpdate(packet, cachedUser) {
 }
 
 client.on(Events.Raw, async (packet) => {
-    // Before discord.js can update the cache, clone the cached user object
-    const originalMember = structuredClone(
-        client.users.cache.get(
-            packet?.d?.user?.id
-        )
-    )
-    
-    // These handlers modify cache, run them later.
     checkTagUpdate(packet);
-    logGuildMemberUpdate(packet, originalMember);
+    logGuildMemberUpdate(packet);
 });
 
 
