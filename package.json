@@ -18,6 +18,7 @@
     "googleapis": "^148.0.0",
     "heic-convert": "^2.1.0",
     "katex": "^0.16.22",
+    "lru-cache": "^11.1.0",
     "mathjax": "^3.2.2",
     "mathjs": "^14.4.0",
     "mongoose": "^8.13.2",
