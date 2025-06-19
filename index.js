@@ -1608,7 +1608,10 @@ async function logGuildMemberUpdate(packet) {
     const packetUser = packet.d?.user;
     const cachedUser = oldProfileCache.get(packetUser.id)
     const guildId = packet.d?.guild_id;
-    if (!packetUser || !guildId) return;
+    if (!packetUser || !guildId || !cachedUser) return;
+
+    // Remove this user since we already logged the event for them
+    oldProfileCache.delete(packetUser.id);
 
     // Fetch logging channel
     const [logChannelId] = await Guilds.find({
