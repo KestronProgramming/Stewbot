@@ -1508,71 +1508,8 @@ client.on("roleUpdate",async (roleO,role)=>{
         }
     }
 });
-client.on("userUpdate",async (userO, user)=>{
-    var diffs=[];
-    var caredAboutDiffs=["username","globalName","avatar","banner"];
-    Object.keys(userO).forEach(key=>{
-        if(userO[key]!==user[key]&&caredAboutDiffs.includes(key)){
-            diffs.push(key);
-        }
-    });
-    if (diffs.length < 1) return;
-
-    // Find servers where this user is
-    const userStores = await GuildUsers.find({ 
-        userId: user.id,
-        inServer: true
-    }) .select("guildId").lean();
-
-    // Find the servers that have logs on
-    const listeningGuilds = await Guilds.find({
-        id: { $in: userStores.map(u => u.guildId) },
-        "logs.active": true,
-        "logs.user_change_events": true,
-    })
-
-    listeningGuilds.forEach(async guild => {
-        var channel = guild.logs.channel 
-            ? await client.channels.fetch(guild.logs.channel).catch(e => null)
-            : null;
-        if (channel?.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)) {
-            var flds = [];
-            if (diffs.includes("avatar")) {
-                flds.push({
-                    "name": `Avatar`,
-                    "value": `Changed`,
-                    "inline": true
-                });
-            }
-            if(diffs.includes("banner")){
-                flds.push({
-                    "name": `Banner`,
-                    "value": `Changed`,
-                    "inline": true
-                });
-            }
-            if (diffs.length == 0) return;
-            channel.send({content:`**User <@${user.id}> Edited Globally**`,embeds:[{
-                    "type": "rich",
-                    "title": `${diffs.includes("globalName")?`${userO.globalName} -> `:""}${user.globalName}`,
-                    "description": `${diffs.includes("username")?`${userO.username} -> `:""}${user.username}`,
-                    "color": user.accentColor===undefined?0x006400:user.accentColor,
-                    "fields": flds,
-                    "thumbnail": {
-                        "url": user.displayAvatarURL(),
-                        "height": 0,
-                        "width": 0
-                    },
-                    "url":`https://discord.com/users/${user.id}`
-                }],allowedMentions:{parse:[]}});
-        }
-        else{
-            guild.logs.active=false;
-            guild.save();
-        }
-    });
-});
 client.on("guildMemberUpdate",async (memberO,member)=>{
+    
     const guildStore = await guildByObj(member.guild);
 
     if(guildStore.logs.active&&guildStore.logs.user_change_events){
@@ -1617,7 +1554,7 @@ client.on("guildMemberUpdate",async (memberO,member)=>{
 
 });
 
-client.on(Events.Raw, async (packet) => {
+async function checkTagUpdate(packet) {
     if (packet.t !== 'GUILD_MEMBER_UPDATE') return;
 
     // Monitor guild tags to apply a given role to all users who apply the tag. This is not yet supported by discord.js so we have to do it ourself
@@ -1646,6 +1583,132 @@ client.on(Events.Raw, async (packet) => {
             } catch (e) { console.log(e); }
         }
     }
+}
+
+async function logGuildMemberUpdate(packet, cachedUser) {
+    // This function takes a `GUILD_MEMBER_UPDATE` packet,
+    //   and posts about diffs between what the user is and what the user was
+    //   *globally*. Only global diffs are posted about by this function.
+    // Guild-user diffs are handled by the `guildMemberUpdate` function.
+    // This function is here because discord.js does not pass `guildMemberUpdate` update
+    // events when the event is global.
+    const packetUser = packet.d?.user;
+    const guildId = packet.d?.guild_id;
+    if (!packetUser || !guildId) return;
+
+    // Fetch logging channel
+    const [logChannelId] = await Guilds.find({
+        id: guildId,
+        "logs.user_change_events": true
+    }).distinct("logs.channel");
+    if (!logChannelId) return;
+
+    // Normalize old/new fields
+    const oldData = {
+        username: cachedUser?.username ?? "[Unknown]",
+        global_name: cachedUser?.globalName ?? "[Unknown]",
+        avatar: cachedUser?.avatar ?? null,
+        banner: cachedUser?.banner ?? null,
+    };
+
+    const newData = {
+        username: packetUser.username ?? "[Unknown]",
+        global_name: packetUser.global_name ?? "[Unknown]",
+        avatar: packetUser.avatar ?? null,
+        banner: packetUser.banner ?? null,
+    };
+
+    const trackedFields = [
+        { key: "username", label: "Username" },
+        { key: "global_name", label: "Global Name" },
+    ];
+
+    const diffs = [];
+
+    // CDN builders
+    function cdnAssetURL(type, userId, hash) {
+        if (!hash) return null;
+        const ext = hash.startsWith("a_") ? "gif" : "png";
+        return `https://cdn.discordapp.com/${type}/${userId}/${hash}.${ext}?size=256`;
+    }
+    const avatarURL = (id, hash) => cdnAssetURL("avatars", id, hash);
+    const bannerURL = (id, hash) => cdnAssetURL("banners", id, hash);
+
+    // Generic diff builder
+    function diffField(field, label, inline = true, formatter = (a, b) => `\`${a}\` → \`${b}\``) {
+        if (oldData[field] !== newData[field]) {
+            diffs.push({
+                name: label,
+                value: formatter(oldData[field], newData[field]),
+                inline
+            });
+        }
+    }
+
+    for (const { key, label } of trackedFields) {
+        diffField(key, label);
+    }
+
+    // Special: Avatar diff
+    if (oldData.avatar !== newData.avatar) {
+        const oldUrl = avatarURL(packetUser.id, oldData.avatar);
+        const newUrl = avatarURL(packetUser.id, newData.avatar);
+        diffs.push({
+            name: "Avatar",
+            value: `${oldUrl ? `[Old](${oldUrl})` : "`[None]`"} → ${newUrl ? `[New](${newUrl})` : "`[None]`"}`,
+            inline: false
+        });
+    }
+
+    // Special: Banner diff
+    if (oldData.banner !== newData.banner) {
+        const oldUrl = bannerURL(packetUser.id, oldData.banner);
+        const newUrl = bannerURL(packetUser.id, newData.banner);
+        diffs.push({
+            name: "Banner",
+            value: `${oldUrl ? `[Old](${oldUrl})` : "`[None]`"} → ${newUrl ? `[New](${newUrl})` : "`[None]`"}`,
+            inline: false
+        });
+    }
+
+    if (diffs.length === 0) return;
+
+    // Channel + permission check
+    const channel = await client.channels.fetch(logChannelId).catch(() => null);
+    if (!channel || !channel.permissionsFor(client.user).has(PermissionFlagsBits.SendMessages)) {
+        await Guilds.updateOne({ id: guildId }, { "logs.user_change_events": false });
+        return;
+    }
+
+    const thumb = avatarURL(packetUser.id, newData.avatar) || client.user.displayAvatarURL();
+
+    await channel.send({
+        content: `**User <@${packetUser.id}> updated their global profile**`,
+        embeds: [{
+            type: "rich",
+            title: "Global Profile Update",
+            description: `**${newData.username}** (${newData.global_name !== "[Unknown]" ? newData.global_name : "no global name"})`,
+            color: cachedUser?.accentColor ?? 0x006400,
+            fields: diffs,
+            thumbnail: { url: thumb },
+            url: `https://discord.com/users/${packetUser.id}`
+        }],
+        allowedMentions: { parse: [] }
+    });
+
+}
+
+client.on(Events.Raw, async (packet) => {
+    // Before discord.js can update the cache, clone the cached user object
+    const originalMember = structuredClone(
+        client.users.cache.get(
+            packet?.d?.user?.id
+        )
+    )
+    
+    // These handlers modify cache, run them later.
+    checkTagUpdate(packet);
+    logGuildMemberUpdate(packet, originalMember);
 });
 
 
