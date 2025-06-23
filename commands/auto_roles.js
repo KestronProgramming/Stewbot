@@ -47,11 +47,11 @@ module.exports = {
 		}
 		cmd.followUp({
             content: `${
-                await checkDirty(
+                (await checkDirty(
                     config.homeServer,
                     cmd.options.getString("message"),
                     true
-                )[1]
+                ))[1]
             }`,
             ephemeral: true,
             components: [new ActionRowBuilder().addComponents(
