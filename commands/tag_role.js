@@ -56,6 +56,14 @@ You can disable the feature using the \`active\` flag.`,
 		}
 
 		if (role) {
+			const member = await cmd.guild.members.fetch(cmd.user.id);
+			const userHighestRole = member.roles.highest;
+			if (role.position >= userHighestRole.position && cmd.guild.ownerId !== cmd.user.id) {
+				return cmd.followUp("You can only set a tag role that is lower than your highest role.");
+			}
+		}
+
+		if (role) {
 			guild.guildTagRole = role.id;
 		}
 
