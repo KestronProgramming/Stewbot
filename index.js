@@ -353,9 +353,9 @@ async function doEmojiboardReaction(react) {
     if (!emojiboards.has(emoji)) return;
 
     const emojiboard = emojiboards.get(emoji);
-
     if (!emojiboard.active) return;
 
+    // Exit conditions
     if (!emojiboard.isMute) {
         // exit if this message has already been posted
         if (emojiboard.posted.has(react.message.id)) return;
@@ -422,19 +422,17 @@ async function doEmojiboardReaction(react) {
         var hook = await c.fetchWebhooks();
         hook = hook.find(h => h.token);
         if (hook) {
-            hook.send(resp).then(h => {
-                emojiboard.posted.set(react.message.id, `webhook${h.id}`);
-            });
+            let response = await hook.send(resp);
+            emojiboard.posted.set(react.message.id, `webhook${response.id}`);
         }
         else {
-            client.channels.cache.get(emojiboard.channel).createWebhook({
+            const hook = await client.channels.cache.get(emojiboard.channel).createWebhook({
                 name: config.name,
                 avatar: config.pfp,
-            }).then(d => {
-                d.send(resp).then(h => {
-                    emojiboard.posted.set(react.message.id, `webhook${h.id}`);
-                });
             });
+            
+            let response = await hook.send(resp);
+            emojiboard.posted.set(react.message.id, `webhook${response.id}`);
         }
     }
     else {
