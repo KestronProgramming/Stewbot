@@ -45,6 +45,10 @@ You can disable the feature using the \`active\` flag.`,
 	/** @param {import('discord.js').ChatInputCommandInteraction} cmd */
 	async execute(cmd, context) {
         applyContext(context);
+
+		if (!cmd.guild) {
+			return cmd.reply("This feature must be run in a server. It assigns a role to be given to users who adopt the guild's tag.")
+		}
         
 		const role = cmd.options.getRole("role");
 		const active = cmd.options.getBoolean("active");
