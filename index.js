@@ -910,6 +910,12 @@ client.on("interactionCreate", async cmd=>{
 client.on("messageReactionAdd",async (react,user)=>{
     if(react.message.guildId===null) return;
 
+    // Resolve partials
+    await Promise.all([
+        react.partial ? react.fetch() : null,
+        react.message?.partial ? react.message.fetch().catch(e => null) : null
+    ]);
+
     const guild = await guildByObj(react.message.guild);
 
     // Reaction filters
