@@ -1,7 +1,7 @@
 // #region CommandBoilerplate
 const Categories = require("./modules/Categories");
 const { Guilds, Users, ConfigDB, guildByID, userByID, guildByObj, userByObj } = require("./modules/database.js")
-const { ContextMenuCommandBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
+const { Events, ContextMenuCommandBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
 function applyContext(context={}) {
 	for (key in context) {
 		this[key] = context[key];
@@ -631,7 +631,7 @@ module.exports = {
      * @param {GuildDoc} guildStore 
      * @param {UserDoc} guildUserStore 
      * */
-    async onmessage(msg, globals, guildStore, guildUserStore) {
+    async [Events.MessageCreate] (msg, globals, guildStore, guildUserStore) {
         applyContext(globals);
 
         if (!msg.mentions.users.has(client.user.id)) return; // If the bot wasn't pinged
@@ -652,7 +652,7 @@ module.exports = {
             
             // Check if this user is allowed to message again
             if(activeAIRequests.has(msg.author.id)) {
-                // For onmessage, just ignore.
+                // For MessageCreate, just ignore.
                 return;
             }
 

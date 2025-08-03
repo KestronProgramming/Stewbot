@@ -53,7 +53,7 @@ module.exports = {
      * @param {GuildDoc} guildStore 
      * @param {UserDoc} guildUserStore 
      * */
-    async onmessage(msg, context) {
+    async [Events.MessageCreate] (msg, context) {
 		applyContext(context);
 	},
     

@@ -99,7 +99,7 @@ commandsLoadedPromise.then( commandsLoaded => {
         [Events.MessageCreate] : async function(...args) {
             // guildStore, guildUserStore
             const [ readGuildUser, readGuild, readHomeGuild ] = await getReadOnlyDBs(args[0]);
-            return [ ...args, undefined, readGuild, readGuildUser ] // NOTE: undefined here is for `context`, which I might not need to implement
+            return [ ...args, pseudoGlobals, readGuild, readGuildUser ]
         }
     }
 

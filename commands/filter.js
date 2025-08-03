@@ -1,7 +1,7 @@
 // #region CommandBoilerplate
 const Categories = require("./modules/Categories");
 const { Guilds, Users, GuildUsers, guildByID, userByID, guildByObj, userByObj, guildUserByObj } = require("./modules/database.js")
-const { ContextMenuCommandBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
+const { Events, ContextMenuCommandBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
 function applyContext(context={}) {
 	for (key in context) {
 		this[key] = context[key];
@@ -13,7 +13,7 @@ function applyContext(context={}) {
 // That means this module will be run before any others
 // 
 // Impacts:
-//  1. This module's onmessage handler sets a msg.filtered attribute on the msg object
+//  1. This module's MessageCreate handler sets a msg.filtered attribute on the msg object
 //     that can be used elsewhere in the code.
 
 
@@ -375,7 +375,7 @@ module.exports = {
      * @param {GuildDoc} guildStore 
      * @param {UserDoc} guildUserStore 
      * */
-    async onmessage(msg, context, guildStore, guildUserStore) {
+    async [Events.MessageCreate] (msg, context, guildStore, guildUserStore) {
         if (!msg.guild) return;
 		applyContext(context);
 

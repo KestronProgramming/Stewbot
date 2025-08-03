@@ -1,7 +1,7 @@
 // #region CommandBoilerplate
 const Categories = require("./modules/Categories");
 const { Guilds, Users, guildByID, userByID, guildByObj, userByObj } = require("./modules/database.js")
-const { ContextMenuCommandBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
+const { Events, ContextMenuCommandBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
 function applyContext(context={}) {
 	for (key in context) {
 		this[key] = context[key];
@@ -23,7 +23,7 @@ module.exports = {
 	data: {
 		command: null,
 
-		// A priority calling system for handlers like onmessage, only use when required. Smaller = loaded sooner, default = 100
+		// A priority calling system for handlers like MessageCreate, only use when required. Smaller = loaded sooner, default = 100
 		// priority: 100,
 
 		// Not all modules will have help commands, but they can in theory to showcase bot features.
@@ -48,7 +48,7 @@ module.exports = {
      * @param {GuildDoc} guildStore 
      * @param {UserDoc} guildUserStore 
      * */
-    async onmessage(msg, context) {
+    async [Events.MessageCreate] (msg, context) {
 		applyContext(context);
 		// `context` currently does not respect requested globals
 	},
