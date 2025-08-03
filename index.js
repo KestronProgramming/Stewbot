@@ -72,21 +72,68 @@ function getSubscribedCommands(commands, subscription) {
     )
 }
 
-let aiToolsCommands = { }
+//let aiToolsCommands = { } // aiToolsCommands = convertCommandsToTools(commands);  // Work in Progress
 let commands = { }
 let messageListenerModules = [ ];
 let dailyListenerModules   = [ ];
 let buttonListenerModules  = [ ];
 let editListenerModules  = [ ];
 
+// Register listeners
 commandsLoadedPromise.then( commandsLoaded => {
-    commands = commandsLoaded;
+    // This code registers all requested listeners
+    // This method allows any event type to be easily added to a command file
+
+    // Save commands
+    commands = Object.freeze(commandsLoaded);
+
     messageListenerModules = getSubscribedCommands(commands, "onmessage");
     dailyListenerModules = getSubscribedCommands(commands, "daily");
     buttonListenerModules = getSubscribedCommands(commands, "onbutton");
     editListenerModules = getSubscribedCommands(commands, "onedit");
 
-    aiToolsCommands = convertCommandsToTools(commandsLoaded);
+    // Some handlers have extra args injected into them for optimization / ease of use.
+    let argInjectors = {
+        // MessageCreate is a high-traffic handler, we inject database lookups here so that each handler
+        //   doesn't need waste power preforming duplicate lookups.
+        [Events.MessageCreate] : async function(...args) {
+            // guildStore, guildUserStore
+            const [ readGuildUser, readGuild, readHomeGuild ] = await getReadOnlyDBs(args[0]);
+            return [ ...args, undefined, readGuild, readGuildUser ] // NOTE: undefined here is for `context`, which I might not need to implement
+        }
+    }
+
+    let commandsArray = Object.values(commands)
+        .sort((a, b) => {
+            if (a.priority === undefined) return 1;
+            if (b.priority === undefined) return -1;
+            return a.priority - b.priority;
+        });  // Lower priority = executed first.
+
+    for (const listenerName of Object.values(Events)) { // For every type of discord event
+
+        const listeningCommands = Object.freeze(
+            commandsArray.filter(command => command[listenerName]) // Get? listening functions
+        )
+
+        if (!listeningCommands.length) continue;
+
+        client.on(listenerName, async (...args) => {
+            
+            // Modify args if needed for this type
+            const argInjector = argInjectors[listenerName];
+            if (argInjector) args = await argInjector(...args);
+
+            for (const command of listeningCommands) {
+                let handler = command[listenerName];
+
+                // If a specific execution order is requested, wait for it to finish.
+                // Some commands modify the input objects to send data to other handlers down the line.
+                if ("priority" in command) await handler(...args); 
+                else handler(...args);
+            }
+        })
+    }
 });
 
 // Utility functions needed for processing some data blocks 
