@@ -1,7 +1,7 @@
 // #region CommandBoilerplate
 const Categories = require("./modules/Categories");
 const { Guilds, Users, guildByID, userByID, guildByObj, userByObj } = require("./modules/database.js")
-const { ContextMenuCommandBuilder, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
+const { Events, ContextMenuCommandBuilder, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
 function applyContext(context={}) {
 	for (key in context) {
 		this[key] = context[key];
@@ -105,6 +105,7 @@ function isModuleBlocked(listener, guild, globalGuild, isAdmin) {
 
 module.exports = {
     isModuleBlocked,
+    // ExitHandlerStackCode,
 
 	data: {
 		// Slash command data
@@ -133,6 +134,20 @@ module.exports = {
             block_module_message: "I will be unable to unblock this command if you block it, therefore I cannot block this command."
         },		
 	},
+
+    // The event dispatcher calls these before dispatching events
+    // block_module uses these to block disabled events.
+    eventInterceptors: {
+        [Events.MessageCreate]: (handler, ...args) => {
+            const [ msg, context, guildStore, guildUserStore ] = args;
+            const [ blocked, _ ] = isModuleBlocked(
+                [handler.name, handler], 
+                guildStore
+            ) // TODO: pass global guild...
+
+            return blocked;
+        }
+    },
 
     /** @param {import('discord.js').ChatInputCommandInteraction} cmd */
     async execute(cmd, context) {

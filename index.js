@@ -110,12 +110,16 @@ commandsLoadedPromise.then( commandsLoaded => {
             return a.priority - b.priority;
         });  // Lower priority = executed first.
 
+    // Interceptors are used particularly by block_module
+    let interceptors = commandsArray
+        .map(command => command.eventInterceptors)
+        .filter(Boolean);
+
     for (const listenerName of Object.values(Events)) { // For every type of discord event
 
         const listeningCommands = Object.freeze(
-            commandsArray.filter(command => command[listenerName]) // Get? listening functions
+            commandsArray.filter(command => command[listenerName]) // Get listening functions
         )
-
         if (!listeningCommands.length) continue;
 
         client.on(listenerName, async (...args) => {
@@ -127,10 +131,15 @@ commandsLoadedPromise.then( commandsLoaded => {
             for (const command of listeningCommands) {
                 let handler = command[listenerName];
 
+                // Run interceptors (block_module)
+                for (const interceptor of interceptors) {
+                    if (interceptor[listenerName] && interceptor[listenerName](command, ...args)) return;
+                };
+                
+                let promise = handler(...args);
+                
                 // If a specific execution order is requested, wait for it to finish.
-                // Some commands modify the input objects to send data to other handlers down the line.
-                if ("priority" in command) await handler(...args); 
-                else handler(...args);
+                if ("priority" in command) await promise;
             }
         })
     }
