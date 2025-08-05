@@ -9,7 +9,7 @@ const envs = require('./env.json');
 Object.keys(envs).forEach(key => process.env[key] = envs[key] );
 if (process.env.beta == 'false') delete process.env.beta; // ENVs are all strings, so make it falsy if it's "false"
 
-console.beta = (...args) => process.env.beta && console.log(...args)
+console.beta = (...args) => process.env.beta && console.log(...args);
 
 global.config = require("./data/config.json");
 console.beta("Importing discord");
@@ -74,13 +74,15 @@ function getSubscribedCommands(commands, subscription) {
 
 //let aiToolsCommands = { } // aiToolsCommands = convertCommandsToTools(commands);  // Work in Progress
 let commands = { }
-let dailyListenerModules   = [ ];
-let buttonListenerModules  = [ ];
+let dailyListenerModules   = { };
+let buttonListenerModules  = { };
 
 // Register listeners
 commandsLoadedPromise.then( commandsLoaded => {
     // This code registers all requested listeners
     // This method allows any event type to be easily added to a command file
+
+    // The functions `onbutton` and `autocomplete` are both still available for convenience.
 
     // Save commands
     commands = Object.freeze(commandsLoaded);
@@ -111,15 +113,15 @@ commandsLoadedPromise.then( commandsLoaded => {
             return a.priority - b.priority;
         });  // Lower priority = executed first.
 
-    // Interceptors are used particularly by block_module
+    // Interceptors are used to stop other modules from handling events, particularly by block_module
     let interceptors = commandsArray
         .map(command => command.eventInterceptors)
         .filter(Boolean);
 
-    // Tune global handling = most of this is for backwards code compatibility.
+    // Tune global handling - most of this is for backwards code compatibility.
     interceptors.push({
         // Ignore bots on MessageCreate
-        [Events.MessageCreate]: (msg) => (msg.author.id === client.user.id)
+        [Events.MessageCreate]: (handler, ...args) => (args[0].author.id === client.user?.id)
     })
 
     for (const listenerName of Object.values(Events)) { // For every type of discord event
@@ -152,11 +154,6 @@ commandsLoadedPromise.then( commandsLoaded => {
     }
 });
 
-// Utility functions needed for processing some data blocks 
-function hash(obj) {
-    const input = typeof obj === 'string' ? obj : JSON.stringify(obj);
-    return crypto.createHash('md5').update(input).digest('hex');
-}
 
 // Log in with all intents expect guild presence
 const client = new Client({
@@ -166,29 +163,35 @@ const client = new Client({
     partials: Object.keys(Partials).map(a => Partials[a])
 });
 global.client = client;
-global.notify = function(what, useWebhook=false) {
+const notify = global.notify = async function (what, useWebhook = false) {
+    //Notify the staff of the Kestron Support server
+
     console.beta(what);
     try {
         if (useWebhook) {
-            fetch(process.env.logWebhook, {
+            fetch(String(process.env.logWebhook), {
                 'method': 'POST',
                 'headers': {
                     "Content-Type": "application/json"
                 },
                 'body': JSON.stringify({
-                    'username': "Stewbot Notify Webhook", 
+                    'username': "Stewbot Notify Webhook",
                     "content": limitLength(what)
                 })
             })
         }
-        else client.channels.cache.get(process.env.beta ? config.betaNoticeChannel : config.noticeChannel).send(limitLength(what));//Notify the staff of the Kestron Support server
-    }catch(e){
+        else {
+            let channelId = process.env.beta ? config.betaNoticeChannel : config.noticeChannel;
+            const channel = await client.channels.fetch(channelId);
+            channel?.send(limitLength(what));
+        }
+    } catch (e) {
         console.beta("Couldn't send notify()")
     }
 }
 
 // Other data
-var uptime=0;
+var uptime = 0; // Bot uptime in seconds?
 const { guildByID, guildByObj, userByID, userByObj, Guilds, Users, GuildUsers, ConfigDB, guildUserByID, guildUserByObj } = require('./commands/modules/database');
 const NodeCache = require('node-cache');
 
@@ -676,7 +679,7 @@ async function checkPersistentDeletion(guildId, channelId, messageId){
 
 //#region Listeners
 //Actionable events
-client.once("ready",async ()=>{
+client.once(Events.ClientReady,async ()=>{
     killMaintenanceBot();
     
     // Once backup.js fully imports, start the backup thread
@@ -690,19 +693,23 @@ client.once("ready",async ()=>{
 
     // Determine uptime
     const bootedAtTimestamp = `<t:${Math.round(Date.now()/1000)}:R>`
+
     const config = await ConfigDB.findOne({});
-    const rebootIntentional = Date.now() - config.restartedAt < ms("30s");
-    console.log(config.restartedAt - Date.now());
-    if (rebootIntentional) {
-        // The reboot was intentional
-        uptime = Math.round(config.bootedAt/1000);
-        bootMOTD += `Bot resumed after restart ${bootedAtTimestamp}`;
-    } else {
-        // The reboot was accidental, so reset our bootedAt time
-        config.bootedAt = Date.now();
-        uptime = Math.round(Date.now()/1000);
-        bootMOTD += `Started at ${bootedAtTimestamp}`;
-        config.save();
+
+    if (config) {
+        const rebootIntentional = Date.now() - config.restartedAt < ms("30s");
+        console.log(config.restartedAt - Date.now());
+        if (rebootIntentional) {
+            // The reboot was intentional
+            uptime = Math.round(config/1000);
+            bootMOTD += `Bot resumed after restart ${bootedAtTimestamp}`;
+        } else {
+            // The reboot was accidental, so reset our bootedAt time
+            config.bootedAt = Date.now();
+            uptime = Math.round(Date.now()/1000);
+            bootMOTD += `Started at ${bootedAtTimestamp}`;
+            config.save();
+        }
     }
 
     // Add boot time
@@ -855,7 +862,7 @@ client.on(Events.MessageCreate ,async msg => {
     }
 });
 
-client.on("interactionCreate", async cmd=>{
+client.on(Events.InteractionCreate, async cmd=>{
     const asyncTasks = [ ]; // Any non-awaited functions go here to fully known when this command is done executing for metrics
     const intStartTime = Date.now();
     

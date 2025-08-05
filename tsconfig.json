@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": true,
+    "noEmit": true,
+    "strict": false,
+  },
+  "include": [
+    "Scripts/**/*.js",
+    "commands/**/*.js",
+  ],
+  "exclude": [
+    "node_modules"
+  ]
+}

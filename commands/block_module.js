@@ -135,6 +135,8 @@ module.exports = {
         },		
 	},
 
+    priority: -1,
+
     // The event dispatcher calls these before dispatching events
     // block_module uses these to block disabled events.
     eventInterceptors: {

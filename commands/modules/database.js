@@ -25,7 +25,7 @@
 
 const { OAuth2Guild, Guild, User } = require('discord.js');
 const mongoose = require("mongoose");
-const mongooseLeanVirtuals = require('mongoose-lean-virtuals');
+const { mongooseLeanVirtuals } = require('mongoose-lean-virtuals');
 const mongooseLeanDefaults = require('mongoose-lean-defaults').default;
 mongoose.plugin(mongooseLeanDefaults)
 mongoose.plugin(mongooseLeanVirtuals)
@@ -349,7 +349,6 @@ ConfigDB.findOne().then(async (config) => {
  * @typedef {import("mongoose").HydratedDocument<import("mongoose").InferSchemaType<typeof userSchema>>} UserDoc
  * @typedef {import("mongoose").HydratedDocument<import("mongoose").InferSchemaType<typeof guildUserSchema>>} GuildUserDoc
  */
-
 //#endregion
 
 //#region Functions
@@ -550,7 +549,7 @@ function onConnect() {
         dropIndexes(Users);
     };
 
-    mongoose.connection.db.setProfilingLevel(
+    mongoose.connection.db?.setProfilingLevel(
         process.env.beta
             ? "all"
             : "slow_only"

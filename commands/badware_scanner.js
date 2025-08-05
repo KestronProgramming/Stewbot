@@ -250,7 +250,7 @@ async function getBufferFromFetch(res) {
 }
 
 module.exports = {
-    updateBlocklists, // This function will be called in the dailies
+    updateBlocklists: updateBlocklists, // This function will be called in the dailies
 
 	data: {
 		command: new SlashCommandBuilder().setName("badware_scanner").setDescription("Configure the Badware Scanner for this server")
