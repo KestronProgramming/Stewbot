@@ -1,7 +1,7 @@
 // #region CommandBoilerplate
 const Categories = require("./modules/Categories");
 const { Guilds, Users, guildByID, userByID, guildByObj, userByObj } = require("./modules/database.js")
-const { ContextMenuCommandBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
+const { Events, ContextMenuCommandBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
 function applyContext(context={}) {
 	for (key in context) {
 		this[key] = context[key];
@@ -79,5 +79,44 @@ module.exports = {
 		await guild.save();
 
 		cmd.followUp(`Configured log events.${disclaimers.map(d=>`\n\n${d}`).join("")}`);
+	},
+
+	async [Events.MessageDelete](msg, guildStore) {
+		if(msg.guild?.id===undefined) return;
+		
+		if (guildStore.logs.mod_actions && guildStore.logs.active) {
+			if (msg.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ViewAuditLog)) {
+
+				// Wait for audit log to propagate
+				setTimeout(async () => {
+					const fetchedLogs = await msg.guild.fetchAuditLogs({
+						type: AuditLogEvent.MessageDelete,
+						limit: 1,
+					});
+					const firstEntry = fetchedLogs.entries.first();
+					if (!firstEntry) return;
+					firstEntry.timestamp = BigInt("0b" + BigInt(firstEntry.id).toString(2).slice(0, 39)) + BigInt(1420070400000);
+					if (firstEntry.target.id === msg?.author?.id && BigInt(Date.now()) - firstEntry.timestamp < BigInt(60000)) {
+						var c = msg.guild.channels.cache.get(guildStore.logs.channel);
+						if (c?.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)) {
+							c.send({ content: limitLength(`**Message from <@${firstEntry.target.id}> Deleted by <@${firstEntry.executor.id}> in <#${msg.channel.id}>**\n\n${msg.content.length > 0 ? `\`\`\`\n${msg.content}\`\`\`` : ""}${msg.attachments?.size > 0 ? `There were **${msg.attachments.size}** attachments on this message.` : ""}`), allowedMentions: { parse: [] } });
+						}
+						else {
+							await Guilds.findOne({ id: guildStore.id }, {
+								$set: { "logs.active": false }
+							})
+						}
+					}
+				}, 2000);
+
+			}
+			else {
+				// We can't see the audit log, so turn this off
+				await Guilds.findOne({ id: guildStore.id }, {
+					$set: { "logs.mod_actions": false }
+				})
+				// TODO: make a post noting this
+			}
+		}
 	}
 };

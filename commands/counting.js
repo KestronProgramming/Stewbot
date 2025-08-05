@@ -448,5 +448,24 @@ module.exports = {
                 }
             }
         }
+    },
+
+    async [Events.MessageDelete](msg, guildStore) {
+        // Resend if the latest counting number was deleted
+        if (guildStore.counting.active && guildStore.counting.channel === msg.channel.id) {
+
+            // var num=msg.content?.match(/^(\d|,)+(?:\b)/i);
+            var num = msg.content ? processForNumber(msg.content) : null;
+
+            if (num !== null && num !== undefined) {
+
+                // If the deleted number is the current number, sent it ourselves
+                if (+num === guildStore.counting.nextNum - 1) {
+                    msg.channel.send(String(num))
+                        .then(m => m.react("✅"));
+                }
+            }
+        }
+
     }
 };

@@ -836,52 +836,6 @@ client.on(Events.InteractionCreate, async cmd=>{
     queueCommandMetric(cmd.commandName, intEndTime - intStartTime);
 });
 
-client.on("messageDelete",async msg=>{
-    if(msg.guild?.id===undefined) return;
-
-    const guildStore = await guildByObj(msg.guild);
-
-    // Resend if the latest counting number was deleted
-    if(guildStore.counting.active&&guildStore.counting.channel===msg.channel.id){
-        // var num=msg.content?.match(/^(\d|,)+(?:\b)/i);
-        var num = msg.content ? processForNumber(msg.content) : null;
-        if(num!==null&&num!==undefined){
-            if(+num===guildStore.counting.nextNum-1){
-                msg.channel.send(String(num)).then(m=>m.react("✅"));
-            }
-        }
-    }
-
-    // Logs stuff
-    if(guildStore.logs.mod_actions&&guildStore.logs.active){
-        if(msg.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ViewAuditLog)){
-            setTimeout(async ()=>{
-                const fetchedLogs = await msg.guild.fetchAuditLogs({
-                    type: AuditLogEvent.MessageDelete,
-                    limit: 1,
-                });
-                const firstEntry = fetchedLogs.entries.first();
-                if(!firstEntry) return;
-                firstEntry.timestamp=BigInt("0b"+BigInt(firstEntry.id).toString(2).slice(0,39))+BigInt(1420070400000);
-                if(firstEntry.target.id===msg?.author?.id&&BigInt(Date.now())-firstEntry.timestamp<BigInt(60000)){
-                    var c=msg.guild.channels.cache.get(guildStore.logs.channel);
-                    if(c?.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
-                        c.send({content:limitLength(`**Message from <@${firstEntry.target.id}> Deleted by <@${firstEntry.executor.id}> in <#${msg.channel.id}>**\n\n${msg.content.length>0?`\`\`\`\n${msg.content}\`\`\``:""}${msg.attachments?.size>0?`There were **${msg.attachments.size}** attachments on this message.`:""}`),allowedMentions:{parse:[]}});
-                    }
-                    else{
-                        guildStore.logs.active=false;
-                    }
-                }
-            },2000);
-        }
-        else{
-            guildStore.logs.mod_actions=false;
-        }
-    }
-
-    guildStore.save();
-});
-
 client.on("guildMemberAdd",async member => {
     // Mark this user as in the server, if the user object exists already
     await GuildUsers.updateOne(
