@@ -108,6 +108,11 @@ commandsLoadedPromise.then( commandsLoaded => {
             return [ ...args, readGuild, readGuildUser ]
         },
 
+        [Events.MessageDelete]: async (...args) => {
+            const [ readGuildUser, readGuild, readHomeGuild ] = await getReadOnlyDBs(args[0]);
+            return [ ...args, readGuild, readGuildUser ]
+        },
+
         [Events.MessageReactionAdd]: async (...args) => {
             let [ react, user ] = args;
 
@@ -122,7 +127,7 @@ commandsLoadedPromise.then( commandsLoaded => {
                 userId: args[1].id
             });
             return [ ...args, readGuild, readGuildUser ]
-        }
+        },
     }
 
     let commandsArray = Object.values(commands)
@@ -540,19 +545,6 @@ async function sendWelcome(guild) {
     };
 }
 
-async function checkPersistentDeletion(guildId, channelId, messageId){
-    // If persistence is not active, or a new persistence message was posted, it was stewbot who deleted it.
-    const guildStore = await guildByID(guildId);
-    if(!guildId.persistence[channelId].active || guildId.persistence[channelId].lastPost!==messageId){
-        return;
-    }
-    // If stewbot did not delete it, deactivate it.
-    guildStore.persistence[channelId].active=false;
-    await guildStore.save();
-
-    channelId=client.channels.cache.get(channelId);
-    if(channelId.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)) channelId.send(`I have detected that a moderator deleted the persistent message set for this channel, and as such I have deactivated it. To reactivate it, a moderator can run ${cmds.set_persistent_message.mention}.`);
-}
 //#endregion Functions
 
 //#region Listeners
@@ -848,54 +840,6 @@ client.on("messageDelete",async msg=>{
     if(msg.guild?.id===undefined) return;
 
     const guildStore = await guildByObj(msg.guild);
-
-    if(guildStore.persistence?.[msg.channel.id]?.active&&guildStore.persistence?.[msg.channel.id]?.lastPost===msg.id){
-        setTimeout(()=>{checkPersistentDeletion(msg.guild.id,msg.channel.id,msg.id)},1500);
-    }
-
-    // Emojiboard deleted handlers
-    const postToRedact = await Guilds.aggregate([
-        // Find which emojiboard contains this posted msg ID
-        {
-            $project: {
-                emojiboards: {
-                    $objectToArray: "$emojiboards"
-                }
-            }
-        },
-        {
-            $unwind: "$emojiboards"
-        },
-        {
-            $match: {
-                [`emojiboards.v.posted.${msg.id}`]: {
-                    $exists: true
-                }
-            }
-        },
-        {
-            $project: {
-                emoji: "$emojiboards.k",
-                board: "$emojiboards.v"
-            }
-        }
-    ]) 
-    postToRedact.forEach(async ({emoji, board}) => {
-        if(emoji) {
-            try {
-                if (board.posted[msg.id].startsWith("webhook")&&board.channel?.permissionsFor(client.user.id).has(PermissionFlagsBits.ManageMessages)){
-                    var c=await client.channels.cache.get(board.channel).messages.fetch(board.posted[msg.id].split("webhook")[1]);
-                    c.delete();
-                }
-                else if(!board.posted[msg.id].startsWith("webhook")){
-                    var c=await client.channels.cache.get(board.channel).messages.fetch(board.posted[msg.id]);
-                    c.edit({content:`I'm sorry, but it looks like this post by **${msg.author?.globalName||msg.author?.username}** was deleted.`,embeds:[],files:[]});
-                }
-            } catch(e) {
-                // Cache issues, nothing we can do
-            }
-        }
-    })
 
     // Resend if the latest counting number was deleted
     if(guildStore.counting.active&&guildStore.counting.channel===msg.channel.id){

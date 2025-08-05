@@ -265,6 +265,59 @@ module.exports = {
 		if (react.message.guildId === null) return;
 
         // OPTIMIZE: we can save a DB query on reactions if we make this use the passed readonly guild.
-		doEmojiboardReaction(react);
-	}
+        doEmojiboardReaction(react);
+    },
+
+    async [Events.MessageDelete](msg, guildStore) {
+        // Emojiboard deleted handlers
+        const postToRedact = await Guilds.aggregate([
+            // Find which emojiboard contains this posted msg ID
+            {
+                $project: {
+                    emojiboards: {
+                        $objectToArray: "$emojiboards"
+                    }
+                }
+            },
+            {
+                $unwind: "$emojiboards"
+            },
+            {
+                $match: {
+                    [`emojiboards.v.posted.${msg.id}`]: {
+                        $exists: true
+                    }
+                }
+            },
+            {
+                $project: {
+                    emoji: "$emojiboards.k",
+                    board: "$emojiboards.v"
+                }
+            }
+        ])
+
+        postToRedact.forEach(async ({ emoji, board }) => {
+            if (emoji) {
+                try {
+                    const channel = await client.channels.fetch(board.channel);
+                    const messageId = board.posted[msg.id].replace("webhook", ""); // Webhook posts are formatted like `webhook${id}`
+                    const messageToDelete = await channel.messages.fetch(messageId);
+                    
+                    if (messageToDelete.editable) {
+                        await messageToDelete.edit({ content: `I'm sorry, but it looks like this post by **${msg.author?.globalName || msg.author?.username}** was deleted.`, embeds: [], files: [] });
+                        return;
+                    }
+
+                    // Otherwise delete it (webhooks for example)
+                    else if (messageToDelete.deletable) {
+                        await messageToDelete.delete()
+                        return;
+                    }
+                } catch (e) {
+                    // Cache issues, nothing we can do
+                }
+            }
+        })
+    }
 };

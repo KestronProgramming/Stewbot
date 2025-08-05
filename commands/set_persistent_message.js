@@ -14,6 +14,32 @@ function applyContext(context={}) {
  */
 // #endregion CommandBoilerplate
 
+async function checkPersistentDeletion(guildStore, channelId, messageId) {
+    // If persistence is not active, or a new persistence message was posted, it was stewbot who deleted it.
+
+    if (!guildStore?.persistence[channelId]?.active) return;
+
+    // Fetch the latest `lastPost`
+    const lastPost = (
+        await Guilds.findOne({ id: guildStore.id })
+            .distinct(`persistence.${channelId}.lastPost`)
+    )[0]
+
+    if (lastPost !== messageId) {
+        return;
+    }
+    // If stewbot did not delete it, deactivate it.
+    const guild = await Guilds.findOne({ id: guildStore.id });
+    let persistChannel = guild.persistence.get(channelId);
+    persistChannel.active = false;
+    await guild.save();
+
+    channelId = client.channels.cache.get(channelId);
+    if (channelId.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)) {
+        channelId.send(`I have detected that a moderator deleted the persistent message set for this channel, and as such I have deactivated it. To reactivate it, a moderator can run ${cmds.set_persistent_message.mention}.`);
+    }
+}
+
 module.exports = {
 	data: {
 		// Slash command data
@@ -163,6 +189,14 @@ module.exports = {
 
             // Maybe save the new ID, then delete the old one? Might work better in high-traffic servers. Also timeout for 3 seconds before reposting
             // await guild.save();
+        }
+    },
+
+    async [Events.MessageDelete] (msg, guildStore) {
+        if(msg.guild?.id===undefined) return;
+
+        if (guildStore.persistence?.[msg.channel.id]?.active && guildStore.persistence?.[msg.channel.id]?.lastPost === msg.id) {
+            setTimeout(() => { checkPersistentDeletion(guildStore, msg.channel.id, msg.id) }, 1500);
         }
     }
 };
