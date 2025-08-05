@@ -434,7 +434,9 @@ module.exports = {
         }
     },
 
-    async onedit(msgO, msg, readGuild, guildUserStore) {
+    async [Events.MessageUpdate] (msgO, msg, readGuild, guildUserStore) {
+        if(msg.guild?.id===undefined || client.user.id===msg.author?.id) return; // Ignore self and DMs
+
         if (!readGuild?.counting?.active) return;
 
         // Counting edit handlers

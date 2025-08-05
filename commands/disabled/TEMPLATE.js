@@ -86,7 +86,7 @@ module.exports = {
 	 * @param {import('discord.js').PartialMessage | import('discord.js').Message} msgO
 	 * @param {import('discord.js').PartialMessage | import('discord.js').Message} msg
 	 */
-    async onedit(msgO, msg, readGuild, guildUserStore) {
+    async [Events.MessageUpdate] (msgO, msg, readGuild, guildUserStore) {
 		applyContext(context);
 		// `context` currently does not respect requested globals
 

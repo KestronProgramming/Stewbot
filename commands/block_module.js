@@ -146,6 +146,16 @@ module.exports = {
             ) // TODO: pass global guild...
 
             return blocked;
+        },
+
+        [Events.MessageUpdate]: (handler, ...args) => {
+            const [ msgO, msg, guildStore, guildUserStore ] = args;
+            const [ blocked, _ ] = isModuleBlocked(
+                [handler.name, handler], 
+                guildStore
+            ) // TODO: pass global guild...
+
+            return blocked;
         }
     },
 

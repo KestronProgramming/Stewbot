@@ -478,7 +478,8 @@ module.exports = {
         msg.filtered = messageFiltered;
     },
 
-    async onedit(msgO, msg, readGuild, readGuildUser) {
+    async [Events.MessageUpdate] (msgO, msg, readGuild, readGuildUser) {
+        if (msg.guild?.id === undefined || client.user.id === msg.author?.id) return; // Ignore self and DMs
         if (!readGuild?.filter?.active) return;
 
         // Filter edit handler

@@ -74,10 +74,8 @@ function getSubscribedCommands(commands, subscription) {
 
 //let aiToolsCommands = { } // aiToolsCommands = convertCommandsToTools(commands);  // Work in Progress
 let commands = { }
-let messageListenerModules = [ ];
 let dailyListenerModules   = [ ];
 let buttonListenerModules  = [ ];
-let editListenerModules  = [ ];
 
 // Register listeners
 commandsLoadedPromise.then( commandsLoaded => {
@@ -87,19 +85,22 @@ commandsLoadedPromise.then( commandsLoaded => {
     // Save commands
     commands = Object.freeze(commandsLoaded);
 
-    messageListenerModules = getSubscribedCommands(commands, "onmessage");
+    // Load some custom listener functions
     dailyListenerModules = getSubscribedCommands(commands, "daily");
     buttonListenerModules = getSubscribedCommands(commands, "onbutton");
-    editListenerModules = getSubscribedCommands(commands, "onedit");
 
     // Some handlers have extra args injected into them for optimization / ease of use.
     let argInjectors = {
         // MessageCreate is a high-traffic handler, we inject database lookups here so that each handler
         //   doesn't need waste power preforming duplicate lookups.
-        [Events.MessageCreate] : async function(...args) {
-            // guildStore, guildUserStore
+        [Events.MessageCreate]: async (...args) => {
             const [ readGuildUser, readGuild, readHomeGuild ] = await getReadOnlyDBs(args[0]);
             return [ ...args, pseudoGlobals, readGuild, readGuildUser ]
+        },
+
+        [Events.MessageUpdate]: async (...args) => {
+            const [ readGuildUser, readGuild, readHomeGuild ] = await getReadOnlyDBs(args[0]);
+            return [ ...args, readGuild, readGuildUser ]
         }
     }
 
@@ -114,6 +115,12 @@ commandsLoadedPromise.then( commandsLoaded => {
     let interceptors = commandsArray
         .map(command => command.eventInterceptors)
         .filter(Boolean);
+
+    // Tune global handling = most of this is for backwards code compatibility.
+    interceptors.push({
+        // Ignore bots on MessageCreate
+        [Events.MessageCreate]: (msg) => (msg.author.id === client.user.id)
+    })
 
     for (const listenerName of Object.values(Events)) { // For every type of discord event
 
@@ -739,11 +746,8 @@ client.once("ready",async ()=>{
 });
 
 
-client.on("messageCreate",async msg => {
-    if(msg.author.id===client.user.id) return;
-
-    // Read-only stodge objects
-    const [ readGuildUser, readGuild, readHomeGuild ] = await getReadOnlyDBs(msg);
+client.on(Events.MessageCreate ,async msg => {
+    if (msg.author.id === client.user.id) return;
 
     msg.guildId=msg.guildId||"0";
 
@@ -756,12 +760,6 @@ client.on("messageCreate",async msg => {
         });
     }
     
-    // Dispatch to listening modules
-    for (const command of Object.entries(messageListenerModules)) {
-        const [ blocked, _ ] = isModuleBlocked(command, readGuild, readHomeGuild)
-        if (!blocked) command[1].onmessage(msg, pseudoGlobals, readGuild, readGuildUser);
-    }
-
     // The sudo handler uses so many globals, it can stay in index.js for now
     if(msg.content.startsWith("~sudo ")&&!process.env.beta||msg.content.startsWith("~betaSudo ")&&process.env.beta){
         const devadminChannel = await client.channels.fetch(config.commandChannel);
@@ -1091,19 +1089,6 @@ client.on("messageDelete",async msg=>{
     }
 
     guildStore.save();
-});
-
-client.on("messageUpdate",async (msgO,msg)=>{
-    // Currently there's no use for messageUpdate in DMs, only in servers. If this ever changes, remove the guildId check and add more further down
-    if(msg.guild?.id===undefined||client.user.id===msg.author?.id) return;
-    
-    const [ readGuildUser, readGuild, readHomeGuild ] = await getReadOnlyDBs(msg);
-
-    // Dispatch to listening modules
-    for (const command of Object.entries(editListenerModules)) {
-        const [ blocked, _ ] = isModuleBlocked(command, readGuild, readHomeGuild)
-        if (!blocked) command[1].onedit(msgO, msg, readGuild, readGuildUser);
-    }
 });
 
 client.on("guildMemberAdd",async member => {
