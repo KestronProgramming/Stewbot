@@ -1,7 +1,7 @@
 // #region CommandBoilerplate
 const Categories = require("./modules/Categories");
 const { Guilds, Users, guildByID, userByID, guildByObj, userByObj } = require("./modules/database.js")
-const { ContextMenuCommandBuilder, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
+const { Events, ContextMenuCommandBuilder, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
 function applyContext(context={}) {
 	for (key in context) {
 		this[key] = context[key];
@@ -13,6 +13,37 @@ function applyContext(context={}) {
  * @typedef {import("./modules/database").UserDoc} UserDoc
  */
 // #endregion CommandBoilerplate
+
+async function checkTagUpdate(packet) {
+    if (packet.t !== 'GUILD_MEMBER_UPDATE') return;
+
+    // Monitor guild tags to apply a given role to all users who apply the tag. This is not yet supported by discord.js so we have to do it ourself
+    const guildFromPacket = packet.d.guild_id;
+    const clan = packet?.d?.user?.clan || packet?.d?.user?.primary_guild;
+    const tagInUse = clan?.identity_guild_id;
+    const isGuildsTag = guildFromPacket == tagInUse;
+
+    const guild = await guildByID(guildFromPacket);
+    if (guild.guildTagRole) {
+        // If the guild is set to apply tags
+        
+        const discordGuild = await client.guilds.fetch(guildFromPacket).catch(e => null);
+        if (discordGuild) {
+            try {
+                const member = await discordGuild.members.fetch(packet.d.user.id);
+                const role = discordGuild.roles.cache.get(guild.guildTagRole);
+                const memberHasRole = member.roles.cache.get(role.id);
+                if (member && role) {
+                    if (isGuildsTag && !memberHasRole) 
+                        await member.roles.add(role, "Applied for adopting Guild Tag");
+                    
+                    if (!isGuildsTag && memberHasRole)
+                        await member.roles.remove(role, "Removed for removing Guild Tag");
+                }
+            } catch (e) { console.log(e); }
+        }
+    }
+}
 
 module.exports = {
 	data: {
@@ -86,5 +117,9 @@ You can disable the feature using the \`active\` flag.`,
 		}
 
 		cmd.followUp(response.join("\n"));
+	},
+
+	async [Events.Raw] (packet) {
+		checkTagUpdate(packet);
 	},
 };
