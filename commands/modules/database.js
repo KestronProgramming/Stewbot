@@ -142,6 +142,8 @@ let emojiboardSchema = new mongoose.Schema({
     channel: String,
     posted:  { type: Map, of: String, default: {} }, // A record of the original message ID for us to delete 
     posters: { type: Map, of: Number, default: {} }, // List of poster IDs mapped to how many posts they have
+    isMute: { type: Boolean, default: false },
+    length: { type: Number } // Length of timeout from groupmute "emojiboard"
 })
 
 let warningSchema = new mongoose.Schema({
@@ -345,9 +347,14 @@ ConfigDB.findOne().then(async (config) => {
 
 //#region Types
 /**
- * @typedef {import("mongoose").HydratedDocument<import("mongoose").InferSchemaType<typeof guildSchema>>} GuildDoc
- * @typedef {import("mongoose").HydratedDocument<import("mongoose").InferSchemaType<typeof userSchema>>} UserDoc
- * @typedef {import("mongoose").HydratedDocument<import("mongoose").InferSchemaType<typeof guildUserSchema>>} GuildUserDoc
+ * @typedef {import("mongoose").InferSchemaType<typeof guildSchema>} RawGuildDoc
+ * @typedef {import("mongoose").HydratedDocument<RawGuildDoc>} GuildDoc
+ * 
+ * @typedef {import("mongoose").InferSchemaType<typeof userSchema>} RawUserDoc
+ * @typedef {import("mongoose").HydratedDocument<RawUserDoc>} UserDoc
+ * 
+ * @typedef {import("mongoose").InferSchemaType<typeof guildUserSchema>} RawGuildUserDoc
+ * @typedef {import("mongoose").HydratedDocument<RawGuildUserDoc>} GuildUserDoc
  */
 //#endregion
 

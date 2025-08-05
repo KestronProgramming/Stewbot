@@ -14,6 +14,8 @@ function applyContext(context = {}) {
  */
 // #endregion CommandBoilerplate
 
+const { getEmojiFromMessage, parseEmoji } = require('../util');
+
 const { getLvl } = require("./rank.js")
 
 module.exports = {
@@ -40,7 +42,7 @@ module.exports = {
 
         extra: { "contexts": [0, 1, 2], "integration_types": [0, 1] },
 
-        requiredGlobals: ["getEmojiFromMessage"],
+        requiredGlobals: [],
 
         help: {
             helpCategories: [Categories.Information, Categories.Entertainment],

@@ -34,8 +34,11 @@ initInflux()
 // Typedefs for DB
 /**
  * @typedef {import("./commands/modules/database").GuildDoc} GuildDoc
+ * @typedef {import("./commands/modules/database").RawGuildDoc} RawGuildDoc
  * @typedef {import("./commands/modules/database").GuildUserDoc} GuildUserDoc
+ * @typedef {import("./commands/modules/database").RawGuildUserDoc} RawGuildUserDoc
  * @typedef {import("./commands/modules/database").UserDoc} UserDoc
+ * @typedef {import("./commands/modules/database").RawUserDoc} RawUserDoc
  */
 
 const DBConnectPromise = new Promise((resolve, reject) => {
@@ -102,6 +105,22 @@ commandsLoadedPromise.then( commandsLoaded => {
 
         [Events.MessageUpdate]: async (...args) => {
             const [ readGuildUser, readGuild, readHomeGuild ] = await getReadOnlyDBs(args[0]);
+            return [ ...args, readGuild, readGuildUser ]
+        },
+
+        [Events.MessageReactionAdd]: async (...args) => {
+            let [ react, user ] = args;
+
+            // Resolve partials so we always have full data
+            await Promise.all([
+                react.partial ? react.fetch() : null,
+                react.message?.partial ? react.message.fetch().catch(e => null) : null
+            ]);
+
+            const [readGuildUser, readGuild, readHomeGuild] = await getReadOnlyDBs({
+                guildId: args[0].message.guild?.id,
+                userId: args[1].id
+            });
             return [ ...args, readGuild, readGuildUser ]
         }
     }
@@ -323,8 +342,11 @@ global.requireServer = function(interaction, error) {
 // Global message guild cache allows us to have less calls to the DB, and invalidate cache when we save DB changes
 const messageDataCache = global.messageDataCache = new NodeCache({ stdTTL: 5, checkperiod: 30 });
 
-// Database handlers for high-traffic events (messageCreate, messageUpdate, TODO_DB: (look into) guild profile changes?)
-/** @returns {[GuildUserDoc, GuildDoc, GuildDoc]} */
+/** 
+ * Database lookup for high-traffic events (messageCreate, messageUpdate, etc) - TODO_DB: (look into) guild profile changes?
+ * @returns {Promise<[RawGuildUserDoc|undefined, RawGuildDoc|undefined, RawGuildDoc|undefined]>} Array of read only DBs.
+ * @param int Either an object with 'guildId' and 'userId' props, or a message object.  
+ * */
 async function getReadOnlyDBs(int, createGuildUser=true) {
     // returns [ readGuildUser, readGuild, readHomeGuild ]
 
@@ -332,19 +354,28 @@ async function getReadOnlyDBs(int, createGuildUser=true) {
     let readGuild;
     let readHomeGuild;
 
-    // Efficiently create, store, and update users
-    if (int.guild) {
-        let authorId = int.author.id;
+    let guildId;
+    let userId;
+    if (int instanceof Message) {
+        guildId = int.guild?.id;
+        userId = int.author?.id;
+    }
+    else if (typeof(int) == "object") {
+        guildId = int.guildId;
+        userId = int.userId || int.authorId;
+    }
 
-        const guildKey = `${int.guild.id}`;
-        const guildUserKey = `${int.guild.id}>${authorId}`;
+    // Efficiently create, store, and update users
+    if (guildId && userId) {
+        const guildKey = `${guildId}`;
+        const guildUserKey = `${guildKey}>${userId}`;
         const homeGuildKey = config.homeServer;
 
         // Run all three DB queries in parallel
         const [cachedGuildUser, cachedGuild, cachedHomeGuild] = await Promise.all([
             // Get guild user
             messageDataCache.get(guildUserKey) || GuildUsers.findOneAndUpdate(
-                { guildId: int.guild.id, userId: authorId },
+                { guildId: guildId, userId: userId },
                 (createGuildUser ? { inServer: true } : { }), // set inServer since we're fetching them
                 { new: true, setDefaultsOnInsert: false, upsert: true }
             ).lean({ virtuals: true }).then(data => {
@@ -354,7 +385,7 @@ async function getReadOnlyDBs(int, createGuildUser=true) {
             
             // Get guild
             messageDataCache.get(guildKey) || Guilds.findOneAndUpdate(
-                { id: int.guild.id },
+                { id: guildId },
                 { },
                 { new: true, upsert: true, setDefaultsOnInsert: true }
             ).lean({ virtuals: true }).then(data => {
@@ -395,159 +426,6 @@ function noPerms(guildId,what){
             guildByID(guildId, { "filter.censor": false })
         break;
     }
-}
-async function doEmojiboardReaction(react) {
-    /**
-    * Handle the information when a user reacts to a message, for emojiboards
-    *
-    * @param {MessageReaction | PartialMessageReaction} react: The reaction that was added
-    * @returns {Promise<void>}
-    */
-
-    if (react.message.guildId == '0') return; // DMs patch
-
-    const emoji = getEmojiFromMessage(
-        react.emoji.requiresColons ?
-            `<:${react.emoji.name}:${react.emoji.id}>` :
-            react.emoji.name
-    );
-
-    const guild = await guildByID(react.message.guildId);
-    const emojiboards = guild.emojiboards;
-
-    // exit if the emojiboard for this emoji is not setup
-    if (!emojiboards.has(emoji)) return;
-
-    const emojiboard = emojiboards.get(emoji);
-    if (!emojiboard.active) return;
-
-    // Exit conditions
-    if (!emojiboard.isMute) {
-        // exit if this message has already been posted
-        if (emojiboard.posted.has(react.message.id)) return;
-
-        // Exit if the message is already an emojiboard post
-        if (react.message.channel.id === emojiboard.channel) return;
-    }
-
-    const messageData = await react.message.channel.messages.fetch(react.message.id);
-    const foundReactions = messageData.reactions.cache.get(react.emoji.id || react.emoji.name);
-    const selfReactions = react.message.reactions.cache.filter(r => r.users.cache.has(react.message.author.id) && r.emoji.name === react.emoji.name)
-
-    // exit if we haven't reached the threshold
-    if ((emojiboard.threshold + selfReactions.size) > foundReactions?.count) {
-        return;
-    }
-
-    if (emojiboard.isMute) {
-        var member = messageData.guild.members.cache.get(messageData.author.id);
-        if (member === null || member === undefined) {
-            member = await messageData.guild.members.fetch(messageData.author.id);
-        }
-        if (member === null || member === undefined) {
-            return;
-        }
-        if (!member.bannable || !messageData.guild.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ModerateMembers) || member.bot || member.permissions.has(PermissionFlagsBits.Administrator)) {
-            return;
-        }
-        try {
-            member.timeout(emojiboard.length, `I was configured with /groupmute_config to do so.`).catch(e => { });
-        }
-        catch (e) { }
-        return;//If it's a groupmute, don't bother with emojiboard stuff.
-    }
-
-    var replyBlip = "";
-    if (messageData.type === 19) {
-        try {
-            var refMessage = await messageData.fetchReference();
-            replyBlip = `_[Reply to **${refMessage.author.username}**: ${refMessage.content.slice(0, 22).replace(/(https?\:\/\/|\n)/ig, "")}${refMessage.content.length > 22 ? "..." : ""}](<https://discord.com/channels/${refMessage.guild.id}/${refMessage.channel.id}/${refMessage.id}>)_`;
-        } catch (e) { }
-    }
-
-    const resp = { files: [] };
-    var i = 0;
-    react.message.attachments.forEach((attached) => {
-        let url = attached.url.toLowerCase();
-        if (i !== 0 || (!url.includes(".jpg") && !url.includes(".png") && !url.includes(".jpeg") && !url.includes(".gif")) || emojiboard.messType === "0") {
-            resp.files.push(attached.url);
-        }
-        i++;
-    });
-
-    if (emojiboard.messType === "0") {
-        resp.content = react.message.content;
-        resp.username = react.message.author.globalName || react.message.author.username;
-        resp.avatarURL = react.message.author.displayAvatarURL();
-        var c = client.channels.cache.get(emojiboard.channel);
-        if (!c.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageWebhooks)) {
-            emojiboard.messType = "2";
-            guild.save();
-            return;
-        }
-        var hook = await c.fetchWebhooks();
-        hook = hook.find(h => h.token);
-        if (hook) {
-            let response = await hook.send(resp);
-            emojiboard.posted.set(react.message.id, `webhook${response.id}`);
-        }
-        else {
-            const hook = await client.channels.cache.get(emojiboard.channel).createWebhook({
-                name: config.name,
-                avatar: config.pfp,
-            });
-            
-            let response = await hook.send(resp);
-            emojiboard.posted.set(react.message.id, `webhook${response.id}`);
-        }
-    }
-    else {
-        const emojiURL = (
-            react.emoji.requiresColons ?
-                (
-                    react.emoji.animated ?
-                        `https://cdn.discordapp.com/emojis/${react.emoji.id}.gif` :
-                        `https://cdn.discordapp.com/emojis/${react.emoji.id}.png`
-                ) :
-                undefined
-        )
-
-        resp.embeds = [new EmbedBuilder()
-            .setColor(0x006400)
-            .setTitle("(Jump to message)")
-            .setURL(`https://www.discord.com/channels/${react.message.guild.id}/${react.message.channel.id}/${react.message.id}`)
-            .setAuthor({
-                name: react.message.author.globalName || react.message.author.username,
-                iconURL: react.message.author.displayAvatarURL(),
-                url: `https://discord.com/users/${react.message.author.id}`
-            })
-            .setDescription(`${replyBlip ? `${replyBlip}\n` : ""}${react.message.content ? react.message.content : "⠀"}`)
-            .setTimestamp(new Date(react.message.createdTimestamp))
-            .setFooter({
-                text: `${!emojiURL ? react.emoji.name + ' ' : ''}${react.message.channel.name}`,
-                iconURL: emojiURL
-            })
-            .setImage(react.message.attachments.first() ? react.message.attachments.first().url : null)
-        ];
-        if (emojiboard.messType === "1") {
-            resp.content = getStarMsg(react.message);
-        }
-        var c = client.channels.cache.get(emojiboard.channel)
-        if (!c.permissionsFor(client.user.id).has(PermissionFlagsBits.ManageWebhooks)) {
-            emojiboard.active = false;
-            guild.save();
-            return;
-        }
-        const d = await c.send(resp);
-        emojiboard.posted.set(react.message.id, d.id);
-    }
-    
-    if (!guild.emojiboards.get(emoji).posters.get(react.message.author.id)) {
-        guild.emojiboards.get(emoji).posters.set(react.message.author.id, 0);
-    }
-
-    guild.emojiboards.get(emoji).posters.set(react.message.author.id, guild.emojiboards.get(emoji).posters.get(react.message.author.id) + 1);
-    guild.save();
 }
 function daily(dontLoop=false){
     if(!dontLoop) setInterval(()=> { daily(true) },60000*60*24);
@@ -964,44 +842,6 @@ client.on(Events.InteractionCreate, async cmd=>{
     const intEndTime = Date.now();
 
     queueCommandMetric(cmd.commandName, intEndTime - intStartTime);
-});
-
-client.on("messageReactionAdd",async (react,user)=>{
-    if(react.message.guildId===null) return;
-
-    // Resolve partials
-    await Promise.all([
-        react.partial ? react.fetch() : null,
-        react.message?.partial ? react.message.fetch().catch(e => null) : null
-    ]);
-
-    const guild = await guildByObj(react.message.guild);
-
-    // Reaction filters
-    if(guild.filter.active&&react.message.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageMessages)){
-        if(await checkDirty(react.message.guild.id,`${react._emoji}`)){
-            react.remove();
-            if(guild.filter.log){
-                var c=client.channels.cache.get(guild.filter.channel);
-                if(c.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
-                    c.send({
-                        content: `I removed a ${react._emoji.id===null?react._emoji.name:`<:${react._emoji.name}:${react._emoji.id}>`} reaction from https://discord.com/channels/${react.message.guild.id}/${react.message.channel.id}/${react.message.id} added by <@${user.id}> due to being in the filter.`,
-                        allowedMentions: []
-                    });
-                }
-                else{
-                    guild.filter.log=false;
-                }
-            }
-            return;
-        }
-    }
-    else if(guild.filter.active){
-        guild.filter.active=false;
-    }
-
-    // Emojiboard reactions
-    doEmojiboardReaction(react);
 });
 
 client.on("messageDelete",async msg=>{

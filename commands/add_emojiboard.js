@@ -1,7 +1,7 @@
 // #region CommandBoilerplate
 const Categories = require("./modules/Categories");
 const { Guilds, Users, guildByID, userByID, guildByObj, userByObj } = require("./modules/database.js")
-const { ContextMenuCommandBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType, AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType, Component } = require("discord.js");
+const { Events, ContextMenuCommandBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType, AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType, Component } = require("discord.js");
 function applyContext(context={}) {
 	for (key in context) {
 		this[key] = context[key];
@@ -13,6 +13,8 @@ function applyContext(context={}) {
  * @typedef {import("./modules/database").UserDoc} UserDoc
  */
 // #endregion CommandBoilerplate
+
+const { getEmojiFromMessage, parseEmoji } = require('../util');
 
 function getStarMsg(msg){
 	var starboardHeaders = [
@@ -26,6 +28,161 @@ function getStarMsg(msg){
 		`It's always a good day when @ posts`
 	];
 	return `**${starboardHeaders[Math.floor(Math.random()*starboardHeaders.length)].replaceAll("@",msg.member?.nickname||msg.author?.globalName||msg.author?.username||"this person")}**`;
+}
+
+async function doEmojiboardReaction(react) {
+    /**
+    * Handle the information when a user reacts to a message, for emojiboards
+    *
+    * @param {MessageReaction } react: The reaction that was added
+    * @param {import("./modules/database.js").RawGuildDoc } readGuild: Optional read-only guild DB
+    * @returns {Promise<void>}
+    */
+
+    if (react.message.guildId == '0') return; // DMs patch
+
+    const emoji = getEmojiFromMessage(
+        react.emoji.requiresColons ?
+            `<:${react.emoji.name}:${react.emoji.id}>` :
+            react.emoji.name
+    );
+
+    const guild = await guildByID(react.message.guildId);
+    const emojiboards = guild.emojiboards;
+
+    // exit if the emojiboard for this emoji is not setup
+    if (!emojiboards.has(emoji)) return;
+
+    const emojiboard = emojiboards.get(emoji);
+    if (!emojiboard.active) return;
+
+    // Exit conditions
+    if (!emojiboard.isMute) {
+        // exit if this message has already been posted
+        if (emojiboard.posted.has(react.message.id)) return;
+
+        // Exit if the message is already an emojiboard post
+        if (react.message.channel.id === emojiboard.channel) return;
+    }
+
+    const messageData = await react.message.channel.messages.fetch(react.message.id);
+    const foundReactions = messageData.reactions.cache.get(react.emoji.id || react.emoji.name);
+    const selfReactions = react.message.reactions.cache.filter(r => r.users.cache.has(react.message.author.id) && r.emoji.name === react.emoji.name)
+
+    // exit if we haven't reached the threshold
+    if ((emojiboard.threshold + selfReactions.size) > foundReactions?.count) {
+        return;
+    }
+
+    if (emojiboard.isMute) {
+        var member = messageData.guild.members.cache.get(messageData.author.id);
+        if (member === null || member === undefined) {
+            member = await messageData.guild.members.fetch(messageData.author.id);
+        }
+        if (member === null || member === undefined) {
+            return;
+        }
+        if (!member.bannable || !messageData.guild.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ModerateMembers) || member.bot || member.permissions.has(PermissionFlagsBits.Administrator)) {
+            return;
+        }
+        try {
+            member.timeout(emojiboard.length, `I was configured with /groupmute_config to do so.`).catch(e => { });
+        }
+        catch (e) { }
+        return;//If it's a groupmute, don't bother with emojiboard stuff.
+    }
+
+    var replyBlip = "";
+    if (messageData.type === 19) {
+        try {
+            var refMessage = await messageData.fetchReference();
+            replyBlip = `_[Reply to **${refMessage.author.username}**: ${refMessage.content.slice(0, 22).replace(/(https?\:\/\/|\n)/ig, "")}${refMessage.content.length > 22 ? "..." : ""}](<https://discord.com/channels/${refMessage.guild.id}/${refMessage.channel.id}/${refMessage.id}>)_`;
+        } catch (e) { }
+    }
+
+    const resp = { files: [] };
+    var i = 0;
+    react.message.attachments.forEach((attached) => {
+        let url = attached.url.toLowerCase();
+        if (i !== 0 || (!url.includes(".jpg") && !url.includes(".png") && !url.includes(".jpeg") && !url.includes(".gif")) || emojiboard.messType === "0") {
+            resp.files.push(attached.url);
+        }
+        i++;
+    });
+
+    if (emojiboard.messType === "0") {
+        resp.content = react.message.content;
+        resp.username = react.message.author.globalName || react.message.author.username;
+        resp.avatarURL = react.message.author.displayAvatarURL();
+        var c = client.channels.cache.get(emojiboard.channel);
+        if (!c.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageWebhooks)) {
+            emojiboard.messType = "2";
+            guild.save();
+            return;
+        }
+        var hook = await c.fetchWebhooks();
+        hook = hook.find(h => h.token);
+        if (hook) {
+            let response = await hook.send(resp);
+            emojiboard.posted.set(react.message.id, `webhook${response.id}`);
+        }
+        else {
+            const hook = await client.channels.cache.get(emojiboard.channel).createWebhook({
+                name: config.name,
+                avatar: config.pfp,
+            });
+            
+            let response = await hook.send(resp);
+            emojiboard.posted.set(react.message.id, `webhook${response.id}`);
+        }
+    }
+    else {
+        const emojiURL = (
+            react.emoji.requiresColons ?
+                (
+                    react.emoji.animated ?
+                        `https://cdn.discordapp.com/emojis/${react.emoji.id}.gif` :
+                        `https://cdn.discordapp.com/emojis/${react.emoji.id}.png`
+                ) :
+                undefined
+        )
+
+        resp.embeds = [new EmbedBuilder()
+            .setColor(0x006400)
+            .setTitle("(Jump to message)")
+            .setURL(`https://www.discord.com/channels/${react.message.guild.id}/${react.message.channel.id}/${react.message.id}`)
+            .setAuthor({
+                name: react.message.author.globalName || react.message.author.username,
+                iconURL: react.message.author.displayAvatarURL(),
+                url: `https://discord.com/users/${react.message.author.id}`
+            })
+            .setDescription(`${replyBlip ? `${replyBlip}\n` : ""}${react.message.content ? react.message.content : "⠀"}`)
+            .setTimestamp(new Date(react.message.createdTimestamp))
+            .setFooter({
+                text: `${!emojiURL ? react.emoji.name + ' ' : ''}${react.message.channel.name}`,
+                iconURL: emojiURL
+            })
+            .setImage(react.message.attachments.first() ? react.message.attachments.first().url : null)
+        ];
+        if (emojiboard.messType === "1") {
+            resp.content = getStarMsg(react.message);
+        }
+        var c = client.channels.cache.get(emojiboard.channel)
+        if (!c.permissionsFor(client.user.id).has(PermissionFlagsBits.ManageWebhooks)) {
+            emojiboard.active = false;
+            guild.save();
+            return;
+        }
+        const d = await c.send(resp);
+        emojiboard.posted.set(react.message.id, d.id);
+    }
+    
+    if (!guild.emojiboards.get(emoji).posters.get(react.message.author.id)) {
+        guild.emojiboards.get(emoji).posters.set(react.message.author.id, 0);
+    }
+
+    guild.emojiboards.get(emoji).posters.set(react.message.author.id, guild.emojiboards.get(emoji).posters.get(react.message.author.id) + 1);
+    guild.save();
 }
 
 module.exports = {
@@ -61,7 +218,7 @@ module.exports = {
 			).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
 		
 		// Optional fields
-		requiredGlobals: ["parseEmoji", "getEmojiFromMessage"],
+		requiredGlobals: [],
 
 		help: {
 			helpCategories: [Categories.General, Categories.Configuration, Categories.Entertainment, Categories.Server_Only],
@@ -102,5 +259,12 @@ module.exports = {
 		await guild.save();
 
 		cmd.followUp("Emojiboard for " + parseEmoji(emoji) + " emoji added.");
-    }
+    },
+
+	async [Events.MessageReactionAdd] (react, user, details, readGuild, readGuildUser) {
+		if (react.message.guildId === null) return;
+
+        // OPTIMIZE: we can save a DB query on reactions if we make this use the passed readonly guild.
+		doEmojiboardReaction(react);
+	}
 };

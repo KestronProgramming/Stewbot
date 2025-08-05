@@ -14,6 +14,8 @@ function applyContext(context={}) {
  */
 // #endregion CommandBoilerplate
 
+const { getEmojiFromMessage, parseEmoji } = require('../util');
+
 module.exports = {
 	data: {
 		// Slash command data
@@ -37,7 +39,7 @@ module.exports = {
 		
 		// Optional fields
 		extra: {"contexts":[0],"integration_types":[0]},
-		requiredGlobals: ["parseEmoji", "getEmojiFromMessage"],
+		requiredGlobals: [],
 
 		help: {
 			helpCategories: [Categories.Administration, Categories.Configuration, Categories.Server_Only, Categories.Entertainment],

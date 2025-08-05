@@ -509,5 +509,36 @@ module.exports = {
             
             return;
         }
+    },
+
+    async [Events.MessageReactionAdd] (react, user, details, readGuild, readGuildUser) {
+        if (react.message.guildId === null) return;
+        
+        // Filter reactions
+        if (readGuild?.filter?.active && react.message.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageMessages)) {
+            if (await checkDirty(react.message.guild.id, `${react._emoji}`)) {
+                react.remove();
+                if (readGuild.filter.log) {
+                    var channel = client.channels.cache.get(readGuild.filter.channel);
+                    if (channel.isSendable()) {
+                        channel.send({
+                            content: `I removed a ${react._emoji.id === null ? react._emoji.name : `<:${react._emoji.name}:${react._emoji.id}>`} reaction from https://discord.com/channels/${react.message.guild.id}/${react.message.channel.id}/${react.message.id} added by <@${user.id}> due to being in the filter.`,
+                            allowedMentions: {parse:[]}
+                        });
+                    }
+                    else {
+                        Guilds.updateOne({ id: react.message.guild.id }, {
+                            $set: { "filter.active": false }
+                        })
+                    }
+                }
+                return;
+            }
+        }
+        else if (readGuild.filter.active) {
+            Guilds.updateOne({ id: react.message.guild.id }, {
+                $set: { "filter.active": false }
+            })
+        }
     }
 };
