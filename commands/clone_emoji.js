@@ -14,6 +14,8 @@ function applyContext(context={}) {
  */
 // #endregion CommandBoilerplate
 
+const { notify } = require("../utils");
+
 // If a custom emoji exists in the message, extract it's name and URL.
 function getEmojiData(emoji) {
 	const matches = emoji?.match?.(/<(a)?:([\w~_]+):(\d+)>/);

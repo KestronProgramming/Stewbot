@@ -14,6 +14,13 @@ function applyContext(context={}) {
  */
 // #endregion CommandBoilerplate
 
+const { limitLength } = require("../utils.js")
+const Fuse = require('fuse.js');
+const fuseOptions = {
+	includeScore: true,
+	keys: ['item']
+};
+
 function chunkArray(array, size) {
     const result = [];
     for (let i = 0; i < array.length; i += size) {
@@ -140,11 +147,6 @@ function makeHelp(page, categories, filterMode, forWho) {
     };
 }
 
-const Fuse = require('fuse.js');
-const fuseOptions = {
-	includeScore: true,
-	keys: ['item']
-};
 function sortByMatch(items, text) {
 	const fuse = new Fuse(items.map(item => ({ item })), fuseOptions);            
 	const scoredResults = fuse.search(text)

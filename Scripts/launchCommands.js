@@ -5,6 +5,8 @@ const fsPromises = require("fs/promises");
 const path = require("path")
 const config = require("../data/config.json");
 const crypto = require('crypto');
+const { notify } = require("../utils");
+
 function md5(str) {
 	return crypto.createHash('md5').update(str).digest('hex');
 }

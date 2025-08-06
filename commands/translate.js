@@ -15,6 +15,7 @@ function applyContext(context={}) {
 // #endregion CommandBoilerplate
 
 const translate = require("@vitalets/google-translate-api").translate; // Import requires, even though it's greyed out
+const { escapeBackticks } = require("../utils.js");
 
 module.exports = {
 	data: {

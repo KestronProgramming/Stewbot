@@ -14,6 +14,7 @@ function applyContext(context={}) {
  */
 // #endregion CommandBoilerplate
 
+const { limitLength, notify } = require("../utils.js")
 const dgram = require('dgram');
 const os = require('os');
 const { Ollama } = require('ollama');
@@ -21,9 +22,10 @@ const fs = require("fs");
 const { ApplicationCommandOptionType } = require("discord.js")
 const ms = require("ms");
 const NodeCache = require("node-cache");
-console.beta = (...args) => process.env.beta && console.log(...args);
+console.beta = (...args) => 
+    process.env.beta && console.log(...args);
 
-const config = require("../data/config")
+const config = require("../data/config.json")
 const INTERFACES = config.aiNodeInterfaces;
 const BROADCAST_PORT = config.aiNodePort;
 

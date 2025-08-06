@@ -18,6 +18,8 @@ const crypto = require('crypto');
 const Turndown = require('turndown');
 const dns = require('dns');
 const { URL } = require('url');
+const { limitLength } = require("../utils.js")
+const { notify } = require("../utils");
 
 const RSSParser = require("rss-parser");
 var turndown = new Turndown();

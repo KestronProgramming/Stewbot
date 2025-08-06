@@ -15,6 +15,7 @@ function applyContext(context={}) {
 // #endregion CommandBoilerplate
 
 const setDates = require("../data/setDates.json");
+const { notify } = require("../utils");
 
 async function holidayPfpCheck() {
     function Easter(Y) {//Thanks StackOverflow :) https://stackoverflow.com/questions/1284314/easter-date-in-javascript

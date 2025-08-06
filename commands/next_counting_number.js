@@ -14,6 +14,8 @@ function applyContext(context={}) {
  */
 // #endregion CommandBoilerplate
 
+const { limitLength } = require("../utils.js")
+
 module.exports = {
 	data: {
 		// Slash command data

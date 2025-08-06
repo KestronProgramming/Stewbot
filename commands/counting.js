@@ -16,6 +16,7 @@ function applyContext(context = {}) {
 
 const nlp = require('compromise');
 const mathjs = require('mathjs');
+const { canUseRole } = require("../utils.js");
 
 function processForNumber(text) {
     text = text?.toLowerCase() || '';

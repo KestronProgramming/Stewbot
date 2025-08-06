@@ -61,6 +61,7 @@ const scamEmoji = process.env.beta ? "<:This_Post_May_Contain_A_Scam:13303202953
 
 const { URL } = require('url');
 const fs = require("node:fs")
+const { limitLength } = require("../utils.js")
 
 // Functions for ublock list checker
 async function loadBlocklist(url) {

@@ -16,7 +16,7 @@ function applyContext(context={}) {
 
 const fs = require("node:fs")
 const wotdList = fs.readFileSync(`./data/wordlist.txt`,"utf-8").split("\n");
-
+const { notify } = require("../utils");
 
 module.exports = {
 	data: {

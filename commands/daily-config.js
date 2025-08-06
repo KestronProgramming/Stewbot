@@ -17,6 +17,7 @@ function applyContext(context={}) {
 const fs = require("node:fs")
 const Turndown = require('turndown');
 var turndown = new Turndown();
+const { notify } = require("../utils");
 
 async function sendDailiesToSubscribed(type, message={}) {
     const dailySubbedGuilds = await Guilds.find({ 

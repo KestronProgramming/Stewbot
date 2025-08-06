@@ -19,6 +19,8 @@ const ChartDataLabels = require('chartjs-plugin-datalabels');
 // const Chart = require("chart.js")
 
 const { ChartJSNodeCanvas } = require('chartjs-node-canvas');
+const { limitLength } = require("../utils.js")
+const { notify } = require("../utils");
 
 
 const CHART_WIDTH = 1200;

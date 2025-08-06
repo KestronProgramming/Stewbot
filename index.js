@@ -11,13 +11,13 @@ if (process.env.beta == 'false') delete process.env.beta; // ENVs are all string
 
 console.beta = (...args) => process.env.beta && console.log(...args);
 
-global.config = require("./data/config.json");
+const cmds = global.cmds = require("./data/commands.json");
+const config = global.config = require("./data/config.json");
 console.beta("Importing discord");
 const { Client, Events, GatewayIntentBits, Partials, ActivityType, PermissionFlagsBits, Message } = require("discord.js");
 console.beta("Importing commands");
 const { getCommands } = require("./Scripts/launchCommands.js"); // Note: current setup requires this to be before the commands.json import (the cmd.globals setting)
 const commandsLoadedPromise = getCommands();
-const cmds = require("./data/commands.json"); global.cmds = cmds;
 console.beta("Importing backup.js");
 const { startBackupThreadPromise, checkForMongoRestore } = require("./backup.js");
 console.beta("Importing everything else");
@@ -26,6 +26,7 @@ const mongoose = require("mongoose");
 const ms = require("ms");
 const { guildByID, guildByObj, userByID, userByObj, Guilds, Users, GuildUsers, ConfigDB, guildUserByID, guildUserByObj } = require('./commands/modules/database');
 const NodeCache = require('node-cache');
+const { canUseRole, sendHook, limitLength, escapeBackticks, requireServer, notify } = require("./utils");
 console.beta("Importing InfluxDB");
 const { initInflux, queueCommandMetric } = require('./commands/modules/metrics')
 initInflux()
@@ -194,39 +195,12 @@ commandsLoadedPromise.then( commandsLoaded => {
 
 
 // Log in with all intents expect guild presence
-const client = new Client({
+const client  = global.client = new Client({
     intents: Object.values(GatewayIntentBits)
         .filter(i => typeof(i) == 'number')
         .filter(i => i !== GatewayIntentBits.GuildPresences),
     partials: Object.keys(Partials).map(a => Partials[a])
 });
-global.client = client;
-const notify = global.notify = async function (what, useWebhook = false) {
-    //Notify the staff of the Kestron Support server
-
-    console.beta(what);
-    try {
-        if (useWebhook) {
-            fetch(String(process.env.logWebhook), {
-                'method': 'POST',
-                'headers': {
-                    "Content-Type": "application/json"
-                },
-                'body': JSON.stringify({
-                    'username': "Stewbot Notify Webhook",
-                    "content": limitLength(what)
-                })
-            })
-        }
-        else {
-            let channelId = process.env.beta ? config.betaNoticeChannel : config.noticeChannel;
-            const channel = await client.channels.fetch(channelId);
-            channel?.send(limitLength(what));
-        }
-    } catch (e) {
-        console.beta("Couldn't send notify()")
-    }
-}
 
 // Other data
 let uptime = 0; // Bot uptime in seconds I think?
@@ -270,91 +244,6 @@ const pseudoGlobals = {
 //#endregion Setup
 
 //#region Functions
-// Global functions
-global.canUseRole = async function(user, role, channel) { // A centralized permission-checking function for users and roles
-    // returns [ success, errorMsg ]
-    if (user && role.comparePositionTo(channel.guild.members.cache.get(user.id)?.roles?.highest) >= 0) {
-        return [ false, `You cannot add this role because it is equal to or higher than your highest role.` ];
-    }
-    if (user && !channel.permissionsFor(user.id).has(PermissionFlagsBits.ManageRoles)){
-        return [ false, `You do not have permission to manage roles.` ]
-    }
-    if (role.managed){
-        return [ false, `This role is managed by an integration an cannot be used.` ]
-    }
-    if (!channel.permissionsFor(client.user.id).has(PermissionFlagsBits.ManageRoles)){
-        return [ false, `I do not have the ManageRoles permission needed to preform this action.` ]
-    }
-    if (channel.guild.members.cache.get(client.user.id)?.roles?.highest.position<=role.rawPosition){
-        return [ false, `I cannot help with that role. If you would like me to, grant me a role that is ordered to be higher in the roles list than ${role.name}. You can reorder roles from Server Settings -> Roles.` ];
-    }
-    return [ true, null ]
-}
-global.sendHook = async function(what, msg) {
-    if(typeof what==="string"){
-        what={"content": what}
-    }
-    what.content=(await checkDirty(config.homeServer,what.content,true))[1];
-    
-    // Prevent pings
-    what.allowedMentions = { parse: [] };
-
-    // Thread IDs work a little different (channel is parent, and thread ID is channel ID)
-    let mainChannel;
-    if (msg.channel.isThread()) {
-        mainChannel = msg.channel.parent;
-        // Add in thread ID so it sends it there instead of the parent channel 
-        what.threadId = msg.channel.id;
-    } else {
-        mainChannel = msg.channel;
-    }
-
-    var hook=await mainChannel.fetchWebhooks();
-    hook=hook.find(h=>h.token);
-    if(hook){
-        hook.send(what);
-    }
-    else{
-        mainChannel.createWebhook({
-            name: config.name,
-            avatar: config.pfp,
-        }).then(d=>{
-            d.send(what);
-        });
-    }
-}
-global.limitLength = function(s, size=1999) { // Used everywhere, so global function.
-    s = String(s);
-    return s.length>size?s.slice(0,size-3)+"...":s;
-}
-global.escapeBackticks = function(text) { // This function is useful anywhere to properly escape backticks to prevent format escaping
-    return text.replace(/(?<!\\)(?:\\\\)*`/g, "\\`");
-}
-global.requireServer = function(interaction, error) {
-    // This function takes in cmd.guild and an error message, 
-    //  and will reply with the error message if the bot is not installed in the server.
-    // Returns true if it had an error.
-    // 
-    // Usage:
-    // if (requireServer(cmd) return;
-    // if (requireServer(cmd, "Custom error here")) return;
-
-    if (!error) error = `I must be installed to this server to run this command. A moderator can install me with this link:\n<${config.install}>`;
-
-    if (!interaction.guild) {
-        let replyMethod = interaction.deferred 
-            ? (opts) => interaction.followUp(opts)
-            : (opts) => interaction.reply(opts);
-
-        replyMethod({
-            content: error,
-            ephemeral: true,
-        });
-        return true;
-    }
-    return false;
-}
-
 
 // Global message guild cache allows us to have less calls to the DB, and invalidate cache when we save DB changes
 const messageDataCache = global.messageDataCache = new NodeCache({ stdTTL: 5, checkperiod: 30 });
@@ -626,7 +515,6 @@ client.once(Events.ClientReady,async ()=>{
     scheduleTodaysSlowmode();
 });
 
-
 client.on(Events.MessageCreate ,async msg => {
     if (msg.author.id === client.user.id) return;
 
@@ -863,17 +751,11 @@ client.on(Events.GuildCreate,async guild=>{
     await sendWelcome(guild);
 });
 client.on(Events.GuildDelete,async guild=>{
-    // Remove this guild from the store
-    await Guilds.deleteOne({ id: guild.id });
-
-    // Remove all guild users objects under this server
-    await GuildUsers.deleteMany({
-        guildId: guild.id
-    })
-
-    notify(`Removed from **a server**.`);
 });
 //#endregion Listeners
+
+// Note:
+// Other important logic handling database cleanup, general management, etc., is inside `./commands/core.js`
 
 //Error handling
 process.on('unhandledRejection', e=>notify(e.stack));

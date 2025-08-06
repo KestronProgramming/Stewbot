@@ -8,6 +8,7 @@ const process = require('process');
 const envs = require("./env.json");
 const archiver = require('archiver');
 const unzip = require('unzipper');
+const { notify } = require("./utils");
 
 // Other related config we're using rn - this could be cleaned up a good bit
 const uploadName = envs.beta ? "stewbeta-backup.zip" : "stewbot-backup.zip";

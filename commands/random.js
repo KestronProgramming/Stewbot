@@ -15,6 +15,8 @@ function applyContext(context={}) {
 // #endregion CommandBoilerplate
 
 const crypto = require('crypto');
+const { escapeBackticks } = require("../utils.js");
+
 
 const m8ballResponses = ["So it would seem", "Yes", "No", "Perhaps", "Absolutely", "Positively", "Unfortunately", "I am unsure", "I do not know", "Absolutely not", "Possibly", "More likely than not", "Unlikely", "Probably not", "Probably", "Maybe", "Random answers is not the answer"];
 

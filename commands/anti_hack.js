@@ -14,6 +14,8 @@ function applyContext(context={}) {
  */
 // #endregion CommandBoilerplate
 
+const { requireServer } = require("../utils.js");
+
 const crypto = require('crypto');
 
 module.exports = {

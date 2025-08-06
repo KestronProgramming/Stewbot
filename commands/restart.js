@@ -13,12 +13,14 @@ function applyContext(context = {}) {
  * @typedef {import("./modules/database").UserDoc} UserDoc
  */
 // #endregion CommandBoilerplate
+
 const fs = require("fs");
 const { spawn, exec } = require('child_process');
 const config = require("../data/config.json");
 const path = require('path');
 const os = require('os');
 const { launchCommands } = require("../Scripts/launchCommands.js");
+const { notify } = require("../utils");
 
 const PID_FILE = path.join(os.tmpdir(), 'stewbot-maintenance.pid');
 

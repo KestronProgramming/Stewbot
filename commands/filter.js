@@ -18,6 +18,8 @@ function applyContext(context={}) {
 
 
 const leetMap = require("../data/filterLeetmap.json");
+const { sendHook, limitLength, notify } = require("../utils.js");
+
 
 // This is a function built to support regex filters, which are currently not implemented
 function verifyRegex(regexStr) {
@@ -156,6 +158,8 @@ const checkDirty = global.checkDirty = async function(guildID, what, filter=fals
 
 
 module.exports = {
+    checkDirty,
+    
 	data: {
 		// Slash command data
 		command: new SlashCommandBuilder().setName("filter").setDescription("Manage the filter for this server").addSubcommand(command=>

@@ -14,6 +14,8 @@ function applyContext(context={}) {
  */
 // #endregion CommandBoilerplate
 
+const { notify } = require("../utils");
+
 module.exports = {
 	data: {
 		// Slash command data

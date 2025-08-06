@@ -16,6 +16,7 @@ function applyContext(context={}) {
 
 const LRUCache = require("lru-cache").LRUCache;
 const ms = require("ms");
+const { limitLength } = require("../utils.js")
 
 // Temporarily caches old user profiles. See comment under [Events.UserUpdate]
 const oldProfileCache = new LRUCache({ ttl: ms("30s") })

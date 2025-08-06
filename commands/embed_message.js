@@ -15,6 +15,7 @@ function applyContext(context={}) {
 // #endregion CommandBoilerplate
 
 const { getPrimedEmbed } = require("./prime_embed.js")
+const { notify } = require("../utils");
 
 const kaProgramRegex =/\b(?!<)https?:\/\/(?:www\.)?khanacademy\.org\/(cs|computer-programming|hour-of-code|python-program)\/[a-z,\d,-]+\/\d+(?!>)\b/gi;
 const discordMessageRegex =/\b(?!<)https?:\/\/(ptb\.|canary\.)?discord(app)?.com\/channels\/(\@me|\d+)\/\d+\/\d+(?!>)\b/gi;
