@@ -223,7 +223,34 @@ module.exports = {
 	//#region EventLoggers
 	//Repetitive, strictly log-based events
 
-	async [Events.MessageDelete](msg, guildStore) {
+	async [Events.GuildMemberAdd](member, guildStore) {
+		if (guildStore.logs.active && guildStore.logs.joining_and_leaving) {
+			client.channels.cache.get(guildStore.logs.channel)
+				.send({ 
+					content: `**<@${member.id}> (${member.user.username}) has joined the server.**`, 
+					allowedMentions: { parse: [] }
+				})
+				.catch(e => null);
+		}
+	},
+
+	async [Events.GuildMemberRemove](member, guildStore) {
+		// Logs
+		if (guildStore.logs.active && guildStore.logs.joining_and_leaving) {
+			var bans = await member.guild.bans.fetch();
+			var c = client.channels.cache.get(guildStore.logs.channel);
+			if (c.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)) {
+				c.send({ content: `**<@${member.id}> (${member.user.username}) has ${bans.find(b => b.user.id === member.id) ? "been banned from" : "left"} the server.**${bans.find(b => b.user.id === member.id)?.reason !== undefined ? `\n${bans.find(b => b.user.id === member.id)?.reason}` : ""}`, allowedMentions: { parse: [] } });
+			}
+			else {
+				await Guilds.updateOne({ id: guildStore.id }, {
+					$set: { "logs.active": false }
+				})
+			}
+		}
+	},
+
+	async [Events.MessageDelete] (msg, guildStore) {
 		if(msg.guild?.id===undefined) return;
 		
 		if (guildStore.logs.mod_actions && guildStore.logs.active) {
@@ -244,7 +271,7 @@ module.exports = {
 							c.send({ content: limitLength(`**Message from <@${firstEntry.target.id}> Deleted by <@${firstEntry.executor.id}> in <#${msg.channel.id}>**\n\n${msg.content.length > 0 ? `\`\`\`\n${msg.content}\`\`\`` : ""}${msg.attachments?.size > 0 ? `There were **${msg.attachments.size}** attachments on this message.` : ""}`), allowedMentions: { parse: [] } });
 						}
 						else {
-							await Guilds.findOne({ id: guildStore.id }, {
+							await Guilds.updateOne({ id: guildStore.id }, {
 								$set: { "logs.active": false }
 							})
 						}
@@ -254,7 +281,7 @@ module.exports = {
 			}
 			else {
 				// We can't see the audit log, so turn this off
-				await Guilds.findOne({ id: guildStore.id }, {
+				await Guilds.updateOne({ id: guildStore.id }, {
 					$set: { "logs.mod_actions": false }
 				})
 				// TODO: make a post noting this

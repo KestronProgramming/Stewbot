@@ -1,7 +1,7 @@
 // #region CommandBoilerplate
 const Categories = require("./modules/Categories");
 const { Guilds, Users, guildByID, userByID, guildByObj, userByObj } = require("./modules/database.js")
-const { ContextMenuCommandBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
+const { Events, ContextMenuCommandBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
 function applyContext(context={}) {
 	for (key in context) {
 		this[key] = context[key];
@@ -62,5 +62,37 @@ module.exports = {
 		
 		await guild.save();
 		cmd.followUp(`Auto leave messages configured.${disclaimers.map(d=>`\n\n${d}`).join("")}`);
+	},
+
+	async [Events.GuildMemberRemove](member, guildStore) {
+		// Auto Leave Messages
+		if (guildStore.alm?.active) {
+			if (!member.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageWebhooks)) {
+				Guilds.updateOne({ id: guildStore.id }, {
+					$set: { "alm.active": false }
+				})
+				return;
+			}
+
+			var resp = {
+				content: guildStore.alm.message.replaceAll("${@USER}", `<@${member.id}> ${member.user.username ? `(**${member.user.username}**)` : ''}`),
+				username: member.guild.name,
+				avatarURL: member.guild.iconURL()
+			};
+			var hook = await client.channels.cache.get(guildStore.alm.channel).fetchWebhooks();
+			hook = hook.find(h => h.token);
+			if (hook) {
+				hook.send(resp);
+			}
+			else {
+				client.channels.cache.get(guildStore.alm.channel).createWebhook({
+					name: config.name,
+					avatar: config.pfp
+				}).then(d => {
+					d.send(resp);
+				});
+			}
+		}
+
 	}
 };

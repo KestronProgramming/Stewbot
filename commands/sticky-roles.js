@@ -1,7 +1,7 @@
 // #region CommandBoilerplate
 const Categories = require("./modules/Categories");
-const { Guilds, Users, guildByID, userByID, guildByObj, userByObj } = require("./modules/database.js")
-const { ContextMenuCommandBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
+const { Guilds, Users, GuildUsers, guildByID, userByID, guildByObj, guildUserByObj, guildUserByID, userByObj } = require("./modules/database.js")
+const { Events, ContextMenuCommandBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
 function applyContext(context={}) {
 	for (key in context) {
 		this[key] = context[key];
@@ -38,6 +38,9 @@ module.exports = {
 		},
 	},
 
+	// This module should be run before auto-join-roles
+	priority: 50,
+
     /** @param {import('discord.js').ChatInputCommandInteraction} cmd */
     async execute(cmd, context) {
 		applyContext(context);
@@ -56,5 +59,48 @@ module.exports = {
 		await guildByObj(cmd.guild, updates)
 
 		cmd.followUp("Sticky roles configured. Please be aware I can only manage roles lower than my highest role in the server roles list.");
+	},
+
+	/** @param {import("discord.js").GuildMember} member */
+	async [Events.GuildMemberAdd](member, readGuildStore) {
+
+		// Track whether we added any roles to know whether or not to apply auto join roles.
+		let addedStickyRoles = 0;
+
+		if (readGuildStore.stickyRoles) {
+			let myUser = await member.guild?.members.fetch(client.user.id)
+			if (!myUser?.permissions.has(PermissionFlagsBits.ManageRoles)) {
+				Guilds.updateOne({ id: readGuildStore.id }, { 
+					$set: { "stickyRoles": false }
+				})
+			}
+			else {
+				const guildUser = await guildUserByObj(member.guild, member.id);
+				let myRole = myUser.roles.highest.position;
+
+				for (const roleId of guildUser.roles) {
+					try {
+						var role = await member.guild.roles.fetch(roleId);
+						if (role && role.id !== member.guild.id) {
+							if (myRole > role.rawPosition) {
+								member.roles.add(role).catch(e => null);
+								addedStickyRoles++;
+							}
+						}
+					}
+					catch (e) { }
+				}
+			}
+		}
+
+		// Signal to auto-join-roles
+		if (addedStickyRoles > 0) member.addedStickyRoles = true;
+	},
+
+	async [Events.GuildMemberRemove] (member, readGuildStore) {
+		// Save all this user's roles
+		await guildUserByID(member.guild.id, member.id, {
+			"roles": member.roles.cache.map(r => r.id) 
+		}, true);
 	}
 };

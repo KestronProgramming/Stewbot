@@ -1,7 +1,7 @@
 // #region CommandBoilerplate
 const Categories = require("./modules/Categories");
 const { Guilds, Users, guildByID, userByID, guildByObj, userByObj } = require("./modules/database.js")
-const { ContextMenuCommandBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
+const { Events, ContextMenuCommandBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
 function applyContext(context={}) {
 	for (key in context) {
 		this[key] = context[key];
@@ -59,6 +59,30 @@ module.exports = {
 				),
 			],
         });
+	},
+
+	/** @param {import("discord.js").GuildMember} member */
+	async [Events.GuildMemberAdd](member, readGuildStore) {
+
+		if (!member.addedStickyRoles && readGuildStore.autoJoinRoles) {
+			if (!member.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageRoles)) {
+				Guilds.updateOne({ id: readGuildStore.id }, { 
+					$set: { "autoJoinRoles": [] }
+				})
+
+			}
+			if (readGuildStore.autoJoinRoles.length > 0) {
+				readGuildStore.autoJoinRoles.forEach(role => {
+					let myRole = member.guild.members.cache.get(client.user.id).roles.highest.position;
+					var role = member.guild.roles.cache.find(r => r.id === role);
+					if (role !== undefined && role !== null) {
+						if (myRole > role.rawPosition) {
+							member.roles.add(role);
+						}
+					}
+				});
+			}
+		}
 	},
 
 	// Only button subscriptions matched will be sent to the handler 

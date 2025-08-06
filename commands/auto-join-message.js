@@ -1,7 +1,7 @@
 // #region CommandBoilerplate
 const Categories = require("./modules/Categories");
 const { Guilds, Users, guildByID, userByID, guildByObj, userByObj } = require("./modules/database.js")
-const { ContextMenuCommandBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
+const { Events, ContextMenuCommandBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
 function applyContext(context={}) {
 	for (key in context) {
 		this[key] = context[key];
@@ -71,5 +71,59 @@ module.exports = {
 		await guild.save();
 
 		cmd.followUp(`Auto join messages configured.${disclaimers.map(d => `\n\n${d}`).join("")}`);
+	},
+
+	async [Events.GuildMemberAdd](member, readGuildStore) {
+
+		// Auto join messages
+		if (readGuildStore.ajm.active) {
+			if (!member.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageWebhooks)) {
+				// Swap to DMs if we don't have perms to message, but the join messages are active
+				readGuildStore.ajm.dm = true;
+
+				// Save it (guildStore is readonly here)
+				Guilds.updateOne({ id: readGuildStore.id }, { $set: { "ajm.dm": true } })
+			}
+
+			if (readGuildStore.ajm.dm) {
+				try {
+					member.send({
+						embeds: [{
+							type: "rich",
+							title: member.guild.name,
+							description: readGuildStore.ajm.message.replaceAll("${@USER}", `<@${member.id}> ${member.user.username ? `(**${member.user.username}**)` : ''}`).replaceAll("\\n", "\n"),
+							color: 0x006400,
+							thumbnail: {
+								url: member.guild.iconURL(),
+								height: 0,
+								width: 0,
+							},
+							footer: { text: `This message was sent from ${member.guild.name}` },
+						}]
+					}).catch(e => { });
+				} catch (e) { }
+			}
+
+			else {
+				var resp = {
+					content: readGuildStore.ajm.message.replaceAll("${@USER}", `<@${member.id}> ${member.user.username ? `(**${member.user.username}**)` : ''}`).replaceAll("\\n", "\n"),
+					username: member.guild.name,
+					avatarURL: member.guild.iconURL()
+				};
+				var hook = await client.channels.cache.get(readGuildStore.ajm.channel).fetchWebhooks();
+				hook = hook.find(h => h.token);
+				if (hook) {
+					hook.send(resp);
+				}
+				else {
+					client.channels.cache.get(readGuildStore.ajm.channel).createWebhook({
+						name: config.name,
+						avatar: config.pfp
+					}).then(d => {
+						d.send(resp);
+					});
+				}
+			}
+		}
 	}
 };

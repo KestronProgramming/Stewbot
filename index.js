@@ -13,7 +13,7 @@ console.beta = (...args) => process.env.beta && console.log(...args);
 
 global.config = require("./data/config.json");
 console.beta("Importing discord");
-const {Client, Events, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType, TeamMemberMembershipState, Message}=require("discord.js");
+const { Client, Events, GatewayIntentBits, Partials, ActivityType, PermissionFlagsBits, Message } = require("discord.js");
 console.beta("Importing commands");
 const { getCommands } = require("./Scripts/launchCommands.js"); // Note: current setup requires this to be before the commands.json import (the cmd.globals setting)
 const commandsLoadedPromise = getCommands();
@@ -21,12 +21,9 @@ const cmds = require("./data/commands.json"); global.cmds = cmds;
 console.beta("Importing backup.js");
 const { startBackupThreadPromise, checkForMongoRestore } = require("./backup.js");
 console.beta("Importing everything else");
-const { getEmojiFromMessage, parseEmoji } = require('./util');
 const fs = require("fs");
-const crypto = require('crypto');
 const mongoose = require("mongoose");
 const ms = require("ms");
-const LRUCache = require("lru-cache").LRUCache;
 console.beta("Importing InfluxDB");
 const { initInflux, queueCommandMetric } = require('./commands/modules/metrics')
 initInflux()
@@ -51,15 +48,13 @@ const DBConnectPromise = new Promise((resolve, reject) => {
 
 const cache = global.cache = {}; // This is used for things like antihack hashes that need to be stored, but not persistent 
 const { updateBlocklists } = require("./commands/badware_scanner.js")
-const { finTempSlow, scheduleTodaysSlowmode } = require("./commands/slowmode.js")
-const { finTempRole, scheduleTodaysTemproles } = require("./commands/temp_role.js")
-const { finHatPull, resetHatScheduleLocks, scheduleTodaysHats } = require("./commands/hat_pull.js")
-const { finTempBan, scheduleTodaysUnbans } = require("./commands/ban.js")
-const { finTimer, scheduleTimerEnds } = require("./commands/timer.js")
-const { getStarMsg } = require("./commands/add_emojiboard.js")
-const { processForNumber } = require("./commands/counting.js")
+const { scheduleTodaysSlowmode } = require("./commands/slowmode.js")
+const { scheduleTodaysTemproles } = require("./commands/temp_role.js")
+const { resetHatScheduleLocks, scheduleTodaysHats } = require("./commands/hat_pull.js")
+const { scheduleTodaysUnbans } = require("./commands/ban.js")
+const { scheduleTimerEnds } = require("./commands/timer.js")
 const { killMaintenanceBot } = require("./commands/restart.js")
-const { resetAIRequests, convertCommandsToTools } = require("./commands/chat.js")
+const { resetAIRequests } = require("./commands/chat.js")
 const { isModuleBlocked } = require("./commands/block_module.js")
 
 //#endregion Imports
@@ -75,7 +70,6 @@ function getSubscribedCommands(commands, subscription) {
     )
 }
 
-//let aiToolsCommands = { } // aiToolsCommands = convertCommandsToTools(commands);  // Work in Progress
 let commands = { }
 let dailyListenerModules   = { };
 let buttonListenerModules  = { };
@@ -128,6 +122,24 @@ commandsLoadedPromise.then( commandsLoaded => {
             });
             return [ ...args, readGuild, readGuildUser ]
         },
+
+        [Events.GuildMemberAdd]: async (...args) => {
+            let [ member ] = args;
+            const [ readGuildUser, readGuild, readHomeGuild ] = await getReadOnlyDBs({
+                guildId: args[0].guild?.id,
+                userId: args[0].id
+            });
+            return [...args, readGuild]
+        },
+
+        [Events.GuildMemberRemove]: async (...args) => {
+            let [ member ] = args;
+            const [ readGuildUser, readGuild, readHomeGuild ] = await getReadOnlyDBs({
+                guildId: args[0].guild?.id,
+                userId: args[0].id
+            });
+            return [...args, readGuild]
+        }
     }
 
     let commandsArray = Object.values(commands)
@@ -836,160 +848,25 @@ client.on(Events.InteractionCreate, async cmd=>{
     queueCommandMetric(cmd.commandName, intEndTime - intStartTime);
 });
 
-client.on("guildMemberAdd",async member => {
+client.on(Events.GuildMemberAdd, async member => {
     // Mark this user as in the server, if the user object exists already
     await GuildUsers.updateOne(
         { userId: member.user.id, guildId: member.guild.id },
         { $set: { inServer: true } },
         { upsert: false }
     );
-
-    const guildStore = await guildByObj(member.guild);
-
-    // Auto join messages
-    if(guildStore.ajm.active){
-        if(!member.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageWebhooks)){
-            // Swap to DMs if we don't have perms to message, but the join messages are active
-            guildStore.ajm.dm=true;
-        }
-
-        if (guildStore.ajm.dm) {
-            try {
-                member.send({
-                    embeds: [{
-                        type: "rich",
-                        title: member.guild.name,
-                        description: guildStore.ajm.message.replaceAll("${@USER}", `<@${member.id}> ${member.user.username ? `(**${member.user.username}**)` : ''}`).replaceAll("\\n", "\n"),
-                        color: 0x006400,
-                        thumbnail: {
-                            url: member.guild.iconURL(),
-                            height: 0,
-                            width: 0,
-                        },
-                        footer: { text: `This message was sent from ${member.guild.name}` },
-                    }]
-                }).catch(e => { });
-            } catch (e) { }
-        }
-        else{
-            var resp={
-                content:guildStore.ajm.message.replaceAll("${@USER}",`<@${member.id}> ${member.user.username ? `(**${member.user.username}**)` : '' }`).replaceAll("\\n","\n"),
-                username:member.guild.name,
-                avatarURL:member.guild.iconURL()
-            };
-            var hook=await client.channels.cache.get(guildStore.ajm.channel).fetchWebhooks();
-            hook=hook.find(h=>h.token);
-            if(hook){
-                hook.send(resp);
-            }
-            else{
-                client.channels.cache.get(guildStore.ajm.channel).createWebhook({
-                    name: config.name,
-                    avatar: config.pfp
-                }).then(d=>{
-                    d.send(resp);
-                });
-            }
-        }
-    }
-
-    // Stick roles
-    var addedStickyRoles=0;
-    if(guildStore.stickyRoles){
-        if(!member.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageRoles)){
-            guildStore.stickyRoles=false;
-        }
-        else{
-            const guildUser = await guildUserByObj(member.guild, member.id);
-            guildUser.roles.forEach(role=>{
-                try{
-                    let myRole=member.guild.members.cache.get(client.user.id).roles.highest.position;
-                    var role=member.guild.roles.cache.find(r=>r.id===role);
-                    if (role && role.id !== member.guild.id) {
-                        if(myRole>role.rawPosition){
-                            member.roles.add(role);
-                            addedStickyRoles++;
-                        }
-                    }
-                }
-                catch(e){}
-            });
-        }
-    }
-    if(addedStickyRoles===0&&guildStore.autoJoinRoles){
-        if(!member.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageRoles)){
-            guildStore.autoJoinRoles=[];
-        }
-        if(guildStore.autoJoinRoles.length>0){
-            guildStore.autoJoinRoles.forEach(role=>{
-                let myRole=member.guild.members.cache.get(client.user.id).roles.highest.position;
-                var role=member.guild.roles.cache.find(r=>r.id===role);
-                if(role!==undefined&&role!==null){
-                    if(myRole>role.rawPosition){
-                        member.roles.add(role);
-                    }
-                }
-            });
-        }
-    }
-    if(guildStore.logs.active&&guildStore.logs.joining_and_leaving){
-        client.channels.cache.get(guildStore.logs.channel).send({content:`**<@${member.id}> (${member.user.username}) has joined the server.**`,allowedMentions:{parse:[]}});
-    }
-
-    guildStore.save();
 });
 
-client.on("guildMemberRemove",async member=>{
+client.on(Events.GuildMemberRemove, async member => {
     if (member.user.id == client.user.id) return;
 
-    // Save all this user's roles
-    const guildUser = await guildUserByID(member.guild.id, member.id, {}, true);
-    const guildStore = await guildByObj(member.guild);
-    
-    guildUser.roles = member.roles.cache.map(r => r.id);
-    guildUser.inServer = false;
-    
-    // Logs
-    if (guildStore.logs.active && guildStore.logs.joining_and_leaving) {
-        var bans = await member.guild.bans.fetch();
-        var c = client.channels.cache.get(guildStore.logs.channel);
-        if (c.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)) {
-            c.send({ content: `**<@${member.id}> (${member.user.username}) has ${bans.find(b => b.user.id === member.id) ? "been banned from" : "left"} the server.**${bans.find(b => b.user.id === member.id)?.reason !== undefined ? `\n${bans.find(b => b.user.id === member.id)?.reason}` : ""}`, allowedMentions: { parse: [] } });
-        }
-        else {
-            guildStore.logs.active = false;
-        }
-    }
-
-    // Auto Leave Messages
-    if (guildStore.alm?.active) {
-        if (!member.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageWebhooks)) {
-            guildStore.alm.active = false;
-            return;
-        }
-
-        var resp = {
-            content:guildStore.alm.message.replaceAll("${@USER}",`<@${member.id}> ${member.user.username ? `(**${member.user.username}**)` : '' }`),
-            username:member.guild.name,
-            avatarURL:member.guild.iconURL()
-        };
-        var hook=await client.channels.cache.get(guildStore.alm.channel).fetchWebhooks();
-        hook=hook.find(h=>h.token);
-        if(hook){
-            hook.send(resp);
-        }
-        else{
-            client.channels.cache.get(guildStore.alm.channel).createWebhook({
-                name: config.name,
-                avatar: config.pfp
-            }).then(d=>{
-                d.send(resp);
-            });
-        }
-    }
-
-    guildStore.save();
-    guildUser.save();
+    // Mark as not in the server
+    GuildUsers.updateOne({
+        userId: member.user.id,
+        guildId: member.guild.id,
+    }, {
+        $set: { "inServer": false }
+    })
 });
 
 
