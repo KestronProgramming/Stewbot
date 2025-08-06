@@ -24,6 +24,8 @@ console.beta("Importing everything else");
 const fs = require("fs");
 const mongoose = require("mongoose");
 const ms = require("ms");
+const { guildByID, guildByObj, userByID, userByObj, Guilds, Users, GuildUsers, ConfigDB, guildUserByID, guildUserByObj } = require('./commands/modules/database');
+const NodeCache = require('node-cache');
 console.beta("Importing InfluxDB");
 const { initInflux, queueCommandMetric } = require('./commands/modules/metrics')
 initInflux()
@@ -71,8 +73,8 @@ function getSubscribedCommands(commands, subscription) {
 }
 
 let commands = { }
-let dailyListenerModules   = { };
-let buttonListenerModules  = { };
+let dailyListenerModules  = { };
+let buttonListenerModules = { };
 
 // Register listeners
 commandsLoadedPromise.then( commandsLoaded => {
@@ -227,12 +229,10 @@ const notify = global.notify = async function (what, useWebhook = false) {
 }
 
 // Other data
-var uptime = 0; // Bot uptime in seconds?
-const { guildByID, guildByObj, userByID, userByObj, Guilds, Users, GuildUsers, ConfigDB, guildUserByID, guildUserByObj } = require('./commands/modules/database');
-const NodeCache = require('node-cache');
+let uptime = 0; // Bot uptime in seconds I think?
 
 // Build dynamic help pages
-var helpCommands=[];
+let helpCommands=[];
 commandsLoadedPromise.finally( _ => {
     // Once commands are loaded
     Object.keys(commands).forEach(commandName=>{
@@ -655,20 +655,9 @@ client.on(Events.MessageCreate ,async msg => {
         await devadminChannel.guild.members.fetch(msg.author.id);
 
         if(devadminChannel?.permissionsFor(msg.author.id)?.has(PermissionFlagsBits.SendMessages)){
-            const config = await ConfigDB.findOne({});
+            const config = await ConfigDB.findOne();
             const guild = await guildByObj(msg.guild);
             switch(msg.content.split(" ")[1].replaceAll(".","")){
-                case "gemini":
-                    config.useGlobalGemini = true;
-                    msg.reply("Using Google Gemini globally")
-                    break;
-                case "ollama":
-                    msg.reply("Using Ollama AI globally")
-                    config.useGlobalGemini = false;
-                    break;
-                case "resetAI":
-                    resetAIRequests();
-                    break;
                 case "setBanner":
                     const bannerName = msg.content.split(" ")[2];
                     const bannerPath = `./pfps/${bannerName}`;
@@ -734,7 +723,7 @@ client.on(Events.MessageCreate ,async msg => {
                     undefined.instructed_to_crash = instructed_to_crash
                 break;
             }
-            config.save();
+            config?.save();
             guild.save()
         }
         else{
