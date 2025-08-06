@@ -863,14 +863,14 @@ client.on(Events.GuildMemberRemove, async member => {
 client.on("rateLimit",async d=>{
     notify("Ratelimited -\n\n"+d);
 });
-client.on("error",async e=>{
+client.on(Events.Error,async e=>{
     notify("Client emitted error:\n\n"+e.stack);
 });
-client.on("guildCreate",async guild=>{
+client.on(Events.GuildCreate,async guild=>{
     notify(`Added to **a new server**!`);
     await sendWelcome(guild);
 });
-client.on("guildDelete",async guild=>{
+client.on(Events.GuildDelete,async guild=>{
     // Remove this guild from the store
     await Guilds.deleteOne({ id: guild.id });
 

@@ -1,7 +1,7 @@
 // #region CommandBoilerplate
 const Categories = require("./modules/Categories");
 const { Guilds, Users, guildByID, userByID, guildByObj, userByObj } = require("./modules/database.js")
-const { ContextMenuCommandBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
+const { EmbedType, ContextMenuCommandBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
 function applyContext(context={}) {
 	for (key in context) {
 		this[key] = context[key];
@@ -86,7 +86,7 @@ function makeHelp(page, categories, filterMode, forWho) {
     
     return {
         content: `## Help Menu\nPage: ${page+1}/${totalPages} | Mode: ${filterMode} | Categories: ${categories.length===0?`None`:categories.length===helpCategories.length?`All`:categories.join(", ")}`, embeds: [{
-            "type": "rich",
+            "type": EmbedType.Rich,
             "title": `Help Menu`,
             "description": ``,
             "color": 0x006400,
@@ -200,6 +200,7 @@ module.exports = {
 					"inline": true
 				})
 			}
+
 			if (expandedHelp[0].helpCategories?.length > 0) {
 				fields.push({
 					"name":"Tags",
@@ -208,26 +209,34 @@ module.exports = {
 				})
 			}
 
+            // Link back to the source code
+            let sourceCodeLink = `https://github.com/KestronProgramming/Stewbot/blob/main/commands/${inp}.js`;
+            fields.push({
+                "name": '\u200B',
+                "value": `[View module source code](${sourceCodeLink})`,
+                "inline": false
+            })
+
+
 			// Add something if no data is specified
 			if (fields.length === 0 && !description) {
 				description = "No additional information is available for this command."
 			}
 
-			cmd.followUp({content:`## Help Menu for ${expandedHelp[0].mention}`,embeds:[{
-				"type": "rich",
-				"title": `${expandedHelp[0].mention}`,
-				description,
-				"color": 0x006400,
-				fields,
-				"thumbnail": {
-					"url": config.pfp,
-					"height": 0,
-					"width": 0
-				},
-				"footer": {
-					"text": `Expanded Help Menu for ${inp}.`
-				}
-			}]});
+            cmd.followUp({
+                content: `## Help Menu for ${expandedHelp[0].mention}`, embeds: [{
+                    "type": EmbedType.Rich,
+                    "title": `${expandedHelp[0].mention}`,
+                    description,
+                    "color": 0x006400,
+                    fields,
+                    "thumbnail": {
+                        "url": config.pfp,
+                        "height": 0,
+                        "width": 0
+                    },
+                }]
+            });
 		}
 	},
 
