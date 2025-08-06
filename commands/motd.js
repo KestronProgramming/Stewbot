@@ -1,0 +1,107 @@
+// #region CommandBoilerplate
+const Categories = require("./modules/Categories");
+const { Guilds, Users, ConfigDB, guildByID, userByID, guildByObj, userByObj } = require("./modules/database.js")
+const { Events, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType, AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType } = require("discord.js");
+function applyContext(context = {}) {
+    for (key in context) {
+        this[key] = context[key];
+    }
+}
+/**
+ * @typedef {import("./modules/database").GuildDoc} GuildDoc
+ * @typedef {import("./modules/database").GuildUserDoc} GuildUserDoc
+ * @typedef {import("./modules/database").UserDoc} UserDoc
+ */
+// #endregion CommandBoilerplate
+
+let statusCycleInterval;
+
+async function refreshStatusHandler() {
+    let { statuses, delay } = (
+        await ConfigDB.findOne({}).select("MOTD")
+    ).MOTD;
+
+    if (statusCycleInterval) clearInterval(statusCycleInterval);
+
+    if (statuses.length > 1) {
+        let statusIndex = 0;
+        statusCycleInterval = setInterval(() => {
+            let thisStatus = statuses[statusIndex % statuses.length];
+            client.user.setActivity(
+                thisStatus,
+                { type: ActivityType.Custom }
+            );
+            statusIndex++;
+        }, Math.max(delay, 1000))
+    } else {
+        client.user.setActivity(
+            statuses?.[0],
+            { type: ActivityType.Custom }
+        );
+    }
+}
+
+module.exports = {
+    data: {
+        command: null,
+        requiredGlobals: [],
+        help: {
+            helpCategories: [""],//Do not show in any automated help pages
+            shortDesc: "Stewbot's Admins Only",//Should be the same as the command setDescription field
+            detailedDesc: //Detailed on exactly what the command does and how to use it
+                `Stewbot's Admins Only`
+        }
+    },
+
+    /** @param {import('discord.js').ChatInputCommandInteraction} cmd */
+    async execute(cmd, context) {
+        applyContext(context);
+
+        if (cmd.guild?.id === config.homeServer && cmd.channel.id === config.commandChannel) {
+
+            const subcommand = cmd.options.getSubcommand();
+            let delay = cmd.options.getNumber("milliseconds");
+            let status = cmd.options.getString("status")?.normalize()?.trim();
+
+            let config = await ConfigDB.findOne();
+
+            switch (subcommand) {
+                case "add": 
+                    config.MOTD.statuses.push(status)
+                    break
+
+                case "remove": 
+                    config.MOTD.statuses = config.MOTD.statuses.filter( s =>
+                        s.normalize().trim() !== status
+                    )
+                    break
+
+                case "delay": 
+                    config.MOTD.delay = Math.max(delay, 1000);
+                    break;
+            }
+
+            await config.save();
+            await refreshStatusHandler();
+            cmd.followUp("Done.");
+
+        } else {
+            cmd.followUp("This command is for bot administrators only.");
+        }
+    },
+
+    async autocomplete(cmd) {
+        let allStatues = await ConfigDB.findOne({}).distinct("MOTD.statuses")
+        let autocompletes = allStatues.map(status => ({
+            name: status,
+            value: status
+        }))
+
+        cmd.respond(autocompletes);
+    },
+
+    async [Events.ClientReady] () {
+        setTimeout(refreshStatusHandler, 500);
+        setInterval(refreshStatusHandler, 60000 * 5)
+    }
+};

@@ -16,7 +16,7 @@ function applyContext(context = {}) {
 
 module.exports = {    
     data: {
-        command: null, // TODO: devadmin command globals. Really this is the only one rn
+        command: null,
 
         requiredGlobals: [],
         help:{

@@ -599,13 +599,6 @@ client.once(Events.ClientReady,async ()=>{
 
     console.beta(`Logged into ${client.user.tag}`);
     
-    // Status
-    const status = "/tag_role - give your members a role when they apply your Guild Tag"
-    // const status = "𝐒teward 𝐓o 𝐄xpedite 𝐖ork";
-    client.user.setActivity(status,{type:ActivityType.Custom},1000*60*60*4);
-    setInterval(()=>{
-        client.user.setActivity(status,{type:ActivityType.Custom},1000*60*60*4);
-    },60000*5);
     var now=new Date();
     setTimeout(daily,((now.getHours()>11?11+24-now.getHours():11-now.getHours())*(60000*60))+((60-now.getMinutes())*60000));
 

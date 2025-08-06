@@ -190,13 +190,58 @@ async function launchCommands(hash) {
 			)
 			.addBooleanOption(option=>
 				option.setName("update_commands").setDescription("Update registered commands on discord").setRequired(false)
-			),
+			)
+			.setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
+			
 		new SlashCommandBuilder()
 			.setName('launch_commands')
-			.setDescription('Relaunch commands'),
+			.setDescription('Relaunch commands')
+			.setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
+
 		new SlashCommandBuilder()
 			.setName('update_in_server')
 			.setDescription('API heavy - sync our storage database with up to date information by scanning every single guild')
+			.setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
+
+		new SlashCommandBuilder()
+			.setName('motd')
+			.setDescription(`Change the bot's status`)
+			.addSubcommand(subcommand =>
+				subcommand
+					.setName("add")
+					.setDescription("Add a new status message")
+					.addStringOption(option => 
+						option
+							.setName("status")
+							.setDescription("The status message")
+							.setRequired(true)
+					)
+			)
+			.addSubcommand(subcommand => 
+				subcommand
+					.setName("remove")
+					.setDescription("Remove a status message")
+					.addStringOption(option => 
+						option
+							.setName("status")
+							.setDescription("The status message")
+							.setRequired(true)
+							.setAutocomplete(true)
+					)
+			)
+			.addSubcommand(subcommand =>
+				subcommand
+					.setName("delay")
+					.setDescription("Set the cycle delay")
+					.addNumberOption(option => 
+						option
+							.setName("milliseconds")
+							.setDescription("The time in milliseconds between statuses")
+							.setRequired(true)
+					)
+			)
+			.setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
+			
 	]
 	rest.put(
 		Routes.applicationGuildCommands(process.env.beta ? process.env.betaClientId : process.env.clientId, config.homeServer),
