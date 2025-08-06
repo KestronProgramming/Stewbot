@@ -1,17 +1,5 @@
 [
     {
-        "name": "add_emojiboard",
-        "mention": "</add_emojiboard:1363253073744498698>",
-        "helpCategories": [
-            "General",
-            "Configuration",
-            "Entertainment",
-            "Server_Only"
-        ],
-        "shortDesc": "Create a new emojiboard",
-        "detailedDesc": "Adds an emojiboard for Stewbot to run. If the emoji you choose is reacted enough times on a message (configurable threshold), then it will be posted to a highlights reel channel of your choosing.\n\n\t\t\t\tYou can choose if Stewbot should display a random message and an embed with the message, just an embed with the message, or use webhooks to appear as if the user who originally made the post in question posted it there themselves."
-    },
-    {
         "name": "admin_message",
         "mention": "</admin_message:1363253073744498699>",
         "helpCategories": [
@@ -232,17 +220,6 @@
         "detailedDesc": "Stewbot is a passion project, born out of our desire for the ultimate Discord bot. We never charge for any usage of the bot. We never have advertisements. We never store, or sell your info. We make the source code that the bot runs on public and open source. We provide free features that other bots charge for.\n\n                \n\n                If this is something that speaks to you, that you want to support and to help fund, you can donate here."
     },
     {
-        "name": "edit_emojiboard",
-        "mention": "</edit_emojiboard:1363253073941762139>",
-        "helpCategories": [
-            "Configuration",
-            "Entertainment",
-            "Server_Only"
-        ],
-        "shortDesc": "Configure an emojiboard for this server",
-        "detailedDesc": "Change settings for a previously added emojiboard in this server"
-    },
-    {
         "name": "embed_message",
         "mention": "</embed_message:1363253073941762140>",
         "helpCategories": [
@@ -252,6 +229,18 @@
         ],
         "shortDesc": "Embed a message link from another channel or server",
         "detailedDesc": "This command allows you to enter a message link from any channel or server you are in and have Stewbot to display it. If Stewbot does not share the server with you, you can still embed it by installing Stewbot to use everywhere (click his PFP and then \"Add App\" to do so) and then using the \"prime_embed\" context menu command (right click on desktop, hold down on mobile, then press Apps) on the message you'd like to embed, and then using this command and entering \"PRIMED\"."
+    },
+    {
+        "name": "emojiboard",
+        "mention": "</emojiboard:1402468890461737050>",
+        "helpCategories": [
+            "General",
+            "Configuration",
+            "Entertainment",
+            "Server_Only"
+        ],
+        "shortDesc": "Manage emojiboards for this server",
+        "detailedDesc": "Manage emojiboards for Stewbot to run. If the emoji you choose is reacted enough times on a message (configurable threshold), then it will be posted to a highlights reel channel of your choosing.\n\n\t\t\t\tYou can choose if Stewbot should display a random message and an embed with the message, just an embed with the message, or use webhooks to appear as if the user who originally made the post in question posted it there themselves.\n\n\t\t\t\tUse the subcommands to add, remove, edit, or view emojiboards."
     },
     {
         "name": "filter config",
@@ -599,17 +588,6 @@
         ],
         "shortDesc": "View someone's rank for this server's level ups",
         "detailedDesc": "Check someone's rank for this server's level ups if this server has them configured."
-    },
-    {
-        "name": "remove_emojiboard",
-        "mention": "</remove_emojiboard:1363253074126442781>",
-        "helpCategories": [
-            "Entertainment",
-            "Configuration",
-            "Server_Only"
-        ],
-        "shortDesc": "Remove an emojiboard",
-        "detailedDesc": "Choose an emojiboard that you would no longer like to have Stewbot manage and post for."
     },
     {
         "name": "report_problem",

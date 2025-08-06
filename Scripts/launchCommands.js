@@ -53,7 +53,7 @@ async function getCommands(autoRelaunch=true) { // launching runs getCommands, s
 						returnCommands[commandName] = command?.default || command; // `import` throws the module under the `default` tag
 					} catch (importError) {
 						try { notify(`Command ${commandName} failed to load`, true) } catch{}
-						console.error(`Error importing command "${commandName}":`, importError);
+						console.log(`Error importing command "${commandName}":`, importError);
 					}
 				}
 			})
@@ -176,7 +176,9 @@ async function launchCommands(hash) {
 		// )
 		if (hash) comms._hash = hash;
 		fs.writeFileSync("./data/commands.json", JSON.stringify(comms, null, 4));
-	}).catch(console.error);
+	}).catch((error) => {
+		console.error(error);
+	});
 
 	// Register stewbot-devadmin-only commands
 	const devadminCommands = [

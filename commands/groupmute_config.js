@@ -14,7 +14,7 @@ function applyContext(context={}) {
  */
 // #endregion CommandBoilerplate
 
-const { getEmojiFromMessage, parseEmoji } = require('../util');
+const { getEmojiFromMessage, parseEmoji } = require('./emojiboard');
 
 module.exports = {
 	data: {

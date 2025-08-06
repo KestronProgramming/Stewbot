@@ -576,14 +576,13 @@ client.once(Events.ClientReady,async ()=>{
     // Determine uptime
     const bootedAtTimestamp = `<t:${Math.round(Date.now()/1000)}:R>`
 
-    const config = await ConfigDB.findOne({});
+    const config = await ConfigDB.findOne();
 
     if (config) {
         const rebootIntentional = Date.now() - config.restartedAt < ms("30s");
-        console.log(config.restartedAt - Date.now());
         if (rebootIntentional) {
             // The reboot was intentional
-            uptime = Math.round(config/1000);
+            uptime = Math.round(config.restartedAt/1000);
             bootMOTD += `Bot resumed after restart ${bootedAtTimestamp}`;
         } else {
             // The reboot was accidental, so reset our bootedAt time
