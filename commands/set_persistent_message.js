@@ -193,9 +193,9 @@ module.exports = {
     },
 
     async [Events.MessageDelete] (msg, guildStore) {
-        if(msg.guild?.id===undefined) return;
+        if(!msg.guild) return;
 
-        if (guildStore.persistence?.[msg.channel.id]?.active && guildStore.persistence?.[msg.channel.id]?.lastPost === msg.id) {
+        if (guildStore?.persistence?.[msg.channel.id]?.active && guildStore.persistence?.[msg.channel.id]?.lastPost === msg.id) {
             setTimeout(() => { checkPersistentDeletion(guildStore, msg.channel.id, msg.id) }, 1500);
         }
     }

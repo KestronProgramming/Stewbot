@@ -251,9 +251,9 @@ module.exports = {
 	},
 
 	async [Events.MessageDelete] (msg, guildStore) {
-		if(msg.guild?.id===undefined) return;
+		if(!msg.guild?.id) return;
 		
-		if (guildStore.logs.mod_actions && guildStore.logs.active) {
+		if (guildStore?.logs?.mod_actions && guildStore.logs.active) {
 			if (msg.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ViewAuditLog)) {
 
 				// Wait for audit log to propagate

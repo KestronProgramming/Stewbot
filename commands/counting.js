@@ -451,8 +451,10 @@ module.exports = {
     },
 
     async [Events.MessageDelete](msg, guildStore) {
+        if (!msg.guild) return;
+
         // Resend if the latest counting number was deleted
-        if (guildStore.counting.active && guildStore.counting.channel === msg.channel.id) {
+        if (guildStore?.counting?.active && guildStore.counting.channel === msg.channel.id) {
 
             // var num=msg.content?.match(/^(\d|,)+(?:\b)/i);
             var num = msg.content ? processForNumber(msg.content) : null;
