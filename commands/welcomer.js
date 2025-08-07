@@ -15,6 +15,7 @@ function applyContext(context = {}) {
 // #endregion CommandBoilerplate
 
 const config = require("../data/config.json");
+const { notify } = require("../utils")
 
 async function sendWelcome(guild) {
     guild = await client.guilds.fetch(guild.id); // fetch the full guild
@@ -141,7 +142,24 @@ module.exports = {
         },
     },
 
-    async [Events.GuildCreate](guild) {
+    async [Events.GuildCreate] (guild) {
         await sendWelcome(guild);
-    }
+    },
+
+    async [Events.ClientReady] () {
+        // Check for new servers that got added / removed while we were offline
+        const guilds = await client.guilds.fetch();
+        guilds.forEach(async guild => {
+            const knownGuild = await Guilds.findOne({ id: guild.id })
+                .select("sentWelcome")
+                .lean()
+                .catch(e => null);
+
+            if (!knownGuild) {
+                notify("Added to **new server** (detected on boot scan)")
+                await guildByObj(guild); // This will create the guild
+                sendWelcome(guild);
+            }
+        });
+	}
 };

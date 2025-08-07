@@ -1,7 +1,7 @@
 // #region CommandBoilerplate
 const Categories = require("./modules/Categories");
-const { Guilds, Users, guildByID, userByID, guildByObj, userByObj } = require("./modules/database.js")
-const { ContextMenuCommandBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
+const { Guilds, Users, guildByID, userByID, guildByObj, userByObj, ConfigDB } = require("./modules/database.js")
+const { ContextMenuCommandBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType, Events}=require("discord.js");
 function applyContext(context={}) {
 	for (let key in context) {
 		this[key] = context[key];
@@ -16,9 +16,10 @@ function applyContext(context={}) {
 
 const mongoose = require("mongoose")
 const ms = require("ms");
+const { notify } = require("../utils")
 
+const bootedAt = Date.now();
 let uptime = 0; // Bot uptime in seconds I think?
-const setUptime = (time) => uptime = time;
 
 module.exports = {
 	setUptime,
@@ -72,4 +73,36 @@ module.exports = {
 			`- User Install Count: ${app.approximateUserInstallCount} Users`
 		);
 	},
+
+	async [Events.ClientReady] () {
+		let bootMOTD = ``;
+
+		// Determine uptime
+		const bootedAtTimestamp = `<t:${Math.round(Date.now() / 1000)}:R>`
+
+		const config = await ConfigDB.findOne();
+
+		if (config) {
+			const rebootIntentional = Date.now() - config.restartedAt < ms("30s");
+			if (rebootIntentional) {
+				// The reboot was intentional
+				setUptime(Math.round(config.restartedAt / 1000));
+				bootMOTD += `Bot resumed after restart ${bootedAtTimestamp}`;
+			} else {
+				// The reboot was accidental, so reset our bootedAt time
+				config.bootedAt = Date.now();
+				setUptime(Math.round(Date.now() / 1000));
+				bootMOTD += `Started at ${bootedAtTimestamp}`;
+				config.save();
+			}
+		}
+
+		// Add boot time
+		bootMOTD += ` | Booting took ${Date.now() - bootedAt}ms`;
+
+		notify(bootMOTD);
+
+		console.beta(`Logged into ${client.user.tag}`);
+
+	}
 };

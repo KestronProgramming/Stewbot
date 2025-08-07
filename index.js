@@ -1,7 +1,5 @@
 // Stewbot main file.
-// This file imports everything, dispatches events to the files they need to go to, and handles overall bot logic.
-
-const bootedAt = Date.now();
+// This file dispatches events to the files they need to go to, and handles overall event registration logic.
 
 //#region Startup
 // Load envs and prepare for benchmarked boot.
@@ -38,15 +36,8 @@ const DBConnectPromise = new Promise((resolve, reject) => {
     })
 })
 
-const { updateBlocklists } = require("./commands/badware_scanner.js")
-const { scheduleTodaysSlowmode } = require("./commands/slowmode.js")
-const { scheduleTodaysTemproles } = require("./commands/temp_role.js")
-const { resetHatScheduleLocks, scheduleTodaysHats } = require("./commands/hat_pull.js")
-const { scheduleTodaysUnbans } = require("./commands/ban.js")
-const { scheduleTimerEnds } = require("./commands/timer.js")
-const { killMaintenanceBot } = require("./commands/restart.js")
+const { updateBlocklists } = require("./commands/badware_scanner.js")const { killMaintenanceBot } = require("./commands/restart.js")
 const { isModuleBlocked } = require("./commands/block_module.js")
-const { setUptime } = require("./commands/ping.js")
 
 //#endregion Imports
 
@@ -323,13 +314,11 @@ function daily(dontLoop=false){
     Object.values(dailyListenerModules).forEach(module => module.daily(pseudoGlobals))
 }
 
-const { sendWelcome } = require("./commands/welcomer.js");
-
 //#endregion Functions
 
 //#region Listeners
 //Actionable events
-client.once(Events.ClientReady,async ()=>{
+client.once(Events.ClientReady, async ()=>{
     killMaintenanceBot();
     
     // Once backup.js fully imports, start the backup thread
@@ -338,60 +327,14 @@ client.once(Events.ClientReady,async ()=>{
             notify(String(error));
         })
     })
-
-    let bootMOTD = ``;
-
-    // Determine uptime
-    const bootedAtTimestamp = `<t:${Math.round(Date.now()/1000)}:R>`
-
-    const config = await ConfigDB.findOne();
-
-    if (config) {
-        const rebootIntentional = Date.now() - config.restartedAt < ms("30s");
-        if (rebootIntentional) {
-            // The reboot was intentional
-            setUptime(Math.round(config.restartedAt/1000));
-            bootMOTD += `Bot resumed after restart ${bootedAtTimestamp}`;
-        } else {
-            // The reboot was accidental, so reset our bootedAt time
-            config.bootedAt = Date.now();
-            setUptime(Math.round(Date.now()/1000));
-            bootMOTD += `Started at ${bootedAtTimestamp}`;
-            config.save();
-        }
-    }
-
-    // Add boot time
-    bootMOTD += ` | Booting took ${Date.now()-bootedAt}ms`;
-    notify(bootMOTD);
-
-    console.beta(`Logged into ${client.user.tag}`);
     
     var now=new Date();
-    setTimeout(daily,((now.getHours()>11?11+24-now.getHours():11-now.getHours())*(60000*60))+((60-now.getMinutes())*60000));
-
-    // Check for new servers that got added / removed while we were offline
-    const guilds = await client.guilds.fetch();
-    guilds.forEach(async guild => {
-        const knownGuild = await Guilds.findOne({ id: guild.id })
-            .select("sentWelcome")
-            .lean()
-            .catch(e => null);
-
-        if(!knownGuild) {
-            notify("Added to **new server** (detected on boot scan)")
-            await guildByObj(guild); // This will create the guild
-            sendWelcome(guild);
-        }
-    });
-
-    // Register time based stuff
-    await resetHatScheduleLocks(); // has to be run at boot before scheduling timers
-    scheduleTodaysUnbans();
-    scheduleTodaysTemproles();
-    scheduleTodaysHats();
-    scheduleTimerEnds();
-    scheduleTodaysSlowmode();
+    setTimeout(
+        daily,
+        // Schedule dailies to start at 11 AM (host device tz, UTC in this case) the next day
+        // TODO: make this UTC
+        ((now.getHours() > 11 ? 11 + 24 - now.getHours() : 11 - now.getHours()) * (60000 * 60)) + ((60 - now.getMinutes()) * 60000)
+    );
 });
 
 client.on(Events.MessageCreate ,async msg => {
@@ -454,7 +397,7 @@ client.on(Events.MessageCreate ,async msg => {
                 break;
                 case "runWelcome":
                     guild.sentWelcome=false;
-                    sendWelcome(msg.guild);
+                    require("./commands/welcomer.js")(msg.guild);
                 break;
                 case "resetHackSafe":
                     await GuildUsers.updateOne({ userId: msg.author.id, guildId: msg.guild.id }, {
@@ -602,7 +545,7 @@ client.on(Events.InteractionCreate, async cmd=>{
 // Note:
 // Other important logic handling database cleanup, general management, etc., is inside `./commands/core.js`
 
-//Error handling
+// Don't crash on any type of error
 process.on('unhandledRejection', e=>notify(e.stack));
 process.on('unhandledException', e=>notify(e.stack));
 process.on('uncaughtException',  e=>notify(e.stack));
