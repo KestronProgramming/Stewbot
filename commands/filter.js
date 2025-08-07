@@ -42,7 +42,7 @@ function verifyRegex(regexStr) {
     // TODO evaluate user regexes like this:
     // const regex = new RE2(userProvidedRegex, 'ui'); // TODO: figure out some system for flags - i should default on but some uses cases may need it off
     // const result = regex.exec(msg.content);
-    // console.beta(result);
+    // console.log(result);
 }
 
 function escapeRegex(input) {

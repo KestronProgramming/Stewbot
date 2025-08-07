@@ -117,7 +117,7 @@ async function sendWelcome(guild) {
                     }
 
                     await msg.channel.send({ content: "Greetings!", embeds: embs });
-                    console.beta("New server welcomed")
+                    console.log("New server welcomed")
 
                     guildStore.sentWelcome = true;
                     await guildStore.save();

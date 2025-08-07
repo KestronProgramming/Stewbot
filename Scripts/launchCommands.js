@@ -71,7 +71,7 @@ async function getCommands(autoRelaunch=true) { // launching runs getCommands, s
 				)
 			);
 			if (global.cmds._hash !== currentCommandsHash) {
-				console.beta("Command data change detected, relaunching")
+				console.log("Command data change detected, relaunching")
 				launchCommands(currentCommandsHash);
 			};
 		}

@@ -46,7 +46,7 @@ function startMaintenanceHandler() {
     });
     
     small.on('error', (err) => {
-        console.beta('Failed to start maintenance:', err);
+        console.log('Failed to start maintenance:', err);
     });
 
     small.unref();    

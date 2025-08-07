@@ -1,7 +1,7 @@
 // #region CommandBoilerplate
 const Categories = require("./modules/Categories");
 const { Guilds, Users, guildByID, userByID, guildByObj, userByObj } = require("./modules/database.js")
-const { EmbedType, ContextMenuCommandBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
+const { EmbedType, ContextMenuCommandBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType, Events}=require("discord.js");
 function applyContext(context={}) {
 	for (let key in context) {
 		this[key] = context[key];
@@ -14,13 +14,18 @@ function applyContext(context={}) {
  */
 // #endregion CommandBoilerplate
 
-const { limitLength } = require("../utils.js")
+const { limitLength } = require("../utils.js");
 const config = require("../data/config.json");
+const fs = require("fs");
 const Fuse = require('fuse.js');
 const fuseOptions = {
 	includeScore: true,
 	keys: ['item']
 };
+
+
+// Help pages will be stored here
+let helpCommands = [];
 
 function chunkArray(array, size) {
     const result = [];
@@ -169,7 +174,7 @@ module.exports = {
 		
 		extra: {"contexts":[0,1,2],"integration_types":[0,1]},
 
-		requiredGlobals: ["helpCommands", "commands"],
+		requiredGlobals: ["commands"],
 
 		help: {
 			helpCategories: [Categories.General, Categories.Bot, Categories.Information],
@@ -256,7 +261,7 @@ module.exports = {
         possibleCommands = possibleCommands.slice(0, 25);
 
         // Format for discord
-        autocompletes = []
+        let autocompletes = []
         for (let cmdName of possibleCommands) {
             autocompletes.push({
                 name: cmdName,
@@ -305,5 +310,35 @@ module.exports = {
 				}
 			}
 		}
-	}
+	},
+
+    // Build dynamic help pages when the bot is ready
+    async [Events.ClientReady]() {
+        // Once commands are loaded
+        Object.keys(commands).forEach(commandName => {
+            var cmd = commands[commandName];
+            if (cmd.data?.help?.shortDesc !== undefined && cmd.data?.help?.shortDesc !== `Stewbot's Admins Only` && cmd.data?.help?.helpCategories.length > 0) {
+                const commandMention = cmds[cmd.data?.command?.name]?.mention || `\`${commandName}\` Module`; // non-command modules don't have a mention
+                helpCommands.push(Object.assign({
+                    name: cmd.data?.command?.name || commandName,
+                    mention: commandMention
+                }, cmd.data?.help));
+            }
+            else if (cmd.data?.help?.shortDesc !== `Stewbot's Admins Only`) {
+                Object.keys(cmd.data?.help || []).forEach(subcommand => {
+                    var subcommandHelp = cmd.data?.help[subcommand];
+                    const subcommandMention = cmds[cmd.data?.command?.name]?.[subcommand]?.mention || `\`${commandName}\` Module` // No case for this rn but might have one in the future
+                    if (subcommandHelp.helpCategories?.length > 0) {
+                        helpCommands.push(Object.assign({
+                            name: `${commandName} ${subcommand}`,
+                            mention: subcommandMention
+                        }, subcommandHelp));
+                    }
+                });
+            }
+        });
+
+        // Dump the help pages so we can import on websites and stuff
+        fs.promises.writeFile("./data/helpPages.json", JSON.stringify(helpCommands, null, 4))
+    }
 };

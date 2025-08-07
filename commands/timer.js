@@ -31,9 +31,9 @@ async function finTimer(userId,force){
     }
     if(user.timer.respLocation==="DM"){
         try{
-            (await client.users.fetch(userId)).send(`Your timer is done!${user.timer.reminder.length>0?`\n\`${user.timer.reminder}\``:``}`).catch(e=>{console.beta(e)});
+            (await client.users.fetch(userId)).send(`Your timer is done!${user.timer.reminder.length>0?`\n\`${user.timer.reminder}\``:``}`).catch(e=>{console.log(e)});
         }
-        catch(e){console.beta(e)}
+        catch(e){console.log(e)}
     }
     else{
         try{
@@ -50,14 +50,14 @@ async function finTimer(userId,force){
                     }
                 }
                 else{
-                    (await client.users.fetch(userId)).send(`Your timer is done!${user.timer.reminder.length>0?`\n\`${escapeBackticks(user.timer.reminder)}\``:``}`).catch(e=>{console.beta(e)});
+                    (await client.users.fetch(userId)).send(`Your timer is done!${user.timer.reminder.length>0?`\n\`${escapeBackticks(user.timer.reminder)}\``:``}`).catch(e=>{console.log(e)});
                 }
             }
             catch(e){
-                (await client.users.fetch(userId)).send(`Your timer is done!${user.timer.reminder.length>0?`\n\`${user.timer.reminder}\``:``}`).catch(e=>{console.beta(e)});
+                (await client.users.fetch(userId)).send(`Your timer is done!${user.timer.reminder.length>0?`\n\`${user.timer.reminder}\``:``}`).catch(e=>{console.log(e)});
             }
         }
-        catch(e){console.beta(e)}
+        catch(e){console.log(e)}
     }
     await user.updateOne({ $unset: { timer: "" } })
 }

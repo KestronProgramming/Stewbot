@@ -52,11 +52,11 @@ async function initInflux() {
             }
         }, process.env.beta ? ms("1s") : ms("20s"))
 
-        console.beta('[InfluxDB] Connected')
+        console.log('[InfluxDB] Connected')
     } catch (e) {
         writeApi = influxClient = undefined;
         connected = false;
-        console.beta('[InfluxDB] Connection failed, skipping metrics.')
+        console.log('[InfluxDB] Connection failed, skipping metrics.')
     }
 }
 
@@ -69,7 +69,7 @@ function queueCommandMetric(commandName, durationMs) {
 
     pointQueue.push(point)
 
-    console.beta("New point for command", commandName, "which lasted", ms(durationMs))
+    console.log("New point for command", commandName, "which lasted", ms(durationMs))
 }
 
 module.exports = { initInflux, queueCommandMetric }

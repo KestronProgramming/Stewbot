@@ -24,8 +24,6 @@ const ms = require("ms");
 const NodeCache = require("node-cache");
 const { checkDirty } = require("./filter");
 
-console.beta = (...args) => process.env.beta && console.log(...args);
-
 const config = require("../data/config.json")
 const INTERFACES = config.aiNodeInterfaces;
 const BROADCAST_PORT = config.aiNodePort;
@@ -241,14 +239,14 @@ async function multicastRequest(message, waitTimeMs) {
                     return null;
                 }
                 const { localIP, broadcastIP } = interfaceDetails;
-                console.beta(`Using ${iface}: IP=${localIP}, Broadcast=${broadcastIP}`);
+                console.log(`Using ${iface}: IP=${localIP}, Broadcast=${broadcastIP}`);
 
                 const server = dgram.createSocket('udp4');
                 const discovered = [];
 
                 server.bind(BROADCAST_PORT, localIP, () => {
                     server.setBroadcast(true);
-                    console.beta(`Bound to ${iface} (${localIP})`);
+                    console.log(`Bound to ${iface} (${localIP})`);
 
                     const bufferMessage = Buffer.from(message);
                     server.send(bufferMessage, 0, bufferMessage.length, BROADCAST_PORT, broadcastIP, (err) => {
@@ -256,21 +254,21 @@ async function multicastRequest(message, waitTimeMs) {
                             console.error(`Broadcast error on ${iface}:`, err);
                             reject(err);
                         } else {
-                            console.beta(`Broadcast message sent on ${iface}`);
+                            console.log(`Broadcast message sent on ${iface}`);
                         }
                     });
                 });
 
                 // Collect responses
                 server.on('message', (msg, rinfo) => {
-                    console.beta(`Response from ${rinfo.address}:${rinfo.port} -> ${msg.toString()}`);
+                    console.log(`Response from ${rinfo.address}:${rinfo.port} -> ${msg.toString()}`);
                     discovered.push({ ip: rinfo.address, port: rinfo.port, data: msg.toString() });
                 });
 
                 // Close the server after the wait time
                 setTimeout(() => {
                     server.close(() => {
-                        console.beta(`Stopped listening on ${iface}`);
+                        console.log(`Stopped listening on ${iface}`);
                         resolve(discovered);
                     });
                 }, waitTimeMs);
@@ -294,7 +292,7 @@ async function getAvailableOllamaServers() {
     responses.forEach(server => {
         ollamaInstances.push(new Ollama({ host: `http://${server.ip}:${server.data}` }))
     })
-    console.beta(`${ollamaInstances.length} available servers`);
+    console.log(`${ollamaInstances.length} available servers`);
 
     // Remove servers with active requests
     ollamaInstances = ollamaInstances.filter((instance) => !activeAIRequests.get(instance.config.host));
@@ -529,7 +527,7 @@ async function getAiResponseOllama(threadID, message, thinking = null, contextua
     }
     catch (e) {
         notify && notify(`AI API response has no content: \n${e.stack}`)
-        console.beta(e);
+        console.log(e);
         response = `Sorry, there was an error with the AI response. It has already been reported. Try again later.`;
     }
     finally {

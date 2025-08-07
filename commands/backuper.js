@@ -16,7 +16,7 @@ function applyContext(context={}) {
 
 const { notify } = require("../utils")
 const ms = require("ms");
-const { startBackupThreadPromise, checkForMongoRestore } = require("../backup.js");
+const { startBackupThreadPromise } = require("../backup.js");
 
 module.exports = {
 	data: {

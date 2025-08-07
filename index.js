@@ -1,50 +1,46 @@
 // Stewbot main file.
 // This file dispatches events to the files they need to go to, 
 //   connects to the database, and registers event handlers.
+//
+// Note:
+// Other important logic handling database cleanup, 
+//   general management, etc., is inside `./commands/core.js`
 
-//#region Startup
-// Load envs and prepare for benchmarked boot.
+
+// === Load envs
 const envs = require('./env.json');
 Object.keys(envs).forEach(key => process.env[key] = envs[key] );
 if (process.env.beta == 'false') delete process.env.beta; // ENVs are all strings, so make it falsy if it's "false"
 
-console.beta = (...args) => process.env.beta && console.log(...args);
-
+// === Import everything
 const cmds = global.cmds = require("./data/commands.json");
 const config = global.config = require("./data/config.json");
-console.beta("Importing discord");
-const { Client, Events, GatewayIntentBits, Partials, PermissionFlagsBits, Message } = require("discord.js");
-console.beta("Importing commands");
+console.log("Importing discord");
+const { Client, Events, GatewayIntentBits, Partials } = require("discord.js");
+console.log("Importing commands");
 const { getCommands } = require("./Scripts/launchCommands.js"); // Note: current setup requires this to be before the commands.json import (the cmd.globals setting)
 const commandsLoadedPromise = getCommands();
-console.beta("Importing backup.js");
-const { checkForMongoRestore } = require("./backup.js");
-console.beta("Importing everything else");
-const fs = require("fs");
+console.log("Importing backup.js");
+console.log("Importing everything else");
 const mongoose = require("mongoose");
-const ms = require("ms");
-const { messageDataCache, guildByID, guildByObj, userByID, userByObj, Guilds, Users, GuildUsers, ConfigDB, guildUserByID, guildUserByObj } = require('./commands/modules/database');
-const { notify } = require("./utils");
-console.beta("Importing InfluxDB");
+const { guildByID, guildByObj } = require('./commands/modules/database');
+const { notify, getReadOnlyDBs } = require("./utils");
+const { checkForMongoRestore } = require("./backup.js");
+const { isModuleBlocked } = require("./commands/block_module.js")
+console.log("Importing InfluxDB");
 const { initInflux, queueCommandMetric } = require('./commands/modules/metrics')
 initInflux()
 
-const DBConnectPromise = new Promise((resolve, reject) => {
-    // Start the to the DB connection now, so it runs in the background and is ready later
-    checkForMongoRestore().finally(_ => {
-        mongoose.connect(`${process.env.databaseURI}/${process.env.beta ? "stewbeta" : "stewbot"}`)
-        resolve();
-    })
-})
 
-const { updateBlocklists } = require("./commands/badware_scanner.js")
-const { isModuleBlocked } = require("./commands/block_module.js")
+// // === Start DB connection
+// const DBConnectPromise = new Promise((resolve, reject) => {
+//     // Start the to the DB connection now, so it runs in the background and is ready later
+//     checkForMongoRestore().finally(_ => {
+//         mongoose.connect(`${process.env.databaseURI}/${process.env.beta ? "stewbeta" : "stewbot"}`)
+//         resolve(true);
+//     })
+// })
 
-//#endregion Imports
-
-//#region Setup
-
-// Load commands modules
 function getSubscribedCommands(commands, subscription) {
     return Object.fromEntries(
         (Object.entries(commands)
@@ -53,19 +49,19 @@ function getSubscribedCommands(commands, subscription) {
     )
 }
 
-let commands = { }
+// === Register listeners
+let commands = global.commands = { }
 let dailyListenerModules  = { };
 let buttonListenerModules = { };
-
-// Register listeners
-commandsLoadedPromise.then( commandsLoaded => {
+const pseudoGlobals = { config }; // data that should be passed to each module
+let commandListenerRegister = commandsLoadedPromise.then( commandsLoaded => {
     // This code registers all requested listeners
     // This method allows any event type to be easily added to a command file
 
     // The functions `onbutton` and `autocomplete` are both still available for convenience.
 
     // Save commands
-    commands = Object.freeze(commandsLoaded);
+    commands = global.commands = Object.freeze(commandsLoaded);
 
     // Load some custom listener functions
     dailyListenerModules = getSubscribedCommands(commands, "daily");
@@ -173,154 +169,22 @@ commandsLoadedPromise.then( commandsLoaded => {
     }
 });
 
-
-// Log in with all intents expect guild presence
+// === Log in
 const client = global.client = new Client({
     intents: Object.values(GatewayIntentBits)
         .filter(i => typeof(i) == 'number')
-        .filter(i => i !== GatewayIntentBits.GuildPresences),
+        .filter(i => i !== GatewayIntentBits.GuildPresences), // Our production bot was denied GuildPresences intents
     partials: Object.keys(Partials).map(a => Partials[a])
 });
 
-// Build dynamic help pages
-let helpCommands=[];
-commandsLoadedPromise.finally( _ => {
-    // Once commands are loaded
-    Object.keys(commands).forEach(commandName=>{
-        var cmd=commands[commandName];
-        if(cmd.data?.help?.shortDesc!==undefined&&cmd.data?.help?.shortDesc!==`Stewbot's Admins Only`&&cmd.data?.help?.helpCategories.length>0){
-            const commandMention = cmds[cmd.data?.command?.name]?.mention || `\`${commandName}\` Module`; // non-command modules don't have a mention
-            helpCommands.push(Object.assign({
-                name: cmd.data?.command?.name || commandName,
-                mention: commandMention
-            },cmd.data?.help));
-        }
-        else if(cmd.data?.help?.shortDesc!==`Stewbot's Admins Only`){
-            Object.keys(cmd.data?.help || []).forEach(subcommand=>{
-                var subcommandHelp=cmd.data?.help[subcommand];
-                const subcommandMention = cmds[cmd.data?.command?.name]?.[subcommand]?.mention || `\`${commandName}\` Module` // No case for this rn but might have one in the future
-                if(subcommandHelp.helpCategories?.length>0){
-                    helpCommands.push(Object.assign({
-                        name: `${commandName} ${subcommand}`,
-                        mention: subcommandMention
-                    },subcommandHelp));
-                }
-            });
-        }
-    });
-
-    // Dump the help pages so we can import on websites and stuff
-    fs.promises.writeFile("./data/helpPages.json", JSON.stringify(helpCommands, null, 4))
-})
-
-
-// Now that setup is done, define data that should be passed to each module - 
-const pseudoGlobals = { config };
-//#endregion Setup
-
-//#region Functions
-
-/** 
- * Database lookup for high-traffic events (messageCreate, messageUpdate, etc) - TODO_DB: (look into) guild profile changes?
- * 
- * @typedef {import("./commands/modules/database").RawGuildDoc} RawGuildDoc
- * @typedef {import("./commands/modules/database").RawGuildUserDoc} RawGuildUserDoc
- * 
- * @returns {Promise<[RawGuildUserDoc|undefined, RawGuildDoc|undefined, RawGuildDoc|undefined]>} Array of read only DBs.
- * @param int Either an object with 'guildId' and 'userId' props, or a message object.  
- * */
-async function getReadOnlyDBs(int, createGuildUser=true) {
-    // returns [ readGuildUser, readGuild, readHomeGuild ]
-
-    let readGuildUser;
-    let readGuild;
-    let readHomeGuild;
-
-    let guildId;
-    let userId;
-    if (int instanceof Message) {
-        guildId = int.guild?.id;
-        userId = int.author?.id;
-    }
-    else if (typeof(int) == "object") {
-        guildId = int.guildId;
-        userId = int.userId || int.authorId;
-    }
-
-    // Efficiently create, store, and update users
-    if (guildId && userId) {
-        const guildKey = `${guildId}`;
-        const guildUserKey = `${guildKey}>${userId}`;
-        const homeGuildKey = config.homeServer;
-
-        // Run all three DB queries in parallel
-        const [cachedGuildUser, cachedGuild, cachedHomeGuild] = await Promise.all([
-            // Get guild user
-            messageDataCache.get(guildUserKey) || GuildUsers.findOneAndUpdate(
-                { guildId: guildId, userId: userId },
-                (createGuildUser ? { inServer: true } : { }), // set inServer since we're fetching them
-                { new: true, setDefaultsOnInsert: false, upsert: true }
-            ).lean({ virtuals: true }).then(data => {
-                messageDataCache.set(guildUserKey, data);
-                return data;
-            }),
-            
-            // Get guild
-            messageDataCache.get(guildKey) || Guilds.findOneAndUpdate(
-                { id: guildId },
-                { },
-                { new: true, upsert: true, setDefaultsOnInsert: true }
-            ).lean({ virtuals: true }).then(data => {
-                messageDataCache.set(guildKey, data);
-                return data;
-            }),
-
-            // Get home guild (mainly for blocklist)
-            messageDataCache.get(homeGuildKey) || Guilds.findOneAndUpdate(
-                { id: config.homeServer },
-                { },
-                { new: true, setDefaultsOnInsert: false, upsert: true }
-            ).lean({ virtuals: true }).then(data => {
-                messageDataCache.set(homeGuildKey, data, ms("5 min") / 1000);
-                return data;
-            })
-        ]);
-
-        readGuildUser = cachedGuildUser;
-        readGuild = cachedGuild;
-        readHomeGuild = cachedHomeGuild;
-    }
-
-    return [ readGuildUser, readGuild, readHomeGuild ];
-}
-
-// Local functions
-function noPerms(guildId,what){
-    if(!guildId) return false;
-    switch(what){
-        case "ManageMessages":
-            guildByID(guildId, { "filter.active": false })
-        break;
-        case "ManageRoles":
-            guildByID(guildId, { "stickyRoles": false })
-        break;
-        case "ManageWebhooks":
-            guildByID(guildId, { "filter.censor": false })
-        break;
-    }
-}
-function daily(dontLoop=false){
+// === Schedule `daily` execution
+const daily = global.daily = function(dontLoop=false){
     if(!dontLoop) setInterval(()=> { daily(true) },60000*60*24);
+    
     // Dispatch daily calls to all listening modules
     Object.values(dailyListenerModules).forEach(module => module.daily(pseudoGlobals))
 }
-
-//#endregion Functions
-
-//#region Listeners
-
-// Schedule `daily` execution
-client.once(Events.ClientReady, async ()=>{        
+client.once(Events.ClientReady, async () => {        
     var now=new Date();
     setTimeout(
         daily,
@@ -330,105 +194,7 @@ client.once(Events.ClientReady, async ()=>{
     );
 });
 
-client.on(Events.MessageCreate ,async msg => {
-    if (msg.author.id === client.user.id) return;
-
-    msg.guildId=msg.guildId||"0";
-
-    if(msg.guild) {
-        // Disable features in the server that the bot does not have permissions for.
-        Object.keys(PermissionFlagsBits).forEach(perm=>{
-            if(!msg.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits[perm])){
-                noPerms(msg.guild.id,perm);
-            }
-        });
-    }
-    
-    // The sudo handler uses so many globals, it can stay in index.js for now
-    if(msg.content.startsWith("~sudo ")&&!process.env.beta||msg.content.startsWith("~betaSudo ")&&process.env.beta){
-        const devadminChannel = await client.channels.fetch(config.commandChannel);
-        await devadminChannel.guild.members.fetch(msg.author.id);
-
-        if(devadminChannel?.permissionsFor(msg.author.id)?.has(PermissionFlagsBits.SendMessages)){
-            const config = await ConfigDB.findOne();
-            const guild = await guildByObj(msg.guild);
-            switch(msg.content.split(" ")[1].replaceAll(".","")){
-                case "setBanner":
-                    const bannerName = msg.content.split(" ")[2];
-                    const bannerPath = `./pfps/${bannerName}`;
-                    const bannerBuffer = await fs.promises.readFile(bannerPath)
-                    client.user.setBanner(bannerBuffer)
-                    msg.reply("Done")
-                    break;
-                case "permStatus":
-                    var missingPerms=[];
-                    Object.keys(PermissionFlagsBits).forEach(perm=>{
-                        if(!msg.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits[perm])){
-                            missingPerms.push(perm);
-                        }
-                    });
-                    if(missingPerms.length===0) missingPerms.push(`No issues found`);
-                    msg.reply(`As you command. My highest role is ${msg.guild.members.cache.get(client.user.id).roles.highest.name} at ${msg.guild.members.cache.get(client.user.id).roles.highest.rawPosition}.${missingPerms.map(m=>`\n- ${m}`).join("")}`);
-                break;
-                case "configStatus":
-                    switch(msg.content.split(" ")[2]){
-                        case "filter":
-                            msg.reply(`As you command.\n- Active: ${guild.filter.active}\n- Censor: ${guild.filter.censor}\n- Log to a channel: ${guild.filter.log} <#${guild.filter.channel}>\n- Blocked words: ${guild.filter.blacklist.length}`);
-                        break;
-                        case "autoMessage":
-                            msg.reply(`As you command.\n## Auto Join Messages\n- Active: ${guild.ajm.active}\n- Location: ${guild.ajm.location||guild.ajm.dm?"DM":"Channel"}\n- Channel: ${guild.ajm.channel}\n- Message: \n\`\`\`\n${guild.ajm.message}\n\`\`\`\n## Auto Leave Messages\n- Active: ${guild.alm.active}\n- Channel: ${guild.alm.channel}\n- Message: \n\`\`\`\n${guild.alm.message}\n\`\`\``);
-                        break;
-                    }
-                break;
-                case "countSet":
-                    guild.counting.nextNum=+msg.content.split(" ")[2];
-                    msg.reply(`The next number to enter is **${guild.counting.nextNum}**.`);
-                break;
-                case "runDaily":
-                    await msg.reply(`Running the daily function...`);
-                    daily(true);
-                break;
-                case "runWelcome":
-                    guild.sentWelcome=false;
-                    require("./commands/welcomer.js")(msg.guild);
-                break;
-                case "resetHackSafe":
-                    await GuildUsers.updateOne({ userId: msg.author.id, guildId: msg.guild.id }, {
-                        $unset: { "safeTimestamp": 1 }
-                    });
-                    msg.reply("Removed your anti-hack safe time");
-                break;
-                case "echo":
-                    msg.channel.send(msg.content.slice("~sudo echo ".length,msg.content.length));
-                break;
-                case "setWord":
-                    config.wotd=msg.content.split(" ")[2].toLowerCase();
-                    msg.reply(config.wotd);
-                break;
-                case "checkRSS":
-                    Object.entries(commands).find(([name, module]) => name === 'rss')[1].daily(pseudoGlobals);
-                    // checkRSS();
-                break;
-                case "updateBlocklists":
-                    updateBlocklists();
-                break;
-                case "crash":
-                    setTimeout(die => { undefined.instructed_to_crash = instructed_to_crash })
-                    setTimeout(async die => { undefined.instructed_to_crash = instructed_to_crash })
-                    undefined.instructed_to_crash = instructed_to_crash
-                break;
-            }
-            config?.save();
-            guild.save()
-        }
-        else{
-            msg.reply("I was unable to verify you.");
-        }
-        return;
-    }
-});
-
-// Dispatch command execute / autocomplete / buttons where they need to go.
+// === Dispatch command execute / autocomplete / buttons where they need to go.
 client.on(Events.InteractionCreate, async cmd=>{
     const asyncTasks = [ ]; // Any non-awaited functions go here to fully known when this command is done executing for metrics
     const intStartTime = Date.now();
@@ -533,20 +299,25 @@ client.on(Events.InteractionCreate, async cmd=>{
     queueCommandMetric(cmd.commandName, intEndTime - intStartTime);
 });
 
-//#endregion Listeners
-
-// Note:
-// Other important logic handling database cleanup, general management, etc., is inside `./commands/core.js`
-
 // Don't crash on any type of error
 process.on('unhandledRejection', e=>notify(e.stack));
 process.on('unhandledException', e=>notify(e.stack));
 process.on('uncaughtException',  e=>notify(e.stack));
 process.on('uncaughtRejection',  e=>notify(e.stack));
 
-// Connect to the DB before logging in
-console.beta("Connecting to database")
-DBConnectPromise.then(_ => {
-    console.beta("Logging in")
-    client.login(process.env.beta ? process.env.betaToken : process.env.token);
-});
+async function start() {
+    // Register all handlers to the client
+    await commandListenerRegister;
+
+    // Check if we're restoring from a backup checkpoint
+    await checkForMongoRestore()
+
+    // Connect to the db
+    console.log("Connecting to database")
+    await mongoose.connect(`${process.env.databaseURI}/${process.env.beta ? "stewbeta" : "stewbot"}`)
+    
+    // Login
+    console.log("Logging in")
+    await client.login(process.env.beta ? process.env.betaToken : process.env.token);
+}
+start();

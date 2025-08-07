@@ -100,7 +100,7 @@ module.exports = {
 
 		notify(bootMOTD);
 
-		console.beta(`Logged into ${client.user.tag}`);
+		console.log(`Logged into ${client.user.tag}`);
 
 	}
 };
