@@ -1,3 +1,5 @@
+[![Support Server](https://img.shields.io/discord/983074750165299250?label=Discord&logo=discord&style=for-the-badge)](https://discord.gg/k3yVkrrvez)
+
 # Stewbot
 This is the open source repository for Stewbot, an advanced Discord bot with the intention of helping keep your server running smoothly while also providing entertainment.
 Stewbot is completely open source and free.
