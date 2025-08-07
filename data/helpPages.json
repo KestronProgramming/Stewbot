@@ -829,6 +829,15 @@
         "detailedDesc": "Moderators can use this command to view a list of warnings dealt, specifying a user will show only the warnings affecting that user, and not specifying a user will list users that have received warnings and a sum of the severities."
     },
     {
+        "name": "welcomer",
+        "mention": "`welcomer` Module",
+        "helpCategories": [
+            "Module"
+        ],
+        "shortDesc": "Welcomer module.",
+        "detailedDesc": "When Stewbot is added to a new server, this module attempts to find the most appropriate channel to post an intro message in.\n                This message can recommend commands and explain how Stewbot works. "
+    },
+    {
         "name": "wotd",
         "mention": "</wotd:1363253074298273958>",
         "helpCategories": [
