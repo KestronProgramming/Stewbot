@@ -30,16 +30,6 @@ console.beta("Importing InfluxDB");
 const { initInflux, queueCommandMetric } = require('./commands/modules/metrics')
 initInflux()
 
-// Typedefs for DB
-/**
- * @typedef {import("./commands/modules/database").GuildDoc} GuildDoc
- * @typedef {import("./commands/modules/database").RawGuildDoc} RawGuildDoc
- * @typedef {import("./commands/modules/database").GuildUserDoc} GuildUserDoc
- * @typedef {import("./commands/modules/database").RawGuildUserDoc} RawGuildUserDoc
- * @typedef {import("./commands/modules/database").UserDoc} UserDoc
- * @typedef {import("./commands/modules/database").RawUserDoc} RawUserDoc
- */
-
 const DBConnectPromise = new Promise((resolve, reject) => {
     // Start the to the DB connection now, so it runs in the background and is ready later
     checkForMongoRestore().finally(_ => {
@@ -240,6 +230,10 @@ const pseudoGlobals = { config };
 
 /** 
  * Database lookup for high-traffic events (messageCreate, messageUpdate, etc) - TODO_DB: (look into) guild profile changes?
+ * 
+ * @typedef {import("./commands/modules/database").RawGuildDoc} RawGuildDoc
+ * @typedef {import("./commands/modules/database").RawGuildUserDoc} RawGuildUserDoc
+ * 
  * @returns {Promise<[RawGuildUserDoc|undefined, RawGuildDoc|undefined, RawGuildDoc|undefined]>} Array of read only DBs.
  * @param int Either an object with 'guildId' and 'userId' props, or a message object.  
  * */
