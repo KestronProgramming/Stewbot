@@ -1,4 +1,3 @@
-
 ## To load into systemd, copy this file to /etc/systemd/system/stewbot.service
 ## Then run:
 # sudo systemctl daemon-reload
@@ -12,15 +11,15 @@ After=network.target
 
 [Service]
 Type=simple
-ExecStart=/bin/sh /home/guest/StewbotGit/run.sh
-WorkingDirectory=/home/guest/StewbotGit
+ExecStart=/bin/sh /home/guest/StewbotMongo/run.sh
+WorkingDirectory=/home/guest/StewbotMongo
 User=guest
 Group=guest
 Restart=always
 
 Environment="PATH=/usr/bin:/bin:/usr/sbin:/sbin"
 
-ExecStopPost=/bin/sh -c "XDG_RUNTIME_DIR=/run/user/$(id -u guest) DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/$(id -u guest)/bus /usr/bin/systemd-run --user --unit=maintenance-message /usr/local/bin/node /home/guest/StewbotGit/Scripts/maintenanceMessage.js"
+# ExecStopPost=/bin/sh -c "XDG_RUNTIME_DIR=/run/user/$(id -u guest) DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/$(id -u guest)/bus /usr/bin/systemd-run --user --unit=maintenance-message /usr/local/bin/node /home/guest/StewbotGit/infrastructure/maintenanceMessage.js"
 
 [Install]
 WantedBy=default.target

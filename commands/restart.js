@@ -19,7 +19,7 @@ const { spawn, exec } = require('child_process');
 const config = require("../data/config.json");
 const path = require('path');
 const os = require('os');
-const { launchCommands } = require("../Scripts/launchCommands.js");
+const { launchCommands } = require("../launchCommands.js");
 const { notify } = require("../utils");
 
 const PID_FILE = path.join(os.tmpdir(), 'stewbot-maintenance.pid');
@@ -40,7 +40,7 @@ function killMaintenanceBot() {
 
 function startMaintenanceHandler() {
     const nodePath = process.argv[0];
-    const small = spawn(nodePath, [path.join(__dirname, '../Scripts/maintenanceMessage.js')], {
+    const small = spawn(nodePath, [path.join(__dirname, '../infrastructure/maintenanceMessage.js')], {
         detached: true,
         stdio: 'ignore'
     });
@@ -54,6 +54,8 @@ function startMaintenanceHandler() {
 
 
 module.exports = {    
+    killMaintenanceBot,
+    
     data: {
         command: null, // TODO: devadmin command globals. Really this is the only one rn
 

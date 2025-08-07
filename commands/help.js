@@ -218,7 +218,8 @@ module.exports = {
 			}
 
             // Link back to the source code
-            let sourceCodeLink = `https://github.com/KestronProgramming/Stewbot/blob/main/commands/${inp}.js`;
+            let fileName = inp.split(" ")[0];
+            let sourceCodeLink = `https://github.com/KestronProgramming/Stewbot/blob/main/commands/${fileName}.js`;
             fields.push({
                 "name": '\u200B',
                 "value": `[View module source code](${sourceCodeLink})`,

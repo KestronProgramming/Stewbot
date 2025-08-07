@@ -1,14 +1,42 @@
-process.env = require("../env.json");
-const { REST, Routes, PermissionFlagsBits, SlashCommandBuilder, ContextMenuCommandBuilder, ApplicationCommandType, ChannelType } = require('discord.js');
+if (!process.env.token || !process.env.betaToken) process.env = require("./env.json");
+
+injectCmdsProxy()
+const { REST, Routes, PermissionFlagsBits, SlashCommandBuilder } = require('discord.js');
 const fs = require("fs");
 const fsPromises = require("fs/promises");
 const path = require("path")
-const config = require("../data/config.json");
+const config = require("./data/config.json");
 const crypto = require('crypto');
-const { notify } = require("../utils");
+const { notify } = require("./utils");
+restoreCmds()
 
-function md5(str) {
-	return crypto.createHash('md5').update(str).digest('hex');
+const md5 = (str) => crypto.createHash('md5').update(str).digest('hex');
+
+function injectCmdsProxy() {
+	if (global.cmds) return; // Don't inject unless needed
+
+	// Importing command files relies on `global.cmds` being defined.
+	// Because an unlaunched command is not already defined in cmds per it's nature,
+	//   (for example of we just added cmds.new_command and modified cmds.old_command to reference cmds.new_command),
+	//   to safely load these we need to have a dummy proxy that still lets it call the .mention fields without crashing.
+
+	// Save original commands, without accidentally overriding them with the proxy.
+	global.oldCmds = global.oldCmds || global.cmds;
+
+	const cmds = global.cmds = new Proxy({}, {
+		get: function (target, prop) {
+			if (prop === 'mention') {
+				return '';
+			}
+			return global.cmds;
+		}
+	});
+}
+
+function restoreCmds() {
+	if (!global.oldCmds) return;
+	global.cmds = global.oldCmds;
+	delete global.oldCmds;
 }
 
 // Function to build command files, handle beta/production
@@ -16,6 +44,8 @@ async function getCommands(autoRelaunch=true) { // launching runs getCommands, s
 	const returnCommands = {};
 	try {
 		const files = await fsPromises.readdir("./commands");
+
+		injectCmdsProxy()
 
 		// Process files concurrently
 		await Promise.all(
@@ -30,7 +60,7 @@ async function getCommands(autoRelaunch=true) { // launching runs getCommands, s
 						if (commandName.includes(".beta")) {
 							if (process.env.beta) {
 								// Load command before we strip the .beta out of the filename
-								command = await import(`../commands/${commandName}.js`);
+								command = await import(`./commands/${commandName}.js`);
 
 								// Store this command under the normal name/location
 								commandName = commandName.replaceAll(".beta", "");
@@ -46,7 +76,7 @@ async function getCommands(autoRelaunch=true) { // launching runs getCommands, s
 								return; // Use return to skip the current file
 							}
 							// Load this normal command
-							command = await import(`../commands/${commandName}.js`);
+							command = await import(`./commands/${commandName}.js`);
 						}
 
 						// Tack on filename into command for convenience. 
@@ -60,6 +90,8 @@ async function getCommands(autoRelaunch=true) { // launching runs getCommands, s
 				}
 			})
 		);
+
+		restoreCmds()
 
 		// If beta, relaunch commands if they changed
 		if (autoRelaunch && process.env.beta) {
@@ -85,19 +117,7 @@ async function getCommands(autoRelaunch=true) { // launching runs getCommands, s
 
 // Fetch command data for API
 function getCommandAndExtraData() {
-	// Save original commands
-	const oldCmds = global.cmds;
-
-	// Command imports rely on `global.cmds` being defined.
-	// Because an unregistered command is not already defined, to load it we need to have a dummy proxy that still lets it load the .mention fields without crashing
-	global.cmds = new Proxy({}, {
-		get: function(target, prop) {
-			if (prop === 'mention') {
-				return '';
-			}
-			return global.cmds;
-		}
-	});
+	injectCmdsProxy();
 
 	// Build commands for API in a promise
 	const commandsPromise = new Promise(async (resolve, reject) =>{
@@ -125,11 +145,7 @@ function getCommandAndExtraData() {
 		}
 	});
 
-	// Once we're done, set global.cmds back to what it was before.
-	// Ideally, after calling launchCommands, the code will also set global.cmds to the new outputted file.
-	commandsPromise.then( _ => 
-		global.cmds = oldCmds
-	)
+	restoreCmds();
 
 	return commandsPromise;
 }
@@ -253,14 +269,13 @@ async function launchCommands(hash) {
 	return "Updated commands on Discord and wrote commands to ./commands.json";
 }
 
-// Run if being run directly
+module.exports = { launchCommands, getCommands };
+
+// Run if being run directly, register commands
 if (require.main == module) {
 	launchCommands().then( re => 
 		console.log(re)
 	).finally( _ => 
 		process.exit() // needed since mongo is connected and keeps it alive
 	)
-}
-else {
-	module.exports = { launchCommands, getCommands };
 }

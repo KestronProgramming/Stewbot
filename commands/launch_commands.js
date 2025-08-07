@@ -15,7 +15,7 @@ function applyContext(context={}) {
 // #endregion CommandBoilerplate
 
 const config = require("../data/config.json");
-const { launchCommands } = require(`../Scripts/launchCommands.js`);
+const { launchCommands } = require(`../launchCommands.js`);
 const fs = require("fs/promises");
 const { notify } = require("../utils");
 

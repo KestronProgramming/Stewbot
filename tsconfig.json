@@ -9,7 +9,7 @@
     "target": "esnext",
   },
   "include": [
-    "Scripts/**/*.js",
+    "infrastructure/**/*.js",
     "commands/**/*.js",
   ],
   "exclude": [

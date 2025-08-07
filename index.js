@@ -18,7 +18,7 @@ const config = global.config = require("./data/config.json");
 console.log("Importing discord");
 const { Client, Events, GatewayIntentBits, Partials } = require("discord.js");
 console.log("Importing commands");
-const { getCommands } = require("./Scripts/launchCommands.js"); // Note: current setup requires this to be before the commands.json import (the cmd.globals setting)
+const { getCommands } = require("./launchCommands.js"); // Note: current setup requires this to be before the commands.json import (the cmd.globals setting)
 const commandsLoadedPromise = getCommands();
 console.log("Importing backup.js");
 console.log("Importing everything else");
