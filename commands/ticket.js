@@ -3,7 +3,7 @@ const Categories = require("./modules/Categories");
 const { Guilds, Users, guildByID, userByID, guildByObj, userByObj } = require("./modules/database.js")
 const { Events, ContextMenuCommandBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
 function applyContext(context={}) {
-	for (key in context) {
+	for (let key in context) {
 		this[key] = context[key];
 	}
 }
@@ -13,6 +13,8 @@ function applyContext(context={}) {
  * @typedef {import("./modules/database").UserDoc} UserDoc
  */
 // #endregion CommandBoilerplate
+
+const config = require("../data/config.json");
 
 module.exports = {
 	data: {

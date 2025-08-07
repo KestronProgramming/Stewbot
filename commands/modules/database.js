@@ -25,12 +25,17 @@
 
 const { OAuth2Guild, Guild, User } = require('discord.js');
 const { notify } = require("../../utils");
+const NodeCache = require('node-cache');
 const mongoose = require("mongoose");
 const { mongooseLeanVirtuals } = require('mongoose-lean-virtuals');
 const mongooseLeanDefaults = require('mongoose-lean-defaults').default;
 mongoose.plugin(mongooseLeanDefaults)
 mongoose.plugin(mongooseLeanVirtuals)
 mongoose.set('setDefaultsOnInsert', false);
+
+// Message guild cache allows us to have less calls to the DB, and invalidate cache when we save DB changes
+const messageDataCache = new NodeCache({ stdTTL: 5, checkperiod: 30 });
+
 
 //#region Guild
 let persistenceSchema = new mongoose.Schema({
@@ -533,10 +538,10 @@ async function guildUserByObj(guild, userID, updateData={}) {
 
 
 // Cache invalidators
-guildSchema.post('save', doc => { global.messageDataCache.del(doc.id || "") });
-guildSchema.post('findOneAndUpdate', doc => { global.messageDataCache.del(doc.id || "") });
-guildUserSchema.post('save', doc => { global.messageDataCache.del(`${doc.guildId}>${doc.userId}` || "") });
-guildUserSchema.post('findOneAndUpdate', doc => { global.messageDataCache.del(`${doc.guildId}>${doc.userId}` || "") });
+guildSchema.post('save', doc => { messageDataCache.del(doc.id || "") });
+guildSchema.post('findOneAndUpdate', doc => { messageDataCache.del(doc.id || "") });
+guildUserSchema.post('save', doc => { messageDataCache.del(`${doc.guildId}>${doc.userId}` || "") });
+guildUserSchema.post('findOneAndUpdate', doc => { messageDataCache.del(`${doc.guildId}>${doc.userId}` || "") });
 
 
 // Set plugins and define docs
@@ -587,5 +592,6 @@ module.exports = {
 
     // Utilities
     keyDecode,
-    keyEncode
+    keyEncode,
+    messageDataCache,
 }

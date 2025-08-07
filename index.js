@@ -14,7 +14,7 @@ console.beta = (...args) => process.env.beta && console.log(...args);
 const cmds = global.cmds = require("./data/commands.json");
 const config = global.config = require("./data/config.json");
 console.beta("Importing discord");
-const { Client, Events, GatewayIntentBits, Partials, ActivityType, PermissionFlagsBits, Message } = require("discord.js");
+const { Client, Events, GatewayIntentBits, Partials, PermissionFlagsBits, Message } = require("discord.js");
 console.beta("Importing commands");
 const { getCommands } = require("./Scripts/launchCommands.js"); // Note: current setup requires this to be before the commands.json import (the cmd.globals setting)
 const commandsLoadedPromise = getCommands();
@@ -24,9 +24,8 @@ console.beta("Importing everything else");
 const fs = require("fs");
 const mongoose = require("mongoose");
 const ms = require("ms");
-const { guildByID, guildByObj, userByID, userByObj, Guilds, Users, GuildUsers, ConfigDB, guildUserByID, guildUserByObj } = require('./commands/modules/database');
-const NodeCache = require('node-cache');
-const { canUseRole, sendHook, limitLength, escapeBackticks, requireServer, notify } = require("./utils");
+const { messageDataCache, guildByID, guildByObj, userByID, userByObj, Guilds, Users, GuildUsers, ConfigDB, guildUserByID, guildUserByObj } = require('./commands/modules/database');
+const { notify } = require("./utils");
 console.beta("Importing InfluxDB");
 const { initInflux, queueCommandMetric } = require('./commands/modules/metrics')
 initInflux()
@@ -49,7 +48,6 @@ const DBConnectPromise = new Promise((resolve, reject) => {
     })
 })
 
-const cache = global.cache = {}; // This is used for things like antihack hashes that need to be stored, but not persistent 
 const { updateBlocklists } = require("./commands/badware_scanner.js")
 const { scheduleTodaysSlowmode } = require("./commands/slowmode.js")
 const { scheduleTodaysTemproles } = require("./commands/temp_role.js")
@@ -57,8 +55,8 @@ const { resetHatScheduleLocks, scheduleTodaysHats } = require("./commands/hat_pu
 const { scheduleTodaysUnbans } = require("./commands/ban.js")
 const { scheduleTimerEnds } = require("./commands/timer.js")
 const { killMaintenanceBot } = require("./commands/restart.js")
-const { resetAIRequests } = require("./commands/chat.js")
 const { isModuleBlocked } = require("./commands/block_module.js")
+const { setUptime } = require("./commands/ping.js")
 
 //#endregion Imports
 
@@ -195,15 +193,12 @@ commandsLoadedPromise.then( commandsLoaded => {
 
 
 // Log in with all intents expect guild presence
-const client  = global.client = new Client({
+const client = global.client = new Client({
     intents: Object.values(GatewayIntentBits)
         .filter(i => typeof(i) == 'number')
         .filter(i => i !== GatewayIntentBits.GuildPresences),
     partials: Object.keys(Partials).map(a => Partials[a])
 });
-
-// Other data
-let uptime = 0; // Bot uptime in seconds I think?
 
 // Build dynamic help pages
 let helpCommands=[];
@@ -238,15 +233,10 @@ commandsLoadedPromise.finally( _ => {
 
 
 // Now that setup is done, define data that should be passed to each module - 
-const pseudoGlobals = {
-    config
-};
+const pseudoGlobals = { config };
 //#endregion Setup
 
 //#region Functions
-
-// Global message guild cache allows us to have less calls to the DB, and invalidate cache when we save DB changes
-const messageDataCache = global.messageDataCache = new NodeCache({ stdTTL: 5, checkperiod: 30 });
 
 /** 
  * Database lookup for high-traffic events (messageCreate, messageUpdate, etc) - TODO_DB: (look into) guild profile changes?
@@ -386,7 +376,7 @@ async function sendWelcome(guild) {
                                 "inline":true
                             },
                             {
-                                "name":`${cmds.add_emojiboard.mention}`,
+                                "name":`${cmds.emojiboard.add.mention}`,
                                 "value":"Setup an emojiboard for use in your server",
                                 "inline":true
                             },
@@ -457,7 +447,7 @@ client.once(Events.ClientReady,async ()=>{
     startBackupThreadPromise.then( startBackupThread => {
         startBackupThread( ms("1h") , error => {
             notify(String(error));
-        }, global.importedAtBoot ?? true)
+        })
     })
 
     let bootMOTD = ``;
@@ -471,12 +461,12 @@ client.once(Events.ClientReady,async ()=>{
         const rebootIntentional = Date.now() - config.restartedAt < ms("30s");
         if (rebootIntentional) {
             // The reboot was intentional
-            uptime = Math.round(config.restartedAt/1000);
+            setUptime(Math.round(config.restartedAt/1000));
             bootMOTD += `Bot resumed after restart ${bootedAtTimestamp}`;
         } else {
             // The reboot was accidental, so reset our bootedAt time
             config.bootedAt = Date.now();
-            uptime = Math.round(Date.now()/1000);
+            setUptime(Math.round(Date.now()/1000));
             bootMOTD += `Started at ${bootedAtTimestamp}`;
             config.save();
         }

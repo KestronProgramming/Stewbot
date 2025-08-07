@@ -3,7 +3,7 @@ const Categories = require("./modules/Categories");
 const { Guilds, Users, guildByID, userByID, guildByObj, userByObj, ConfigDB } = require("./modules/database.js")
 const { ContextMenuCommandBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
 function applyContext(context={}) {
-	for (key in context) {
+	for (let key in context) {
 		this[key] = context[key];
 	}
 }
@@ -155,7 +155,7 @@ async function checkRSS() {
 				let lastSentDate = new Date(feed.lastSent);
 				let mostRecentArticle = lastSentDate;
 
-				for (item of parsed.items.reverse()) {
+				for (let item of parsed.items.reverse()) {
 					let thisArticleDate = new Date(item.isoDate);
 					if(lastSentDate < thisArticleDate){
 						// Keep track of most recent
@@ -201,7 +201,7 @@ async function checkRSS() {
 							if (contentImage) embed.setImage(contentImage);
 
 							// Send this feed to everyone following it
-							for (chan of feed.channels) {
+							for (let chan of feed.channels) {
 								let c=client.channels.cache.get(chan);
 								if(c===undefined||c===null||!c?.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
 									feed.channels.splice(feed.channels.indexOf(chan),1);

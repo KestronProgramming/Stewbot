@@ -3,7 +3,7 @@ const Categories = require("./modules/Categories");
 const { Guilds, Users, guildByID, userByID, guildByObj, userByObj, GuildUsers } = require("./modules/database.js")
 const { ContextMenuCommandBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
 function applyContext(context={}) {
-	for (key in context) {
+	for (let key in context) {
 		this[key] = context[key];
 	}
 }
@@ -15,6 +15,8 @@ function applyContext(context={}) {
 // #endregion CommandBoilerplate
 
 const ms = require("ms")
+const config = require("../data/config.json");
+const { checkDirty } = require("./filter");
 
 async function finTempBan(guildId, who, force) {
 	const guildDB = await guildByID(guildId);

@@ -15,7 +15,7 @@ function applyContext(context = {}) {
 // #endregion CommandBoilerplate
 
 const { getEmojiFromMessage } = require('./emojiboard');
-
+const { checkDirty } = require("./filter");
 const { getLvl } = require("./rank.js")
 
 module.exports = {
@@ -172,7 +172,7 @@ module.exports = {
                 break;
             case "emojiboard":
                 if (guild?.emojiboards.size < 1) {
-                    cmd.followUp(`This server doesn't use any emojiboards at the moment. It can be configured using ${cmds.add_emojiboard.mention}.`);
+                    cmd.followUp(`This server doesn't use any emojiboards at the moment. It can be configured using ${cmds.emojiboard.add.mention}.`);
                     break;
                 }
 

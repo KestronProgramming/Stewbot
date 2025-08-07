@@ -3,7 +3,7 @@ const Categories = require("./modules/Categories");
 const { Guilds, Users, ConfigDB, guildByID, userByID, guildByObj, userByObj } = require("./modules/database.js")
 const { ContextMenuCommandBuilder, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
 function applyContext(context={}) {
-	for (key in context) {
+	for (let key in context) {
 		this[key] = context[key];
 	}
 }
@@ -17,6 +17,8 @@ function applyContext(context={}) {
 const fs = require("node:fs")
 const wotdList = fs.readFileSync(`./data/wordlist.txt`,"utf-8").split("\n");
 const { notify } = require("../utils");
+const config = require("../data/config.json");
+const { checkDirty } = require("./filter");
 
 module.exports = {
 	data: {
@@ -62,11 +64,11 @@ module.exports = {
     async onbutton(cmd, context) {
 		applyContext(context);
 
-		const config = await ConfigDB.findOne()
+		const configDoc = await ConfigDB.findOne()
 			.select("wotd")
 			.lean({ defaults: true })
 
-		const wotd = config.wotd;
+		const wotd = configDoc.wotd;
 
 		if (cmd.customId == "wotdModal") {
 			var guess=cmd.fields.getTextInputValue("wotdInput").toLowerCase();

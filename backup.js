@@ -1,5 +1,4 @@
-// Exports a promise that resolves to the backup function.
-// Uses dynamic import for faster initial require time.
+// Handles backing up our database to Google Drive
 
 const { exec } = require('child_process');
 const fs = require('fs');
@@ -34,7 +33,7 @@ const startBackupThreadPromise = new Promise(async (resolve, reject) => {
         return { google, OAuth2 };
     };
 
-    // --- Core Authentication Logic ---
+    // Core Authentication Logic
 
     async function loadSavedCredentialsIfExist() {
         const credentials = envs?.google?.token;
@@ -184,7 +183,7 @@ const startBackupThreadPromise = new Promise(async (resolve, reject) => {
         }
     }
 
-    // --- Google Drive File Operations ---
+    // Google Drive File Operations
 
     async function uploadTextFile(drive, filePath) { // Ensure envs is loaded
 
@@ -271,7 +270,7 @@ const startBackupThreadPromise = new Promise(async (resolve, reject) => {
         }
     }
 
-    // --- Backup Process ---
+    // Backup Process
 
     async function backupToDrive(filename, attempt = 0) {
         if (!googleDrive) {
@@ -415,8 +414,8 @@ const startBackupThreadPromise = new Promise(async (resolve, reject) => {
         return true;
     }
 
-    // TODO: move to node-cron instead so boot loops don't prevent backups
-    function startBackupThread(msFrequency, userErrorCallback = null, backupNow = false) {
+    // TODO: move to node-cron instead so frequent crashes don't prevent backups
+    function startBackupThread(msFrequency, userErrorCallback = null, backupNow = true) {
         // backupNow = true;
 
         // Pass an error handler, for us this would call notify
@@ -448,7 +447,7 @@ const startBackupThreadPromise = new Promise(async (resolve, reject) => {
 
 });
 
-// --- Import Process ---
+// Import Process
 // Less complicated since we're not dealing with GDrive.
 async function checkForMongoRestore() {
     const database = envs.beta ? "stewbeta" : "stewbot";
@@ -506,7 +505,6 @@ async function checkForMongoRestore() {
     await fs.promises.rm(zipPath, { force: true });
     await fs.promises.rm(dumpDir, { recursive: true, force: true });
     
-    global.importedAtBoot = true;
     return true;
 }
 

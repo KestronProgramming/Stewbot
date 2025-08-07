@@ -15,6 +15,7 @@ function applyContext(context = {}) {
 // #endregion CommandBoilerplate
 const fs = require("fs")
 const { limitLength } = require("../utils.js")
+const config = require("../data/config.json");
 
 const components = [new ActionRowBuilder().addComponents(
     new ButtonBuilder().setCustomId("save_meme").setLabel("Approve meme").setStyle(ButtonStyle.Success),

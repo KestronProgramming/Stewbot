@@ -15,6 +15,8 @@ function applyContext(context = {}) {
 // #endregion CommandBoilerplate
 
 const { limitLength } = require("../utils.js")
+const config = require("../data/config.json");
+const { checkDirty } = require("./filter");
 
 module.exports = {
     data: {

@@ -14,6 +14,9 @@ function applyContext(context = {}) {
  */
 // #endregion CommandBoilerplate
 
+const config = require("../data/config.json");
+const { checkDirty } = require("./filter");
+
 async function getPrimedEmbed(userId, guildIn){
 	const user = await userByID(userId);
 

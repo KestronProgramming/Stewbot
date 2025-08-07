@@ -14,6 +14,8 @@ function applyContext(context = {}) {
  */
 // #endregion CommandBoilerplate
 
+const config = require("../data/config.json");
+
 function getEmojiFromMessage(emoji) {
     emoji = emoji.trim();
 

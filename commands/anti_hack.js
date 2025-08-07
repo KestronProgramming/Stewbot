@@ -15,8 +15,11 @@ function applyContext(context={}) {
 // #endregion CommandBoilerplate
 
 const { requireServer } = require("../utils.js");
-
+const config = require("../data/config.json");
 const crypto = require('crypto');
+
+// Store post hashes so we can catch repeat posts
+const cache = {};
 
 module.exports = {
     data: {

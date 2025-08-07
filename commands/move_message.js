@@ -15,6 +15,7 @@ function applyContext(context = {}) {
 // #endregion CommandBoilerplate
 
 const fs = require("node:fs")
+const config = require("../data/config.json");
 
 module.exports = {
 	data: {
