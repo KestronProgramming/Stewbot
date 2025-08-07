@@ -66,12 +66,12 @@ let commandListenerRegister = commandsLoadedPromise.then( commandsLoaded => {
         //   doesn't need waste power preforming duplicate lookups.
         [Events.MessageCreate]: async (...args) => {
             const [ readGuildUser, readGuild, readHomeGuild ] = await getReadOnlyDBs(args[0]);
-            return [ ...args, pseudoGlobals, readGuild, readGuildUser ]
+            return [ ...args, pseudoGlobals, readGuild, readGuildUser, readHomeGuild ]
         },
 
         [Events.MessageUpdate]: async (...args) => {
             const [ readGuildUser, readGuild, readHomeGuild ] = await getReadOnlyDBs(args[0]);
-            return [ ...args, readGuild, readGuildUser ]
+            return [ ...args, readGuild, readGuildUser, readHomeGuild ]
         },
 
         [Events.MessageDelete]: async (...args) => {

@@ -79,7 +79,7 @@ function isModuleBlocked(listener, guild, globalGuild, isAdmin) {
 
     // Check if this command is blocked with /block_module
     const commandPath = `${module.data?.command?.name || name}`; //  handles non-command modules
-        
+    
     // If this is a guild, check for blocklist
     if (guild) {
         let guildBlocklist = guild.blockedCommands;
@@ -141,21 +141,21 @@ module.exports = {
     // block_module uses these to block disabled events.
     eventInterceptors: {
         [Events.MessageCreate]: (handler, ...args) => {
-            const [ msg, context, guildStore, guildUserStore ] = args;
+            const [ msg, context, guildStore, guildUserStore, globalGuildStore ] = args;
             const [ blocked, _ ] = isModuleBlocked(
                 [handler.name, handler], 
-                guildStore
-            ) // TODO: pass global guild...
+                guildStore, globalGuildStore
+            )
 
             return blocked;
         },
 
         [Events.MessageUpdate]: (handler, ...args) => {
-            const [ msgO, msg, guildStore, guildUserStore ] = args;
+            const [ msgO, msg, guildStore, guildUserStore, globalGuildStore ] = args;
             const [ blocked, _ ] = isModuleBlocked(
                 [handler.name, handler], 
-                guildStore
-            ) // TODO: pass global guild...
+                guildStore, globalGuildStore
+            )
 
             return blocked;
         }
