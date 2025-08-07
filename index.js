@@ -32,22 +32,6 @@ const { initInflux, queueCommandMetric } = require('./commands/modules/metrics')
 initInflux()
 
 
-// // === Start DB connection
-// const DBConnectPromise = new Promise((resolve, reject) => {
-//     // Start the to the DB connection now, so it runs in the background and is ready later
-//     checkForMongoRestore().finally(_ => {
-//         mongoose.connect(`${process.env.databaseURI}/${process.env.beta ? "stewbeta" : "stewbot"}`)
-//         resolve(true);
-//     })
-// })
-
-function getSubscribedCommands(commands, subscription) {
-    return Object.fromEntries(
-        (Object.entries(commands)
-                .filter(([name, command]) => command[subscription]) // Get all subscribed modules
-        ).sort((a, b) => (a[1].data?.priority ?? 100) - (b[1].data?.priority ?? 100))
-    )
-}
 
 // === Register listeners
 let commands = global.commands = { }
@@ -57,11 +41,20 @@ const pseudoGlobals = { config }; // data that should be passed to each module
 let commandListenerRegister = commandsLoadedPromise.then( commandsLoaded => {
     // This code registers all requested listeners
     // This method allows any event type to be easily added to a command file
-
     // The functions `onbutton` and `autocomplete` are both still available for convenience.
+
 
     // Save commands
     commands = global.commands = Object.freeze(commandsLoaded);
+
+    // Utility for registering listeners
+    function getSubscribedCommands(commands, subscription) {
+        return Object.fromEntries(
+            (Object.entries(commands)
+                    .filter(([name, command]) => command[subscription]) // Get all subscribed modules
+            ).sort((a, b) => (a[1].data?.priority ?? 100) - (b[1].data?.priority ?? 100))
+        )
+    }
 
     // Load some custom listener functions
     dailyListenerModules = getSubscribedCommands(commands, "daily");
