@@ -558,9 +558,6 @@ module.exports = {
                 option.setName("thinking").setDescription("Enable thinking before responding?")
             )
             .addBooleanOption(option =>
-                option.setName("gemini").setDescription("Use Google's Gemini instead of our local AI?")
-            )
-            .addBooleanOption(option =>
                 option.setName("private").setDescription("Make the response ephemeral?")//Do not remove private option unless the command is REQUIRED to be ephemeral or non-ephemeral.
             ),
 
