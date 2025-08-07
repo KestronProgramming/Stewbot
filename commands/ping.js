@@ -21,9 +21,7 @@ const { notify } = require("../utils")
 const bootedAt = Date.now();
 let uptime = 0; // Bot uptime in seconds I think?
 
-module.exports = {
-	setUptime,
-	
+module.exports = {	
 	data: {
 		// Slash command data
 		command: new SlashCommandBuilder()
@@ -86,12 +84,12 @@ module.exports = {
 			const rebootIntentional = Date.now() - config.restartedAt < ms("30s");
 			if (rebootIntentional) {
 				// The reboot was intentional
-				setUptime(Math.round(config.restartedAt / 1000));
+				uptime = Math.round(config.restartedAt / 1000);
 				bootMOTD += `Bot resumed after restart ${bootedAtTimestamp}`;
 			} else {
 				// The reboot was accidental, so reset our bootedAt time
 				config.bootedAt = Date.now();
-				setUptime(Math.round(Date.now() / 1000));
+				uptime = Math.round(Date.now() / 1000);
 				bootMOTD += `Started at ${bootedAtTimestamp}`;
 				config.save();
 			}

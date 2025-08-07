@@ -29,6 +29,8 @@ module.exports = {
 		},
 	},
 
+
+	
 	// Staff notifs
 
 	async [Events.Error] (error) {
@@ -59,7 +61,6 @@ module.exports = {
 		notify(`Removed from **a server**.`);
     },
 
-
 	async [Events.GuildMemberRemove] (member) {
 		if (member.user.id == client.user.id) return;
 
@@ -80,7 +81,4 @@ module.exports = {
 			{ upsert: false }
 		);
 	},
-
-	
-
 };

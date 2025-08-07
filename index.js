@@ -1,5 +1,6 @@
 // Stewbot main file.
-// This file dispatches events to the files they need to go to, and handles overall event registration logic.
+// This file dispatches events to the files they need to go to, 
+//   connects to the database, and registers event handlers.
 
 //#region Startup
 // Load envs and prepare for benchmarked boot.
@@ -17,7 +18,7 @@ console.beta("Importing commands");
 const { getCommands } = require("./Scripts/launchCommands.js"); // Note: current setup requires this to be before the commands.json import (the cmd.globals setting)
 const commandsLoadedPromise = getCommands();
 console.beta("Importing backup.js");
-const { startBackupThreadPromise, checkForMongoRestore } = require("./backup.js");
+const { checkForMongoRestore } = require("./backup.js");
 console.beta("Importing everything else");
 const fs = require("fs");
 const mongoose = require("mongoose");
@@ -36,7 +37,7 @@ const DBConnectPromise = new Promise((resolve, reject) => {
     })
 })
 
-const { updateBlocklists } = require("./commands/badware_scanner.js")const { killMaintenanceBot } = require("./commands/restart.js")
+const { updateBlocklists } = require("./commands/badware_scanner.js")
 const { isModuleBlocked } = require("./commands/block_module.js")
 
 //#endregion Imports
@@ -317,17 +318,9 @@ function daily(dontLoop=false){
 //#endregion Functions
 
 //#region Listeners
-//Actionable events
-client.once(Events.ClientReady, async ()=>{
-    killMaintenanceBot();
-    
-    // Once backup.js fully imports, start the backup thread
-    startBackupThreadPromise.then( startBackupThread => {
-        startBackupThread( ms("1h") , error => {
-            notify(String(error));
-        })
-    })
-    
+
+// Schedule `daily` execution
+client.once(Events.ClientReady, async ()=>{        
     var now=new Date();
     setTimeout(
         daily,

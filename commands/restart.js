@@ -1,7 +1,7 @@
 // #region CommandBoilerplate
 const Categories = require("./modules/Categories");
 const { Guilds, Users, ConfigDB, guildByID, userByID, guildByObj, userByObj } = require("./modules/database.js")
-const { SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType, AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType } = require("discord.js");
+const { SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType, AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType, Events } = require("discord.js");
 function applyContext(context = {}) {
     for (key in context) {
         this[key] = context[key];
@@ -53,9 +53,7 @@ function startMaintenanceHandler() {
 }
 
 
-module.exports = {
-    killMaintenanceBot,
-    
+module.exports = {    
     data: {
         command: null, // TODO: devadmin command globals. Really this is the only one rn
 
@@ -123,5 +121,10 @@ module.exports = {
             
             setTimeout(() => { process.exit(0) }, 500);
         }
-    }
+    },
+
+    // Kill maintenance bot on bot
+    async [Events.ClientReady] () {
+    	killMaintenanceBot();
+	}
 };

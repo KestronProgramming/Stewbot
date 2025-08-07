@@ -65,6 +65,15 @@
         "detailedDesc": "In the channel this command is used in, Stewbot will post a configurable message with buttons to add and remove the selected roles from themselves. Start by using the command with the message, and then Stewbot will prompt for the roles."
     },
     {
+        "name": "backuper",
+        "mention": "`backuper` Module",
+        "helpCategories": [
+            "Module"
+        ],
+        "shortDesc": "Periodically backup the bot's database.",
+        "detailedDesc": "To avoid data loss on server issues, stewbot periodically backs up his database to a private cloud folder."
+    },
+    {
         "name": "badware_scanner",
         "mention": "</badware_scanner:1363253073744498705>",
         "helpCategories": [
@@ -519,7 +528,7 @@
     },
     {
         "name": "ping",
-        "mention": "</ping:1363253074033901677>",
+        "mention": "</ping:1402831730343411883>",
         "helpCategories": [
             "General",
             "Bot",
