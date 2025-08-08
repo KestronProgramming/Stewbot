@@ -17,7 +17,7 @@ const cmds = global.cmds = require("./data/commands.json");
 const config = global.config = require("./data/config.json");
 console.log("Importing discord");
 const client = require("./client.js");
-const { Events } = require("discord.js");
+const { Events, PermissionFlagsBits } = require("discord.js");
 console.log("Importing commands");
 const { getCommands } = require("./launchCommands.js"); // Note: current setup requires this to be before the commands.json import (the cmd.globals setting)
 const commandsLoadedPromise = getCommands();
@@ -43,7 +43,6 @@ let commandListenerRegister = commandsLoadedPromise.then( commandsLoaded => {
     // This code registers all requested listeners
     // This method allows any event type to be easily added to a command file
     // The functions `onbutton` and `autocomplete` are both still available for convenience.
-
 
     // Save commands
     commands = global.commands = Object.freeze(commandsLoaded);
@@ -140,7 +139,7 @@ let commandListenerRegister = commandsLoadedPromise.then( commandsLoaded => {
         )
         if (!listeningCommands.length) continue;
 
-        client.on(listenerName, async (...args) => {
+        client.on(String(listenerName), async (...args) => {
             
             // Modify args if needed for this type
             const argInjector = argInjectors[listenerName];
@@ -186,35 +185,23 @@ client.on(Events.InteractionCreate, async cmd=>{
     const asyncTasks = [ ]; // Any non-awaited functions go here to fully known when this command is done executing for metrics
     const intStartTime = Date.now();
     
+    // @ts-ignore
     const commandScript = commands[cmd.commandName];
     if (!commandScript && (cmd.isCommand() || cmd.isAutocomplete())) return; // Ignore any potential cache issues 
 
     //// Manage deferring
-    try{
-        if(
-            !cmd.isButton() &&
-            !cmd.isModalSubmit() &&
-            !cmd.isChannelSelectMenu() &&
-            !cmd.isRoleSelectMenu() &&
-            !cmd.isStringSelectMenu()
-        ) {
-            const isPrivate = cmd.options.getBoolean("private");
-            const isPrivateDefined = isPrivate !== null;
-            const ephemeral = 
-                isPrivateDefined ? cmd.options.getBoolean("private") : 
-                commandScript?.data.deferEphemeral || // Slash commands base off this property.
-                [ "join-roleOption" ].includes(cmd.commandName); // Backup for buttons that need to be ephemeral. 
-            
-            await cmd.deferReply({
-                ephemeral
-            });
-        }
-    }catch(e){}
+    if(cmd.isChatInputCommand()) { 
+        // Always obey the `private` property, if not defined default to the `deferEphemeral` property. 
+        await cmd.deferReply({
+            ephemeral:
+                cmd.options.getBoolean("private") ?? commandScript?.data.deferEphemeral
+        });
+    }
 
     //// Autocomplete
     if (cmd.isAutocomplete()) {
         const providedGlobals = { ...pseudoGlobals };
-        requestedGlobals = commandScript.data?.requiredGlobals || commandScript.requestGlobals?.() || [];
+        const requestedGlobals = commandScript.data?.requiredGlobals || commandScript.requestGlobals?.() || [];
         for (var name of requestedGlobals) {
             providedGlobals[name] = eval(name.match(/[\w-]+/)[0]);
         }
@@ -225,19 +212,22 @@ client.on(Events.InteractionCreate, async cmd=>{
     }
 
     //// Slash commands
-    if (cmd.isCommand() && commands.hasOwnProperty(cmd.commandName)) {
-        const listeningModule = [ `${cmd.commandName} ${cmd.options.getSubcommand(false)}`.trim(), commandScript ]; // Here we artificially provide the full path since slash commands can have subcommands
+    if (cmd.isChatInputCommand() && commands.hasOwnProperty(cmd.commandName)) {
+        // Here we artificially provide the full path since slash commands can have subcommands
+        const listeningModule = [ `${cmd.commandName} ${cmd.options.getSubcommand(false)}`.trim(), commandScript ];
+        
         // TODO_DB: this could be made more efficient by passing in the readonly guilds as objects
         const [ blocked, errorMsg ] = isModuleBlocked(listeningModule, 
             (await guildByObj(cmd.guild)), 
             (await guildByID(config.homeServer)),
-            cmd?.member?.permissions?.has?.('Administrator')
+            // @ts-ignore
+            cmd.member?.permissions?.has?.(PermissionFlagsBits.Administrator)
         )
         if (blocked) return cmd.followUp(errorMsg);
         
         // Checks passed, gather requested data
         const providedGlobals = { ...pseudoGlobals };
-        requestedGlobals = commandScript.data?.requiredGlobals || commandScript.requestGlobals?.() || [];
+        const requestedGlobals = commandScript.data?.requiredGlobals || commandScript.requestGlobals?.() || [];
         for (var name of requestedGlobals) {
             providedGlobals[name] = eval(name.match(/[\w-]+/)[0]);
         }
@@ -262,31 +252,36 @@ client.on(Events.InteractionCreate, async cmd=>{
     }
 
     //// Buttons, Modals, and Select Menu
-    Object.values(buttonListenerModules).forEach(module => {
-        // Only emit buttons to subscribed modules
-        const moduleSubscriptions = module.subscribedButtons || [];
-        let subbed = false;
-        for (const sub of moduleSubscriptions) {
-            if (
-                (typeof sub === 'string' && sub === cmd.customId) || 
-                (sub instanceof RegExp && sub.test(cmd.customId))
-            ) {
-                subbed = true;
-                continue;
+    // All of these get send to onButton. 
+    if (cmd.isButton() || cmd.isModalSubmit() || cmd.isStringSelectMenu()) {
+        Object.values(buttonListenerModules).forEach(module => {
+            // Only emit buttons to subscribed modules
+            const moduleSubscriptions = module.subscribedButtons || [];
+            let subbed = false;
+            for (const sub of moduleSubscriptions) {
+                if (
+                    (typeof sub === 'string' && sub === cmd.customId) || 
+                    (sub instanceof RegExp && sub.test(cmd.customId))
+                ) {
+                    subbed = true;
+                    continue;
+                }
             }
-        }
 
-        if (subbed) asyncTasks.push(module.onbutton(cmd, pseudoGlobals))
-    })
+            if (subbed) asyncTasks.push(module.onbutton(cmd, pseudoGlobals))
+        })
+    }
 
     // Wait for everything to complete
     await Promise.allSettled(asyncTasks);
     const intEndTime = Date.now();
 
-    queueCommandMetric(cmd.commandName, intEndTime - intStartTime);
+    // @ts-ignore
+    if (cmd.commandName) queueCommandMetric(cmd.commandName || "unspecified", intEndTime - intStartTime);
 });
 
 // Don't crash on any type of error
+// @ts-ignore
 process.on('unhandledRejection', e => notify(e.stack));
 process.on('uncaughtException', e => notify(e.stack));
 

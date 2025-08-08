@@ -86,18 +86,16 @@ module.exports = {
 		}
 	},
 
-	// Only button subscriptions matched will be sent to the handler 
-	subscribedButtons: ["join-roleOption"],
-	
-    /** @param {import('discord.js').ButtonInteraction} cmd */
-    async onbutton(cmd, context) {
-		applyContext(context);
+	/** @param {import('discord.js').Interaction} cmd */
+	async [Events.InteractionCreate] (cmd) {
+		if (!cmd.isRoleSelectMenu()) return;
+		if (cmd.customId !== "join-roleOption") return;
 
-		let myHighestRole = cmd.guild.members.cache.get(client.user.id).roles.highest.position;
+		let myHighestRolePos = cmd.guild.members.cache.get(client.user.id).roles.highest.position;
 		let goodRoles = [];
 		let cantRoles = [];
 		cmd.values.forEach(role => {
-			if (myHighestRole <= cmd.roles.get(role).rawPosition) {
+			if (myHighestRolePos <= cmd.roles.get(role).position) {
 				cantRoles.push(cmd.roles.get(role).id);
 			}
 			else {
@@ -106,8 +104,7 @@ module.exports = {
 		});
 		if (cantRoles.length > 0) {
 			cmd.reply({
-				ephemeral: true, 
-				ephemeral: true, 
+				ephemeral: true,
 				content: 
 					`I'm sorry, but I don't have a high enough permission to handle the following roles. If you'd like my help with these, go into Roles in the Server Settings, and drag a role I have above the roles you want me to manage.\n`+
 					`<@&${cantRoles.join(">, <@&")}>`, 

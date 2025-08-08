@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    // "noImplicitAny": true, // Too Strict for JS code
     "resolveJsonModule": true,
     "moduleResolution": "node",
     "allowJs": true,
@@ -7,6 +8,7 @@
     "noEmit": true,
     "strict": false,
     "target": "esnext",
+    "strictNullChecks": true
   },
   "include": [
     "**/*.js",

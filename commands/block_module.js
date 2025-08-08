@@ -73,9 +73,12 @@ function getCommandBlockMessageFromPath(cmdPath) { // Subcommands make this hard
     return help?.block_module_message;
 }
 
+/**
+ * Check if this module is blocked. `isAdmin` signifies whether this user has perms to unblock the server command block
+ * @returns {[boolean, string]} Whether the module was blocked, the error message.
+ */
+
 function isModuleBlocked(listener, guild, globalGuild, isAdmin) {
-    // returns: [ blocked, error ]
-    // isadmin signifies whether this user has perms to unblock the server command block
     const [ name, module ] = listener;
 
     // Check if this command is blocked with /block_module
@@ -101,7 +104,7 @@ function isModuleBlocked(listener, guild, globalGuild, isAdmin) {
         }
     }
 
-    return [ false ]
+    return [ false, "" ]
 }
 
 module.exports = {
