@@ -190,11 +190,12 @@ client.on(Events.InteractionCreate, async cmd=>{
     if (!commandScript && (cmd.isCommand() || cmd.isAutocomplete())) return; // Ignore any potential cache issues 
 
     //// Manage deferring
-    if(cmd.isChatInputCommand()) { 
+    if(cmd.isChatInputCommand() || cmd.isMessageContextMenuCommand()) { 
         // Always obey the `private` property, if not defined default to the `deferEphemeral` property. 
+        const private = cmd.isChatInputCommand() ? cmd.options.getBoolean("private") : null;
         await cmd.deferReply({
             ephemeral:
-                cmd.options.getBoolean("private") ?? commandScript?.data.deferEphemeral
+                private ?? commandScript?.data.deferEphemeral ?? false
         });
     }
 
@@ -212,9 +213,17 @@ client.on(Events.InteractionCreate, async cmd=>{
     }
 
     //// Slash commands
-    if (cmd.isChatInputCommand() && commands.hasOwnProperty(cmd.commandName)) {
+    if (
+        (cmd.isChatInputCommand() || cmd.isMessageContextMenuCommand()) &&
+        commands.hasOwnProperty(cmd.commandName)
+    ) {
         // Here we artificially provide the full path since slash commands can have subcommands
-        const listeningModule = [ `${cmd.commandName} ${cmd.options.getSubcommand(false)}`.trim(), commandScript ];
+        // @ts-ignore
+        const listeningModule = [ `${cmd.commandName} ${
+            cmd.isChatInputCommand()
+                ? cmd.options.getSubcommand(false)
+                : ""
+        }`.trim(), commandScript ];
         
         // TODO_DB: this could be made more efficient by passing in the readonly guilds as objects
         const [ blocked, errorMsg ] = isModuleBlocked(listeningModule, 
@@ -276,8 +285,7 @@ client.on(Events.InteractionCreate, async cmd=>{
     await Promise.allSettled(asyncTasks);
     const intEndTime = Date.now();
 
-    // @ts-ignore
-    if (cmd.commandName) queueCommandMetric(cmd.commandName || "unspecified", intEndTime - intStartTime);
+    if (cmd.isChatInputCommand()) queueCommandMetric(cmd.commandName || "unspecified", intEndTime - intStartTime);
 });
 
 // Don't crash on any type of error

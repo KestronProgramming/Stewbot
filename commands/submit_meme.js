@@ -47,7 +47,7 @@ module.exports = {
         },
     },
 
-    /** @param {import('discord.js').ChatInputCommandInteraction} cmd */
+    /** @param {import('discord.js').MessageContextMenuCommandInteraction} cmd */
     async execute(cmd, context) {
         applyContext(context);
 
@@ -55,14 +55,13 @@ module.exports = {
             cmd.followUp({ ephemeral: true, content: "I'm sorry, but I didn't detect any attachments on that message. Note that it has to be attached (uploaded), and that I don't visit embedded links." });
             return;
         }
-        cmd.followUp({ content: `Submitted for evaluation`, ephemeral: true });
         let i = 0;
         let files = [ ]
-        for (a of cmd.targetMessage.attachments) {
-            var dots = a[1].url.split("?")[0].split(".");
-            dots = dots[dots.length - 1];
-            if (!["mov", "png", "jpg", "jpeg", "gif", "mp4", "mp3", "wav", "webm", "ogg"].includes(dots)) {
-                cmd.reply({ content: `I don't support/recognize the file extension \`.${dots}\``, ephemeral: true });
+        for (let a of cmd.targetMessage.attachments) {
+            var temp = a[1].url.split("?")[0].split(".");
+            let dots = temp[temp.length - 1];
+            if (!["webp", "mov", "png", "jpg", "jpeg", "gif", "mp4", "mp3", "wav", "webm", "ogg"].includes(dots)) {
+                cmd.followUp({ content: `I don't support/recognize the file extension \`.${dots}\``, ephemeral: true });
                 return;
             }
             await fetch(a[1].url).then(d => d.arrayBuffer()).then(d => {
@@ -71,11 +70,12 @@ module.exports = {
             });
             i++;
         }
-        await client.channels.cache.get(process.env.beta ? config.betaNoticeChannel : config.noticeChannel).send({ 
+        await client.channels.cache.get(process.env.beta ? config.betaNoticeChannel : config.noticeChannel)?.send({ 
             content: limitLength(`User ${cmd.user.username} submitted a meme for evaluation.`), 
             files: files, 
             components: components 
         });
+        cmd.followUp({ content: `Submitted for evaluation`, ephemeral: true });
     },
 
     subscribedButtons: ["save_meme"],
@@ -85,10 +85,11 @@ module.exports = {
 		applyContext(context);
 
         for (const [name, a] of cmd.message.attachments) {
-            var dots=a.url.split("?")[0].split(".");
-            dots=dots[dots.length-1];
-            if(!["mov","png","jpg","jpeg","gif","mp4","mp3","wav","webm","ogg"].includes(dots)){
-                cmd.reply({content:`I don't support or recognize that format (\`.${dots}\`)`,ephemeral:true});
+            let temp=a.url.split("?")[0].split(".");
+            let dots=temp[temp.length-1];
+            if(!["webp", "mov","png","jpg","jpeg","gif","mp4","mp3","wav","webm","ogg"].includes(dots)){
+                await cmd.deferReply({ ephemeral: true }).catch(e=>null);
+                cmd.editReply({ content: `I don't support or recognize that format (\`.${dots}\`)` });
                 return;
             }
             const c = await fetch(a.url);
