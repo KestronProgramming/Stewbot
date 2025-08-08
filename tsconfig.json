@@ -9,8 +9,7 @@
     "target": "esnext",
   },
   "include": [
-    "infrastructure/**/*.js",
-    "commands/**/*.js",
+    "**/*.js",
   ],
   "exclude": [
     "node_modules"

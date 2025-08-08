@@ -5,8 +5,9 @@ const { PermissionFlagsBits, Message } = require("discord.js")
 const config = require("./data/config.json");
 const { checkDirty } = require("./commands/filter");
 const { messageDataCache, Guilds, GuildUsers } = require("./commands/modules/database")
-// @ts-ignore
 const ms = require("ms");
+const client = require("./client.js");
+
 
 
 // Easily cut output to a maximum length.
@@ -30,11 +31,9 @@ module.exports = {
         if (role.managed) {
             return [false, `This role is managed by an integration an cannot be used.`]
         }
-        // @ts-ignore
         if (!channel.permissionsFor(client.user.id).has(PermissionFlagsBits.ManageRoles)) {
             return [false, `I do not have the ManageRoles permission needed to preform this action.`]
         }
-        // @ts-ignore
         if (channel.guild.members.cache.get(client.user.id)?.roles?.highest.position <= role.rawPosition) {
             return [false, `I cannot help with that role. If you would like me to, grant me a role that is ordered to be higher in the roles list than ${role.name}. You can reorder roles from Server Settings -> Roles.`];
         }
@@ -124,7 +123,6 @@ module.exports = {
             }
             else {
                 let channelId = process.env.beta ? config.betaNoticeChannel : config.noticeChannel;
-                // @ts-ignore
                 const channel = await client.channels.fetch(channelId);
                 channel?.send(limitLength(what));
             }

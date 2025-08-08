@@ -16,7 +16,8 @@ if (process.env.beta == 'false') delete process.env.beta; // ENVs are all string
 const cmds = global.cmds = require("./data/commands.json");
 const config = global.config = require("./data/config.json");
 console.log("Importing discord");
-const { Client, Events, GatewayIntentBits, Partials } = require("discord.js");
+const client = require("./client.js");
+const { Events } = require("discord.js");
 console.log("Importing commands");
 const { getCommands } = require("./launchCommands.js"); // Note: current setup requires this to be before the commands.json import (the cmd.globals setting)
 const commandsLoadedPromise = getCommands();
@@ -162,13 +163,6 @@ let commandListenerRegister = commandsLoadedPromise.then( commandsLoaded => {
     }
 });
 
-// === Log in
-const client = global.client = new Client({
-    intents: Object.values(GatewayIntentBits)
-        .filter(i => typeof(i) == 'number')
-        .filter(i => i !== GatewayIntentBits.GuildPresences), // Our production bot was denied GuildPresences intents
-    partials: Object.keys(Partials).map(a => Partials[a])
-});
 
 // === Schedule `daily` execution
 const daily = global.daily = function(dontLoop=false){
