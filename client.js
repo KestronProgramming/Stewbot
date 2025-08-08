@@ -2,7 +2,12 @@
 
 const { Client, Events, GatewayIntentBits, Partials } = require("discord.js");
 
-// === Log in
+/**
+ * @type {import('discord.js').Client<true>}
+ * 
+ * A client who we can assume is *always* logged in.
+ */
+// @ts-ignore
 const client = global.client = new Client({
     // Login with intents that tell discord what events to send us.
     intents: Object.values(GatewayIntentBits)
