@@ -293,10 +293,8 @@ client.on(Events.InteractionCreate, async cmd=>{
 });
 
 // Don't crash on any type of error
-process.on('unhandledRejection', e=>notify(e.stack));
-process.on('unhandledException', e=>notify(e.stack));
-process.on('uncaughtException',  e=>notify(e.stack));
-process.on('uncaughtRejection',  e=>notify(e.stack));
+process.on('unhandledRejection', e => notify(e.stack));
+process.on('uncaughtException', e => notify(e.stack));
 
 async function start() {
     // Register all handlers to the client
