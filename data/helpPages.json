@@ -775,6 +775,50 @@
         "detailedDesc": "Generates a timestamp string. Pasting the output will automatically correct the time set to show the correct time for any user regardless of timezone.\n\n\t\t\t\tFor example, if there was a timestamp for 4 EST, a user in PST would see 1."
     },
     {
+        "name": "trackable about",
+        "mention": "</trackable about:1403817573253906512>",
+        "helpCategories": [
+            "General",
+            "Entertainment",
+            "Bot"
+        ],
+        "shortDesc": "Learn more about trackables",
+        "detailedDesc": "View specific rulesets and descriptions of what the trackable feature does"
+    },
+    {
+        "name": "trackable my_trackable",
+        "mention": "</trackable my_trackable:1403817573253906512>",
+        "helpCategories": [
+            "General",
+            "Entertainment",
+            "Bot"
+        ],
+        "shortDesc": "View or create your trackable",
+        "detailedDesc": "See info about where your trackable is now and its statistics, or create one if you haven't yet."
+    },
+    {
+        "name": "trackable current",
+        "mention": "</trackable current:1403817573253906512>",
+        "helpCategories": [
+            "General",
+            "Entertainment",
+            "Bot"
+        ],
+        "shortDesc": "View the trackable currently in your inventory",
+        "detailedDesc": "See specific info about the trackable currently in your inventory, and place it if you wish."
+    },
+    {
+        "name": "trackable view",
+        "mention": "</trackable view:1403817573253906512>",
+        "helpCategories": [
+            "General",
+            "Entertainment",
+            "Bot"
+        ],
+        "shortDesc": "Find a trackable using its ID",
+        "detailedDesc": "View current stats about a trackable you've seen before using its ID"
+    },
+    {
         "name": "translate",
         "mention": "</translate:1403120086692139100>",
         "helpCategories": [

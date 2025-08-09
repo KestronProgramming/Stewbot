@@ -196,9 +196,19 @@ client.on(Events.InteractionCreate, async cmd=>{
     if(cmd.isChatInputCommand() || cmd.isMessageContextMenuCommand()) { 
         // Always obey the `private` property, if not defined default to the `deferEphemeral` property. 
         const private = cmd.isChatInputCommand() ? cmd.options.getBoolean("private") : null;
+        const subcommand = cmd.isChatInputCommand() ? cmd.options.getSubcommand(false) : null;
+        let forceEphemeral = false;
+        if (commandScript?.data?.deferEphemeral) {
+            if (typeof(commandScript.data.deferEphemeral) == "object" && subcommand) {
+                forceEphemeral = commandScript.data.deferEphemeral[subcommand];
+            }
+            else if (typeof(commandScript.data.deferEphemeral) == "boolean") {
+                forceEphemeral = commandScript.data.deferEphemeral;
+            }
+        }
         await cmd.deferReply({
             ephemeral:
-                private ?? commandScript?.data.deferEphemeral ?? false
+                private ?? forceEphemeral ?? false
         });
     }
 
@@ -256,13 +266,13 @@ client.on(Events.InteractionCreate, async cmd=>{
             try {
                 cmd.followUp(
                     `Sorry, some error was encountered. It has already been reported, there is nothing you need to do.\n` +
-                    `However, you can keep up with Stewbot's latest features and patches in the [Support Server](<https://discord.gg/k3yVkrrvez>).`
+                    `However, you can keep up with Stewbot's latest features and patches in the [Support Server](<${config.invite}>).`
                 )
             } catch {}
             throw e; // Throw it so that it hits the error notifiers
         }
     }
-
+ 
     //// Buttons, Modals, and Select Menu
     // Anything that has an ID can be sent
     if ("customId" in cmd) {

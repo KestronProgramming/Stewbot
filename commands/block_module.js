@@ -8,11 +8,7 @@ function applyContext(context={}) {
 		this[key] = context[key];
 	}
 }
-/**
- * @typedef {import("./modules/database").GuildDoc} GuildDoc
- * @typedef {import("./modules/database").GuildUserDoc} GuildUserDoc
- * @typedef {import("./modules/database").UserDoc} UserDoc
- */
+
 // #endregion CommandBoilerplate
 const fs = require("node:fs")
 const Fuse = require('fuse.js');

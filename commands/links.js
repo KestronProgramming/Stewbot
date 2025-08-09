@@ -8,11 +8,7 @@ function applyContext(context={}) {
 		this[key] = context[key];
 	}
 }
-/**
- * @typedef {import("./modules/database").GuildDoc} GuildDoc
- * @typedef {import("./modules/database").GuildUserDoc} GuildUserDoc
- * @typedef {import("./modules/database").UserDoc} UserDoc
- */
+
 // #endregion CommandBoilerplate
 
 const config = require("../data/config.json");
@@ -47,7 +43,7 @@ module.exports = {
 			`Here is a list of links in relation with this bot you may find useful.\n` +
 			`- [Stewbot's Website](<https://stewbot.kestron.software/>)\n` +
 			`- [Stewbot's Invite Link](<${config.install}>)\n` +
-			`- [Support Server](<https://discord.gg/k3yVkrrvez>)\n` +
+			`- [Support Server](<${config.invite}>)\n` +
 			`- [Stewbot's Source Code on Github](<https://github.com/KestronProgramming/Stewbot>)\n` +
 			`- [Donate](<https://stewbot.kestron.software/donate>)`
 		);
