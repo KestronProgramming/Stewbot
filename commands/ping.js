@@ -19,7 +19,6 @@ const mongoose = require("mongoose")
 const ms = require("ms");
 const { notify } = require("../utils")
 
-const bootedAt = Date.now();
 let uptime = 0; // Bot uptime in seconds I think?
 
 module.exports = {	
@@ -97,7 +96,7 @@ module.exports = {
 		}
 
 		// Add boot time
-		bootMOTD += ` | Booting took ${Date.now() - bootedAt}ms`;
+		bootMOTD += ` | Booting took ${Date.now() - global.bootedAt}ms`;
 
 		notify(bootMOTD);
 

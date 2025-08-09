@@ -7,6 +7,9 @@
 //   general management, etc., is inside `./commands/core.js`
 
 
+// To be most accurate, save this before anything.
+global.bootedAt = Date.now();
+
 // === Load envs
 const envs = require('./env.json');
 Object.keys(envs).forEach(key => process.env[key] = envs[key] );
