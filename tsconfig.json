@@ -7,8 +7,8 @@
     "checkJs": true,
     "noEmit": true,
     "strict": false,
-    "target": "esnext",
-    "strictNullChecks": true
+    "target": "es2024",
+    "strictNullChecks": true,
   },
   "include": [
     "**/*.js",

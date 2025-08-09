@@ -161,11 +161,11 @@ let warningSchema = new mongoose.Schema({
 
 let guildConfigSchema = new mongoose.Schema({
     antihack_log_channel: { type: String, default: "" },
-    antihack_to_log: { type: Boolean, default: false},
-    antihack_auto_delete: { type: Boolean, default: true},
-    domain_scanning: { type: Boolean, default: true},
-    fake_link_check: { type: Boolean, default: true},
-    ai: { type: Boolean, default: true},
+    antihack_to_log: { type: Boolean, default: false, required: false  },
+    antihack_auto_delete: { type: Boolean, default: true, required: false },
+    domain_scanning: { type: Boolean, default: true },
+    fake_link_check: { type: Boolean, default: true },
+    ai: { type: Boolean, default: true },
     embedPreviews: { type: Boolean, default: true },
     levelUpMsgs: { type: Boolean, default: false },
     keywords: { type: Boolean, default: false }
@@ -223,13 +223,13 @@ let guildUserSchema = new mongoose.Schema({
     },
     tempRoles: { type: Map, of: Number, default: {} },
     infractions: { type: Number, defaults: 0 },
-    safeTimestamp: { type: Number, default: 0},
+    safeTimestamp: { type: Number, default: 0, required: true },
     countTurns: { type: Number, default: 0 },
     beenCountWarned: { type: Boolean, default: false },
     lvl: { type: Number, default: 0 },
     exp: { type: Number, default: 0 },
-    warnings: [ warningSchema ],
-    roles: [ String ], // Roles stored on server leave, for sticky roles
+    warnings: [warningSchema],
+    roles: [String], // Roles stored on server leave, for sticky roles
     inServer: { type: Boolean, default: true }, // This is used for logs and such - we retain guild user objects for sticky roles but want to know they're not in the server anymore.
 })
 guildUserSchema.index({ userId: 1, guildId: 1 }, { unique: true }); // Compound unique index - only one user per guild

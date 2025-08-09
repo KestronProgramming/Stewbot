@@ -46,7 +46,7 @@ module.exports = {
     async execute(cmd, context) {
 		applyContext(context);
 
-		if(!cmd.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageRoles)){
+		if(!cmd.guild?.members.cache.get(client.user.id)?.permissions.has(PermissionFlagsBits.ManageRoles)){
 			cmd.followUp(`I do not have the MANAGE_ROLES permission for this server, so I cannot run auto roles.`);
 			return;
 		}
@@ -59,36 +59,37 @@ module.exports = {
                 ))[1]
             }`,
             ephemeral: true,
-            components: [new ActionRowBuilder().addComponents(
-				new RoleSelectMenuBuilder()
-					.setCustomId("role-addOption")
-					.setMinValues(1)
-					.setMaxValues(20)
-					.setPlaceholder("Select all the roles you would like to offer")
-			)],
-        });
+			components: [
+				new ActionRowBuilder().addComponents(
+					new RoleSelectMenuBuilder()
+						.setCustomId("role-addOption")
+						.setMinValues(1)
+						.setMaxValues(20)
+						.setPlaceholder("Select all the roles you would like to offer")
+				).toJSON()
+			],
+		});
 	},
 
 	// Only button subscriptions matched will be sent to the handler 
 	subscribedButtons: ["role-addOption", /autoRole-.*/],
 	
-    /** @param {import('discord.js').ButtonInteraction} cmd */
+    /** @param {import('discord.js').RoleSelectMenuInteraction} cmd */
     async onbutton(cmd, context) {
 		applyContext(context);
 
-		if(cmd.customId == "role-addOption") {
-			let myRole=cmd.guild.members.cache.get(client.user.id).roles.highest.position;
-			var badRoles=[];
-			var rows=[];
-			var tempRow=[];
-			for (role of cmd.values) {
+		if (cmd.customId == "role-addOption") {
+			var badRoles = [];
+			var rows = [];
+			var tempRow = [];
+			for (let role of cmd.values) {
 				const roleInQuestion = cmd.roles.get(role);
-				
-				if(roleInQuestion.name===null||roleInQuestion.name===undefined) continue;
-				tempRow.push(new ButtonBuilder().setCustomId("autoRole-"+role).setLabel(roleInQuestion.name).setStyle(ButtonStyle.Success));
-				
-				const [ success, errorMsg ] = await canUseRole(cmd.user, roleInQuestion, cmd.channel);
-				if(!success) {
+				if (!roleInQuestion?.name) continue;
+
+				tempRow.push(new ButtonBuilder().setCustomId("autoRole-" + role).setLabel(roleInQuestion.name).setStyle(ButtonStyle.Success));
+
+				const [success, errorMsg] = await canUseRole(cmd.user, roleInQuestion, cmd.channel);
+				if (!success) {
 					badRoles.push(roleInQuestion.name);
 				}
 

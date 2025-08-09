@@ -47,7 +47,7 @@ module.exports = {
     /** 
      * @param {import('discord.js').Message} msg 
      * @param {GuildDoc} guildStore 
-     * @param {UserDoc} guildUserStore 
+     * @param {GuildUserDoc} guildUserStore 
      * */
     async [Events.MessageCreate] (msg, context) {
 		applyContext(context);

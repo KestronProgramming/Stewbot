@@ -2,9 +2,9 @@
 const Categories = require("./modules/Categories");
 const client = require("../client.js");
 const { Guilds, Users, GuildUsers, guildByID, userByID, guildUserByID, guildByObj, userByObj, guildUserByObj } = require("./modules/database.js")
-const { Events, ContextMenuCommandBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
+const { Events, GuildChannel, ContextMenuCommandBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
 function applyContext(context={}) {
-    for (key in context) {
+    for (let key in context) {
         this[key] = context[key];
     }
 }
@@ -17,7 +17,7 @@ function applyContext(context={}) {
 
 const { requireServer } = require("../utils.js");
 const crypto = require('crypto');
-
+const ms = require("ms");
 
 // Store post hashes so we can catch repeat posts
 const cache = {};
@@ -63,14 +63,15 @@ module.exports = {
         
         const guild = await guildByID(cmd.guildId);
 
-        if (cmd.options.getBoolean("auto_delete") !== null) 
+        if (cmd.options.getBoolean("auto_delete")) 
             guild.config.antihack_auto_delete = cmd.options.getBoolean("auto_delete");
         
         if (cmd.options.getBoolean("disable_anti_hack") !== null) 
             guild.disableAntiHack = cmd.options.getBoolean("disable_anti_hack");
         
-        if (cmd.options.getChannel("log_channel") !== null) {
-            guild.config.antihack_log_channel = cmd.options.getChannel("log_channel").id;
+        let log_channel = cmd.options.getChannel("log_channel");
+        if (log_channel) {
+            guild.config.antihack_log_channel = log_channel.id;
             guild.config.antihack_to_log = true; // Unless overridden, changing the log channel means enable logging
         }
         
@@ -85,7 +86,7 @@ module.exports = {
     /** 
      * @param {import('discord.js').Message} msg 
      * @param {GuildDoc} guildStore 
-     * @param {UserDoc} guildUserStore 
+     * @param {GuildUserDoc} guildUserStore 
      * */
     async [Events.MessageCreate] (msg, context, guildStore, guildUserStore) {
         if (!msg.guild) return;
@@ -111,7 +112,7 @@ module.exports = {
         // Anti-hack message
         if(msg.guild && !msg.author.bot){
             // Create message data
-            var hash = crypto.createHash('md5').update(msg.content.slice(0,148)).digest('hex'); // TODO: use something faster than md5
+            var hash = crypto.createHash('md5').update(msg.content.slice(0,148)).digest('hex'); // TODO: use something faster than md5?
             
             // Make sure user / server is in cache
             cache[msg.guild.id] ??= {};
@@ -140,14 +141,19 @@ module.exports = {
 
                     // Handle this user
                     user.captcha=true;
-                    var botInServer=msg.guild?.members.cache.get(client.user.id);
+                    var botInServer = msg.guild?.members.cache.get(client.user.id);
                     if (
+                        botInServer &&
                         !guild.disableAntiHack && 
-                        new Date() - (userInGuild.safeTimestamp || 0) > 60000 * 60 * 24 * 7
+                        // Users who complete captchas are marked as safe for a week.
+                        Date.now() - (userInGuild.safeTimestamp || 0) > ms('7d')
                     ) {
                         // Timeout if we have perms
                         if (timeoutable) {
-                            msg.member.timeout(60000*60*24,`Detected spam activity of high profile pings and/or a URL of some kind. Automatically applied for safety.`); //One day, by then any automated hacks should've run their course
+                            msg.member.timeout(
+                                ms('1d'),
+                                `Detected spam activity of high profile pings and/or a URL of some kind. Automatically applied for safety.`
+                            ); //One day, by then any automated hacks should've run their course
                             user.timedOutIn.push(msg.guild.id);
                         }
 
@@ -164,8 +170,14 @@ module.exports = {
                             })
                             : msg.channel;
 
+                        
+
                         // Post about this user in this channel
-                        if (logChannel.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)) {
+                        if (
+                            logChannel?.isTextBased() && 
+                            'permissionsFor' in logChannel &&
+                            logChannel?.permissionsFor(client.user.id)?.has(PermissionFlagsBits.SendMessages)
+                        ) {
                             
                             // Build buttons based on what permissions the bot has over the user.
                             const sendRow = [ ];
@@ -192,9 +204,12 @@ module.exports = {
                                     // Delete without asking
                                     for (var i = 0; i < cache[msg.guild.id].users[msg.author.id].lastMessages.length; i++) {
                                         try {
-                                            var badMess = await client.channels.cache.get(
+                                            let channel = await client.channels.cache.get(
                                                 cache[msg.guild.id].users[msg.author.id].lastMessages[i].split("/")[0]
-                                            ).messages.fetch(
+                                            );
+                                            if (!channel || !("messages" in channel)) continue;
+                                            
+                                            let badMess = await channel.messages?.fetch(
                                                 cache[msg.guild.id].users[msg.author.id].lastMessages[i].split("/")[1]
                                             );
                                             badMess.delete().catch(e=>{}); // TODO: make one bulk-delete request instead of 4
@@ -221,6 +236,7 @@ module.exports = {
                             }
 
                             let timeoutAttemptMessage = timeoutable
+                                // @ts-ignore
                                 ? `I temporarily applied a timeout. To remove this timeout, <@${msg.author.id}> can use ${cmds.captcha.mention} in a DM with me, or a moderator can remove this timeout manually.`
                                 : `I tried to apply a timeout to this account, but either I lack the \`Timeout Members\` permission, my role needs to be dragged above theirs, or they are an administrator. It is advisable to grant me these permissions to defend against spam and hacked accounts.`
 
@@ -228,7 +244,7 @@ module.exports = {
                                 ? " which has since been automatically deleted"
                                 : ""
                             
-                            const components = [ ]
+                            const components = [ ];
                             
                             if (sendRow.length > 0) {
                                 components.push(
@@ -243,15 +259,18 @@ module.exports = {
                                 content: 
                                 `I have detected unusual activity from <@${msg.author.id}>${autoDeleteNotice}. ${timeoutAttemptMessage}\n` +
                                 `\n` +
+                                // @ts-ignore
                                 `If a mod wishes to change settings related to this behavior designed to protect servers from mass spam and hacked accounts, run ${cmds.anti_hack?.mention || "/anti_hack"}.` + // TODO: fix
                                 missingPermissionsMessage,
-                                components
+                                // @ts-ignore
+                                components: components
                             });
                             
                             // Finally, DM This user if the message was set to go to a log channel
                             if (toNotify && toLog) {
                                 msg.author.send(
                                     `I have detected unusual activity from your account, you have been given a timeout in one or more servers.\n`+
+                                    // @ts-ignore
                                     `To remove this timeout, you can use can use ${cmds.captcha.mention} in a DM with me.`
                                 )
                             }
@@ -267,7 +286,6 @@ module.exports = {
                 cache[msg.guild.id].users[msg.author.id].lastMessages=[];
             }
             cache[msg.guild.id].users[msg.author.id].lastMessages.push(`${msg.channel.id}/${msg.id}`);
-            
         }
     },
     
@@ -276,14 +294,20 @@ module.exports = {
     
     /** @param {import('discord.js').ButtonInteraction} cmd */
     async onbutton(cmd, context) {
+        if (!cmd.guild) return;
+        if (!cmd.member || typeof(cmd.member.permissions) !== "object") return;
 
         const guild = await guildByObj(cmd.guild);
 
-        if (guild.disableAntiHack) return cmd.reply({content:`AntiHack protection has been disabled for this servers.`, ephemeral:true});
-        applyContext(context);
+        if (guild.disableAntiHack) return cmd.reply({
+            content: `AntiHack protection has been disabled for this server.`,
+            ephemeral: true
+        });
         
+        applyContext(context);
+
         if(cmd.customId?.startsWith("ban-")) {
-            if(cmd.member.permissions.has(PermissionFlagsBits.BanMembers)){
+            if(cmd.member?.permissions.has(PermissionFlagsBits.BanMembers)){
                 var target=cmd.guild.members.cache.get(cmd.customId.split("-")[1]);
                 if(target){
                     target.ban({reason:`Detected high spam activity with high profile pings and/or a URL, was instructed to ban by ${cmd.user.username}.`});
@@ -292,22 +316,23 @@ module.exports = {
                 else{
                     cmd.reply({content:`I was unable to find the target in question.`,ephemeral:true});
                 }
-                if(cmd.member.permissions.has(PermissionFlagsBits.ManageMessages)){
-                    for(var i=0;i<cache[cmd.guild.id].users[cmd.customId.split("-")[1]].lastMessages.length;i++){
-                        try{
-                            var badMess = await client.channels.cache
-                                .get(
-                                    cache[cmd.guild.id].users[
-                                        cmd.customId.split("-")[1]
-                                    ].lastMessages[i].split("/")[0]
-                                )
-                                .messages.fetch(
-                                    cache[cmd.guild.id].users[
-                                        cmd.customId.split("-")[1]
-                                    ].lastMessages[i].split("/")[1]
-                                );
-                            badMess.delete().catch(e=>{console.log(e)});
-                            cache[cmd.guild.id].users[cmd.customId.split("-")[1]].lastMessages.splice(i,1);
+                if (cmd.member.permissions.has(PermissionFlagsBits.ManageMessages)) {
+                    for (var i = 0; i < cache[cmd.guild.id].users[cmd.customId.split("-")[1]].lastMessages.length; i++) {
+                        try {
+                            let channel = await client.channels.cache.get(
+                                cache[cmd.guild.id].users[
+                                    cmd.customId.split("-")[1]
+                                ].lastMessages[i].split("/")[0]
+                            );
+                            if (!channel || !("messages" in channel)) continue;
+
+                            let badMess = await channel.messages.fetch(
+                                cache[cmd.guild.id].users[
+                                    cmd.customId.split("-")[1]
+                                ].lastMessages[i].split("/")[1]
+                            );
+                            badMess.delete().catch(e => { console.log(e) });
+                            cache[cmd.guild.id].users[cmd.customId.split("-")[1]].lastMessages.splice(i, 1);
                             i--;
                         }
                         catch(e){ console.log(e) }
@@ -320,9 +345,9 @@ module.exports = {
         }
         
         if(cmd.customId?.startsWith("untimeout-")){
-            if(cmd.member.permissions.has(PermissionFlagsBits.ModerateMembers)) {
+            if(cmd.member?.permissions.has(PermissionFlagsBits.ModerateMembers)) {
 
-                var target = await cmd.guild.members.fetch(cmd.customId.split("-")[1]).catch(_ => null);
+                let target = await cmd.guild.members.fetch(cmd.customId.split("-")[1]).catch(_ => null);
                 if (target) {
                     await guildUserByObj(cmd.guild, cmd.customId.split("-")[1], {
                         safeTimestamp: new Date()
@@ -344,7 +369,7 @@ module.exports = {
             if(cmd.member.permissions.has(PermissionFlagsBits.KickMembers)){
                 var target=cmd.guild.members.cache.get(cmd.customId.split("-")[1]);
                 if(target){
-                    target.kick({reason:`Detected high spam activity with high profile pings and/or a URL, was instructed to kick by ${cmd.user.username}.`});
+                    target.kick(`Detected high spam activity with high profile pings and/or a URL, was instructed to kick by ${cmd.user.username}.`);
                     // await cmd.reply({content:`Done. Do you wish to delete the messages in question as well?`,components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId("del-"+target.id).setLabel("Yes").setStyle(ButtonStyle.Success))],ephemeral:true});
                     await cmd.reply({content:`Attempted to kick.`, ephemeral:true});
                     cmd.message.delete();
@@ -353,20 +378,21 @@ module.exports = {
                     cmd.reply({content:`I was unable to find the target in question.`,ephemeral:true});
                 }
                 if(cmd.member.permissions.has(PermissionFlagsBits.ManageMessages)){
-                    for(var i=0;i<cache[cmd.guild.id].users[cmd.customId.split("-")[1]].lastMessages.length;i++){
-                        try{
-                            var badMess = await client.channels.cache
-                                .get(
-                                    cache[cmd.guild.id].users[
-                                        cmd.customId.split("-")[1]
-                                    ].lastMessages[i].split("/")[0]
-                                )
-                                .messages.fetch(
-                                    cache[cmd.guild.id].users[
-                                        cmd.customId.split("-")[1]
-                                    ].lastMessages[i].split("/")[1]
-                                );
-                            badMess.delete().catch(e=>{console.log(e)});
+                    for (var i = 0; i < cache[cmd.guild.id].users[cmd.customId.split("-")[1]].lastMessages.length; i++) {
+                        try {
+                            var channel = await client.channels.cache.get(
+                                cache[cmd.guild.id].users[
+                                    cmd.customId.split("-")[1]
+                                ].lastMessages[i].split("/")[0]
+                            );
+                            if (!channel || !("messages" in channel)) continue;
+
+                            let badMess = await channel.messages.fetch(
+                                cache[cmd.guild.id].users[
+                                    cmd.customId.split("-")[1]
+                                ].lastMessages[i].split("/")[1]
+                            ).catch(e => null);
+                            badMess?.delete().catch(e => null);
                             cache[cmd.guild.id].users[cmd.customId.split("-")[1]].lastMessages.splice(i,1);
                             i--;
                         }
@@ -374,27 +400,31 @@ module.exports = {
                     }
                 }
             }
-            else{
-                cmd.reply({content:`You do not have sufficient permissions to kick members.`,ephemeral:true});
+            else {
+                cmd.reply({
+                    content: `You do not have sufficient permissions to kick members.`,
+                    ephemeral: true
+                });
             }
         }
         
         if(cmd.customId?.startsWith("del-")){
             if(cmd.member.permissions.has(PermissionFlagsBits.ManageMessages)){
                 for(var i=0;i<cache[cmd.guild.id].users[cmd.customId.split("-")[1]].lastMessages.length;i++){
-                    try{
-                        var badMess = await client.channels.cache
-                            .get(
-                                cache[cmd.guild.id].users[
-                                    cmd.customId.split("-")[1]
-                                ].lastMessages[i].split("/")[0]
-                            )
-                            .messages.fetch(
-                                cache[cmd.guild.id].users[
-                                    cmd.customId.split("-")[1]
-                                ].lastMessages[i].split("/")[1]
-                            );
-                        badMess.delete().catch(e=>{console.log(e)});
+                    try {
+                        let channel = await client.channels.cache.get(
+                            cache[cmd.guild.id].users[
+                                cmd.customId.split("-")[1]
+                            ].lastMessages[i].split("/")[0]
+                        );
+                        if (!channel || !("messages" in channel)) continue;
+
+                        let badMess = await channel.messages.fetch(
+                            cache[cmd.guild.id].users[
+                                cmd.customId.split("-")[1]
+                            ].lastMessages[i].split("/")[1]
+                        );
+                        badMess.delete().catch(e => null);
                         cache[cmd.guild.id].users[cmd.customId.split("-")[1]].lastMessages.splice(i,1);
                         i--;
                     }

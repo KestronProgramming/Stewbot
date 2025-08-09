@@ -261,8 +261,8 @@ client.on(Events.InteractionCreate, async cmd=>{
     }
 
     //// Buttons, Modals, and Select Menu
-    // All of these get send to onButton. 
-    if (cmd.isButton() || cmd.isModalSubmit() || cmd.isStringSelectMenu()) {
+    // Anything that has an ID can be sent
+    if ("customId" in cmd) {
         Object.values(buttonListenerModules).forEach(module => {
             // Only emit buttons to subscribed modules
             const moduleSubscriptions = module.subscribedButtons || [];
