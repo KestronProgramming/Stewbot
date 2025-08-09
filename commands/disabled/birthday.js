@@ -7,18 +7,10 @@ function applyContext(context={}) {
 		this[key] = context[key];
 	}
 }
-/**
- * @typedef {import("./modules/database").GuildDoc} GuildDoc
- * @typedef {import("./modules/database").GuildUserDoc} GuildUserDoc
- * @typedef {import("./modules/database").UserDoc} UserDoc
- */
+
 // #endregion CommandBoilerplate
 
-// 
-// TEMPLATE.js is an exhaustive template showcasing every feature available to modules.
-//  Any module/command can be derived from these.
-// 
-
+const config = require("../data/config.json");
 
 module.exports = {
 	data: {
@@ -71,7 +63,7 @@ module.exports = {
             fields: [
               {
                 name: "How to Enter",
-                value: "You'll need to be in Stewbot's home server to enter: https://discord.gg/9yKkQFgv92. Once there, check the #announcements channel!",
+                value: `You'll need to be in Stewbot's home server to enter: [Kestron Central](${config.invite}). Once there, check the #announcements channel!`,
                 inline: true
               },
               {

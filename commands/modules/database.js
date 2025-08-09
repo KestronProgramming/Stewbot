@@ -243,7 +243,7 @@ let timerSchema = new mongoose.Schema({
     "time": Number,
     "respLocation": String, 
     "reminder": String
-})
+});
 
 let hatPullSchema = new mongoose.Schema({
     limit: { type: Number, default: 0 },
@@ -254,7 +254,7 @@ let hatPullSchema = new mongoose.Schema({
     registered: Boolean,
     user: String, // Opening user
     scheduled: { type: Boolean, default: false }, // Set to false on boot, true when scheduled. Prevents double scheduling via boot and daily
-})
+});
 
 let primedEmbedSchema = new mongoose.Schema({
 	content: { type: String, default: "" },
@@ -280,7 +280,7 @@ let primedEmbedSchema = new mongoose.Schema({
 		type: [String],
 		default: []
 	}
-})
+});
 
 let userConfigSchema = new mongoose.Schema({
     beenAIDisclaimered: { type: Boolean, default: false },
@@ -292,7 +292,7 @@ let userConfigSchema = new mongoose.Schema({
     hasSetTZ: { type: Boolean, default: false },
     timeOffset: { type: Number, default: 0 },
     attachmentProtection: { type: Boolean, default: true },
-})
+});
 
 let userSchema = new mongoose.Schema({
     id: {
@@ -313,6 +313,30 @@ let userSchema = new mongoose.Schema({
     timer: timerSchema,
     captcha: Boolean,
 });
+
+let trackableSchema = new mongoose.Schema({
+    owner: { type: String, required: true },
+    current: { type: String, required: true },
+    id: { type: String, required: true },
+    name: { type: String, required: true, default: "Jerry" },
+    img: { 
+        type: String, 
+        required: true
+    },
+    desc: { 
+        type: String, 
+        required: true, 
+        default: "This is a Stewbot trackable. Install Stewbot, then run `/trackable my_trackable` to create your own! You can edit this message." 
+    },
+    tag: { type: String, required: true, default: "Look at my new trackable!!" },
+    currentName: { type: String, required: true, default: "Jerrysalem" },
+    placed: { type: String, required: true,  default: Date.now },
+    layout: { type: Number, required: true, default: 0 }, // The type of layout
+    color: { type: Number, required: true, default: 0x00d7ff },
+    pastLocations: { type: [String], required: true, default: [] },
+    status: { type: String, required: true, enum: ["editing", "published"], default: "editing" }
+});
+
 userSchema.index({"hat_pull.location": 1});
 userSchema.index({"timer": 1, "timer.time": 1});
 //#endregion
@@ -353,19 +377,6 @@ ConfigDB.findOne().then(async (config) => {
     }
 });
 
-//#endregion
-
-//#region Types
-/**
- * @typedef {import("mongoose").InferSchemaType<typeof guildSchema>} RawGuildDoc
- * @typedef {import("mongoose").HydratedDocument<RawGuildDoc>} GuildDoc
- * 
- * @typedef {import("mongoose").InferSchemaType<typeof userSchema>} RawUserDoc
- * @typedef {import("mongoose").HydratedDocument<RawUserDoc>} UserDoc
- * 
- * @typedef {import("mongoose").InferSchemaType<typeof guildUserSchema>} RawGuildUserDoc
- * @typedef {import("mongoose").HydratedDocument<RawGuildUserDoc>} GuildUserDoc
- */
 //#endregion
 
 //#region Functions
@@ -547,7 +558,8 @@ guildUserSchema.post('findOneAndUpdate', doc => { messageDataCache.del(`${doc.gu
 // Set plugins and define docs
 const Guilds = mongoose.model("guilds", guildSchema);
 const GuildUsers = mongoose.model("guildusers", guildUserSchema);
-const Users = mongoose.model("users", userSchema)
+const Users = mongoose.model("users", userSchema);
+const Trackables=mongoose.model("trackables",trackableSchema);
 
 // Drop indexes of docs where metadata was changed
 async function dropIndexes(Model) {
@@ -589,6 +601,8 @@ module.exports = {
     guildUserByObj,
 
     ConfigDB,
+
+    Trackables,
 
     // Utilities
     keyDecode,

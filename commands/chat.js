@@ -8,11 +8,7 @@ function applyContext(context={}) {
 		this[key] = context[key];
 	}
 }
-/**
- * @typedef {import("./modules/database").GuildDoc} GuildDoc
- * @typedef {import("./modules/database").GuildUserDoc} GuildUserDoc
- * @typedef {import("./modules/database").UserDoc} UserDoc
- */
+
 // #endregion CommandBoilerplate
 
 const { limitLength, notify } = require("../utils.js")
@@ -433,7 +429,7 @@ async function getAiResponseOllama(threadID, message, thinking = null, contextua
 
     if (ollamaInstances.length === 0) {
         return [`Sorry, there are no available AI servers. Try again later.\n\n` +
-            `We host our own AI servers. If you would like to support this project, feel free to join the [Support Server](<https://discord.gg/k3yVkrrvez>) and see how you can help!`,
+            `We host our own AI servers. If you would like to support this project, feel free to join the [Support Server](<${config.invite}>) and see how you can help!`,
             false];
     }
 

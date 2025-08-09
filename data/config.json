@@ -1,6 +1,7 @@
 {
     "pfp":"https://stewbot.kestron.com/stewbot.jpg",
     "install":"https://discord.com/oauth2/authorize?client_id=966167746243076136",
+    "invite": "https://discord.gg/k3yVkrrvez",
     "themeColor":"0x006400",
     "name":"Stewbot",
     "homeServer":"983074750165299250",

@@ -8,11 +8,7 @@ function applyContext(context={}) {
 		this[key] = context[key];
 	}
 }
-/**
- * @typedef {import("./modules/database").GuildDoc} GuildDoc
- * @typedef {import("./modules/database").GuildUserDoc} GuildUserDoc
- * @typedef {import("./modules/database").UserDoc} UserDoc
- */
+
 // #endregion CommandBoilerplate
 
 const mongoose = require("mongoose")
@@ -90,7 +86,7 @@ module.exports = {
 				// The reboot was accidental, so reset our bootedAt time
 				config.bootedAt = Date.now();
 				uptime = Math.round(Date.now() / 1000);
-				bootMOTD += `Started at ${bootedAtTimestamp}`;
+				bootMOTD += `Started ${bootedAtTimestamp}`;
 				config.save();
 			}
 		}
