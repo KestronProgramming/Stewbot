@@ -234,7 +234,7 @@ function getTrackableEditor(trackable) {
 	const publishButton = new ButtonBuilder()
 		.setCustomId('edit_trackable_publish')
 		.setLabel('Publish')
-		.setStyle(ButtonStyle.Danger);
+		.setStyle(ButtonStyle.Success);
 
 	return {
 		embeds: [embed],
@@ -311,6 +311,18 @@ async function genTrackerId(){
 
 // TODO: Expiring - daily listener and expirer. Make sure transferring hands resets the last moved date. Make sure the find-a-trackable channel's don't expire.
 
+// TODO: Place command
+
+// TODO: 'about'
+
+// TODO: Rerun this command with an image.... specify image option... 
+
+// TODO: If pickup, and it didn't have it, 
+// TODO: Link to KC for find a trackable more on pickup expired
+
+// TODO: When claimed, just use name, and say "it moved on"  
+
+
 module.exports = {
 	data: {
 		command: new SlashCommandBuilder()
@@ -324,27 +336,28 @@ module.exports = {
 				AT.UserInstall     // Install to users
 			)
 			.setName('trackable').setDescription('Manage Trackables')
-				.addSubcommand(command=>command.setName("about").setDescription("Learn more about Trackables").addBooleanOption(option =>
-                    option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
-                ))
-				.addSubcommand(command=>command.setName("my_trackable").setDescription("View or create your Trackable")
-					// .addBooleanOption(option =>
-					// 	option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
-					// )
-					.addAttachmentOption(option => 
-						option.setRequired(false).setName("image").setDescription("The image that you want to make into a Trackable")
-					)
+			.addSubcommand(command => command.setName("about").setDescription("Learn more about Trackables").addBooleanOption(option =>
+				option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
+			))
+			.addSubcommand(command => command.setName("my_trackable").setDescription("View or create your Trackable")
+				// .addBooleanOption(option =>
+				// 	option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
+				// )
+				.addAttachmentOption(option =>
+					option.setRequired(false).setName("image").setDescription("The image that you want to make into a Trackable")
 				)
-				.addSubcommand(command=>command.setName("inventory").setDescription("View the Trackable currently in your inventory"))
-				.addSubcommand(command=>
-					command.setName("view").setDescription("View a Trackable with its ID").addStringOption(option=>
+			)
+			.addSubcommand(command => command.setName("inventory").setDescription("View the Trackable currently in your inventory"))
+			.addSubcommand(command =>
+				command.setName("view").setDescription("View a Trackable with its ID")
+					.addStringOption(option =>
 						option.setName("id").setDescription("The ID of the trackable you want to view").setRequired(true)
 					)
 					.addBooleanOption(option =>
 						option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 					)
-				),
-		
+			),
+
 		requiredGlobals: [],
 
 		deferEphemeral: {
@@ -558,7 +571,7 @@ module.exports = {
 
 				if (serversSinceTarget == 0) {
 					return cmd.reply({
-						content: "You must post this in a different server than it came from.",
+						content: "You must post this in a different server than it was last in.",
 						ephemeral: true
 					});
 				}
@@ -661,11 +674,15 @@ module.exports = {
 					})
 
 					await cmd.followUp({
-						content: 
-							// @ts-ignore
-							`You have picked up this Trackable! Now go share it somewhere with ${cmds.trackable.inventory.mention}\n`+
-							`\n`+
-							`You can even share it in servers that don't have Stewbot if you [add Stewbot to your apps](<${config.install}>)!`,
+						embeds: [
+							new EmbedBuilder()
+								.setDescription(
+									// @ts-ignore
+									`You have picked up this Trackable! Now go share it somewhere with ${cmds.trackable.inventory.mention}\n`+
+									`\n`+
+									`You can even share it in servers that don't have Stewbot if you [add Stewbot to your apps](<${config.install}>)!`
+								)
+							],
 						ephemeral: true
 					})
 				}
@@ -731,7 +748,41 @@ module.exports = {
 						await cmd.showModal(modal);
 					}
 					else if (cmd.customId === 'edit_trackable_publish') {
+						const hasCurrentTrackable = await Trackables.exists({
+							status: "published",
+							current: `u${cmd.user.id}`
+						});
+						if (hasCurrentTrackable) {
+							return cmd.reply("You already have a Trackable in your inventory. Place your current Trackable somewhere before creating one.");
+						}
 
+						// Make then confirm
+						return cmd.reply({
+							ephemeral: true,
+							content: "Are you sure you want to publish this? Once you publish it you can't change it.",
+							components: [
+								new ActionRowBuilder().addComponents([
+									new ButtonBuilder()
+										.setCustomId('edit_trackable_publish_no')
+										.setLabel('No')
+										.setStyle(ButtonStyle.Success),
+									new ButtonBuilder()
+										.setCustomId('edit_trackable_publish_yes')
+										.setLabel('Yes')
+										.setStyle(ButtonStyle.Danger)
+								]).toJSON()
+							]
+						})
+					}
+					
+					else if (cmd.customId === 'edit_trackable_publish_no') {
+						cmd.update({
+							content: "Publishing canceled.",
+							components: []
+						})
+					}
+
+					else if (cmd.customId === 'edit_trackable_publish_yes') {
 						const hasCurrentTrackable = await Trackables.exists({
 							status: "published",
 							current: `u${cmd.user.id}`
@@ -745,7 +796,8 @@ module.exports = {
 						await trackableData.save();
 
 						await cmd.reply({
-							content: 'Trackable published!',
+							// @ts-ignore
+							content: `Trackable published!\n\nNow you can send it somewhere with ${cmds.trackable.current.mention}. If you install Stewbot to your profile, you can even send it in servers that don't use stewbot!`,
 							ephemeral: true
 						});
 
@@ -759,6 +811,12 @@ module.exports = {
 					}
 				}
 				else if (cmd.isModalSubmit()) {
+					// Special case for publish
+					if (cmd.customId === 'edit_trackable_publish_confirmed') {
+						// TODO
+					}
+
+					// These all have additional handling at the end
 					if (cmd.customId === 'edit_trackable_name') {
 						trackableData.name = cmd.fields.getTextInputValue('name_input');
 					}
@@ -768,6 +826,7 @@ module.exports = {
 					else if (cmd.customId === 'edit_trackable_desc') {
 						trackableData.desc = cmd.fields.getTextInputValue('desc_input');
 					}
+
 					trackableData.save();
 
 					// We can't update the message, we have to reply with the new one - TODO: consider alternative
