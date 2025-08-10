@@ -207,8 +207,7 @@ client.on(Events.InteractionCreate, async cmd=>{
             }
         }
         await cmd.deferReply({
-            ephemeral:
-                private ?? forceEphemeral ?? false
+            ephemeral: private ?? forceEphemeral ?? false,
         });
     }
 

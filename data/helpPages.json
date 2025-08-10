@@ -797,8 +797,8 @@
         "detailedDesc": "See info about where your trackable is now and its statistics, or create one if you haven't yet."
     },
     {
-        "name": "trackable current",
-        "mention": "</trackable current:1403817573253906512>",
+        "name": "trackable inventory",
+        "mention": "</trackable inventory:1403817573253906512>",
         "helpCategories": [
             "General",
             "Entertainment",

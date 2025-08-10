@@ -315,21 +315,22 @@ let userSchema = new mongoose.Schema({
 });
 
 let trackableSchema = new mongoose.Schema({
-    owner: { type: String, required: true },
-    current: { type: String, required: true },
-    id: { type: String, required: true },
-    name: { type: String, required: true, default: "Jerry" },
-    img: { 
+    id: { type: String, required: true, unique: true },
+    owner: { type: String, required: true },   // ID of the creator of this trackable.
+    letCreationDate: { type: Number, default: Date.now, required: true },
+    current: { type: String, required: true }, // Current holder (user or channel). u/c prepends the ID.
+    name: { type: String, required: true, default: "My New Trackable" },
+    img: {
         type: String, 
         required: true
     },
-    desc: { 
+    desc: {
         type: String, 
         required: true, 
         default: "This is a Stewbot trackable. Install Stewbot, then run `/trackable my_trackable` to create your own! You can edit this message." 
     },
     tag: { type: String, required: true, default: "Look at my new trackable!!" },
-    currentName: { type: String, required: true, default: "Jerrysalem" },
+    currentName: { type: String, required: true },
     placed: { type: String, required: true,  default: Date.now },
     layout: { type: Number, required: true, default: 0 }, // The type of layout
     color: { type: Number, required: true, default: 0x00d7ff },
