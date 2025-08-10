@@ -1,7 +1,9 @@
 // #region CommandBoilerplate
 const Categories = require("./modules/Categories.js");
 const client = require("../client.js");
+// @ts-ignore
 const { Guilds, Users, guildByID, userByID, guildByObj, userByObj, Trackables } = require("./modules/database.js")
+// @ts-ignore
 const { Events, MessageFlags, ContainerBuilder, ContextMenuCommandBuilder, TextDisplayBuilder, SeparatorSpacingSize, SeparatorBuilder, SectionBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
 function applyContext(context={}) {
 	for (let key in context) {
@@ -53,21 +55,22 @@ function getTrackableEditor(trackable) {
 	// Embed
 	const embed = new EmbedBuilder()
 		.setTitle(name)
-		.setDescription(`ID: ${id}\n\n${desc}\n\n**${tag}**`)
 		.setColor(color);
 
 	// Images depending on layout
 	if (layout === 0 && img) {
 		embed.setThumbnail(img);
+		embed.setDescription(`ID: ${id}\n\n${desc}\n\n**${tag}**`)
 	} else if (layout === 1 && img) {
 		embed.setImage(img);
+		embed.setDescription(`ID: ${id}\n\n${desc}\n\n**${tag}**`)
 	} else if (layout === 2 && img) {
 		embed.setImage(img);
 	}
 
 	// Layout select
 	const layoutSelect = new StringSelectMenuBuilder()
-		.setCustomId('trackable_layout')
+		.setCustomId('edit_trackable_layout')
 		.setPlaceholder('Choose layout type')
 		.addOptions(
 			{ label: 'Thumbnail Image', value: '0', default: layout === 0 },
@@ -78,7 +81,7 @@ function getTrackableEditor(trackable) {
 	// Color select
 	// TODO make current value be the default if one of these is the default?
 	const colorSelect = new StringSelectMenuBuilder()
-		.setCustomId('trackable_color')
+		.setCustomId('edit_trackable_color')
 		.setPlaceholder('Choose embed color')
 		.addOptions(
 			{ label: 'Sky Blue', value: '0x00d7ff', emoji: '🔵' },
@@ -120,14 +123,6 @@ function getTrackableEditor(trackable) {
 	};
 }
 
-
-
-/**
- * Creates a modal for editing text fields
- * @param {string} field - The field being edited ('name', 'tag', 'desc')
- * @param {string} currentValue - Current value of the field
- * @returns {ModalBuilder} The modal for editing
- */
 function createEditModal(field, currentValue = '') {
     const fieldConfig = {
         name: {
@@ -157,7 +152,7 @@ function createEditModal(field, currentValue = '') {
     if (!config) throw new Error(`Invalid field: ${field}`);
 
     const modal = new ModalBuilder()
-        .setCustomId(`edit_modal_${field}`)
+        .setCustomId(`edit_trackable_${field}`)
         .setTitle(config.title);
 
     const textInput = new TextInputBuilder()
@@ -172,6 +167,7 @@ function createEditModal(field, currentValue = '') {
     const actionRow = new ActionRowBuilder()
         .addComponents(textInput);
 
+    // @ts-ignore
     modal.addComponents(actionRow);
     return modal;
 }
@@ -191,7 +187,6 @@ async function genTrackerId(){
 }
 
 
-
 module.exports = {
 	data: {
 		command: new SlashCommandBuilder()
@@ -209,9 +204,9 @@ module.exports = {
                     option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
                 ))
 				.addSubcommand(command=>command.setName("my_trackable").setDescription("View or create your trackable")
-					.addBooleanOption(option =>
-						option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
-					)
+					// .addBooleanOption(option =>
+					// 	option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
+					// )
 					.addAttachmentOption(option => 
 						option.setRequired(false).setName("image").setDescription("The image that you want to make into a Trackable")
 					)
@@ -227,9 +222,11 @@ module.exports = {
 		
 		requiredGlobals: [],
 
-		deferEphemeral: {"current":true},
+		deferEphemeral: {
+			"current": true,
+			"my_trackable": true
+		},
 		
-
 		help: {
 			"about":{
 				helpCategories: [ Categories.General, Categories.Entertainment, Categories.Bot ],
@@ -238,7 +235,7 @@ module.exports = {
 			},
 			"my_trackable":{
 				helpCategories: [ Categories.General, Categories.Entertainment, Categories.Bot ],
-				shortDesc: "View or create your trackable",
+				shortDesc: "Create or view stats about your trackable",
 				detailedDesc: `See info about where your trackable is now and its statistics, or create one if you haven't yet.`,
 			},
 			"current":{
@@ -289,15 +286,23 @@ module.exports = {
 
 				if (!usersTrackable) {
 					// Create it
+					const hasCurrentTrackable = await Trackables.exists({ 
+						current: `u${cmd.user.id}`
+					});
+
+					if (!hasCurrentTrackable) {
+						return cmd.followUp("You already have a trackable in your inventory. Place your current trackable somewhere before creating one.");
+					}
+
 					if (!attachment || !attachment?.contentType) {
 						return cmd.followUp("To create your own Trackable, you must supply an image.");
 					}
+
 					if (!allowedMimes.includes(attachment.contentType||"")) {
 						return cmd.followUp("Image must be one of the supported types: " + allowedMimes.join(", "))
 					}
 
-					const trackableChannel = await client.channels.fetch(process.env.trackablesChannel||'');
-
+					// const trackableChannel = await client.channels.fetch(process.env.trackablesChannel||'');
 					// const uploadedTrackable = await trackableChannel.send({
 					// 	content: `Uploaded a trackable image`,
 					// 	files: [ attachment.url ]
@@ -306,7 +311,6 @@ module.exports = {
 
 					// WARNING: Idk if this expires??
 					let uploadedLink = attachment.url;
-					console.log(attachment)
 
 					// Create and post editor embed
 					usersTrackable = await Trackables.findOneAndUpdate(
@@ -335,16 +339,16 @@ module.exports = {
 						ephemeral: true,
 					});
 
-					// Notify us - actually do this on publish
-					// @ts-ignore
-					// trackableChannel.send({
-					// 	content:`${cmd.user.id} made a new trackable.`,
-					// 	embeds:[ getTrackableEmbed(usersTrackable) ]
-					// });
-
 					break;
 				}
 				else {
+					// Your trackable already exists
+					if (attachment) {
+						return cmd.followUp("You may only create one trackable. Run this command without an attachment to see the stats of yours.");
+					}
+
+					// TODO: embed stats about your trackable.
+
 					// Display
 					cmd.followUp({
 						content:usersTrackable.name,
@@ -354,15 +358,18 @@ module.exports = {
 				}
 			break;
 			case "current":
-				var tracker=await Trackables.findOne({current:`u${cmd.user.id}`});
+				var tracker = await Trackables.findOne({ 
+					current: `u${cmd.user.id}`
+				});
 				if(!tracker){
 					// @ts-ignore
-					return cmd.followUp(`You don't have any trackables in your inventory! You can make one with ${cmds.trackable.my_trackable.mention}.`);
+					return cmd.followUp(`You don't have any trackables in your inventory! You can make one with ${cmds.trackable.my_trackable.mention} or find others that have been posted.`); // TODO: link to our server
 				}
 				cmd.followUp({
-					content:`${tracker.name}`,
-					embeds:[getTrackableEmbed(tracker)],
-					components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId(`place-${tracker.id}-${cmd.user.id}`).setLabel("Place").setStyle(ButtonStyle.Success)).toJSON()]
+					ephemeral: true,
+					content: `${tracker.name}`,
+					embeds: [getTrackableEmbed(tracker)],
+					components: [new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId(`place-${tracker.id}-${cmd.user.id}`).setLabel("Place").setStyle(ButtonStyle.Success)).toJSON()]
 				});
 			break;
 			case "view":
@@ -380,7 +387,110 @@ module.exports = {
 		}
 	},
 
-	async [Events.InteractionCreate] (int) {
+	/** @param {import('discord.js').Interaction} cmd */
+	async [Events.InteractionCreate] (cmd) {
+		if (!cmd.isStringSelectMenu() && !cmd.isButton() && !cmd.isModalSubmit()) return;
 
+		let trackableData = await Trackables.findOne({ owner: cmd.user.id })
+		if (!trackableData) return; // TODO: respond custom per type if something is wrong?
+
+		if (trackableData.status !== "editing") {
+			return cmd.reply({
+				content: "This Trackable has already been published.",
+				ephemeral: true
+			})
+		}
+
+		try {
+			if (cmd.isStringSelectMenu()) {
+				if (cmd.customId === 'edit_trackable_layout') {
+					trackableData.layout = parseInt(cmd.values[0]);
+					trackableData.save();
+
+					// Update the message with new layout
+					const updatedEditor = getTrackableEditor(trackableData);
+					await cmd.update({
+						// @ts-ignore
+						components: updatedEditor.components,
+						embeds: updatedEditor.embeds,
+					});
+				}
+				else if (cmd.customId === 'edit_trackable_color') {
+					// @ts-ignore
+					trackableData.color = cmd.values[0];
+					trackableData.save();
+
+					// Update the message with new color
+					const updatedEditor = getTrackableEditor(trackableData);
+					await cmd.update({
+						// @ts-ignore
+						components: updatedEditor.components,
+						embeds: updatedEditor.embeds,
+					});
+				}
+			}
+			else if (cmd.isButton()) {
+				if (cmd.customId === 'edit_trackable_name') {
+					const modal = createEditModal('name', trackableData.name);
+					await cmd.showModal(modal);
+				}
+				else if (cmd.customId === 'edit_trackable_tag') {
+					const modal = createEditModal('tag', trackableData.tag);
+					await cmd.showModal(modal);
+				}
+				else if (cmd.customId === 'edit_trackable_desc') {
+					const modal = createEditModal('desc', trackableData.desc);
+					await cmd.showModal(modal);
+				}
+				else if (cmd.customId === 'edit_trackable_publish') {
+					trackableData.status = "published"
+					await trackableData.save();
+
+					await cmd.reply({
+						content: 'Trackable published!',
+						ephemeral: true
+					});
+
+					// Notify us
+					const trackableChannel = await client.channels.fetch(process.env.trackablesChannel||'');
+					// @ts-ignore
+					trackableChannel.send({
+						content:`${cmd.user.id} made a new trackable.`,
+						embeds:[ getTrackableEmbed(trackableData) ]
+					});
+				}
+			}
+			else if (cmd.isModalSubmit()) {
+				if (cmd.customId === 'edit_trackable_name') {
+					trackableData.name = cmd.fields.getTextInputValue('name_input');
+				}
+				else if (cmd.customId === 'edit_trackable_tag') {
+					trackableData.tag = cmd.fields.getTextInputValue('tag_input');
+				}
+				else if (cmd.customId === 'edit_trackable_desc') {
+					trackableData.desc = cmd.fields.getTextInputValue('desc_input');
+				}
+				trackableData.save();
+
+				// We can't update the message, we have to reply with the new one - TODO: consider alternative
+				const updatedEditor = getTrackableEditor(trackableData);
+				await cmd.reply({
+					// @ts-ignore
+					components: updatedEditor.components,
+					embeds: updatedEditor.embeds,
+					ephemeral: true,
+				});
+			}
+		} catch (error) {
+			console.error('Error handling trackable editor interaction:', error);
+
+			// Send error message if interaction hasn't been replied to
+			if (!cmd.replied && !cmd.deferred) {
+				await cmd.reply({
+					content: 'An error occurred while updating the trackable.',
+					ephemeral: true
+				});
+			}
+		}
 	}
 };
