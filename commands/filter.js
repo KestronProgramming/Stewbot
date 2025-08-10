@@ -21,6 +21,8 @@ function applyContext(context={}) {
 const leetMap = require("../data/filterLeetmap.json");
 const { sendHook, limitLength, notify } = require("../utils.js");
 const config = require("../data/config.json");
+const LRUCache = require("lru-cache").LRUCache;
+const ms = require("ms");
 
 
 // This is a function built to support regex filters, which are currently not implemented
@@ -60,6 +62,7 @@ function defangURL(message) {
 const checkDirty = global.checkDirty = async function(guildID, what, filter=false, applyGlobalFilter=false) { // This function is important enough we can make it global
     // If filter is false, it returns: hasBadWords
     // If filter is true, it returns [hadBadWords, censoredMessage, wordsFound]
+    // guildID can supply an array for the blacklist instead.
 
     const originalContent = what; // Because we're preprocessing content, if the message was clean allow the original content without preprocessing 
 
@@ -76,20 +79,27 @@ const checkDirty = global.checkDirty = async function(guildID, what, filter=fals
     let dirty = false;
     let foundWords = []; // keep track of all filtered words to later tell the user what was filtered
 
-    // TODO: consider way to rewrite this to cache blocked words. As this currently queries the DB on every single message
-    const localGuild = await Guilds.findOrCreate({ id: guildID })
-        .select("filter.blacklist")
-        .lean();
+    let blacklist = [];
 
-    // For stewbot-created content (like AI), filter from our server too
-    let blacklist = localGuild?.filter?.blacklist || [];
-    if (applyGlobalFilter) {
-        const homeGuild = await Guilds.findOrCreate({ id: config.homeServer })
+    if (typeof(guildID) == "string") {
+        // TODO: consider way to rewrite this to cache blocked words. As this currently queries the DB on every single message
+        const localGuild = await Guilds.findOrCreate({ id: guildID })
             .select("filter.blacklist")
             .lean();
 
-        const globalBlacklist = homeGuild?.filter?.blacklist || [];
-        blacklist = [...new Set([...(blacklist || []), ...globalBlacklist])];
+        // For stewbot-created content (like AI), filter from our server too
+        blacklist = localGuild?.filter?.blacklist || [];
+        if (applyGlobalFilter) {
+            const homeGuild = await Guilds.findOrCreate({ id: config.homeServer })
+                .select("filter.blacklist")
+                .lean();
+
+            const globalBlacklist = homeGuild?.filter?.blacklist || [];
+            blacklist = [...new Set([...(blacklist || []), ...globalBlacklist])];
+        }
+    }
+    else if (guildID instanceof Array) {
+        blacklist = guildID;
     }
 
     if (blacklist) for (let blockedWord of blacklist) {
@@ -158,9 +168,29 @@ const checkDirty = global.checkDirty = async function(guildID, what, filter=fals
     }
 };
 
+// Utils for only filtering output via the home server.
+let globalServerFilterCache = new LRUCache({ ttl: ms("5m") });
+async function globalCensor(text) {
+    if (!config.homeServer) return text;
+
+    if (!globalServerFilterCache.has("blacklist")) {
+        const globalGuild = await Guilds.findOne({ id: config.homeServer })
+            .select("filter.blacklist");
+
+        globalServerFilterCache.set("blacklist", globalGuild.filter.blacklist);
+        
+    }
+
+    const filter = globalServerFilterCache.get("blacklist");
+    const filtered = await checkDirty(filter, text, true);
+
+    if (!filtered[0]) return text;
+    else return filtered[1];
+}
 
 module.exports = {
     checkDirty,
+    globalCensor,
     
 	data: {
 		// Slash command data

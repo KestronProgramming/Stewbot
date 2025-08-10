@@ -78,22 +78,22 @@ module.exports = {
 	
     /** @param {import('discord.js').ButtonInteraction} cmd */
     async onbutton(cmd, context) {
-		applyContext(context);
+        applyContext(context);
 
         for (const [name, a] of cmd.message.attachments) {
-            let temp=a.url.split("?")[0].split(".");
-            let dots=temp[temp.length-1];
-            if(!["webp", "mov","png","jpg","jpeg","gif","mp4","mp3","wav","webm","ogg"].includes(dots)){
-                await cmd.deferReply({ ephemeral: true }).catch(e=>null);
+            let temp = a.url.split("?")[0].split(".");
+            let dots = temp[temp.length - 1];
+            if (!["webp", "mov", "png", "jpg", "jpeg", "gif", "mp4", "mp3", "wav", "webm", "ogg"].includes(dots)) {
+                await cmd.deferReply({ ephemeral: true }).catch(e => null);
                 cmd.editReply({ content: `I don't support or recognize that format (\`.${dots}\`)` });
                 return;
             }
             const c = await fetch(a.url);
             const d = await c.arrayBuffer();
             const memeNum = (await fs.promises.readdir("./memes")).length;
-            await fs.promises.writeFile(`./memes/${memeNum}.${dots}`,Buffer.from(d));
+            await fs.promises.writeFile(`./memes/${memeNum}.${dots}`, Buffer.from(d));
         };
-        cmd.update({components:[]});
+        cmd.update({ components: [] });
         cmd.message.react("✅");
-	}
+    }
 };

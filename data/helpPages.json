@@ -782,8 +782,8 @@
             "Entertainment",
             "Bot"
         ],
-        "shortDesc": "Learn more about trackables",
-        "detailedDesc": "View specific rulesets and descriptions of what the trackable feature does"
+        "shortDesc": "Learn more about Trackables",
+        "detailedDesc": "View specific rulesets and descriptions of what the Trackable feature does"
     },
     {
         "name": "trackable my_trackable",
@@ -793,8 +793,8 @@
             "Entertainment",
             "Bot"
         ],
-        "shortDesc": "Create or view stats about your trackable",
-        "detailedDesc": "See info about where your trackable is now and its statistics, or create one if you haven't yet."
+        "shortDesc": "Create or view stats about your Trackable",
+        "detailedDesc": "See info about where your Trackable is now and its statistics, or create one if you haven't yet."
     },
     {
         "name": "trackable inventory",
@@ -804,8 +804,8 @@
             "Entertainment",
             "Bot"
         ],
-        "shortDesc": "View the trackable currently in your inventory",
-        "detailedDesc": "See specific info about the trackable currently in your inventory, and place it if you wish."
+        "shortDesc": "View the Trackable currently in your inventory",
+        "detailedDesc": "See specific info about the Trackable currently in your inventory, and place it if you wish."
     },
     {
         "name": "trackable view",
@@ -815,8 +815,8 @@
             "Entertainment",
             "Bot"
         ],
-        "shortDesc": "Find a trackable using its ID",
-        "detailedDesc": "View current stats about a trackable you've seen before using its ID"
+        "shortDesc": "Find a Trackable using its ID",
+        "detailedDesc": "View current stats about a Trackable you've seen before using its ID"
     },
     {
         "name": "translate",

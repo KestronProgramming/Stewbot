@@ -331,11 +331,14 @@ let trackableSchema = new mongoose.Schema({
     },
     tag: { type: String, required: true, default: "Look at my new trackable!!" },
     currentName: { type: String, required: true },
-    placed: { type: String, required: true,  default: Date.now },
+    placed: { type: Number, required: true,  default: Date.now },
     layout: { type: Number, required: true, default: 0 }, // The type of layout
     color: { type: Number, required: true, default: 0x00d7ff },
     pastLocations: { type: [String], required: true, default: [] },
-    status: { type: String, required: true, enum: ["editing", "published"], default: "editing" }
+    status: { type: String, required: true, enum: ["editing", "published", "banned"], default: "editing" },
+
+    currentGuildId: String,
+    currentMessageId: String,
 });
 
 userSchema.index({"hat_pull.location": 1});

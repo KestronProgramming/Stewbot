@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
-    // "noImplicitAny": true, // Too Strict for JS code
+    // "noImplicitAny": true,  // Too Strict for JS code
+    "strictNullChecks": false, // If this is true, it prevents suggesting methods that don't exist on all children. With it false, it suggests it but also warns.
     "resolveJsonModule": true,
     "moduleResolution": "node",
     "allowJs": true,
@@ -8,7 +9,6 @@
     "noEmit": true,
     "strict": false,
     "target": "es2024",
-    "strictNullChecks": true,
   },
   "include": [
     "**/*.js",

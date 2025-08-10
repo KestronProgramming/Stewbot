@@ -1,10 +1,8 @@
 // #region CommandBoilerplate
 const Categories = require("./modules/Categories.js");
 const client = require("../client.js");
-// @ts-ignore
 const { Guilds, Users, guildByID, userByID, guildByObj, userByObj, Trackables } = require("./modules/database.js")
-// @ts-ignore
-const { Events, MessageFlags, ContainerBuilder, ContextMenuCommandBuilder, TextDisplayBuilder, SeparatorSpacingSize, SeparatorBuilder, SectionBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
+const { Events, PermissionsBitField, MessageFlags, ContainerBuilder, AttachmentBuilder, ContextMenuCommandBuilder, TextDisplayBuilder, SeparatorSpacingSize, SeparatorBuilder, SectionBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
 function applyContext(context={}) {
 	for (let key in context) {
 		this[key] = context[key];
@@ -13,6 +11,13 @@ function applyContext(context={}) {
 // #endregion CommandBoilerplate
 
 const config = require("../data/config.json");
+const { globalCensor } = require("./filter.js");
+
+// Defined at boot
+let trackablesNotices;
+let trackablesArchive;
+
+const trackableIcon = "https://cdn.discordapp.com/attachments/1229256619792138351/1404159977987248180/image.png?ex=689a2d62&is=6898dbe2&hm=de6192003f99d891937ac07540aa1a83887f04d05bf23cc86e3d84a34ddcf2bb&";
 
 const aboutTrackables = {
 	ephemeral: false,
@@ -39,41 +44,88 @@ const aboutTrackables = {
 	}]
 }
 
+async function canUserSeeMessage(user, guildId, channelId, messageId) {
+    const guild = await client.guilds.fetch(guildId).catch(() => null);
+    if (!guild) return false;
+
+    const member = await guild.members.fetch(user.id).catch(() => null);
+    if (!member) return false;
+
+    const channel = await guild.channels.fetch(channelId).catch(() => null);
+    if (!channel) return false;
+
+    // Check basic channel visibility
+    const perms = channel.permissionsFor(member);
+    if (!perms?.has(PermissionsBitField.Flags.ViewChannel)) return false;
+    if (!perms?.has(PermissionsBitField.Flags.ReadMessageHistory)) return false;
+
+    // Finally, try to fetch the message
+    const message = await channel.messages.fetch(messageId).catch(() => null);
+    return !!message;
+}
+
 function unique(array) {
 	return [...new Set(array)]
 }
 
-function getTrackableEmbed(tracker, {
+async function getTrackableEmbed(tracker, {
 	userIdForPlace="", lockPlace=false,
-	showPickUpRow=false, pickUpLocked=false, 
-	pickedUpBy=""
+	showPickUpRow=false, pickUpLocked=false, pickedUpBy="",
+	showBanButton=false,   // For mods
+	userForCurrentLoc=null  // Pass the interaction for guild / user access - if the user has access to the current location, we'll link it
 }) {
 	// We let this function generate the entire reply so it's easier to move to components v2
 
+	let { id, name, img, desc, tag, color, layout } = tracker;
+
+	// Filter output
+	name = await globalCensor(name);
+	desc = await globalCensor(desc);
+	tag = await globalCensor(tag);
+
 	let response = {};
 
+	// Link the trackable if visible to the user
+	let currentLocation = `${tracker.currentName.replace("`","'")}`;
+	let currentChannelId = tracker.current.slice(1);
+	if (userForCurrentLoc && tracker.current[0] == "c" && 
+		canUserSeeMessage(userForCurrentLoc, tracker.currentGuildId, currentChannelId, tracker.currentMessageId)
+	) {
+		currentLocation = `https://discord.com/channels/${tracker.currentGuildId}/${currentChannelId}/${tracker.currentMessageId}`
+	}
+
 	const embed = new EmbedBuilder()
-		.setDescription(tracker.desc)
+		.setTitle(`${name}`)
 		.setColor(tracker.color)
+		.setFooter({ text: "Trackable", iconURL: trackableIcon })
+		// Add stats
 		.addFields(
-			{ name: "─────", value: tracker.tag, inline: false },
-			{ name: "Current Location", value: `${tracker.currentName.replace("`","'")}`, inline: true },
+			{ name: "Current Location", value: currentLocation, inline: true },
 			{ name: "Reach", value: `${
 				unique(
-					tracker.pastLocations.filter(loc => loc.startsWith('c')) // Only servers, for now
+					tracker.pastLocations.filter(loc => loc.startsWith('c')) // Only servers
 				).length
 			} servers`, inline: true },
 			{ name: "Carried By", value: `${
 				unique(
-					tracker.pastLocations.filter(loc => loc.startsWith('u')) // Only servers, for now
+					tracker.pastLocations.filter(loc => loc.startsWith('u')) // Only users
 				).length
 			} users`, inline: true }
 		)
-		.setThumbnail(tracker.img)
-		.setFooter({ text: "Trackable", iconURL: "https://media.discordapp.net/attachments/1221938602397667430/1403786745241272461/OIG2.dPKlYcycwt4DCcIAYeBX.jpg?ex=6898d1c9&is=68978049&hm=4187e9fcf2161b161f45fb467825740450adef00106589d12a07303be7624051&=&width=1708&height=1708" })
-		.setAuthor({ name: `${tracker.name} | #${tracker.id}`, iconURL: tracker.img });
 
+	// Mark old server ones as picked up
 	if (pickedUpBy) embed.addFields({ name: "Picked up by:", value: pickedUpBy, inline: true },)
+
+	// Images depending on layout
+	if (layout === 0 && img) {
+		embed.setThumbnail(img);
+		embed.setDescription(`**${tag}**\n─────\n${desc}`)
+	} else if (layout === 1 && img) {
+		embed.setImage(img);
+		embed.setDescription(`**${tag}**\n─────\n${desc}`)
+	} else if (layout === 2 && img) {
+		embed.setImage(img);
+	}
 
 	response.embeds = [embed];
 	
@@ -105,6 +157,17 @@ function getTrackableEmbed(tracker, {
 		]
 	}
 
+	if (showBanButton) {
+		response.components = [
+			new ActionRowBuilder().addComponents(
+				new ButtonBuilder()
+					.setCustomId(`trackable_ban-${tracker.id}`)
+					.setLabel("Ban Trackable")
+					.setStyle(ButtonStyle.Danger)
+			).toJSON()
+		]
+	}
+
 	return response;
 }
 
@@ -113,16 +176,18 @@ function getTrackableEditor(trackable) {
 
 	// Embed
 	const embed = new EmbedBuilder()
-		.setTitle(name)
-		.setColor(color);
+		.setTitle(`${name}`)
+		.setColor(color)
+		.setFooter({ text: `Trackable #${id}`, iconURL: trackableIcon });
+
 
 	// Images depending on layout
 	if (layout === 0 && img) {
 		embed.setThumbnail(img);
-		embed.setDescription(`ID: ${id}\n\n${desc}\n\n**${tag}**`)
+		embed.setDescription(`**${tag}**\n─────\n${desc}`)
 	} else if (layout === 1 && img) {
 		embed.setImage(img);
-		embed.setDescription(`ID: ${id}\n\n${desc}\n\n**${tag}**`)
+		embed.setDescription(`**${tag}**\n─────\n${desc}`)
 	} else if (layout === 2 && img) {
 		embed.setImage(img);
 	}
@@ -244,13 +309,7 @@ async function genTrackerId(){
 	return tempId;
 }
 
-// TODO: In the Trackble embed, put the "tag" at the top, description below it.
-
 // TODO: Expiring - daily listener and expirer. Make sure transferring hands resets the last moved date. Make sure the find-a-trackable channel's don't expire.
-
-// TODO: Filter output against global filter.
-
-// TODO: Trackable needs to store image URL on 
 
 module.exports = {
 	data: {
@@ -327,7 +386,7 @@ module.exports = {
 			case "my_trackable":
 				let usersTrackable = await Trackables.findOne({
 					"owner": cmd.user.id,
-					"status": "published"
+					"status": { $in: [ "published", "banned" ] }
 				});
 				const attachment = cmd.options.getAttachment("image");
 
@@ -358,17 +417,33 @@ module.exports = {
 					}
 
 					// TODO: These links only last 24 hours
+
+					// NOTE: This link only lasts 24 hours.
 					let uploadedLink = attachment.url;
 
+					// Upload image to trackables channel, this lets us delete the origin image for retroactive filtering and lasts infinitely.
+					const response = await fetch(uploadedLink);
+					const buffer = await response.arrayBuffer();
+					const file = new AttachmentBuilder(Buffer.from(buffer), { name: attachment.name });
+					const sentMessage = await trackablesNotices.send({
+						content: "New trackables image\n-# Deleting here will retroactively remove image globally",
+						files: [file] 
+					});
+					const permanentLink = sentMessage.attachments.first().url;
+					
 					// Create and post editor embed
 					usersTrackable = await Trackables.findOneAndUpdate(
 						{ owner: cmd.user.id },
 						{
+							// The image is changed by rerunning this command while editing
+							$set: {
+								img: permanentLink
+							},
+							// These fields only need to be updated originally
 							$setOnInsert: {
 								current: `u${cmd.user.id}`,
 								currentName: `${cmd.user.username}'s Inventory`,
-								id: await genTrackerId(),
-								img: uploadedLink
+								id: await genTrackerId()
 							}
 						},
 						{
@@ -378,7 +453,6 @@ module.exports = {
 					);
 					
 					// Embed in editor
-
 					const editorComponents = getTrackableEditor(usersTrackable);
 					await cmd.followUp({
 						// @ts-ignore
@@ -390,6 +464,10 @@ module.exports = {
 					break;
 				}
 				else {
+					if (usersTrackable.status == "banned") {
+						return cmd.followUp("Sorry, the trackable you created was banned for being inappropriate.");
+					}
+
 					// Your trackable already exists
 					if (attachment) {
 						return cmd.followUp("You may only create one Trackable. Run this command without an attachment to see the stats of yours.");
@@ -399,15 +477,17 @@ module.exports = {
 
 					// Display
 					cmd.followUp({
-						...getTrackableEmbed(usersTrackable, {
-							"userIdForPlace": holdingTrackable ? cmd.user.id : ""
+						...await getTrackableEmbed(usersTrackable, {
+							"userIdForPlace": holdingTrackable ? cmd.user.id : "",
+							"userForCurrentLoc": cmd.user.id
 						})
 					});
 				}
 			break;
 			case "inventory":
 				var tracker = await Trackables.findOne({ 
-					current: `u${cmd.user.id}`
+					current: `u${cmd.user.id}`,
+					status: "published"
 				});
 				if(!tracker){
 					// @ts-ignore
@@ -415,11 +495,14 @@ module.exports = {
 				}
 				cmd.followUp({
 					ephemeral: true,
-					...getTrackableEmbed(tracker, {"userIdForPlace": cmd.user.id})
+					...await getTrackableEmbed(tracker, {"userIdForPlace": cmd.user.id})
 				});
 			break;
 			case "view":
-				var tracker = await Trackables.findOne({id:cmd.options.getString("id")});
+				var tracker = await Trackables.findOne({
+					id: cmd.options.getString("id"),
+					status: "published"
+				});
 				if(!tracker){
 					// @ts-ignore
 					return cmd.followUp(`I didn't find any Trackables with that ID! The tracker may have been deleted, or  the ID typed incorrectly`);
@@ -429,7 +512,7 @@ module.exports = {
 				const showPlace = tracker.current == `u${cmd.user.id}`;
 
 				cmd.followUp({
-					...getTrackableEmbed(tracker, {"userIdForPlace": showPlace ? cmd.user.id : ""})
+					...await getTrackableEmbed(tracker, {"userIdForPlace": showPlace ? cmd.user.id : ""})
 				});
 			break;
 		}
@@ -445,7 +528,10 @@ module.exports = {
 			if (cmd.customId.startsWith("t-place") && cmd.isButton()) {
 				const [, , trackableId, userId] = cmd.customId.split("-");
 
-				const trackable = await Trackables.findOne({ id: trackableId });
+				const trackable = await Trackables.findOne({ 
+					id: trackableId,
+					status: "published"
+				});
 
 				if (!trackable) {
 					return cmd.reply({
@@ -477,10 +563,6 @@ module.exports = {
 					});
 				}
 
-				trackable.current = placingToo;
-				trackable.currentName = serverName ? `A channel in \`${serverName.replaceAll("`", "'")}\`` : "A discord server";
-				trackable.pastLocations.push(comingFrom);
-
 				// Defer this button so we can see if it was force-ephemeraled by the server rules.
 				const deferedMessage = await cmd.deferReply({
 					"ephemeral": false,
@@ -494,16 +576,23 @@ module.exports = {
 					)
 				}
 
-				await trackable.save();
-				await cmd.followUp({
-					...getTrackableEmbed(trackable, {
+				trackable.current = placingToo;
+				trackable.currentName = serverName ? `A channel in \`${serverName.replaceAll("`", "'")}\`` : "A discord server";
+				trackable.pastLocations.push(comingFrom);
+				trackable.currentGuildId = cmd.guildId;
+				
+				const message = await cmd.followUp({
+					...await getTrackableEmbed(trackable, {
 						"showPickUpRow": true
 					}),
-				})
+				}).catch(e=>null)
+				
+				trackable.currentMessageId = message.id;
+				await trackable.save();
 
 				// Lock place button - I couldn't get this working, I'm not sure if I need to defer it differently or if we only get one choice of reply.
 				// await cmd.update({
-				// 	...getTrackableEmbed(trackable, {
+				// 	...await getTrackableEmbed(trackable, {
 				// 		"userIdForPlace": userId,
 				// 		"lockPlace": true
 				// 	}),
@@ -564,7 +653,7 @@ module.exports = {
 
 					await trackable.save();
 					await cmd.update({
-						...getTrackableEmbed(trackable, {
+						...await getTrackableEmbed(trackable, {
 							"showPickUpRow": true, 
 							"pickUpLocked": true, 
 							"pickedUpBy": cmd.user.username
@@ -572,7 +661,11 @@ module.exports = {
 					})
 
 					await cmd.followUp({
-						content: `You have picked up this Trackable! Now go share it somewhere with ${cmds.trackable.inventory.mention}`,
+						content: 
+							// @ts-ignore
+							`You have picked up this Trackable! Now go share it somewhere with ${cmds.trackable.inventory.mention}\n`+
+							`\n`+
+							`You can even share it in servers that don't have Stewbot if you [add Stewbot to your apps](<${config.install}>)!`,
 						ephemeral: true
 					})
 				}
@@ -591,7 +684,7 @@ module.exports = {
 				
 				if (trackableData.status !== "editing") {
 					return cmd.reply({
-						content: "This Trackable has already been published.",
+						content: `This Trackable has ${trackableData.status == "published" ? "already been published." : "been banned."}`,
 						ephemeral: true
 					})
 				}
@@ -657,11 +750,11 @@ module.exports = {
 						});
 
 						// Notify us
-						const trackableChannel = await client.channels.fetch(process.env.trackablesChannel||'');
-						// @ts-ignore
-						trackableChannel.send({
+						trackablesNotices.send({
 							content:`${cmd.user.id} made a new Trackable.`,
-							...getTrackableEmbed(trackableData)
+							...await getTrackableEmbed(trackableData, {
+								"showBanButton": true
+							})
 						});
 					}
 				}
@@ -679,13 +772,29 @@ module.exports = {
 
 					// We can't update the message, we have to reply with the new one - TODO: consider alternative
 					const updatedEditor = getTrackableEditor(trackableData);
-					await cmd.reply({
+					return await cmd.reply({
 						// @ts-ignore
 						components: updatedEditor.components,
 						embeds: updatedEditor.embeds,
 						ephemeral: true,
 					});
 				}
+			}
+
+			// Mod Trackable Banning
+			if (cmd.customId.startsWith("trackable_ban") && cmd.isButton()) {
+				const [ , trackableId ] = cmd.customId.split("-");
+
+				const trackable = await Trackables.findOne({ id: trackableId });
+
+				if (!trackable) {
+					cmd.reply("I couldn't find that trackable")
+				}
+
+				trackable.status = "banned";
+				await trackable.save();
+				return cmd.reply("Blacklisted that trackable. Delete the image if it needs to be retroactively hidden.");
+
 			}
 		} catch (error) {
 			// Send error message if interaction hasn't been replied to
@@ -696,5 +805,11 @@ module.exports = {
 				});
 			}
 		}
+	},
+
+	async [Events.ClientReady] () {
+		// await client.guilds.fetch(config.homeServer)
+		trackablesNotices = await client.channels.fetch(process.env.trackablesNotices);
+		trackablesArchive = await client.channels.fetch(process.env.trackablesArchive);
 	}
 };
