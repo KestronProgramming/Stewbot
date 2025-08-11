@@ -193,21 +193,29 @@ client.on(Events.InteractionCreate, async cmd=>{
     if (!commandScript && (cmd.isCommand() || cmd.isAutocomplete())) return; // Ignore any potential cache issues 
 
     //// Manage deferring
+    let deferedResponse;
     if(cmd.isChatInputCommand() || cmd.isMessageContextMenuCommand()) { 
         // Always obey the `private` property, if not defined default to the `deferEphemeral` property. 
         const private = cmd.isChatInputCommand() ? cmd.options.getBoolean("private") : null;
         const subcommand = cmd.isChatInputCommand() ? cmd.options.getSubcommand(false) : null;
         let forceEphemeral = false;
+        let detailedExtra = {};
         if (commandScript?.data?.deferEphemeral) {
             if (typeof(commandScript.data.deferEphemeral) == "object" && subcommand) {
-                forceEphemeral = commandScript.data.deferEphemeral[subcommand];
+                let subcommandData = commandScript.data.deferEphemeral[subcommand];
+                if (typeof(subcommandData) == "object") {
+                    detailedExtra = subcommandData;
+                } else {
+                    forceEphemeral = subcommandData; // It's just a raw boolean
+                }
             }
             else if (typeof(commandScript.data.deferEphemeral) == "boolean") {
                 forceEphemeral = commandScript.data.deferEphemeral;
             }
         }
-        await cmd.deferReply({
+        deferedResponse = await cmd.deferReply({
             ephemeral: private ?? forceEphemeral ?? false,
+            ...detailedExtra // This allows fields like withResponse to be specified
         });
     }
 
@@ -255,7 +263,7 @@ client.on(Events.InteractionCreate, async cmd=>{
 
         // Run, and catch errors
         try {
-            await commands[cmd.commandName].execute(cmd, providedGlobals);
+            await commands[cmd.commandName].execute(cmd, providedGlobals, deferedResponse);
         } catch(e) {
             // Catch blocked by automod
             if (e.code === 200000) {

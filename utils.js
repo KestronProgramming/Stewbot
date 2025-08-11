@@ -3,12 +3,12 @@
 
 const { PermissionFlagsBits, Message } = require("discord.js")
 const config = require("./data/config.json");
-const { checkDirty } = require("./commands/filter");
 const { messageDataCache, Guilds, GuildUsers } = require("./commands/modules/database")
 const ms = require("ms");
 const client = require("./client.js");
 
-
+// Temp value for now to avoid circular references
+let checkDirty = () => {};
 
 // Easily cut output to a maximum length.
 function limitLength(s, size = 1999) {
@@ -16,8 +16,20 @@ function limitLength(s, size = 1999) {
     return s.length > size ? s.slice(0, size - 3) + "..." : s;
 }
 
+// This function is useful anywhere to properly escape backticks to prevent format escaping
+function escapeBackticks(text) {
+    return text.replace(/(?<!\\)(?:\\\\)*`/g, "\\`");
+}
+
 module.exports = {
+    // This MUST be called to init - otherwise JavaScript gets confused by circular references 
+    initUtils() {
+        // When filter.js is ready, it runs this function.
+        checkDirty = require("./commands/filter").checkDirty;
+    },
+
     limitLength,
+    escapeBackticks,
 
     // A centralized permission-checking function for users and roles
     async canUseRole(user, role, channel) {
@@ -74,9 +86,8 @@ module.exports = {
         }
     },
 
-    // This function is useful anywhere to properly escape backticks to prevent format escaping
-    escapeBackticks(text) {
-        return text.replace(/(?<!\\)(?:\\\\)*`/g, "\\`");
+    inlineCode(text) {
+        return "`" + escapeBackticks(text) + "`";
     },
 
     requireServer(interaction, error) {

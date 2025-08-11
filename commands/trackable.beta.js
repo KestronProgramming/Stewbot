@@ -12,6 +12,7 @@ function applyContext(context={}) {
 
 const config = require("../data/config.json");
 const { globalCensor } = require("./filter.js");
+const { inlineCode } = require("../utils.js")
 
 // Defined at boot
 let trackablesNotices;
@@ -44,6 +45,25 @@ const aboutTrackables = {
 	}]
 }
 
+let unknownNames = [
+	"The Ether",
+    "The Void",
+	"The Great Beyond",
+    "Oblivion",
+    "The Quantum Realm",
+    "The Wilds",
+    "The Unknown",
+    "The Abyss",
+    "Atlantis",
+	"The Matrix",
+    "Wherever Socks Go", // AI funny ones
+]
+
+function generateUnknownName() {
+	let randomUnknownName = unknownNames[Math.floor(Math.random() * unknownNames.length)];
+	return `*${randomUnknownName}*`
+}
+
 async function canUserSeeMessage(user, guildId, channelId, messageId) {
     const guild = await client.guilds.fetch(guildId).catch(() => null);
     if (!guild) return false;
@@ -70,7 +90,7 @@ function unique(array) {
 
 async function getTrackableEmbed(tracker, {
 	userIdForPlace="", lockPlace=false,
-	showPickUpRow=false, pickUpLocked=false, pickedUpBy="",
+	showPickUpRow=false, pickUpLocked=false, pickedUpBy="", movedOn=false,
 	showBanButton=false,   // For mods
 	userForCurrentLoc=null  // Pass the interaction for guild / user access - if the user has access to the current location, we'll link it
 }) {
@@ -95,38 +115,57 @@ async function getTrackableEmbed(tracker, {
 	}
 
 	const embed = new EmbedBuilder()
-		.setTitle(`${name}`)
+		.setTitle(movedOn ? `${inlineCode(name)} was here!` : `${inlineCode(name)}`)
 		.setColor(tracker.color)
-		.setFooter({ text: "Trackable", iconURL: trackableIcon })
-		// Add stats
-		.addFields(
-			{ name: "Current Location", value: currentLocation, inline: true },
-			{ name: "Reach", value: `${
-				unique(
-					tracker.pastLocations.filter(loc => loc.startsWith('c')) // Only servers
-				).length
-			} servers`, inline: true },
-			{ name: "Carried By", value: `${
-				unique(
-					tracker.pastLocations.filter(loc => loc.startsWith('u')) // Only users
-				).length
-			} users`, inline: true }
-		)
+		.setFooter({ text: "Trackable", iconURL: trackableIcon });
+
+	let fields = [];
+
+	
+	// Only show the current location when it's not in a server 
+	if (!showPickUpRow) fields.push({ name: "Current Location", value: currentLocation, inline: true });
+
+	// Reach
+	fields.push({
+		name: "Reach",
+		value: `${unique(
+			tracker.pastLocations
+				.filter(loc => loc.startsWith('c')) // Only servers
+			).length} servers`,
+		inline: true
+	});
+
+	// How many users have had it
+	fields.push({
+		name: "Carried By", 
+		value: `${unique(
+			tracker.pastLocations
+				.filter(loc => loc.startsWith('u')) // Only users
+			).length} users`, 
+		inline: true
+	})
 
 	// Mark old server ones as picked up
-	if (pickedUpBy) embed.addFields({ name: "Picked up by:", value: pickedUpBy, inline: true },)
+	if (pickedUpBy) fields.push({ name: "Picked up by:", value: pickedUpBy, inline: true })
 
 	// Images depending on layout
+	let description = "";
 	if (layout === 0 && img) {
 		embed.setThumbnail(img);
-		embed.setDescription(`**${tag}**\n─────\n${desc}`)
+		description += `**${tag}**\n`
+		if (!movedOn) description += `─────\n`
+		if (!movedOn) description += `${desc}`
 	} else if (layout === 1 && img) {
 		embed.setImage(img);
-		embed.setDescription(`**${tag}**\n─────\n${desc}`)
+		description += `**${tag}**\n`
+		if (!movedOn) description += `─────\n`
+		if (!movedOn) description += `${desc}`
 	} else if (layout === 2 && img) {
 		embed.setImage(img);
 	}
-
+	if (description) embed.setDescription(description)
+	
+	embed.addFields(fields);
 	response.embeds = [embed];
 	
 	if (userIdForPlace) {
@@ -311,17 +350,9 @@ async function genTrackerId(){
 
 // TODO: Expiring - daily listener and expirer. Make sure transferring hands resets the last moved date. Make sure the find-a-trackable channel's don't expire.
 
-// TODO: Place command
-
 // TODO: 'about'
 
-// TODO: Rerun this command with an image.... specify image option... 
-
-// TODO: If pickup, and it didn't have it, 
-// TODO: Link to KC for find a trackable more on pickup expired
-
-// TODO: When claimed, just use name, and say "it moved on"  
-
+// TODO: server onboarding
 
 module.exports = {
 	data: {
@@ -356,13 +387,15 @@ module.exports = {
 					.addBooleanOption(option =>
 						option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 					)
-			),
+			)
+			.addSubcommand(command => command.setName("place").setDescription("Drop your current trackable here")),
 
 		requiredGlobals: [],
 
 		deferEphemeral: {
 			"inventory": true,
 			"my_trackable": true,
+			"place": { ephemeral: false, withResponse: true } // We need the response to tell if it was forced ephemeral
 		},
 		
 		help: {
@@ -390,7 +423,7 @@ module.exports = {
 	},
 
     /** @param {import('discord.js').ChatInputCommandInteraction} cmd */
-    async execute(cmd, context) {
+    async execute(cmd, context, deferedResponse) {
 		applyContext(context);
 		switch(cmd.options.getSubcommand()){
 			case "about":
@@ -422,14 +455,12 @@ module.exports = {
 					}
 
 					if (!attachment || !attachment?.contentType) {
-						return cmd.followUp("To create your own Trackable, you must supply an image.");
+						return cmd.followUp("To create your own Trackable, you must run this command again, but specify the `image` option.");
 					}
 
 					if (!allowedMimes.includes(attachment.contentType||"")) {
 						return cmd.followUp("Image must be one of the supported types: " + allowedMimes.join(", "))
 					}
-
-					// TODO: These links only last 24 hours
 
 					// NOTE: This link only lasts 24 hours.
 					let uploadedLink = attachment.url;
@@ -528,6 +559,62 @@ module.exports = {
 					...await getTrackableEmbed(tracker, {"userIdForPlace": showPlace ? cmd.user.id : ""})
 				});
 			break;
+			case "place":
+				var trackable = await Trackables.findOne({
+					current: `u${cmd.user.id}`,
+					status: "published"
+				});
+
+				if (!trackable) {
+					return cmd.followUp({
+						content: 
+							`You don't have a trackable!` +
+							`\n`+
+							// @ts-ignore
+							`Try finding one in your servers, create your own with ${cmds.trackable.my_trackable.mention}, or check [#find-a-trackable](<${config.install}>).`, // TODO: joining KS
+						ephemeral: true // This has to be public because it was already defered - TODO: make sure this doesn't embed
+					});
+				}
+
+				const comingFrom = trackable.current;
+				const placingToo = `c${cmd.channelId}`;
+				const serverName = cmd.guild?.name;
+
+				const serversSinceTarget = trackable.pastLocations
+					.filter(l => l[0] == "c")
+					.reverse()
+					.indexOf(placingToo);
+
+				if (serversSinceTarget == 0) {
+					return cmd.followUp({
+						content: "You must post this in a different server than it was last in.",
+						ephemeral: true // Again we can't do this ephemerally
+					});
+				}
+
+				// Check if the post was forced-ephemeral by the server settings.
+				if (deferedResponse.interaction.responseMessageEphemeral) {
+					return cmd.followUp(
+						"This server has prevented your ability to run my commands publicly.\n" +
+						"Try posting your Trackable in another channel or server."
+					);
+				}
+
+				trackable.current = placingToo;
+				trackable.currentName = serverName ? `A channel in \`${serverName.replaceAll("`", "'")}\`` : generateUnknownName();
+				trackable.pastLocations.push(comingFrom);
+				trackable.currentGuildId = cmd.guildId;
+				
+				// TODO: send directly if we have access
+				const message = await cmd.followUp({
+					...await getTrackableEmbed(trackable, {
+						"showPickUpRow": true
+					}),
+				}).catch(e=>null)
+				
+				trackable.currentMessageId = message.id;
+				await trackable.save();
+				return;
 		}
 	},
 
@@ -590,7 +677,7 @@ module.exports = {
 				}
 
 				trackable.current = placingToo;
-				trackable.currentName = serverName ? `A channel in \`${serverName.replaceAll("`", "'")}\`` : "A discord server";
+				trackable.currentName = serverName ? `A channel in \`${serverName.replaceAll("`", "'")}\`` : generateUnknownName();
 				trackable.pastLocations.push(comingFrom);
 				trackable.currentGuildId = cmd.guildId;
 				
@@ -626,6 +713,18 @@ module.exports = {
 				if (cmd.customId.startsWith("trackable_pickup") && cmd.isButton()) {
 					const [ , trackableId ] = cmd.customId.split("-");
 
+					const alreadyHoldingTrackable = await Trackables.exists({
+						status: "published",
+						current: `u${cmd.user.id}`
+					});
+
+					if (alreadyHoldingTrackable) {
+						return cmd.reply({
+							content: `You already have a Trackable in your inventory. Place your current Trackable somewhere with ${cmds.trackable.place.mention} before picking up a new one.`, // TODO
+							ephemeral: true
+						});
+					}
+
 					const trackable = await Trackables.findOne({
 						id: trackableId,
 						status: "published"
@@ -633,7 +732,7 @@ module.exports = {
 
 					if (!trackable) {
 						return cmd.reply({
-							content: "Sorry, I couldn't find that trackable.",
+							content: `Sorry, I couldn't find that trackable. It must have expired, might be able to find it in [#find-a-trackable](<${config.invite}>)`,
 							ephemeral: true
 						});
 					}
@@ -669,7 +768,8 @@ module.exports = {
 						...await getTrackableEmbed(trackable, {
 							"showPickUpRow": true, 
 							"pickUpLocked": true, 
-							"pickedUpBy": cmd.user.username
+							"pickedUpBy": cmd.user.username,
+							"movedOn": true
 						})
 					})
 
@@ -678,7 +778,7 @@ module.exports = {
 							new EmbedBuilder()
 								.setDescription(
 									// @ts-ignore
-									`You have picked up this Trackable! Now go share it somewhere with ${cmds.trackable.inventory.mention}\n`+
+									`You have picked up this Trackable! Now go share it somewhere with ${cmds.trackable.place.mention}\n`+
 									`\n`+
 									`You can even share it in servers that don't have Stewbot if you [add Stewbot to your apps](<${config.install}>)!`
 								)
@@ -765,14 +865,20 @@ module.exports = {
 									new ButtonBuilder()
 										.setCustomId('edit_trackable_publish_no')
 										.setLabel('No')
-										.setStyle(ButtonStyle.Success),
+										.setStyle(ButtonStyle.Secondary),
 									new ButtonBuilder()
 										.setCustomId('edit_trackable_publish_yes')
 										.setLabel('Yes')
-										.setStyle(ButtonStyle.Danger)
+										.setStyle(ButtonStyle.Primary)
 								]).toJSON()
 							]
 						})
+
+						// return cmd.showModal(
+						// 	new ModalBuilder()
+						// 		.setCustomId('edit_trackable_publish_confirm')
+						// 		.setTitle('Are you sure you want to publish this? You can\'t edit it once published.')
+						// )
 					}
 					
 					else if (cmd.customId === 'edit_trackable_publish_no') {
@@ -797,7 +903,7 @@ module.exports = {
 
 						await cmd.reply({
 							// @ts-ignore
-							content: `Trackable published!\n\nNow you can send it somewhere with ${cmds.trackable.current.mention}. If you install Stewbot to your profile, you can even send it in servers that don't use stewbot!`,
+							content: `Trackable published!\n\nNow you can send it somewhere with ${cmds.trackable.place.mention}. If you install Stewbot to your profile, you can even send it in servers that don't use Stewbot!`,
 							ephemeral: true
 						});
 
@@ -811,10 +917,10 @@ module.exports = {
 					}
 				}
 				else if (cmd.isModalSubmit()) {
-					// Special case for publish
-					if (cmd.customId === 'edit_trackable_publish_confirmed') {
-						// TODO
-					}
+					// // Special case for publish
+					// if (cmd.customId === 'edit_trackable_publish_confirmed') {
+					// 	// TODO
+					// }
 
 					// These all have additional handling at the end
 					if (cmd.customId === 'edit_trackable_name') {
@@ -863,11 +969,12 @@ module.exports = {
 					ephemeral: true
 				});
 			}
+			// Throw up chain
+			throw error;
 		}
 	},
 
 	async [Events.ClientReady] () {
-		// await client.guilds.fetch(config.homeServer)
 		trackablesNotices = await client.channels.fetch(process.env.trackablesNotices);
 		trackablesArchive = await client.channels.fetch(process.env.trackablesArchive);
 	}

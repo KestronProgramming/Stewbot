@@ -19,10 +19,11 @@ function applyContext(context={}) {
 
 
 const leetMap = require("../data/filterLeetmap.json");
-const { sendHook, limitLength, notify } = require("../utils.js");
+const { sendHook, limitLength, notify, initUtils } = require("../utils.js");
 const config = require("../data/config.json");
 const LRUCache = require("lru-cache").LRUCache;
 const ms = require("ms");
+const { varDependencies } = require("mathjs");
 
 
 // This is a function built to support regex filters, which are currently not implemented
@@ -576,5 +577,10 @@ module.exports = {
                 $set: { "filter.active": false }
             })
         }
+    }, 
+
+    async [Events.ClientReady] () {
+        // This needs to be run after we're already entirely improted
+        initUtils();
     }
 };
