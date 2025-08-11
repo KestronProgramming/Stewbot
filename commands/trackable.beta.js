@@ -132,7 +132,11 @@ async function getTrackableEmbed(tracker, {
 	}
 
 	const embed = new EmbedBuilder()
-		.setTitle(movedOn ? `${inlineCode(name)} was here!` : `${inlineCode(name)}`)
+		.setAuthor({
+			name: movedOn ? `${name} was here!` : `${name}`,
+			iconURL: movedOn ? img : undefined
+		})
+		// .setTitle(movedOn ? `${inlineCode(name)} was here!` : `${inlineCode(name)}`)
 		.setColor(tracker.color)
 		.setFooter({ text: `Trackable #${id}`, iconURL: trackableIcon });
 
@@ -170,20 +174,25 @@ async function getTrackableEmbed(tracker, {
 	// Images depending on layout
 	let description = "";
 	if (layout === 0 && img) {
-		embed.setThumbnail(img);
+		if (!movedOn) embed.setThumbnail(img);
 		description += `**${tag}**\n`
 		if (!movedOn) description += `─────\n`
 		if (!movedOn) description += `${desc}\n`
 	} else if (layout === 1 && img) {
-		embed.setImage(img);
+		if (!movedOn) embed.setImage(img);
 		description += `**${tag}**\n`
 		if (!movedOn) description += `─────\n`
 		if (!movedOn) description += `${desc}\n`
 	} else if (layout === 2 && img) {
-		embed.setImage(img);
+		if (!movedOn) embed.setImage(img);
 	}
 
-	description += `\n-# Trackable created on <t:${Math.floor(tracker.creationDate / 1000)}:d>`
+	// description += `\n-# Trackable created on <t:${Math.floor(tracker.creationDate / 1000)}:d>`
+	fields.push({
+		"name": "Created on:", 
+		value: `<t:${Math.floor(tracker.creationDate / 1000)}:d>`,
+		inline: false
+	})
 
 	if (description) embed.setDescription(description.trim())
 	
@@ -298,6 +307,8 @@ function getTrackableEditor(trackable) {
 		.setStyle(ButtonStyle.Success);
 
 	return {
+		content: 
+			`When a trackable is claimed, the image is shrunk into a thumbnail, and the description field is remove. The tag field will stay, even after a trackable is claimed.`,
 		embeds: [embed],
 		components: [
 			new ActionRowBuilder().addComponents(layoutSelect),
@@ -369,11 +380,6 @@ async function genTrackerId(){
 	}
 	return tempId;
 }
-
-// TODO: 'about'
-
-// TODO: server onboarding
-
 module.exports = {
 	data: {
 		command: new SlashCommandBuilder()
@@ -1021,26 +1027,6 @@ module.exports = {
 		}
 
 		let expiredTrackables = await Trackables.find(expiredFilter);
-
-		// Modify data across all expired trackables
-		// const re = await Trackables.updateMany(expiredFilter, {
-		// 	$set : {
-		// 		placed: Date.now(),
-		// 		current: hubLoc,
-		// 		currentName: `[#find-a-trackable](<${config.invite}>)`,
-
-		// 		// Add the current location and the hubLoc to the pastLocations list
-		// 		pastLocations: {
-		// 			$concatArrays: [
-		// 				{ $ifNull: ["$pastLocations", []] },
-		// 				[{ $ifNull: ["$current", null] }],
-		// 				[hubLoc]
-		// 			]
-		// 		}
-		// 	},
-		// 	$unset: ["currentGuildId", "currentMessageId"],
-
-		// });
 
 		const re = await Trackables.updateMany(expiredFilter, [
 			{
