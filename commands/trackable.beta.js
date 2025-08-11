@@ -13,27 +13,35 @@ function applyContext(context={}) {
 const config = require("../data/config.json");
 const { globalCensor } = require("./filter.js");
 const { inlineCode } = require("../utils.js")
+const ms = require("ms");
 
 // Defined at boot
 let trackablesNotices;
-let trackablesArchive;
+let trackablesHub;
 
 const trackableIcon = "https://cdn.discordapp.com/attachments/1229256619792138351/1404159977987248180/image.png?ex=689a2d62&is=6898dbe2&hm=de6192003f99d891937ac07540aa1a83887f04d05bf23cc86e3d84a34ddcf2bb&";
 
 const aboutTrackables = {
 	ephemeral: false,
-	content: "About Trackables",
+	content: "About trackables",
 	embeds: [{
-		"title": "About Trackables",
+		"title": "About trackables",
+		// "description": 
+		// 	// @ts-ignore
+		// 	`Trackables are a feature that start with your image, which you release to travel across servers. They can be picked up and placed in any server. [Add Stewbot to your profile](${config.install}) to make your own! ${cmds.trackable.my_trackable.mention}\n`+
+		// 	`\n`+
+		// 	`Trackables show you how many people and servers they have traversed.\n`+
+		// 	`\n`+
+		// 	`If a trackable sees no movement for one week, it will be sent to a special channel in [Kestron Central](${config.invite}) where you can pick them up.\n`+
+		// 	`\n`+
+		// 	`-# All trackables are reviewed by bot staff.`,
 		"description": 
+			`With trackables you can release your image to travel across any server. A trackable can be picked up and placed down from server to server. Each person and server is counted on the trackable.\n` +
+			`\n`+
 			// @ts-ignore
-			`Trackables are a feature that start with your image, which you release to travel across servers. They can be picked up and placed in any server. [Add Stewbot to your profile](${config.install}) to make your own! ${cmds.trackable.my_trackable.mention}\n`+
+			`[Add Stewbot to your profile](${config.install}) to make your own! ${cmds.trackable.my_trackable.mention}\n` +
 			`\n`+
-			`Trackables show you how many people and servers they have traversed.\n`+
-			`\n`+
-			`If a trackable sees no movement for one week, it will be sent to a special channel in [Kestron Central](${config.invite}) where you can pick them up.\n`+
-			`\n`+
-			`-# All trackables are reviewed by bot staff.`,
+			`If a trackable is not moved for one week, it will be sent to a special channel in [Kestron Central](${config.invite}) where you can pick it up for a new adventure!`,
 		"color": 0x006400,
 		"thumbnail": {
 			"url": "https://media.discordapp.net/attachments/1221938602397667430/1403786745241272461/OIG2.dPKlYcycwt4DCcIAYeBX.jpg?ex=6898d1c9&is=68978049&hm=4187e9fcf2161b161f45fb467825740450adef00106589d12a07303be7624051&=&width=1708&height=1708"
@@ -58,6 +66,15 @@ let unknownNames = [
 	"The Matrix",
     "Wherever Socks Go", // AI funny ones
 ]
+
+function textAsEmbed(text) {
+	return {
+		embeds: [
+			new EmbedBuilder()
+				.setDescription(text)
+		]
+	}
+}
 
 function generateUnknownName() {
 	let randomUnknownName = unknownNames[Math.floor(Math.random() * unknownNames.length)];
@@ -108,7 +125,7 @@ async function getTrackableEmbed(tracker, {
 	// Link the trackable if visible to the user
 	let currentLocation = `${tracker.currentName.replace("`","'")}`;
 	let currentChannelId = tracker.current.slice(1);
-	if (userForCurrentLoc && tracker.current[0] == "c" && 
+	if (userForCurrentLoc && tracker.current[0] == "c" && tracker.currentMessageId &&
 		canUserSeeMessage(userForCurrentLoc, tracker.currentGuildId, currentChannelId, tracker.currentMessageId)
 	) {
 		currentLocation = `https://discord.com/channels/${tracker.currentGuildId}/${currentChannelId}/${tracker.currentMessageId}`
@@ -117,7 +134,7 @@ async function getTrackableEmbed(tracker, {
 	const embed = new EmbedBuilder()
 		.setTitle(movedOn ? `${inlineCode(name)} was here!` : `${inlineCode(name)}`)
 		.setColor(tracker.color)
-		.setFooter({ text: "Trackable", iconURL: trackableIcon });
+		.setFooter({ text: `Trackable #${id}`, iconURL: trackableIcon });
 
 	let fields = [];
 
@@ -126,22 +143,24 @@ async function getTrackableEmbed(tracker, {
 	if (!showPickUpRow) fields.push({ name: "Current Location", value: currentLocation, inline: true });
 
 	// Reach
+	const serverCount = unique(
+		tracker.pastLocations
+			.filter(loc => loc.startsWith('c')) // Only servers
+	).length;
 	fields.push({
 		name: "Reach",
-		value: `${unique(
-			tracker.pastLocations
-				.filter(loc => loc.startsWith('c')) // Only servers
-			).length} servers`,
+		value: `${serverCount} server${serverCount==1?"":"s"}`,
 		inline: true
 	});
 
 	// How many users have had it
+	const userCount = unique(
+		tracker.pastLocations
+			.filter(loc => loc.startsWith('u')) // Only users
+	).length
 	fields.push({
 		name: "Carried By", 
-		value: `${unique(
-			tracker.pastLocations
-				.filter(loc => loc.startsWith('u')) // Only users
-			).length} users`, 
+		value: `${userCount} user${userCount==1?"":"s"}`, 
 		inline: true
 	})
 
@@ -154,16 +173,19 @@ async function getTrackableEmbed(tracker, {
 		embed.setThumbnail(img);
 		description += `**${tag}**\n`
 		if (!movedOn) description += `─────\n`
-		if (!movedOn) description += `${desc}`
+		if (!movedOn) description += `${desc}\n`
 	} else if (layout === 1 && img) {
 		embed.setImage(img);
 		description += `**${tag}**\n`
 		if (!movedOn) description += `─────\n`
-		if (!movedOn) description += `${desc}`
+		if (!movedOn) description += `${desc}\n`
 	} else if (layout === 2 && img) {
 		embed.setImage(img);
 	}
-	if (description) embed.setDescription(description)
+
+	description += `\n-# Trackable created on <t:${Math.floor(tracker.creationDate / 1000)}:d>`
+
+	if (description) embed.setDescription(description.trim())
 	
 	embed.addFields(fields);
 	response.embeds = [embed];
@@ -348,8 +370,6 @@ async function genTrackerId(){
 	return tempId;
 }
 
-// TODO: Expiring - daily listener and expirer. Make sure transferring hands resets the last moved date. Make sure the find-a-trackable channel's don't expire.
-
 // TODO: 'about'
 
 // TODO: server onboarding
@@ -366,21 +386,21 @@ module.exports = {
 				AT.GuildInstall,   // Install to servers
 				AT.UserInstall     // Install to users
 			)
-			.setName('trackable').setDescription('Manage Trackables')
-			.addSubcommand(command => command.setName("about").setDescription("Learn more about Trackables").addBooleanOption(option =>
+			.setName('trackable').setDescription('Manage trackables')
+			.addSubcommand(command => command.setName("about").setDescription("Learn more about trackables").addBooleanOption(option =>
 				option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 			))
-			.addSubcommand(command => command.setName("my_trackable").setDescription("View or create your Trackable")
+			.addSubcommand(command => command.setName("my_trackable").setDescription("View or create your trackable")
 				// .addBooleanOption(option =>
 				// 	option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 				// )
 				.addAttachmentOption(option =>
-					option.setRequired(false).setName("image").setDescription("The image that you want to make into a Trackable")
+					option.setRequired(false).setName("image").setDescription("The image that you want to make into a trackable")
 				)
 			)
-			.addSubcommand(command => command.setName("inventory").setDescription("View the Trackable currently in your inventory"))
+			.addSubcommand(command => command.setName("inventory").setDescription("View the trackable currently in your inventory"))
 			.addSubcommand(command =>
-				command.setName("view").setDescription("View a Trackable with its ID")
+				command.setName("view").setDescription("View a trackable with its ID")
 					.addStringOption(option =>
 						option.setName("id").setDescription("The ID of the trackable you want to view").setRequired(true)
 					)
@@ -401,23 +421,23 @@ module.exports = {
 		help: {
 			"about":{
 				helpCategories: [ Categories.General, Categories.Entertainment, Categories.Bot ],
-				shortDesc: "Learn more about Trackables",
-				detailedDesc: `View specific rulesets and descriptions of what the Trackable feature does`,
+				shortDesc: "Learn more about trackables",
+				detailedDesc: `View specific rulesets and descriptions of what the trackable feature does`,
 			},
 			"my_trackable":{
 				helpCategories: [ Categories.General, Categories.Entertainment, Categories.Bot ],
-				shortDesc: "Create or view stats about your Trackable",
-				detailedDesc: `See info about where your Trackable is now and its statistics, or create one if you haven't yet.`,
+				shortDesc: "Create or view stats about your trackable",
+				detailedDesc: `See info about where your trackable is now and its statistics, or create one if you haven't yet.`,
 			},
 			"inventory":{
 				helpCategories: [ Categories.General, Categories.Entertainment, Categories.Bot ],
-				shortDesc: "View the Trackable currently in your inventory",
-				detailedDesc: `See specific info about the Trackable currently in your inventory, and place it if you wish.`,
+				shortDesc: "View the trackable currently in your inventory",
+				detailedDesc: `See specific info about the trackable currently in your inventory, and place it if you wish.`,
 			},
 			"view":{
 				helpCategories: [ Categories.General, Categories.Entertainment, Categories.Bot ],
-				shortDesc: "Find a Trackable using its ID",
-				detailedDesc: `View current stats about a Trackable you've seen before using its ID`,
+				shortDesc: "Find a trackable using its ID",
+				detailedDesc: `View current stats about a trackable you've seen before using its ID`,
 			}
 		},
 	},
@@ -445,21 +465,22 @@ module.exports = {
 
 				if (!usersTrackable) {
 					// Create it
+
+					if (!attachment || !attachment?.contentType) {
+						return cmd.followUp("To create your own trackable, you must run this command again, but specify the `image` option.");
+					}
+					
 					const hasCurrentTrackable = await Trackables.exists({
 						status: "published",
 						current: `u${cmd.user.id}`
 					});
-
 					if (hasCurrentTrackable) {
-						return cmd.followUp("You already have a Trackable in your inventory. Place your current Trackable somewhere before creating one.");
-					}
-
-					if (!attachment || !attachment?.contentType) {
-						return cmd.followUp("To create your own Trackable, you must run this command again, but specify the `image` option.");
+						// @ts-ignore
+						return cmd.followUp(`You already have a trackable in your inventory. Place your current trackable somewhere using ${cmds.trackable.place.mention} before creating one.`);
 					}
 
 					if (!allowedMimes.includes(attachment.contentType||"")) {
-						return cmd.followUp("Image must be one of the supported types: " + allowedMimes.join(", "))
+						return cmd.followUp("Image must be one of the supported types: `" + allowedMimes.join("`, `") + "`")
 					}
 
 					// NOTE: This link only lasts 24 hours.
@@ -514,7 +535,7 @@ module.exports = {
 
 					// Your trackable already exists
 					if (attachment) {
-						return cmd.followUp("You may only create one Trackable. Run this command without an attachment to see the stats of yours.");
+						return cmd.followUp("You may only create one trackable. Run this command without an attachment to see the stats of yours.");
 					}
 
 					const holdingTrackable = usersTrackable.current == `u${cmd.user.id}`;
@@ -535,7 +556,7 @@ module.exports = {
 				});
 				if(!tracker){
 					// @ts-ignore
-					return cmd.followUp(`You don't have any Trackables in your inventory! You can make one with ${cmds.trackable.my_trackable.mention} or find others that have been posted.`); // TODO: link to our server
+					return cmd.followUp(`You don't have any trackables in your inventory! You can make one with ${cmds.trackable.my_trackable.mention} or find others that have been posted.`); // TODO: link to our server
 				}
 				cmd.followUp({
 					ephemeral: true,
@@ -543,13 +564,17 @@ module.exports = {
 				});
 			break;
 			case "view":
+				let trackableId = cmd.options.getString("id")
+					.replaceAll("#", "") // Some users might copy this
+					.trim();
+
 				var tracker = await Trackables.findOne({
-					id: cmd.options.getString("id"),
+					id: trackableId,
 					status: "published"
 				});
 				if(!tracker){
 					// @ts-ignore
-					return cmd.followUp(`I didn't find any Trackables with that ID! The tracker may have been deleted, or  the ID typed incorrectly`);
+					return cmd.followUp(`I didn't find any trackables with that ID! The tracker may have been deleted, or  the ID typed incorrectly`);
 				}
 
 				// Only show the place button if they they currently hold this one
@@ -596,15 +621,10 @@ module.exports = {
 				if (deferedResponse.interaction.responseMessageEphemeral) {
 					return cmd.followUp(
 						"This server has prevented your ability to run my commands publicly.\n" +
-						"Try posting your Trackable in another channel or server."
+						"Try posting your trackable in another channel or server."
 					);
 				}
 
-				trackable.current = placingToo;
-				trackable.currentName = serverName ? `A channel in \`${serverName.replaceAll("`", "'")}\`` : generateUnknownName();
-				trackable.pastLocations.push(comingFrom);
-				trackable.currentGuildId = cmd.guildId;
-				
 				// TODO: send directly if we have access
 				const message = await cmd.followUp({
 					...await getTrackableEmbed(trackable, {
@@ -612,8 +632,14 @@ module.exports = {
 					}),
 				}).catch(e=>null)
 				
+				trackable.current = placingToo;
+				trackable.currentName = serverName ? `A channel in \`${serverName.replaceAll("`", "'")}\`` : generateUnknownName();
+				trackable.pastLocations.push(comingFrom);
+				trackable.currentGuildId = cmd.guildId;
+				trackable.placed = Date.now();
 				trackable.currentMessageId = message.id;
 				await trackable.save();
+
 				return;
 		}
 	},
@@ -635,14 +661,14 @@ module.exports = {
 
 				if (!trackable) {
 					return cmd.reply({
-						content: "Sorry, I couldn't find that Trackable.",
+						content: "Sorry, I couldn't find that trackable.",
 						ephemeral: true
 					});
 				}
 
 				if (trackable.current !== `u${userId}`) {
 					return cmd.reply({
-						content: "You don't have that Trackable anymore, so you can't use it.",
+						content: "You don't have that trackable anymore, so you can't use it.",
 						ephemeral: true
 					});
 				}
@@ -672,14 +698,10 @@ module.exports = {
 				if (deferedMessage.interaction.responseMessageEphemeral) {
 					return cmd.followUp(
 						"This server has prevented your ability to run my commands publicly.\n" +
-						"Try posting your Trackable in another channel or server." 
+						"Try posting your trackable in another channel or server." 
 					)
 				}
 
-				trackable.current = placingToo;
-				trackable.currentName = serverName ? `A channel in \`${serverName.replaceAll("`", "'")}\`` : generateUnknownName();
-				trackable.pastLocations.push(comingFrom);
-				trackable.currentGuildId = cmd.guildId;
 				
 				const message = await cmd.followUp({
 					...await getTrackableEmbed(trackable, {
@@ -687,8 +709,15 @@ module.exports = {
 					}),
 				}).catch(e=>null)
 				
+				trackable.current = placingToo;
+				trackable.currentName = serverName ? `A channel in \`${serverName.replaceAll("`", "'")}\`` : generateUnknownName();
+				trackable.pastLocations.push(comingFrom);
+				trackable.currentGuildId = cmd.guildId;
+				trackable.placed = Date.now();
 				trackable.currentMessageId = message.id;
 				await trackable.save();
+
+				return;
 
 				// Lock place button - I couldn't get this working, I'm not sure if I need to defer it differently or if we only get one choice of reply.
 				// await cmd.update({
@@ -720,7 +749,8 @@ module.exports = {
 
 					if (alreadyHoldingTrackable) {
 						return cmd.reply({
-							content: `You already have a Trackable in your inventory. Place your current Trackable somewhere with ${cmds.trackable.place.mention} before picking up a new one.`, // TODO
+							// @ts-ignore
+							content: `You already have a trackable in your inventory. Place your current trackable somewhere with ${cmds.trackable.place.mention} before picking up a new one.`, // TODO
 							ephemeral: true
 						});
 					}
@@ -732,14 +762,14 @@ module.exports = {
 
 					if (!trackable) {
 						return cmd.reply({
-							content: `Sorry, I couldn't find that trackable. It must have expired, might be able to find it in [#find-a-trackable](<${config.invite}>)`,
+							content: "Sorry, I couldn't find that trackable.",
 							ephemeral: true
 						});
 					}
 
 					if (trackable.current !== `c${cmd.channelId}`) {
 						return cmd.reply({
-							content: "Sorry, that Trackable doesn't seem to be in this channel. Perhaps it was moved somewhere else?",
+							...textAsEmbed(`Sorry, I couldn't find that trackable. It must have expired, so you might be able to find it in [#find-a-trackable](<${config.invite}>)`),
 							ephemeral: true
 						});
 					}
@@ -754,7 +784,7 @@ module.exports = {
 					if (usersSinceLast == 0) {
 						return cmd.reply({
 							// @ts-ignore
-							content: `Let someone else move this Trackable first. In the meantime, you can create your own with ${cmds.trackable.my_trackable.mention} or find a different Trackable.`,
+							content: `Let someone else move this trackable first. In the meantime, you can create your own with ${cmds.trackable.my_trackable.mention} or find a different Trackable.`,
 							ephemeral: true
 						});
 					} 
@@ -762,6 +792,7 @@ module.exports = {
 					trackable.pastLocations.push(trackable.current);
 					trackable.current = goingTo;
 					trackable.currentName = `${cmd.user.username}'s Inventory`
+					trackable.placed = Date.now();
 
 					await trackable.save();
 					await cmd.update({
@@ -774,15 +805,12 @@ module.exports = {
 					})
 
 					await cmd.followUp({
-						embeds: [
-							new EmbedBuilder()
-								.setDescription(
-									// @ts-ignore
-									`You have picked up this Trackable! Now go share it somewhere with ${cmds.trackable.place.mention}\n`+
-									`\n`+
-									`You can even share it in servers that don't have Stewbot if you [add Stewbot to your apps](<${config.install}>)!`
-								)
-							],
+						...textAsEmbed(
+							// @ts-ignore
+							`You have picked up this trackable! Now go share it somewhere with ${cmds.trackable.place.mention}\n`+
+							`\n`+
+							`You can even share it in servers that don't have Stewbot if you [add Stewbot to your apps](<${config.install}>)!`
+						),
 						ephemeral: true
 					})
 				}
@@ -794,14 +822,14 @@ module.exports = {
 				let trackableData = await Trackables.findOne({ owner: cmd.user.id })
 				if (!trackableData) {
 					return cmd.reply({
-						content: "Sorry, I couldn't find that Trackable.",
+						content: "Sorry, I couldn't find that trackable.",
 						ephemeral: true
 					});
 				}
 				
 				if (trackableData.status !== "editing") {
 					return cmd.reply({
-						content: `This Trackable has ${trackableData.status == "published" ? "already been published." : "been banned."}`,
+						content: `This trackable has ${trackableData.status == "published" ? "already been published." : "been banned."}`,
 						ephemeral: true
 					})
 				}
@@ -853,7 +881,7 @@ module.exports = {
 							current: `u${cmd.user.id}`
 						});
 						if (hasCurrentTrackable) {
-							return cmd.reply("You already have a Trackable in your inventory. Place your current Trackable somewhere before creating one.");
+							return cmd.reply("You already have a trackable in your inventory. Place your current trackable somewhere before creating one.");
 						}
 
 						// Make then confirm
@@ -894,7 +922,7 @@ module.exports = {
 							current: `u${cmd.user.id}`
 						});
 						if (hasCurrentTrackable) {
-							return cmd.reply("You already have a Trackable in your inventory. Place your current Trackable somewhere before creating one.");
+							return cmd.reply("You already have a trackable in your inventory. Place your current trackable somewhere before creating one.");
 						}
 
 						trackableData.status = "published"
@@ -909,7 +937,7 @@ module.exports = {
 
 						// Notify us
 						trackablesNotices.send({
-							content:`${cmd.user.id} made a new Trackable.`,
+							content:`${cmd.user.id} made a new trackable.`,
 							...await getTrackableEmbed(trackableData, {
 								"showBanButton": true
 							})
@@ -965,7 +993,7 @@ module.exports = {
 			// Send error message if interaction hasn't been replied to
 			if (!cmd.replied && !cmd.deferred) {
 				await cmd.reply({
-					content: 'An error occurred while updating the Trackable.',
+					content: 'An error occurred while updating the trackable.',
 					ephemeral: true
 				});
 			}
@@ -976,6 +1004,80 @@ module.exports = {
 
 	async [Events.ClientReady] () {
 		trackablesNotices = await client.channels.fetch(process.env.trackablesNotices);
-		trackablesArchive = await client.channels.fetch(process.env.trackablesArchive);
+		trackablesHub = await client.channels.fetch(process.env.trackablesArchive);
+	},
+
+	async daily() {
+		let timeoutLimit = ms("7d");
+		// let timeoutLimit = ms("1s");
+		let olderThan = Date.now() - timeoutLimit;
+
+		let hubLoc = `c${trackablesHub.id}`;
+
+		const expiredFilter = {
+			status: "published",
+			placed: { $lt: olderThan },
+			current: { $ne: hubLoc }
+		}
+
+		let expiredTrackables = await Trackables.find(expiredFilter);
+
+		// Modify data across all expired trackables
+		// const re = await Trackables.updateMany(expiredFilter, {
+		// 	$set : {
+		// 		placed: Date.now(),
+		// 		current: hubLoc,
+		// 		currentName: `[#find-a-trackable](<${config.invite}>)`,
+
+		// 		// Add the current location and the hubLoc to the pastLocations list
+		// 		pastLocations: {
+		// 			$concatArrays: [
+		// 				{ $ifNull: ["$pastLocations", []] },
+		// 				[{ $ifNull: ["$current", null] }],
+		// 				[hubLoc]
+		// 			]
+		// 		}
+		// 	},
+		// 	$unset: ["currentGuildId", "currentMessageId"],
+
+		// });
+
+		const re = await Trackables.updateMany(expiredFilter, [
+			{
+				$set: {
+					placed: Date.now(),
+					current: hubLoc,
+					currentName: `[#find-a-trackable](<${config.invite}>)`,
+					pastLocations: {
+						$concatArrays: [
+							{ $ifNull: ["$pastLocations", []] },
+							{
+								$cond: [
+									{ $ne: ["$current", null] },
+									[{ $toString: "$current" }],
+									[]
+								]
+							},
+							// [hubLoc]
+						]
+					}
+				}
+			},
+			{
+				$unset: ["currentGuildId", "currentMessageId"]
+			}
+		]);
+
+
+		// Repost each Trackable to the archive
+		for (const trackable of expiredTrackables) {
+			// Await to avoid ratelimits
+			await trackablesHub?.send({
+				content: "Trackable timed out! It will sit here until someone picks it up.",
+				...await getTrackableEmbed(trackable, {
+					"showPickUpRow": true
+				})
+			}).catch(console.log)
+		}
 	}
 };

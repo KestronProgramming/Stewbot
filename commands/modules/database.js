@@ -317,7 +317,7 @@ let userSchema = new mongoose.Schema({
 let trackableSchema = new mongoose.Schema({
     id: { type: String, required: true, unique: true },
     owner: { type: String, required: true },   // ID of the creator of this trackable.
-    letCreationDate: { type: Number, default: Date.now, required: true },
+    creationDate: { type: Number, default: Date.now, required: true },
     current: { type: String, required: true }, // Current holder (user or channel). u/c prepends the ID.
     name: { type: String, required: true, default: "My New Trackable" },
     img: {
