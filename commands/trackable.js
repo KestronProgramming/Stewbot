@@ -674,7 +674,7 @@ module.exports = {
 				cmd.followUp({
 					...await getTrackableEmbed(tracker, {
 						"userIdForPlace": showPlace ? cmd.user.id : "",
-						"userForCurrentLoc": true, 
+						"userForCurrentLoc": cmd.user.id, 
 						"isntHere": true
 					})
 				});
@@ -815,7 +815,8 @@ module.exports = {
 							"showPickUpRow": true
 						}),
 					}).catch(e => null);
-					cmd.followUp("Posted!");
+
+					cmd.deleteReply();
 				}
 				else {
 					// Otherwise reply as a user app
@@ -903,7 +904,7 @@ module.exports = {
 
 					trackable.pastLocations.push(trackable.current);
 					trackable.current = goingTo;
-					trackable.currentName = `${cmd.user.username}'s Inventory`
+					trackable.currentName = `${inlineCode(cmd.user.username)}'s Inventory`
 					trackable.placed = Date.now();
 
 					await trackable.save();
