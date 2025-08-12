@@ -2,7 +2,7 @@
 const Categories = require("./modules/Categories");
 const client = require("../client.js");
 const { Guilds, Users, ConfigDB, guildByID, userByID, guildByObj, userByObj } = require("./modules/database.js")
-const { ContextMenuCommandBuilder, MessageAttachment , AttachmentBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
+const { ContextMenuCommandBuilder, AttachmentBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
 function applyContext(context={}) {
 	for (let key in context) {
 		this[key] = context[key];
@@ -28,7 +28,7 @@ async function sendDailiesToSubscribed(type, message={}) {
         try {
             const channel = await client.channels.fetch(subbedChannel);
             
-            if (channel.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)) {
+            if (channel.isSendable()) {
                 await channel.send(message);
             } else {
                 erroredGuilds.push(guild.id);
@@ -100,7 +100,7 @@ module.exports = {
 
         await guildByObj(cmd.guild, updates);
         
-        if(!channel.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
+        if(!("isSendable" in channel) || !channel.isSendable()){
             cmd.followUp(`I can't send messages in that channel, so I can't run daily ${type}.`);
             return;
         }
@@ -186,7 +186,7 @@ module.exports = {
     
             await sendDailiesToSubscribed("verses", {embeds: [votd]});
     
-        } catch {
+        } catch (e) {
             notify("Verse Of The Day error: " + e.stack);
         };
 

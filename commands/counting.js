@@ -11,7 +11,10 @@ function applyContext(context = {}) {
 
 // #endregion CommandBoilerplate
 
+/** @type {import("compromise").default} */
+// @ts-ignore
 const nlp = require('compromise');
+
 const mathjs = require('mathjs');
 const { canUseRole } = require("../utils.js");
 
@@ -195,11 +198,11 @@ module.exports = {
                     disclaimers.push(`No channel was set for counting to be active in, so counting is disabled currently.`);
                 }
                 var c = await client.channels.fetch(guild.counting.channel);
-                if (!c?.permissionsFor(client.user.id)?.has(PermissionFlagsBits.SendMessages)) {
+                if (!("permissionsFor" in c) || !c?.permissionsFor(client.user.id)?.has(PermissionFlagsBits.SendMessages)) {
                     guild.counting.active = false;
                     disclaimers.push(`I can't send messages in the specified channel, so counting is disabled currently.`);
                 }
-                if (!c?.permissionsFor(client.user.id)?.has(PermissionFlagsBits.AddReactions)) {
+                else if (!c?.permissionsFor(client.user.id)?.has(PermissionFlagsBits.AddReactions)) {
                     guild.counting.active = false;
                     disclaimers.push(`I can't add reactions in the specified channel, so counting is disabled currently.`);
                 }
@@ -216,23 +219,24 @@ module.exports = {
                         disclaimers.map(d => `\n\n${d}`).join("")
                     }${
                         resetJustSet 
-                            ? "\n\nBecause you just enabled `reset`, the count has been set to 1."
+                            ? "\nBecause you just enabled `reset`, the count has been set to 1."
                             : ""
                     }
                     ${
                         turnsJustLegit 
-                            ? "\n\nBecause you just set `posts_between_turns` and reset is enabled, the count has been reset."
+                            ? "\nBecause you just set `posts_between_turns` and reset is enabled, the count has been reset."
                             : ""
                     }${
                         guild.counting.legit 
                             ? "" 
-                            : `\n\n-# Please be aware this server is currently ineligible for the leaderboard. To fix this, make sure that reset is set to true, that the posts between turns is at least 1, and that you don't set the number to anything higher than 1 manually.`
+                            : `\n-# Please be aware this server is currently ineligible for the leaderboard. To fix this, make sure that reset is set to true, that the posts between turns is at least 1, and that you don't set the number to anything higher than 1 manually.`
                     }`
                 );
                 break;
 
             case "set_number":
                 if (!guild.counting.active) {
+                    // @ts-ignore
                     cmd.followUp(`This server doesn't use counting at the moment, configure it with ${cmds["counting config"]}.`);
                     break;
                 }
@@ -252,8 +256,8 @@ module.exports = {
 
     /** 
      * @param {import('discord.js').Message} msg 
-     * @param {GuildDoc} guildStore 
-     * @param {GuildUserDoc} guildUserStore 
+     * @param {import("./modules/database.js").GuildDoc} guildStore 
+     * @param {import("./modules/database.js").GuildUserDoc} guildUserStore 
      * */
     async [Events.MessageCreate] (msg, context, guildStore, guildUserStore) {
         if (!msg.guild) return;
@@ -276,9 +280,13 @@ module.exports = {
             if (!guildUser) return;
 
             // If the server uses counting, but Stewbot cannot add reactions or send messages, don't do counting
-            if (!msg.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.AddReactions) || !msg.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)) {
+            if (
+                !("permissionsFor" in msg.channel) || 
+                !msg.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.AddReactions) || 
+                !msg.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)
+            ) {
                 guildCounting.active = false;
-                await guildCounting.save();
+                await guild.save();
                 return;
             }
 
@@ -305,10 +313,7 @@ module.exports = {
                             { $inc: { countTurns: -1 } }
                         );
 
-                        // TODO_DB: increment instead of direct set
-                        guildUser.count++;
                         guildUser.countTurns = guildCounting.takeTurns;
-
                     }
                     else {
                         msg.react("❌");

@@ -69,6 +69,7 @@ module.exports = {
     notify,
 
     // A centralized permission-checking function for users and roles
+    /** @returns {Promise<[Boolean, String]>} */
     async canUseRole(user, role, channel) {
         // returns [ success, errorMsg ]
         if (user && role.comparePositionTo(channel.guild.members.cache.get(user.id)?.roles?.highest) >= 0) {

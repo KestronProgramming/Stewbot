@@ -896,6 +896,7 @@ module.exports = {
 					} 
 
 					trackable.pastLocations.push(trackable.current);
+					trackable.pastLocations.push(`g${cmd.guildId}`); // Also store what guild we're coming from
 					trackable.current = goingTo;
 					trackable.currentName = `${inlineCode(cmd.user.username)}'s Inventory`
 					trackable.placed = Date.now();
