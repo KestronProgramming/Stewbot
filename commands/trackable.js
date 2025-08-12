@@ -722,7 +722,7 @@ module.exports = {
 				}
 
 				trackable.current = placingToo;
-				trackable.currentName = serverName ? `A channel in \`${inlineCode(serverName)}\`` : generateUnknownName();
+				trackable.currentName = serverName ? `A channel in ${inlineCode(serverName)}` : generateUnknownName();
 				trackable.pastLocations.push(comingFrom);
 				trackable.currentGuildId = cmd.guildId;
 				trackable.placed = Date.now();
