@@ -16,7 +16,7 @@ const ms = require("ms");
 const { limitLength } = require("../utils.js")
 
 // Temporarily caches old user profiles. See comment under [Events.UserUpdate]
-const oldProfileCache = new LRUCache({ ttl: ms("30s") })
+const oldProfileCache = new LRUCache({ ttl: ms("30s"), max: 10000 })
 
 async function logGuildMemberUpdate(packet) {
     // This function takes a `GUILD_MEMBER_UPDATE` packet,

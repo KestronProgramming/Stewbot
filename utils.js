@@ -3,12 +3,19 @@
 
 const { PermissionFlagsBits, Message } = require("discord.js")
 const config = require("./data/config.json");
-const { messageDataCache, Guilds, GuildUsers } = require("./commands/modules/database")
 const ms = require("ms");
 const client = require("./client.js");
 
 // Temp value for now to avoid circular references
+let messageDataCache, Guilds, GuildUsers;
 let checkDirty = () => {};
+
+// This is so jank... but we use some functions that also use us, so short of splitting out each dep into it's own function...
+setTimeout(() => {
+    checkDirty = require("./commands/filter").checkDirty;
+    // @ts-ignore
+    ({ messageDataCache, Guilds, GuildUsers } = require("./commands/modules/database"));
+}, 1);
 
 // Easily cut output to a maximum length.
 function limitLength(s, size = 1999) {
@@ -21,15 +28,43 @@ function escapeBackticks(text) {
     return text.replace(/(?<!\\)(?:\\\\)*`/g, "\\`");
 }
 
-module.exports = {
-    // This MUST be called to init - otherwise JavaScript gets confused by circular references 
-    initUtils() {
-        // When filter.js is ready, it runs this function.
-        checkDirty = require("./commands/filter").checkDirty;
-    },
+async function notify(what, useWebhook = false) {
+    //Notify the staff of the Kestron Support server
 
+    console.log(what);
+    try {
+        if (useWebhook) {
+            fetch(String(process.env.beta ? process.env.betaWebhook : process.env.logWebhook), {
+                'method': 'POST',
+                'headers': {
+                    "Content-Type": "application/json"
+                },
+                'body': JSON.stringify({
+                    'username': "Stewbot Notify Webhook",
+                    "content": limitLength(what)
+                })
+            });
+        }
+        else {
+            try {
+                let channelId = process.env.beta ? config.betaNoticeChannel : config.noticeChannel;
+                const channel = await client.channels.fetch(channelId);
+                // @ts-ignore
+                channel?.send(limitLength(what));
+            } catch (e) {
+                console.log("Couldn't send notify, retrying with webhook");
+                notify(what, true);
+            }
+        }
+    } catch (e) {
+        console.log("Couldn't send notify");
+    }
+}
+
+module.exports = {
     limitLength,
     escapeBackticks,
+    notify,
 
     // A centralized permission-checking function for users and roles
     async canUseRole(user, role, channel) {
@@ -115,33 +150,6 @@ module.exports = {
         return false;
     },
 
-    async notify(what, useWebhook = false) {
-        //Notify the staff of the Kestron Support server
-
-        console.log(what);
-        try {
-            if (useWebhook) {
-                fetch(String(process.env.logWebhook), {
-                    'method': 'POST',
-                    'headers': {
-                        "Content-Type": "application/json"
-                    },
-                    'body': JSON.stringify({
-                        'username': "Stewbot Notify Webhook",
-                        "content": limitLength(what)
-                    })
-                })
-            }
-            else {
-                let channelId = process.env.beta ? config.betaNoticeChannel : config.noticeChannel;
-                const channel = await client.channels.fetch(channelId);
-                channel?.send(limitLength(what));
-            }
-        } catch (e) {
-            console.log("Couldn't send notify()")
-        }
-    },
-
     /** 
      * Database lookup for high-traffic events (messageCreate, messageUpdate, etc) - TODO_DB: (look into) guild profile changes?
      * 
@@ -215,5 +223,12 @@ module.exports = {
 
         // @ts-ignore
         return [readGuildUser, readGuild, readHomeGuild];
+    },
+
+    // Are you an owner of stewbot?
+    async isSudo(userId) {
+        const guild = await client.guilds.fetch(config.homeServer);
+        const member = await guild.members.fetch(userId).catch(() => null);
+        return member?.permissionsIn(config.commandChannel).has(PermissionFlagsBits.ViewChannel) || false;
     }
 }

@@ -13,6 +13,15 @@ function applyContext(context={}) {
 
 const config = require("../data/config.json");
 
+function textAsEmbed(text) {
+	return {
+		embeds: [
+			new EmbedBuilder()
+				.setDescription(text)
+		]
+	}
+}
+
 module.exports = {
 	data: {
 		// Slash command data
@@ -39,13 +48,13 @@ module.exports = {
     async execute(cmd, context) {
 		applyContext(context);
 		
-		cmd.followUp(
+		cmd.followUp(textAsEmbed(
 			`Here is a list of links in relation with this bot you may find useful.\n` +
-			`- [Stewbot's Website](<https://stewbot.kestron.software/>)\n` +
-			`- [Stewbot's Invite Link](<${config.install}>)\n` +
+			`- [Stewbot's Install Link](<${config.install}>)\n` +
 			`- [Support Server](<${config.invite}>)\n` +
 			`- [Stewbot's Source Code on Github](<https://github.com/KestronProgramming/Stewbot>)\n` +
-			`- [Donate](<https://stewbot.kestron.software/donate>)`
-		);
+			`- [Stewbot's Website](<https://stewbot.kestron.com/>)\n` +
+			`- [Donate](<https://stewbot.kestron.com/donate>)`
+		));
 	}
 };

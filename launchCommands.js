@@ -1,7 +1,7 @@
 if (!process.env.token || !process.env.betaToken) process.env = require("./env.json");
 
 injectCmdsProxy()
-const { REST, Routes, PermissionFlagsBits, SlashCommandBuilder } = require('discord.js');
+const { REST, Routes } = require('discord.js');
 const fs = require("fs");
 const fsPromises = require("fs/promises");
 const path = require("path")
@@ -125,19 +125,30 @@ function getCommandAndExtraData() {
 			// Build command info from slash commands
 			const extraInfo = {};
 			const migratedCommands = await getCommands(false);   // commands
-			let commands = [];                        // list we're gonna build into data needed for discord API
+			let commands = [];                                   // list we're gonna build into data needed for discord API
 			for (let commandName in migratedCommands) {
-				const command = migratedCommands[commandName];
-				if (command?.data?.command) {
-					commands.push(command.data.command);
+				const module = migratedCommands[commandName];
+				// Get base discord.js command
+				if (module?.data?.command) {
+					let commandData = module.data.command;
+
+					// Inject sudo felid
+					if (module.data.sudo) commandData.sudo = true;
+
+					// Push to commands list
+					commands.push(commandData);
+
 				}
-				if (command?.data?.extra) {
-					extraInfo[commandName] = command.data.extra;
+				// Inject extras
+				if (module?.data?.extra) {
+					extraInfo[commandName] = module.data.extra;
 				}
 			}
 
 			// Inject any extra data that discord.js doesn't support natively
-			commands = commands.map(command => Object.assign(command.toJSON(),extraInfo[command.toJSON().name]));
+			commands = commands.map(command => 
+				Object.assign(command.toJSON(), extraInfo[command.toJSON().name])
+			);
 
 			resolve(commands);
 		} catch (e) {
@@ -152,118 +163,60 @@ function getCommandAndExtraData() {
 
 async function launchCommands(hash) {
 	const commands = await getCommandAndExtraData();
+	let globalCommands = commands.filter(cmd => !cmd.sudo);
 
 	// Register
 	const rest = new REST({ version: '9' }).setToken(process.env.beta ? process.env.betaToken : process.env.token );
-	var comms={};
-	await rest.put(Routes.applicationCommands(process.env.beta ? process.env.betaClientId || process.env.clientId : process.env.clientId),{body:commands}).then(d=>{
-		d.forEach(c=>{
-			comms[c.name]={
-				mention:`</${c.name}:${c.id}>`,
-				id:c.id,
-				name:c.name,
-				description:c.description,
-				contexts:c.contexts,
-				integration_types:c.integration_types,
-				type:c.type,
-				default_member_permissions:c.default_member_permissions
-			};
-			if(c.hasOwnProperty("options")){
-				c.options.forEach(o=>{
-					if(o.type===1){
-						comms[c.name][o.name]={
-							mention:`</${c.name} ${o.name}:${c.id}>`,
-							id:c.id,
-							name:o.name,
-							description:o.description,
-							contexts:c.contexts,
-							integration_types:c.integration_types,
-							type:o.type,
-							default_member_permissions:c.default_member_permissions
-						};
-					}
-				});
-			}
-		});
-		// const commandsHash = md5(
-		// 	JSON.stringify(
-		// 		Object.entries(commands)
-		// 			.map(c => c[1])
-		// 			.filter(c=>c)
-		// 	)
-		// )
-		if (hash) comms._hash = hash;
-		fs.writeFileSync("./data/commands.json", JSON.stringify(comms, null, 4));
-	}).catch((error) => {
-		console.error(error);
-	});
+	var comms = {};
+	
+	let data = await rest.put(
+		Routes.applicationCommands(process.env.beta ? process.env.betaClientId || process.env.clientId : process.env.clientId),
+		{ body: globalCommands }
+	).catch(notify)
+
+	// @ts-ignore
+	for (const commandData of data) {
+		comms[commandData.name] = {
+			mention: `</${commandData.name}:${commandData.id}>`,
+			id: commandData.id,
+			name: commandData.name,
+			description: commandData.description,
+			contexts: commandData.contexts,
+			integration_types: commandData.integration_types,
+			type: commandData.type,
+			default_member_permissions: commandData.default_member_permissions
+		};
+		if (commandData.hasOwnProperty("options")) {
+			commandData.options.forEach(option => {
+				if (option.type === 1) {
+					comms[commandData.name][option.name] = {
+						mention: `</${commandData.name} ${option.name}:${commandData.id}>`,
+						id: commandData.id,
+						name: option.name,
+						description: option.description,
+						contexts: commandData.contexts,
+						integration_types: commandData.integration_types,
+						type: option.type,
+						default_member_permissions: commandData.default_member_permissions
+					};
+				}
+			});
+		}
+	};
+
+	// Idk what this is doing, something to do with the detecting if cmds has changed system
+	if (hash) comms._hash = hash;
+
+	await fs.promises.writeFile("./data/commands.json", JSON.stringify(comms, null, 4));
 
 	// Register stewbot-devadmin-only commands
-	const devadminCommands = [
-		new SlashCommandBuilder()
-			.setName('restart')
-			.setDescription('Restart the bot')
-			.addBooleanOption(option=>
-				option.setName("update").setDescription("Update git and npm before restarting").setRequired(true)
-			)
-			.addBooleanOption(option=>
-				option.setName("update_commands").setDescription("Update registered commands on discord").setRequired(false)
-			)
-			.setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
-			
-		new SlashCommandBuilder()
-			.setName('launch_commands')
-			.setDescription('Relaunch commands')
-			.setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
-
-		new SlashCommandBuilder()
-			.setName('update_in_server')
-			.setDescription('API heavy - sync our storage database with up to date information by scanning every single guild')
-			.setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
-
-		new SlashCommandBuilder()
-			.setName('motd')
-			.setDescription(`Change the bot's status`)
-			.addSubcommand(subcommand =>
-				subcommand
-					.setName("add")
-					.setDescription("Add a new status message")
-					.addStringOption(option => 
-						option
-							.setName("status")
-							.setDescription("The status message")
-							.setRequired(true)
-					)
-			)
-			.addSubcommand(subcommand => 
-				subcommand
-					.setName("remove")
-					.setDescription("Remove a status message")
-					.addStringOption(option => 
-						option
-							.setName("status")
-							.setDescription("The status message")
-							.setRequired(true)
-							.setAutocomplete(true)
-					)
-			)
-			.addSubcommand(subcommand =>
-				subcommand
-					.setName("delay")
-					.setDescription("Set the cycle delay")
-					.addNumberOption(option => 
-						option
-							.setName("milliseconds")
-							.setDescription("The time in milliseconds between statuses")
-							.setRequired(true)
-					)
-			)
-			.setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
-			
-	]
-	rest.put(
+	let sudoOnlyCommands  = commands
+		.filter(cmd => cmd.sudo)
+		.map(data => ({ ...data, sudo: undefined })) // Remove sudo field so API doesn't panic
+	
+	await rest.put(
 		Routes.applicationGuildCommands(process.env.beta ? process.env.betaClientId : process.env.clientId, config.homeServer),
-		{ body: devadminCommands },
+		{ body: sudoOnlyCommands },
 	);
 
 	return "Updated commands on Discord and wrote commands to ./commands.json";

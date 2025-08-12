@@ -4,7 +4,7 @@ const client = require("../client.js");
 const { Guilds, Users, ConfigDB, guildByID, userByID, guildByObj, userByObj, GuildUsers } = require("./modules/database.js")
 const { SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType, AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType } = require("discord.js");
 function applyContext(context = {}) {
-    for (key in context) {
+    for (let key in context) {
         this[key] = context[key];
     }
 }
@@ -13,7 +13,10 @@ function applyContext(context = {}) {
 
 module.exports = {    
     data: {
-        command: null,
+        command: new SlashCommandBuilder()
+            .setName('update_in_server')
+            .setDescription('API heavy - sync our storage database with up to date information by scanning every single guild')
+            .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
 
         requiredGlobals: [],
         help:{

@@ -18,13 +18,13 @@ const { notify } = require("../utils");
 
 module.exports = {
 	data: {
-		// Slash command data
-		command: null,
-		
-		// Optional fields
-		
-		// extra: {"contexts": [0,1,2], "integration_types": [0,1]},
+		sudo: true,
 
+		command: new SlashCommandBuilder()
+			.setName('launch_commands')
+			.setDescription('Relaunch commands')
+			.setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
+		
 		requiredGlobals: [],
 
 		help: {
