@@ -24,7 +24,7 @@ module.exports = {
                     option.setName("id_from").setDescription("What trackable to edit?").setRequired(true)
                 )
                 .addStringOption(option =>
-                    option.setName("id_to").setDescription("What ").setRequired(true)
+                    option.setName("id_to").setDescription("What should the ID be set to?").setRequired(true)
                 )
             )
             .addSubcommand(command => command.setName("make_special").setDescription("Make a trackable special")
@@ -32,7 +32,7 @@ module.exports = {
                     option.setName("id").setDescription("What trackable to edit?").setRequired(true)
                 )
                 .addStringOption(option =>
-                    option.setName("new_id").setDescription("What should I set the ID to?").setRequired(false)
+                    option.setName("new_id").setDescription("What should the ID be set to?").setRequired(false)
                 )
                 .addStringOption(option =>
                     option.setName("new_tag").setDescription("What should the tag be?").setRequired(false)
@@ -84,6 +84,7 @@ module.exports = {
                     var emoji = cmd.options.getString("emoji") || ":star2: ";
 
                     var trackable = await Trackables.findOne({ id: id_to });
+                    if (!trackable) cmd.followUp("I couldn't find this trackable");
                     trackable.color = 0xf5d400;
                     trackable.name =  `${emoji} ${trackable.name}`;
                     trackable.owner = "special";
@@ -99,7 +100,7 @@ module.exports = {
                     var id = cmd.options.getString("id");
                     var trackable = await Trackables.findOne({ id });
 
-                    if (!trackable) cmd.followUp("I couldn't find this trackable")
+                    if (!trackable) cmd.followUp("I couldn't find this trackable");
 
                     // @ts-ignores
                     cmd.followUp(getTrackableEditor(trackable, true));
