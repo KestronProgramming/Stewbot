@@ -10,6 +10,7 @@ function applyContext(context={}) {
 }
 // #endregion CommandBoilerplate
 
+// TODO: Button should show who dropped it
 
 const config = require("../data/config.json");
 const { globalCensor } = require("./filter.js");
@@ -150,10 +151,10 @@ async function getTrackableEmbed(tracker, {
 	let response = {};
 
 	// Link the trackable if visible to the user
-	let currentLocation = `${tracker.currentName.replace("`","'")}`;
+	let currentLocation = tracker.currentName;
 	let currentChannelId = tracker.current.slice(1);
 	if (userForCurrentLoc && tracker.current[0] == "c" && tracker.currentMessageId &&
-		canUserSeeMessage(userForCurrentLoc, tracker.currentGuildId, currentChannelId, tracker.currentMessageId)
+		await canUserSeeMessage(userForCurrentLoc, tracker.currentGuildId, currentChannelId, tracker.currentMessageId)
 	) {
 		currentLocation = `https://discord.com/channels/${tracker.currentGuildId}/${currentChannelId}/${tracker.currentMessageId}`
 	}
@@ -802,7 +803,7 @@ module.exports = {
 				}
 
 				trackable.current = placingToo;
-				trackable.currentName = serverName ? `A channel in \`${serverName.replaceAll("`", "'")}\`` : generateUnknownName();
+				trackable.currentName = serverName ? `A channel in ${inlineCode(serverName)}` : generateUnknownName();
 				trackable.pastLocations.push(comingFrom);
 				trackable.currentGuildId = cmd.guildId;
 				trackable.placed = Date.now();
