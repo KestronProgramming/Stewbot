@@ -82,7 +82,7 @@ module.exports = {
                     var new_id = cmd.options.getString("new_id");
                     var new_tag = cmd.options.getString("new_tag");
                     var new_desc = cmd.options.getString("new_desc");
-                    var emoji = cmd.options.getString("emoji") || "🌟 ";
+                    var emoji = cmd.options.getString("emoji") || "🌟";
 
                     var trackable = await Trackables.findOne({ id });
                     if (!trackable) return cmd.followUp("I couldn't find this trackable");
