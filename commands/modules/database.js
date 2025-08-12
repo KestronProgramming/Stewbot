@@ -35,6 +35,7 @@ mongoose.set('setDefaultsOnInsert', false);
 
 // Message guild cache allows us to have less calls to the DB, and invalidate cache when we save DB changes
 const messageDataCache = new NodeCache({ stdTTL: 5, checkperiod: 30 });
+const config = require("../../data/config.json");
 
 
 //#region Guild
@@ -327,7 +328,7 @@ let trackableSchema = new mongoose.Schema({
     desc: {
         type: String, 
         required: true, 
-        default: "This is a trackable. Install Stewbot, then run `/trackable my_trackable` to create your own! You can edit this message." 
+        default: `This is a trackable. [Install Stewbot](${config.install}), then run \`/trackable create\` to create your own! You can edit this message.` 
     },
     tag: { type: String, required: true, default: "Look at my new trackable!!" },
     currentName: { type: String, required: true },
