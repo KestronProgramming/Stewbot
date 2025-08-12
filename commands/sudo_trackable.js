@@ -2,7 +2,7 @@ const { Trackables } = require("./modules/database.js")
 const { InteractionContextType: IT, ApplicationIntegrationType: AT, SlashCommandBuilder} = require("discord.js");
 
 const config = require("../data/config.json");
-const { getTrackableEditor } = require("./trackable.beta.js")
+const { getTrackableEditor } = require("./trackable.js")
 
 module.exports = {
     data: {
