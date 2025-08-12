@@ -53,7 +53,7 @@ module.exports = {
 						.setPlaceholder(
 							"Select all the roles you would like to add to new users"
 						)
-				),
+				).toJSON(),
 			],
         });
 	},
@@ -61,6 +61,7 @@ module.exports = {
 	/** @param {import("discord.js").GuildMember} member */
 	async [Events.GuildMemberAdd](member, readGuildStore) {
 
+		// @ts-ignore - addedStickyRoles is a property we set in higher priority modules
 		if (!member.addedStickyRoles && readGuildStore.autoJoinRoles) {
 			if (!member.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageRoles)) {
 				Guilds.updateOne({ id: readGuildStore.id }, { 
@@ -69,9 +70,9 @@ module.exports = {
 
 			}
 			if (readGuildStore.autoJoinRoles.length > 0) {
-				readGuildStore.autoJoinRoles.forEach(role => {
+				readGuildStore.autoJoinRoles.forEach(roleId => {
 					let myRole = member.guild.members.cache.get(client.user.id).roles.highest.position;
-					var role = member.guild.roles.cache.find(r => r.id === role);
+					var role = member.guild.roles.cache.find(r => r.id === roleId);
 					if (role !== undefined && role !== null) {
 						if (myRole > role.rawPosition) {
 							member.roles.add(role);

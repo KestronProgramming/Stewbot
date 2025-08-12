@@ -829,7 +829,7 @@ module.exports = {
 					}).catch(e => null);
 				}
 				
-				trackable.currentMessageId = message.id;
+				trackable.currentMessageId = message?.id;
 				await trackable.save();
 
 				return;

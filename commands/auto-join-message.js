@@ -59,13 +59,19 @@ module.exports = {
 		if (cmd.options.getString("message") !== null) guild.ajm.message = (await checkDirty(config.homeServer, cmd.options.getString("message"), true))[1];
 
 		var disclaimers = [];
+
 		if (!guild.ajm.dm && guild.ajm.channel === "") {
 			guild.ajm.dm = true;
 			disclaimers.push(`-# No channel was specified to post auto join messages in, so I have set it to DMs instead.`);
 		}
-		if (!guild.ajm.dm && !client.channels.cache.get(guild.ajm.channel)?.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)) {
-			guild.ajm.dm = true;
-			disclaimers.push(`-# I can't post in the specified channel, so I have set the location to DMs instead.`);
+
+		if (!guild.ajm.dm) {
+			let channel = await client.channels.fetch(guild.ajm.channel).catch(e => null);
+
+			if (!("permissionsFor" in channel) || !("fetchWebhooks" in channel)  || !channel.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)) {
+				guild.ajm.dm = true;
+				disclaimers.push(`-# I can't post in the specified channel, so I have set the location to DMs instead.`);
+			}
 		}
 
 		await guild.save();
@@ -110,13 +116,16 @@ module.exports = {
 					username: member.guild.name,
 					avatarURL: member.guild.iconURL()
 				};
-				var hook = await client.channels.cache.get(readGuildStore.ajm.channel).fetchWebhooks();
-				hook = hook.find(h => h.token);
+				const channel = await client.channels.cache.get(readGuildStore.ajm.channel);
+				if (!("fetchWebhooks" in channel)) return;
+
+				let webhooks = await channel.fetchWebhooks();
+				let hook = webhooks.find(h => h.token);
 				if (hook) {
 					hook.send(resp);
 				}
 				else {
-					client.channels.cache.get(readGuildStore.ajm.channel).createWebhook({
+					channel.createWebhook({
 						name: config.name,
 						avatar: config.pfp
 					}).then(d => {

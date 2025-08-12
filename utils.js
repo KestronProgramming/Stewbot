@@ -8,7 +8,7 @@ const client = require("./client.js");
 
 // Temp value for now to avoid circular references
 let messageDataCache, Guilds, GuildUsers;
-let checkDirty = () => {};
+let checkDirty = (guildID, what, filter=false, applyGlobalFilter=false) => {};
 
 // This is so jank... but we use some functions that also use us, so short of splitting out each dep into it's own function...
 setTimeout(() => {

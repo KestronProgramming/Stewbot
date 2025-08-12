@@ -592,6 +592,18 @@ function onConnect() {
 mongoose.connection.on('connected', onConnect);
   
 
+// These types need to be exported for a few places.
+/**
+ * @typedef {import("mongoose").InferSchemaType<typeof guildSchema>} RawGuildDoc
+ * @typedef {import("mongoose").HydratedDocument<RawGuildDoc>} GuildDoc
+ * 
+ * @typedef {import("mongoose").InferSchemaType<typeof userSchema>} RawUserDoc
+ * @typedef {import("mongoose").HydratedDocument<RawUserDoc>} UserDoc
+ * 
+ * @typedef {import("mongoose").InferSchemaType<typeof guildUserSchema>} RawGuildUserDoc
+ * @typedef {import("mongoose").HydratedDocument<RawGuildUserDoc>} GuildUserDoc
+ */
+
 module.exports = {
     Guilds,
     guildByID,

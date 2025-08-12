@@ -309,8 +309,8 @@ module.exports = {
 
     /** 
      * @param {import('discord.js').Message} msg 
-     * @param {GuildDoc} guildStore 
-     * @param {GuildUserDoc} guildUserStore 
+     * @param {import("./modules/database.js").GuildDoc} guildStore 
+     * @param {import("./modules/database.js").GuildUserDoc} guildUserStore 
      * */
     async [Events.MessageCreate] (msg, context, guildStore, guildUserStore) {
 		applyContext(context);
@@ -319,6 +319,10 @@ module.exports = {
         const guild = guildStore;
 
         try {
+            const sendable = msg.channel.isSendable();
+            const reactable = ("permissionsFor" in msg.channel) && msg.channel.permissionsFor(client.user).has(PermissionFlagsBits.AddReactions);
+
+            
             // Check domain
             if (msg.guild && !(guild.config.domain_scanning === false)) {
                 const urlRegex = /https?:\/\/[^\s/$.?#].[^\s]*/g;
@@ -326,14 +330,14 @@ module.exports = {
                 for (const link of links) {
                     const triggerdBlocklist = await checkURL(link);
                     if (triggerdBlocklist) {
-                        if (msg.channel.permissionsFor(client.user).has(PermissionFlagsBits.SendMessages)) {
+                        if (sendable) {
                             return await msg.reply(
                                 `## :warning: WARNING :warning:\n` +
                                 `The link sent in this message was found in the blocklist [${triggerdBlocklist.title}](${triggerdBlocklist.url})\n` +
                                 `\n` +
                                 `-# If you need to disable this feature, run ${"`/badware_scanner domain_scanning:false`"}`
                             );
-                        } else if (msg.channel.permissionsFor(client.user).has(PermissionFlagsBits.AddReactions)) {
+                        } else if (reactable) {
                             await msg.react('⚠️');
                             return await msg.react(scamEmoji);
                         }

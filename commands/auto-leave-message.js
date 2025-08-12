@@ -52,7 +52,10 @@ module.exports = {
 		guild.alm.channel=cmd.options.getChannel("channel").id;
 
 		var disclaimers=[];
-		if(!client.channels.cache.get(guild.alm.channel).permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
+
+		let channel = await client.channels.fetch(guild.alm.channel).catch(e => null);
+
+		if(!("permissionsFor" in channel) || !("fetchWebhooks" in channel) || !channel.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
 			guild.alm.active=false;
 			disclaimers.push(`I can't post in the specified channel, so I cannot run auto leave messages.`);
 		}
@@ -79,13 +82,17 @@ module.exports = {
 				username: member.guild.name,
 				avatarURL: member.guild.iconURL()
 			};
-			var hook = await client.channels.cache.get(guildStore.alm.channel).fetchWebhooks();
-			hook = hook.find(h => h.token);
+
+			let channel = await client.channels.fetch(guildStore.alm.channel);
+			if (!("fetchWebhooks" in channel)) return;
+
+			let webhooks = await channel.fetchWebhooks();
+			let hook = webhooks.find(h => h.token);
 			if (hook) {
 				hook.send(resp);
 			}
 			else {
-				client.channels.cache.get(guildStore.alm.channel).createWebhook({
+				channel.createWebhook({
 					name: config.name,
 					avatar: config.pfp
 				}).then(d => {

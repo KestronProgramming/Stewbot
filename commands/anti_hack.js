@@ -81,8 +81,8 @@ module.exports = {
     
     /** 
      * @param {import('discord.js').Message} msg 
-     * @param {GuildDoc} guildStore 
-     * @param {GuildUserDoc} guildUserStore 
+     * @param {import("./modules/database.js").GuildDoc} guildStore 
+     * @param {import("./modules/database.js").GuildUserDoc} guildUserStore 
      * */
     async [Events.MessageCreate] (msg, context, guildStore, guildUserStore) {
         if (!msg.guild) return;
