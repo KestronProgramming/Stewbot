@@ -3,6 +3,7 @@ const { InteractionContextType: IT, ApplicationIntegrationType: AT, SlashCommand
 
 const config = require("../data/config.json");
 const { getTrackableEditor } = require("./trackable.js")
+const { isSudo } = require("../utils.js");
 
 module.exports = {
     data: {
@@ -48,6 +49,19 @@ module.exports = {
                 .addStringOption(option =>
                     option.setName("id").setDescription("What trackable to edit?").setRequired(true)
                 )
+            )
+            .addSubcommand(command => command.setName("set_status").setDescription("Pull up a trackable editor")
+                .addStringOption(option =>
+                    option.setName("id").setDescription("What trackable to edit?").setRequired(true)
+                )
+                .addStringOption(option =>
+                    option.setName("status").setDescription("What trackable to edit?").setRequired(true)
+                        .addChoices(
+                            {"name":"editing","value":"editing"},
+                            {"name":"published","value":"published"},
+                            {"name":"banned","value":"banned"}
+                        )
+                )
             ),
 
         requiredGlobals: [],
@@ -62,7 +76,9 @@ module.exports = {
 
     /** @param {import('discord.js').ChatInputCommandInteraction} cmd */
     async execute(cmd) {
-        if (cmd.guild?.id === config.homeServer && cmd.channel.id === config.commandChannel) {
+        const isSudoUser = isSudo(cmd.user.id);
+
+        if (isSudoUser) {
             switch (cmd.options.getSubcommand()) {
 
                 case "set_id":
@@ -106,10 +122,25 @@ module.exports = {
                     // @ts-ignores
                     cmd.followUp(getTrackableEditor(trackable, true));
                     break;
+
+                case "set_status":
+                    var id = cmd.options.getString("id");
+                    var status = cmd.options.getString("status");
+
+                    var trackable = await Trackables.findOne({ id });
+
+                    if (!trackable) cmd.followUp("I couldn't find this trackable");
+
+                    // @ts-ignore
+                    trackable.status = status;
+                    trackable.save();
+                    
+                    cmd.followUp("Done");
+                    break;
             }
         }
         else {
-            cmd.followUp("This command is for bot admins only, and can only be used in mod bot commands.");
+            cmd.followUp("This command is for bot admins only.");
         }
     },
 

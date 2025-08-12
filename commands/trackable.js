@@ -10,8 +10,6 @@ function applyContext(context={}) {
 }
 // #endregion CommandBoilerplate
 
-// TODO: Button should show who dropped it
-
 const config = require("../data/config.json");
 const { globalCensor } = require("./filter.js");
 const { inlineCode, isSudo } = require("../utils.js")
@@ -137,7 +135,8 @@ async function getTrackableEmbed(tracker, {
 	showPickUpRow=false, pickUpLocked=false, pickedUpBy="", movedOn=false,
 	isntHere=false,         // Renders as movedOn but doesn't show "was here" text
 	showBanButton=false,    // For mods
-	userForCurrentLoc=null  // Pass the interaction for guild / user access - if the user has access to the current location, we'll link it
+	userForCurrentLoc=null, // Pass the interaction for guild / user access - if the user has access to the current location, we'll link it
+	droppedBy=""
 }) {
 	// We let this function generate the entire reply so it's easier to move to components v2
 
@@ -198,6 +197,7 @@ async function getTrackableEmbed(tracker, {
 
 	// Mark old server ones as picked up
 	if (pickedUpBy) fields.push({ name: "Picked up by:", value: pickedUpBy, inline: true })
+	if (droppedBy) fields.push({ name: "Placed by:", value: droppedBy, inline: true })
 
 	// Images depending on layout
 	let description = "";
@@ -813,7 +813,8 @@ module.exports = {
 				if (cmd.channel?.isSendable()) {
 					message = await cmd.channel.send({
 						...await getTrackableEmbed(trackable, {
-							"showPickUpRow": true
+							"showPickUpRow": true,
+							"droppedBy": cmd.user.username
 						}),
 					}).catch(e => null);
 
@@ -832,16 +833,6 @@ module.exports = {
 				await trackable.save();
 
 				return;
-
-				// Lock place button - I couldn't get this working, I'm not sure if I need to defer it differently or if we only get one choice of reply.
-				// await cmd.update({
-				// 	...await getTrackableEmbed(trackable, {
-				// 		"userIdForPlace": userId,
-				// 		"lockPlace": true
-				// 	}),
-				// 	embeds: undefined // Don't update embed content since the trackable has changed
-				// })
-				// return;
 			}
 
 			// Buttons for handling placed trackables

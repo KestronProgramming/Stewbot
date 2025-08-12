@@ -68,8 +68,6 @@ function queueCommandMetric(commandName, durationMs) {
         .timestamp(new Date())
 
     pointQueue.push(point)
-
-    console.log("New point for command", commandName, "which lasted", ms(durationMs))
 }
 
 module.exports = { initInflux, queueCommandMetric }
