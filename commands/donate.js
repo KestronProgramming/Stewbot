@@ -53,6 +53,15 @@ module.exports = {
 			  "text": "Stewbot",
 			  "icon_url": "https://stewbot.kestron.software/stewbot.jpg"
 			}
-		}],components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setLabel("Donate with Paypal").setStyle(ButtonStyle.Link).setURL("https://www.paypal.com/donate?business=kestron@kestron.software&no_recurring=0&item_name=KestronProgramming&item_number=Stewbot"))]});
+		}],components:[
+			new ActionRowBuilder()
+				.addComponents(
+					new ButtonBuilder()
+						.setLabel("Donate with Paypal")
+						.setStyle(ButtonStyle.Link)
+						.setURL("https://www.paypal.com/donate?business=kestron@kestron.software&no_recurring=0&item_name=KestronProgramming&item_number=Stewbot")
+				)
+				.toJSON()
+			]});
 	},
 };

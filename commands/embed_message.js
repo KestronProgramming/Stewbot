@@ -47,60 +47,79 @@ module.exports = {
 		applyContext(context);
 
         const user = await userByObj(cmd.user);
-		
+
+
         if (cmd.options.getString("link").toLowerCase().trim() === "primed") {
             if (!user.primedEmbed) {
                 return cmd.followUp("You don't have any primed embeds. Rightclick a message, go to Apps, and click prime_embed to set one.");
             }
-            var primer=await getPrimedEmbed(cmd.user.id,cmd.guild?.id);
+            var primer = await getPrimedEmbed(cmd.user.id, cmd.guild?.id);
             cmd.followUp({
-                "content":`-# Embedded primed message. Use the context menu command \`/prime_embed\` and type \`PRIMED\` into ${cmds.embed_message.mention} to do the same.`,
-                embeds:[primer],
-                files: primer.title==="Blocked"
+                // @ts-ignore
+                content: `-# Embedded primed message. Use the context menu command \`/prime_embed\` and type \`PRIMED\` into ${cmds.embed_message.mention} to do the same.`,
+                embeds: [primer],
+                files: primer.data.title === "Blocked"
                     ? []
                     : user.primedEmbed.attachmentURLs
-                });
+            });
         }
         else {
             try {
                 let slashes = cmd.options.getString("link").split("channels/")[1].split("/");
                 let embs = [];
+                let fils = [];
+                
                 try {
-                    var channelLinked = await client.channels.cache.get(slashes[slashes.length - 2]);
+                    // @ts-ignore
+                    const failedMessage = `Failed to embed message. Try opening the context menu (holding down on mobile, right clicking on desktop) and pressing Apps -> prime_embed, then use ${cmds.embed_message.mention} and type **PRIMED** into it. If I'm not in the server you want to embed a message from, you can use me anywhere by pressing my profile, then Add App, then Use it Everywhere.`;
+
+                    var channelLinked = await client.channels.fetch(slashes[slashes.length - 2]).catch(e => null);
+
+                    if (!channelLinked || !("messages" in channelLinked)) {
+                        return cmd.followUp(failedMessage);
+                    }
+
                     var mes = await channelLinked.messages.fetch(slashes[slashes.length - 1]);
+
+                    let channelName = "";
+                    if (mes.guild?.name && ("name" in mes.channel)) channelName = mes.guild.name + " / " + mes.channel.name;
+                    if (mes.channel.isDMBased()) channelName = `DM with ${client.user.username}`
+
                     if (
                         (await checkDirty(cmd.guild?.id, mes.content, false, true)) ||
                         (await checkDirty(
                             cmd.guild?.id,
-                            mes.author.nickname || mes.author.globalName || mes.author.username, 
+                            mes.author.globalName || mes.author.username, 
                             false, true)) ||
                         (await checkDirty(cmd.guild?.id, mes.guild.name, false, true)) ||
-                        (await checkDirty(cmd.guild?.id, mes.channel.name, false, true))
+                        (await checkDirty(cmd.guild?.id, channelName, false, true))
                     ) {
                         cmd.followUp(
                             `I'm sorry, I am unable to embed that message due to its content.`
                         );
                         return;
                     }
+
                     let messEmbed = new EmbedBuilder()
                         .setColor("#006400")
                         .setTitle("(Jump to message)")
                         .setURL(cmd.options.getString("link"))
                         .setAuthor({
-                            name: mes.author.nickname||mes.author.globalName||mes.author.username,
+                            name: mes.author.globalName||mes.author.username,
                             iconURL: "" + mes.author.displayAvatarURL(),
                             url: "https://discord.com/users/" + mes.author.id,
                         })
                         .setDescription(mes.content||null)
                         .setTimestamp(new Date(mes.createdTimestamp))
                         .setFooter({
-                            text: mes.guild?.name?mes.guild.name + " / " + mes.channel.name:`DM with ${client.user.username}`,
+                            text: channelName,
                             iconURL: mes.guild.iconURL(),
                         });
+
                     var attachedImg=false;
                     mes.attachments.forEach((attached,i) => {
                         let url = attached.url;
-                        if(attachedImg||!(/(png|jpe?g)/i.test(url))){
+                        if(attachedImg||!(/(png|jpe?g)/i.test(url))){ // TODO: increase embeded attachment types
                             fils.push(url);
                         }
                         else{
@@ -108,17 +127,25 @@ module.exports = {
                             attachedImg=true;
                         }
                     });
-                    if(channelLinked?.permissionsFor(cmd.user.id)?.has(PermissionFlagsBits.ViewChannel)){
+
+                    if (("permissionsFor" in channelLinked) && channelLinked.permissionsFor(cmd.user.id)?.has(PermissionFlagsBits.ViewChannel)) {
                         embs.push(messEmbed);
                     }
-                    cmd.followUp({content:embs.length>0?`-# Embedded linked message`:`Failed to embed message. Try opening the context menu (holding down on mobile, right clicking on desktop) and pressing Apps -> prime_embed, then use ${cmds.embed_message.mention} and type **PRIMED** into it. If I'm not in the server you want to embed a message from, you can use me anywhere by pressing my profile, then Add App, then Use it Everywhere.`,embeds:embs});
+
+                    return cmd.followUp({
+                        content:
+                            embs.length > 0
+                                ? `-# Embedded linked message`
+                                : failedMessage,
+                        embeds: embs
+                    });
                 }
                 catch(e){
                     console.log(e);
                     cmd.followUp(`I'm sorry, I can't access that message.`);
                 }
             }
-            catch(e){
+            catch (e) {
                 cmd.followUp(`I didn't get that. Are you sure this is a valid message link? You can get one by accessing the context menu on a message, and pressing \`Copy Message Link\`.`);
             }
         }
@@ -128,8 +155,8 @@ module.exports = {
     // Watch for discord message embeds
     /** 
      * @param {import('discord.js').Message} msg 
-     * @param {GuildDoc} guildStore 
-     * @param {GuildUserDoc} guildUserStore 
+     * @param {import("./modules/database.js").GuildDoc} guildStore 
+     * @param {import("./modules/database.js").GuildUserDoc} guildUserStore 
      * */
     async [Events.MessageCreate] (msg, context, guildStore, guildUserStore) {
 		applyContext(context);
@@ -142,14 +169,16 @@ module.exports = {
             await (async () => {
                 // Make sure we have perms to embed
                 if (
-                    !msg.channel?.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages) || 
-                    !msg.channel.permissionsFor(msg.author.id)?.has(PermissionFlagsBits.EmbedLinks)
+                    !("permissionsFor" in msg.channel) ||
+                    !msg.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages) || 
+                    !msg.channel.permissionsFor(msg.author.id).has(PermissionFlagsBits.EmbedLinks)
                 ) {
                     links = progs = [];
                     return;
                 }
 
                 // If this message has links, check if the user blocked embeds
+                // @ts-ignore
                 const user = await Users.findOrCreate({ id: msg.author.id })
                     .select("config.embedPreviews")
                     .lean({ virtuals: true });
@@ -173,18 +202,24 @@ module.exports = {
             })()
         }
 
-        var embs=[];
-        var fils=[];
+        var embs = [];
+        var fils = [];
         for(var i=0;i<links.length;i++){
             let linkIDs=links[i].split("channels/")[1].split("/");
             try{
                 var channelLinked=await client.channels.fetch(linkIDs[linkIDs.length-2]);
+                if (!("messages" in channelLinked)) return;
                 var mes=await channelLinked.messages.fetch(linkIDs[linkIDs.length-1]);
+
+                let channelName = "";
+                if (mes.guild?.name && ("name" in mes.channel)) channelName = mes.guild.name + " / " + mes.channel.name;
+                if (mes.channel.isDMBased()) channelName = `DM with ${client.user.username}`
+
                 if(
                     await checkDirty(msg.guild?.id,mes.content) ||
-                    await checkDirty(msg.guild?.id, mes.author.nickname || mes.author.globalName || mes.author.username) ||
+                    await checkDirty(msg.guild?.id || mes.author.globalName || mes.author.username) ||
                     await checkDirty(msg.guild?.id, mes.guild.name) ||
-                    await checkDirty(msg.guild?.id, mes.channel.name)
+                    await checkDirty(msg.guild?.id, channelName)
                 ){
                     embs.push(
                         new EmbedBuilder()
@@ -197,34 +232,38 @@ module.exports = {
                     );
                     continue;
                 }
+
                 let messEmbed = new EmbedBuilder()
                     .setColor("#006400")
                     .setTitle("(Jump to message)")
                     .setURL(links[i])
                     .setAuthor({
-                        name: (await checkDirty(config.homeServer,mes.member?.nickname||mes.author.globalName||mes.author.username,true))[1],
+                        name: (await checkDirty(config.homeServer, mes.member?.nickname || mes.author.globalName || mes.author.username, true))[1],
                         iconURL: "" + mes.author.displayAvatarURL(),
                         url: "https://discord.com/users/" + mes.author.id,
                     })
-                    .setDescription((await checkDirty(config.homeServer,mes.content,true))[1]||null)
+                    .setDescription((await checkDirty(config.homeServer, mes.content, true))[1] || null)
                     .setTimestamp(new Date(mes.createdTimestamp))
                     .setFooter({
-                        text: mes.guild?.name?mes.guild.name + " / " + mes.channel.name:`DM with ${client.user.username}`,
+                        text: channelName,
                         iconURL: mes.guild.iconURL(),
                     });
-                var attachedImg=false;
-                mes.attachments.forEach((attached,i) => {
+
+                var attachedImg = false;
+                mes.attachments.forEach((attached, i) => {
                     let url = attached.url;
-                    if(attachedImg||!(/(png|jpe?g)/i.test(url))){
+                    if (attachedImg || !(/(png|jpe?g)/i.test(url))) {
                         fils.push(url);
                     }
-                    else{
+                    else {
                         messEmbed.setImage(url);
-                        attachedImg=true;
+                        attachedImg = true;
                     }
                 });
-                await channelLinked.guild.members.fetch(msg.author.id);
-                if(channelLinked.permissionsFor(msg.author.id)?.has(PermissionFlagsBits.ViewChannel)){
+
+                if ("guild" in channelLinked) await channelLinked.guild.members.fetch(msg.author.id);
+
+                if (("permissionsFor" in channelLinked) && channelLinked.permissionsFor(msg.author.id)?.has(PermissionFlagsBits.ViewChannel)) {
                     embs.push(messEmbed);
                 }
             }
@@ -234,8 +273,13 @@ module.exports = {
         }
 
         var progsDeleted = false;
-        if(embs.length>0){
-            msg.reply({content:`-# Embedded linked message${embs.length>1?"s":""}. You can prevent this behavior by surrounding message links in \`<\` and \`>\`.`,embeds:embs,files:fils,allowedMentions:{parse:[]}});
+        if (embs.length > 0) {
+            msg.reply({
+                content: `-# Embedded linked message${embs.length > 1 ? "s" : ""}. You can prevent this behavior by surrounding message links in \`<\` and \`>\`.`,
+                embeds: embs,
+                files: fils,
+                allowedMentions: { parse: [] }
+            });
         }
 
         // #region KA Embeds

@@ -49,14 +49,14 @@ module.exports = {
 		const privateBuffer = cmd.options.getBoolean("private") ? 0 : 1;
 		const requestedNum = cmd.options.getInteger("amount");
 		let numToDelete = requestedNum + privateBuffer;
-		let dateLimited = false; // JANKY: Store truthy original number of messages if more than we can do was requested 
+		let dateLimited = 0; // 0 for not limited, -1 for error, 1 for limited.
 		
 		// Try flat out doing it (instead of fetching first, that could eat a ton of ram if there are a lot of messages)
 		try {
 			await cmd.channel.bulkDelete(numToDelete);
 		} catch {
 			// Fetch how many messages there were (verify under the given limit) there were in the past 14 days
-			dateLimited = true;
+			dateLimited = 1;
 			const messages = await cmd.channel.messages.fetch({ limit: numToDelete });
 			const twoWeeksAgo = Date.now() - 12096e5; // 14 days in ms
 			numToDelete = messages.filter(msg => msg.createdTimestamp >= twoWeeksAgo).size;
@@ -64,7 +64,7 @@ module.exports = {
 				await cmd.channel.bulkDelete(numToDelete);
 			} catch(e) {
 				notify(`Error bulk deleting: ${e.stack}`)
-				dateLimited = -1 // idk, this is a good open place to note we had an error
+				dateLimited = -1;
 			}
 		}
 
@@ -73,6 +73,7 @@ module.exports = {
 			response += `\nPlease note, I couldn't delete the full requested ${requestedNum} because some are older than two weeks.`
 		}
 		if (dateLimited === -1) {
+			// @ts-ignore
 			response = `My apologies, an unknown error was encountered. This error has been reported, feel free to use ${cmds.report_problem.mention} to report additional details.`
 		}
 

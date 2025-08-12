@@ -2,9 +2,9 @@
 const Categories = require("./modules/Categories");
 const client = require("../client.js");
 const { Guilds, Users, guildByID, userByID, guildByObj, userByObj } = require("./modules/database.js")
-const { ContextMenuCommandBuilder, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType, AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType } = require("discord.js");
+const { ContextMenuCommandBuilder, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType, AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType, Embed } = require("discord.js");
 function applyContext(context = {}) {
-	for (key in context) {
+	for (let key in context) {
 		this[key] = context[key];
 	}
 }
@@ -14,10 +14,11 @@ function applyContext(context = {}) {
 const config = require("../data/config.json");
 const { checkDirty } = require("./filter");
 
+/** @returns {Promise<EmbedBuilder>} */
 async function getPrimedEmbed(userId, guildIn){
 	const user = await userByID(userId);
 
-	var mes=user.primedEmbed;
+	let mes=user.primedEmbed;
 	if(await checkDirty(guildIn,mes.content)||await checkDirty(guildIn,mes.author.name)||await checkDirty(guildIn,mes.server.name)||await checkDirty(guildIn,mes.server.channelName)){
 		return {
 			"type": "rich",
@@ -26,7 +27,7 @@ async function getPrimedEmbed(userId, guildIn){
 			"color": 0xff0000
 		  };
 	}
-	var emb=new EmbedBuilder()
+	let emb=new EmbedBuilder()
 		.setColor("#006400")
 		.setAuthor({
 			name: mes.author.name,

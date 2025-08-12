@@ -50,7 +50,7 @@ module.exports = {
 		},
 	},
 
-    /** @param {import('discord.js').ContextMenuCommandInteraction} cmd */
+    /** @param {import('discord.js').MessageContextMenuCommandInteraction} cmd */
     async execute(cmd, context) {
 		applyContext(context);
 
@@ -82,7 +82,7 @@ module.exports = {
 
 		return cmd.followUp({ 
 			content: msg,
-			components: [ new ActionRowBuilder().addComponents(confirm) ],
+			components: [ new ActionRowBuilder().addComponents(confirm).toJSON() ],
 			ephemeral: true
 		});
 	},
