@@ -623,11 +623,13 @@ module.exports = {
 
     /** 
      * @param {import('discord.js').Message} msg 
-     * @param {GuildDoc} guildStore 
-     * @param {GuildUserDoc} guildUserStore 
+     * @param {import("./modules/database.js").GuildDoc} guildStore 
+     * @param {import("./modules/database.js").GuildUserDoc} guildUserStore 
      * */
     async [Events.MessageCreate] (msg, globals, guildStore, guildUserStore) {
         applyContext(globals);
+
+        if (!("send" in msg.channel)) return;
 
         if (!msg.mentions.users.has(client.user.id)) return; // If the bot wasn't pinged
 
@@ -641,9 +643,9 @@ module.exports = {
             const botSettings = await ConfigDB.findOne().lean();
 
             // Check for available servers before sending typing indicator
-            let ollamaInstances = null;
-            if (!botSettings.useGlobalGemini) ollamaInstances = await getAvailableOllamaServers();
-            if (!botSettings.useGlobalGemini && ollamaInstances?.length === 0) return; // Don't send typing if no ollama servers and not using gemini
+            // let ollamaInstances = null;
+            // if (!botSettings.useGlobalGemini) ollamaInstances = await getAvailableOllamaServers();
+            // if (!botSettings.useGlobalGemini && ollamaInstances?.length === 0) return; // Don't send typing if no ollama servers and not using gemini
             
             // Check if this user is allowed to message again
             if(activeAIRequests.has(msg.author.id)) {
@@ -651,7 +653,7 @@ module.exports = {
                 return;
             }
 
-            msg.channel.sendTyping();
+            if ("sendTyping" in msg.channel) msg.channel.sendTyping();
             activeAIRequests.set(msg.author.id, true) // Don't allow this user to send another request until this one finishes
 
             let message = await postprocessUserMessage(msg.content, msg.guild);
@@ -664,15 +666,16 @@ module.exports = {
                     server: msg.guild ? msg.guild.name : "Direct Messages",
                 }, notify, 0);
             } else {
-                [response, success] = await getAiResponseOllama(threadID, message, false, { // Disable thinking on replies for now. Consider setting to null later to default to last
-                    name: msg.author.username,
-                    server: msg.guild ? msg.guild.name : "Direct Messages",
-                }, notify, 0, ollamaInstances);
+                return; // Disable for now
+                // [response, success] = await getAiResponseOllama(threadID, message, false, { // Disable thinking on replies for now. Consider setting to null later to default to last
+                //     name: msg.author.username,
+                //     server: msg.guild ? msg.guild.name : "Direct Messages",
+                // }, notify, 0, ollamaInstances);
             }
 
 
             if (success) { // Only reply if it worked, don't send error codes in reply to replies
-                let stillExists = true; // Message could have been deleted/filtered since sending
+                let stillExists; // Message could have been deleted/filtered since sending
                 try {
                     stillExists = await msg.channel.messages.fetch(msg.id)
                 } catch {
@@ -725,7 +728,7 @@ module.exports = {
 
                 }
 
-                activeAIRequests.del(msg.author.id, true);
+                activeAIRequests.del(msg.author.id);
 
                 // if (response) msg.reply({
                 //     content: await postprocessAIMessage(response, msg.guild),

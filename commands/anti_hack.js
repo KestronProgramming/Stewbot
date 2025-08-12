@@ -19,6 +19,8 @@ const ms = require("ms");
 const cache = {};
 
 module.exports = {
+    antiHackCache: cache,
+
     data: {
         command: new SlashCommandBuilder()
             .setContexts(
@@ -214,7 +216,7 @@ module.exports = {
                                     }
                                     
                                     // Finally, delete this current trigger message
-                                    msg.delete()
+                                    msg.delete().catch(e=>{});
                                     
                                     // Since they are deleted, now ignore them
                                     cache[msg.guild.id].users[msg.author.id].lastMessages = []
@@ -307,7 +309,7 @@ module.exports = {
                 var target=cmd.guild.members.cache.get(cmd.customId.split("-")[1]);
                 if(target){
                     target.ban({reason:`Detected high spam activity with high profile pings and/or a URL, was instructed to ban by ${cmd.user.username}.`});
-                    cmd.message.delete();
+                    cmd.message.delete().catch(e=>{});
                 }
                 else{
                     cmd.reply({content:`I was unable to find the target in question.`,ephemeral:true});
@@ -327,7 +329,7 @@ module.exports = {
                                     cmd.customId.split("-")[1]
                                 ].lastMessages[i].split("/")[1]
                             );
-                            badMess.delete().catch(e => { console.log(e) });
+                            badMess.delete().catch(e=>{});
                             cache[cmd.guild.id].users[cmd.customId.split("-")[1]].lastMessages.splice(i, 1);
                             i--;
                         }
@@ -350,7 +352,7 @@ module.exports = {
                     });
 
                     target.timeout(null);
-                    cmd.message.delete();
+                    cmd.message.delete().catch(e=>{});;
                 }
                 else{
                     cmd.reply({content:`I was unable to find the target in question.`,ephemeral:true});
@@ -368,7 +370,7 @@ module.exports = {
                     target.kick(`Detected high spam activity with high profile pings and/or a URL, was instructed to kick by ${cmd.user.username}.`);
                     // await cmd.reply({content:`Done. Do you wish to delete the messages in question as well?`,components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId("del-"+target.id).setLabel("Yes").setStyle(ButtonStyle.Success))],ephemeral:true});
                     await cmd.reply({content:`Attempted to kick.`, ephemeral:true});
-                    cmd.message.delete();
+                    cmd.message.delete().catch(e=>{});;
                 }
                 else{
                     cmd.reply({content:`I was unable to find the target in question.`,ephemeral:true});
@@ -427,7 +429,7 @@ module.exports = {
                     catch(e){console.log(e)}
                 }
                 await cmd.reply({content:`Done.`,ephemeral:true});
-                cmd.message.delete();
+                cmd.message.delete().catch(e=>{});;
             }
             else{
                 cmd.reply({content:`You do not have sufficient permissions to delete messages.`,ephemeral:true});

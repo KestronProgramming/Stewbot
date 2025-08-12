@@ -661,11 +661,12 @@ module.exports = {
 					return cmd.followUp(
 						trackableId 
 							? `I didn't find any trackables with that ID!`
-
-							: `You don't have a trackable!` +
+							: textAsEmbed(
+								`You don't have a trackable!` +
 								`\n`+
 								// @ts-ignore
-								`Try finding one in your servers, create your own with ${cmds.trackable.create.mention}, or check [#find-a-trackable](<${config.invite}>).`,
+								`Create your own with ${cmds.trackable.create.mention}, find others in your servers, or check [#find-a-trackable](<${config.invite}>).`
+							),
 					);
 				}
 
@@ -1058,7 +1059,7 @@ module.exports = {
 						// Notify us
 						trackablesNotices.send({
 							...await getTrackableEditor(trackableData, true),
-							content:`${cmd.user.id} made a new trackable.`,
+							content:`<@${cmd.user.id}> made a new trackable.`,
 						});
 					}
 				}

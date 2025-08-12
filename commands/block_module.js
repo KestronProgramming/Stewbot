@@ -52,6 +52,7 @@ function getCommandPaths(cmds, includeAllModules) {
 
 function getCommandFromPath(cmdPath) {
     var [commandName, subcommandName] = cmdPath.split(" ");
+    // @ts-ignore
     var command = cmds[commandName];
     if (subcommandName) {
         command = command[subcommandName];
@@ -61,6 +62,7 @@ function getCommandFromPath(cmdPath) {
 
 function getCommandBlockMessageFromPath(cmdPath) { // Subcommands make this hard to use the other function for
     var [commandName, subcommandName] = cmdPath.split(" ");
+    // @ts-ignore
     var command = commands[commandName];
     let help = command?.data?.help;
     if (subcommandName) {
@@ -86,6 +88,7 @@ function isModuleBlocked(listener, guild, globalGuild, isAdmin) {
         guildBlocklist = guildBlocklist.map(blockCommand => blockCommand.replace(/^\//, '')) // Backwards compatibility with block_command which had a leading /
         if (guildBlocklist.includes(name) || guildBlocklist.includes(commandPath)) {
             let err = "This command has been blocked by this server.";
+            // @ts-ignore
             if (isAdmin) err += `\nYou can use ${cmds.block_module.mention} to unblock it.`;
             return [ true, err ];
         }
@@ -167,6 +170,7 @@ module.exports = {
 
         const guild = await guildByObj(cmd.guild);
 
+        // @ts-ignore
         const allCommands = getCommandPaths(cmds, true);
         const commandToBlock = cmd.options.getString("command")
         const unblock = cmd.options.getBoolean("unblock")
@@ -204,11 +208,13 @@ module.exports = {
 	},
 
 	async autocomplete(cmd) {
+        // @ts-ignore
 		let   allCommands = getCommandPaths(cmds, true);
         const userInput = cmd.options.getFocused() || "";
 
         // Get the top matching results
         if (userInput) {
+            // @ts-ignore
             const fuse = new Fuse(allCommands.map(item => ({ item })), fuseOptions);            
             const scoredResults = fuse.search(userInput)
                 .filter(result => result.score <= 3.5) // Very roughly similar-ish
@@ -220,7 +226,7 @@ module.exports = {
         allCommands = allCommands.slice(0, 25)
 
         // Format for discord
-        autocompletes = []
+        let autocompletes = []
         for (let commandPath of allCommands) {
             autocompletes.push({
                 name: commandPath,

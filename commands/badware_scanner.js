@@ -322,6 +322,8 @@ module.exports = {
             const sendable = msg.channel.isSendable();
             const reactable = ("permissionsFor" in msg.channel) && msg.channel.permissionsFor(client.user).has(PermissionFlagsBits.AddReactions);
 
+            if (!sendable && !reactable) return;
+
             
             // Check domain
             if (msg.guild && !(guild.config.domain_scanning === false)) {
@@ -349,7 +351,7 @@ module.exports = {
             if (msg.guild && !(guild.config.fake_link_check === false)) {
                 const fakeLink = detectMismatchedDomains(msg.content);
                 if (fakeLink) {
-                    if (msg.channel.permissionsFor(client.user).has(PermissionFlagsBits.SendMessages)) {
+                    if (sendable) {
                         return await msg.reply({
                             content:
                                 `## :warning: WARNING :warning:\n` +
@@ -358,7 +360,7 @@ module.exports = {
                                 `-# If you need to disable this feature, run ${"`/badware_scanner fake_link_check:false`"}`,
                             allowedMentions:{parse:[]}
                         })
-                    } else if (msg.channel.permissionsFor(client.user).has(PermissionFlagsBits.AddReactions)) {
+                    } else if (reactable) {
                         // await msg.react('🛑');
                         await msg.react('⚠️');
                         return await msg.react(scamEmoji);
@@ -378,9 +380,12 @@ module.exports = {
                 
                     if (needsStripping) {
                         // If we have permission to delete
-                        if (msg.channel.permissionsFor(client.user).has(PermissionFlagsBits.ManageMessages) 
-                            && msg.channel.permissionsFor(client.user).has(PermissionFlagsBits.AttachFiles)
-                            && msg.channel.permissionsFor(client.user).has(PermissionFlagsBits.SendMessages)) {
+                        if (
+                            sendable && 
+                            ("permissionsFor" in msg.channel) &&
+                            msg.channel.permissionsFor(client.user).has(PermissionFlagsBits.ManageMessages) &&
+                            msg.channel.permissionsFor(client.user).has(PermissionFlagsBits.AttachFiles)
+                        ) {
                             
                             let cleanedAttachments = [];
                             let tooLargeAttachments = [];
@@ -433,6 +438,7 @@ module.exports = {
 
                             let message = 
                                 `<@${msg.author.id}> your attachments contained sensitive data (e.g. the GPS/location the photo was taken), I have cleaned them and reuploaded your attachments.\n` +
+                                // @ts-ignore
                                 `-# You can prevent this feature by running ${cmds.personal_config.mention}\n`;
                             
                             // Add warning about files that were too large
@@ -463,6 +469,7 @@ module.exports = {
                                         `These filetypes can contain data (e.g., the GPS/location the photo was taken). I suggest deleting your message and converting to a more standard format.\n` +
                                         `\n` +
                                         `I tried to clean them myself, but do not have sufficient permissions in the server (\`Manage_Messages\`).\n` +
+                                        // @ts-ignore
                                         `-# You can prevent this feature by running ${cmds.personal_config.mention}`
                             });
                         }

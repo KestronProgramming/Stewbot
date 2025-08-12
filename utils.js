@@ -30,11 +30,13 @@ function escapeBackticks(text) {
 
 async function notify(what, useWebhook = false) {
     // Notify the staff of the Kestron Support server
-
-    console.log(what);
     try {
+        console.log(what);
         if (useWebhook) {
-            fetch(String(process.env.beta ? process.env.betaWebhook : process.env.logWebhook), {
+            const webhook = process.env.beta ? process.env.betaWebhook : process.env.logWebhook;
+            if (!webhook) return
+
+            await fetch(webhook, {
                 'method': 'POST',
                 'headers': {
                     "Content-Type": "application/json"
@@ -49,15 +51,15 @@ async function notify(what, useWebhook = false) {
             try {
                 let channelId = process.env.beta ? config.betaNoticeChannel : config.noticeChannel;
                 const channel = await client.channels.fetch(channelId);
-                // @ts-ignore
-                channel?.send(limitLength(what));
+                if (!channel || !("send" in channel)) return;
+                channel.send(limitLength(what));
             } catch (e) {
                 console.log("Couldn't send notify, retrying with webhook");
                 notify(what, true);
             }
         }
     } catch (e) {
-        console.log("Couldn't send notify");
+        // Nothing should happen here, do not pass up this error to higher handlers, etc.
     }
 }
 

@@ -27,6 +27,7 @@ function getEmojiData(emoji) {
 	return {url, emojiName};
 }
 
+/** @returns {Promise<[boolean, String]>} */
 async function uploadEmoji(url, name, guild) {
 	// returns [success, message]
 	// We'll do the emoji count checking here
@@ -138,6 +139,7 @@ module.exports = {
 						primedName: success ? emojiName || "unnamed" : ""
 					})
 
+					// @ts-ignore
 					if (success) cmd.followUp({ content:`Emoji primed. Use it in a server with ${cmds.clone_emoji.mention}` });
 					break;
 

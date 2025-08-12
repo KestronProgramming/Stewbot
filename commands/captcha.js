@@ -1,7 +1,7 @@
 // #region CommandBoilerplate
 const Categories = require("./modules/Categories");
 const client = require("../client.js");
-const { Guilds, Users, guildByID, userByID, guildByObj, userByObj } = require("./modules/database.js")
+const { Guilds, Users, guildByID, userByID, guildByObj, userByObj, GuildUsers } = require("./modules/database.js")
 const { ContextMenuCommandBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
 function applyContext(context={}) {
 	for (let key in context) {
@@ -10,6 +10,8 @@ function applyContext(context={}) {
 }
 
 // #endregion CommandBoilerplate
+
+const { antiHackCache } = require("./anti_hack");
 
 const captchaButtons = [
     new ActionRowBuilder().addComponents(
@@ -32,7 +34,7 @@ const captchaButtons = [
         new ButtonBuilder().setCustomId("captcha-0").setLabel("0").setStyle(ButtonStyle.Primary),
         new ButtonBuilder().setCustomId("captcha-done").setEmoji("✅").setStyle(ButtonStyle.Success)
     ),
-];
+].map(r=>r.toJSON());
 
 module.exports = {
 	data: {
@@ -61,7 +63,10 @@ module.exports = {
 		for(var ca=0;ca<5;ca++){
 			captcha+=Math.floor(Math.random()*10);
 		}
-		cmd.followUp({content:`Please enter the following: \`${captcha}\`\n\nEntered: \`\``,components:captchaButtons});
+		cmd.followUp({
+			content:`Please enter the following: \`${captcha}\`\n\nEntered: `,
+			components: captchaButtons
+		});
 	},
 
 	subscribedButtons: [/captcha-.*/],
@@ -70,51 +75,61 @@ module.exports = {
     async onbutton(cmd, context) {
 		applyContext(context);
 
-		if(cmd.customId?.startsWith("captcha-")){
-			var action=cmd.customId.split("captcha-")[1];
-			if(action==="done"){
-				if(cmd.message.content.split("Entered: ")[1].replaceAll("`","")===cmd.message.content.split("`")[1]){
-					cmd.update({content:`Thank you.`,components:[]});
-					
+		if (cmd.customId?.startsWith("captcha-")) {
+			var action = cmd.customId.split("captcha-")[1];
+			if (action === "done") {
+				if (cmd.message.content.split("Entered: ")[1].replaceAll("`", "") === cmd.message.content.split("`")[1]) {
+					cmd.update({ content: `Thank you.`, components: [] });
+
 					const user = await userByObj(cmd.user);
 
-					// TODO_DB look into this
-					user.captcha=false;
-					user.lastHash="";
-					user.hashStreak=0;
-					
-					for(var to=0;to<user.timedOutIn.length;to++){
-						try{
-							client.guilds.fetch(user.timedOutIn[to]).then(guild=>{
-								guild.members.fetch().then(members=>{
-									members.forEach(m=>{
-										if(m.id===cmd.user.id){
+					user.captcha = false;
+
+					antiHackCache[user.id].lastHash = "";
+					antiHackCache[user.id].hashStreak = 0;
+
+					for (var to = 0; to < user.timedOutIn.length; to++) {
+						try {
+							// TODO: uh, can we just fetch them directly rather than all members
+							client.guilds.fetch(user.timedOutIn[to]).then(guild => {
+								guild.members.fetch().then(members => {
+									members.forEach(m => {
+										if (m.id === cmd.user.id) {
 											m.timeout(null);
-											user.safeTimestamp=new Date();
+											GuildUsers.updateOne(
+												{ id: user.id },
+												{ $set: { "safeTimestamp": Date() } }
+											);
 										}
 									});
 								});
 							});
-						}catch(e){console.log(e)}
-						user.timedOutIn.splice(to,1);
+						} catch (e) { console.log(e); }
+						user.timedOutIn.splice(to, 1);
 						to--;
 					}
 
 					user.save();
 				}
-				else{
+				else {
 					cmd.message.delete();
 				}
 			}
-			else if(action==="back"){
-				var inp=cmd.message.content.split("Entered: ")[1].replaceAll("`","");
-				if(inp.length>0){
-					inp=inp.slice(0,inp.length-1);
+			else if (action === "back") {
+				var inp = cmd.message.content.split("Entered: ")[1].replaceAll("`", "");
+				if (inp.length > 0) {
+					inp = inp.slice(0, inp.length - 1);
 				}
 				cmd.update(`${cmd.message.content.split("Entered: ")[0]}Entered: \`${inp}\``);
 			}
-			else{
-				cmd.update(`${cmd.message.content.split("Entered: ")[0]}Entered: \`${cmd.message.content.split("Entered: ")[1].replaceAll("`","")}${action}\``);
+			else {
+				let original = cmd.message.content.split("Entered: ").concat(""); // Concat another string so that [1] is defined regardless of whether anything was entered yet
+
+				cmd.update(`${
+					original[0]
+				}Entered: \`${
+					original[1].replaceAll("`", "")
+				}${action}\``);
 			}
 		}
 	}

@@ -2,7 +2,7 @@
 const Categories = require("./modules/Categories");
 const client = require("../client.js");
 const { Guilds, Users, guildByID, userByID, guildByObj, userByObj, GuildUsers } = require("./modules/database.js")
-const { ContextMenuCommandBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType, Events}=require("discord.js");
+const { ContextMenuCommandBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType, Events, EmbedType}=require("discord.js");
 function applyContext(context={}) {
 	for (let key in context) {
 		this[key] = context[key];
@@ -181,6 +181,7 @@ module.exports = {
 			return;
 		}
 		if(targetMember.id===client.user.id){
+			// @ts-ignore
 			cmd.followUp(`I cannot ban myself. I apologize for any inconveniences I may have caused. You can use ${cmds.report_problem.mention} if there's something that needs improvement.`);
 			return;
 		}
@@ -210,7 +211,7 @@ module.exports = {
 		if(cmd.options.getBoolean("private")===null||!cmd.options.getBoolean("private")){
 			try{
 				cmd.options.getUser("target").send({content:`## ${temp?`Temporarily b`:`B`}anned in ${cmd.guild.name}.${temp?`\n\nThis ban will expire <t:${Math.round((Date.now()+timer)/1000)}:R>, at <t:${Math.round((Date.now()+timer)/1000)}:f>.`:``}`,embeds:[{
-					type: "rich",
+					type: EmbedType.Rich,
 					title: (await checkDirty(config.homeServer,cmd.guild.name.slice(0, 80),true))[1],
 					description: reason ? (await checkDirty(config.homeServer,reason,true))[1]:`They did not specify a reason`,
 					color: 0xff0000,
@@ -232,7 +233,7 @@ module.exports = {
 				ends: Date.now() + timer,
 				reason: reason ? (await checkDirty(config.homeServer, reason, true))[1] : `Unspecified reason.`,
 				invoker: cmd.user.id, //If we can't unban the person at the end of the time, try to DM the one who banned them
-				private: cmd.options.getBoolean("private") !== null ? cmd.options.getBoolean("private") : false ?? false
+				private: cmd.options.getBoolean("private") ?? false
 			};
 
 			const guildDoc = await guildByObj(cmd.guild);
@@ -272,7 +273,7 @@ module.exports = {
                                 .setLabel("Unban Now")
                                 .setCustomId(`unban`)
                                 .setDisabled(true)
-                        ),
+                        ).toJSON(),
                     ],
                 });
 				finTempBan(cmd.guild.id, cmd.customId.split("-")[1],true);

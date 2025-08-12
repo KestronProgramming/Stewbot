@@ -2,7 +2,7 @@
 const Categories = require("./modules/Categories");
 const client = require("../client.js");
 const { Guilds, Users, guildByID, userByID, guildByObj, userByObj } = require("./modules/database.js")
-const { ContextMenuCommandBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
+const { ContextMenuCommandBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType, EmbedType}=require("discord.js");
 function applyContext(context={}) {
 	for (let key in context) {
 		this[key] = context[key];
@@ -19,13 +19,17 @@ Object.keys(bible).forEach(book=>{
     Bible[book.toLowerCase()]=bible[book];//Make everything lowercase for compatibility with sanitizing user input
 });
 
+// @ts-ignore
 const Fuse = require('fuse.js');
 const bookNames = Object.keys(Bible);
 const fuseOptions = {
     includeScore: true,
     keys: ['item']
 };
+
+
 function sortByMatch(items, text) {
+    // @ts-ignore
     const fuse = new Fuse(items.map(item => ({ item })), fuseOptions);            
     const scoredResults = fuse.search(text)
         .filter(result => result.score <= 2) // Roughly similar-ish
@@ -94,7 +98,7 @@ module.exports = {
                 }
                 else{
                     cmd.followUp({content:`${properNames[book]} ${chapter}:${verse}`,embeds:[{
-                        "type": "rich",
+                        "type": EmbedType.Rich,
                         "title": `${properNames[book]} ${chapter}:${verse}`,
                         "description": verses.join(" "),
                         "color": 0x773e09,
@@ -112,7 +116,7 @@ module.exports = {
             try{
                 if(Bible[book][chapter][+verse]!==undefined){
                     cmd.followUp({content:`${properNames[book]} ${chapter}:${verse}`,embeds:[{
-                        "type": "rich",
+                        "type": EmbedType.Rich,
                         "title": `${properNames[book]} ${chapter}:${verse}`,
                         "description": Bible[book][chapter][+verse],
                         "color": 0x773e09,
@@ -144,7 +148,7 @@ module.exports = {
         allBooks = allBooks.slice(0, 25)
 
         // Format for discord
-        autocompletes = []
+        let autocompletes = []
         for (let bookname of allBooks) {
             const suggest = capitalize(bookname)
             autocompletes.push({

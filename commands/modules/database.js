@@ -182,6 +182,7 @@ let guildSchema = new mongoose.Schema({
         match: [/^\d{5,}$/, "Error: ServerID must be digits only, and longer than 5 chars"]
     },
     guildTagRole: { type: String, default: "" },
+    guildTagRoleActive: { type: Boolean, default: false },
     emojiboards: { type: Map, of: emojiboardSchema, default: {} },
     tempBans: { type: Map, of: tempBanSchema, default: {} },
     tempSlow: { type: Map, of: tempSlowmodeSchema, default: {} },
@@ -313,6 +314,7 @@ let userSchema = new mongoose.Schema({
     hat_pull: hatPullSchema, // This one does not need defaults, it is checked for existence
     timer: timerSchema,
     captcha: Boolean,
+    
 });
 
 let trackableSchema = new mongoose.Schema({

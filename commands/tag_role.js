@@ -21,7 +21,8 @@ async function checkTagUpdate(packet) {
     const isGuildsTag = guildFromPacket == tagInUse;
 
     const guild = await guildByID(guildFromPacket);
-    if (guild.guildTagRole) {
+
+    if (guild.guildTagRole && guild.guildTagRoleActive) {
         // If the guild is set to apply tags
         
         const discordGuild = await client.guilds.fetch(guildFromPacket).catch(e => null);
@@ -103,7 +104,6 @@ You can disable the feature using the \`active\` flag.`,
 			guild.guildTagRoleActive = active;
 		}
 
-		await guild.save();
 
 		let response = [];
 		if (role) {
@@ -114,6 +114,8 @@ You can disable the feature using the \`active\` flag.`,
 		}
 
 		cmd.followUp(response.join("\n"));
+
+		await guild.save();
 	},
 
 	async [Events.Raw] (packet) {
