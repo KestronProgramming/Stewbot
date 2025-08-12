@@ -66,7 +66,7 @@ module.exports = {
             switch (cmd.options.getSubcommand()) {
 
                 case "set_id":
-                    var id_from = cmd.options.getString("id_from");
+                    var ijd_from = cmd.options.getString("id_from");
                     var id_to = cmd.options.getString("id_to");
 
                     await Trackables.updateOne(
@@ -109,7 +109,7 @@ module.exports = {
             }
         }
         else {
-            cmd.reply("This command is for bot admins only, and can only be used in mod bot commands.");
+            cmd.followUp("This command is for bot admins only, and can only be used in mod bot commands.");
         }
     },
 
