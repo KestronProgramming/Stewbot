@@ -767,7 +767,7 @@ module.exports = {
 					});
 				}
 
-				if (trackable.current !== `u${userId}`) {
+				if (trackable.current !== `u${cmd.user.id}`) {
 					return cmd.reply({
 						content: "You don't have that trackable anymore, so you can't use it.",
 						ephemeral: true
