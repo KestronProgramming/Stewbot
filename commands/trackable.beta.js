@@ -1,8 +1,3 @@
-
-
-// Link directly
-// Server inline code block
-
 // #region CommandBoilerplate
 const Categories = require("./modules/Categories.js");
 const client = require("../client.js");
@@ -89,6 +84,7 @@ const unknownNames = [
     "The Abyss",
     "Atlantis",
     "Wherever Socks Go",
+	"With the Tupperware Lids"
 ]
 
 function textAsEmbed(text) {
@@ -647,6 +643,7 @@ module.exports = {
 					...await getTrackableEmbed(tracker, {"userIdForPlace": cmd.user.id})
 				});
 			break;
+			
 			case "stats":
 				let trackableId = cmd.options.getString("id")?.trim()?.replace(/^\#/, "")?.trim();
 				
@@ -677,10 +674,12 @@ module.exports = {
 				cmd.followUp({
 					...await getTrackableEmbed(tracker, {
 						"userIdForPlace": showPlace ? cmd.user.id : "",
+						"userForCurrentLoc": true, 
 						"isntHere": true
 					})
 				});
 			break;
+			
 			case "place":
 				var trackable = await Trackables.findOne({
 					current: `u${cmd.user.id}`,
@@ -723,7 +722,7 @@ module.exports = {
 				}
 
 				trackable.current = placingToo;
-				trackable.currentName = serverName ? `A channel in \`${serverName.replaceAll("`", "'")}\`` : generateUnknownName();
+				trackable.currentName = serverName ? `A channel in \`${inlineCode(serverName)}\`` : generateUnknownName();
 				trackable.pastLocations.push(comingFrom);
 				trackable.currentGuildId = cmd.guildId;
 				trackable.placed = Date.now();

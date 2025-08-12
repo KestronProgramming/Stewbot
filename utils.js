@@ -29,7 +29,7 @@ function escapeBackticks(text) {
 }
 
 async function notify(what, useWebhook = false) {
-    //Notify the staff of the Kestron Support server
+    // Notify the staff of the Kestron Support server
 
     console.log(what);
     try {
