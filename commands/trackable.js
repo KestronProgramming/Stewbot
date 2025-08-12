@@ -103,7 +103,7 @@ function generateUnknownName() {
 }
 
 function generateExpiredText(trackable) {
-	let text = expiredText[Math.floor(Math.random() * unknownNames.length)];
+	let text = expiredText[Math.floor(Math.random() * expiredText.length)];
 	text = text.replaceAll("${name}", trackable.name);
 	return text;
 }
