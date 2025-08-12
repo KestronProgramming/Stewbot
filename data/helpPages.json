@@ -786,8 +786,8 @@
         "detailedDesc": "View specific rulesets and descriptions of what the trackable feature does"
     },
     {
-        "name": "trackable my_trackable",
-        "mention": "</trackable my_trackable:1404500688284946514>",
+        "name": "trackable create",
+        "mention": "</trackable create:1404500688284946514>",
         "helpCategories": [
             "General",
             "Entertainment",
@@ -809,7 +809,7 @@
     },
     {
         "name": "trackable view",
-        "mention": "</trackable view:1404500688284946514>",
+        "mention": "`trackable` Module",
         "helpCategories": [
             "General",
             "Entertainment",

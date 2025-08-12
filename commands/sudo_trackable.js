@@ -78,13 +78,14 @@ module.exports = {
                     break;
 
                 case "make_special":
+                    var id = cmd.options.getString("id");
                     var new_id = cmd.options.getString("new_id");
                     var new_tag = cmd.options.getString("new_tag");
                     var new_desc = cmd.options.getString("new_desc");
-                    var emoji = cmd.options.getString("emoji") || ":star2: ";
+                    var emoji = cmd.options.getString("emoji") || "🌟 ";
 
-                    var trackable = await Trackables.findOne({ id: id_to });
-                    if (!trackable) cmd.followUp("I couldn't find this trackable");
+                    var trackable = await Trackables.findOne({ id });
+                    if (!trackable) return cmd.followUp("I couldn't find this trackable");
                     trackable.color = 0xf5d400;
                     trackable.name =  `${emoji} ${trackable.name}`;
                     trackable.owner = "special";
