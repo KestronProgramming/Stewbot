@@ -148,7 +148,7 @@ module.exports = {
 
                 case "transfer":
                     var id = cmd.options.getString("id");
-                    var who = cmd.options.getRole("who");
+                    var who = cmd.options.getUser("who");
 
                     var trackable = await Trackables.findOne({ current: `u${who.id}` });
                     if (!trackable) return cmd.followUp("That user already has a trackable in their inventory.");
