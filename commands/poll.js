@@ -14,7 +14,7 @@ function applyContext(context={}) {
 const pieCols = require("../data/pieCols.json");
 const ChartDataLabels = require('chartjs-plugin-datalabels');
 const config = require("../data/config.json");
-const { checkDirty } = require("./filter");
+const { checkDirty, globalCensor } = require("./filter");
 // const Chart = require("chart.js")
 
 const { ChartJSNodeCanvas } = require('chartjs-node-canvas');
@@ -290,11 +290,15 @@ module.exports = {
 			cmd.followUp({content:"This server doesn't want me to process that prompt.","ephemeral":true});
 			return;
 		}
-		const configurationMessage = await cmd.followUp({ "content": `**${(await checkDirty(config.homeServer, cmd.options.getString("prompt"), true))[1]}**`, "ephemeral": true, "components": [new ActionRowBuilder().addComponents(
-			new ButtonBuilder().setCustomId("poll-addOption").setLabel("Add a poll option").setStyle(ButtonStyle.Primary), 
-			new ButtonBuilder().setCustomId("poll-delOption").setLabel("Remove a poll option").setStyle(ButtonStyle.Danger), 
-			new ButtonBuilder().setCustomId("poll-publish").setLabel("Publish the poll").setStyle(ButtonStyle.Success)
-		)] });
+		const configurationMessage = await cmd.followUp({ 
+			content: `**${await globalCensor(cmd.options.getString("prompt"))}**`, 
+			ephemeral: true,
+			components: [new ActionRowBuilder().addComponents(
+				new ButtonBuilder().setCustomId("poll-addOption").setLabel("Add a poll option").setStyle(ButtonStyle.Primary),
+				new ButtonBuilder().setCustomId("poll-delOption").setLabel("Remove a poll option").setStyle(ButtonStyle.Danger),
+				new ButtonBuilder().setCustomId("poll-publish").setLabel("Publish the poll").setStyle(ButtonStyle.Success)
+			).toJSON()]
+		});
 
 		pollSettingsCache.set(configurationMessage.id, {
 			labels: cmd.options.getBoolean("labels"),
@@ -462,11 +466,7 @@ module.exports = {
 					break;
 				}
 				poll.options.push(cmd.fields.getTextInputValue("poll-addedInp"));
-				cmd.update((await checkDirty(
-					config.homeServer,
-					`**${poll.title}**${poll.options.map((a,i)=>`\n${i}. ${a}`).join("")}`,
-					true
-				))[1]);
+				await globalCensor(`*${poll.title}**${poll.options.map((a,i)=>`\n${i}. ${a}`).join("")}`);
 			break;
 			
 			case 'poll-removed':

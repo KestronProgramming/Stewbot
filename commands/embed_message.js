@@ -14,7 +14,7 @@ function applyContext(context={}) {
 const { getPrimedEmbed } = require("./prime_embed.js")
 const { notify } = require("../utils");
 const config = require("../data/config.json");
-const { checkDirty } = require("./filter");
+const { checkDirty, globalCensor } = require("./filter");
 
 const kaProgramRegex =/\b(?!<)https?:\/\/(?:www\.)?khanacademy\.org\/(cs|computer-programming|hour-of-code|python-program)\/[a-z,\d,-]+\/\d+(?!>)\b/gi;
 const discordMessageRegex =/\b(?!<)https?:\/\/(ptb\.|canary\.)?discord(app)?.com\/channels\/(\@me|\d+)\/\d+\/\d+(?!>)\b/gi;
@@ -238,11 +238,11 @@ module.exports = {
                     .setTitle("(Jump to message)")
                     .setURL(links[i])
                     .setAuthor({
-                        name: (await checkDirty(config.homeServer, mes.member?.nickname || mes.author.globalName || mes.author.username, true))[1],
+                        name: await globalCensor(mes.member?.nickname || mes.author.globalName || mes.author.username),
                         iconURL: "" + mes.author.displayAvatarURL(),
                         url: "https://discord.com/users/" + mes.author.id,
                     })
-                    .setDescription((await checkDirty(config.homeServer, mes.content, true))[1] || null)
+                    .setDescription(await globalCensor(mes.content) || null)
                     .setTimestamp(new Date(mes.createdTimestamp))
                     .setFooter({
                         text: channelName,

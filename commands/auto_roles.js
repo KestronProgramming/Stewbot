@@ -13,7 +13,7 @@ function applyContext(context={}) {
 
 const { canUseRole, limitLength } = require("../utils.js");
 const config = require("../data/config.json");
-const { checkDirty } = require("./filter");
+const { globalCensor } = require("./filter");
 
 module.exports = {
 	data: {
@@ -47,13 +47,7 @@ module.exports = {
 			return;
 		}
 		cmd.followUp({
-            content: `${
-                (await checkDirty(
-                    config.homeServer,
-                    cmd.options.getString("message"),
-                    true
-                ))[1]
-            }`,
+            content: `${await globalCensor(cmd.options.getString("message"))}`,
             ephemeral: true,
 			components: [
 				new ActionRowBuilder().addComponents(

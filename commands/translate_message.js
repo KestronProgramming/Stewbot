@@ -13,7 +13,7 @@ function applyContext(context={}) {
 
 const translate = require("@vitalets/google-translate-api").translate; // Import requires, even though it's greyed out
 const { escapeBackticks } = require("../utils.js");
-const { checkDirty } = require("./filter");
+const { checkDirty, globalCensor } = require("./filter");
 
 module.exports = {
 	data: {
@@ -44,7 +44,7 @@ module.exports = {
 		const guild = await guildByObj(cmd.guild);
 		
 		const t = await translate(cmd.targetMessage.content,{to:cmd.locale.slice(0,2)});
-		t.text = (await checkDirty(config.homeServer, t.text, true))[1];
+		t.text = await globalCensor(config.homeServer);
 		if (cmd.guildId && guild?.filter?.active) t.text = (await checkDirty(cmd.guildId, t.text, true))[1];
 		cmd.followUp(
 			`Attempted to translate${t.text !== cmd.targetMessage.content 

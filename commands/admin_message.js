@@ -13,7 +13,7 @@ function applyContext(context = {}) {
 
 const { limitLength } = require("../utils.js")
 const config = require("../data/config.json");
-const { checkDirty } = require("./filter");
+const { globalCensor } = require("./filter");
 
 module.exports = {
     data: {
@@ -64,8 +64,8 @@ module.exports = {
                 await target.send({
                     embeds: [{
                         type: EmbedType.Rich,
-                        title: (await checkDirty(config.homeServer, limitLength(cmd.guild.name, 80), true))[1],
-                        description: (await checkDirty(config.homeServer, message.replaceAll("\\n", "\n"), true))[1],
+                        title: limitLength(await globalCensor(cmd.guild.name), 80),
+                        description: await globalCensor(message.replaceAll("\\n", "\n")),
                         color: 0x006400,
                         thumbnail: {
                             url: String(cmd.guild.iconURL() || ""),
@@ -90,9 +90,9 @@ module.exports = {
         // If we're supposed to post something:
         else if (cmd.channel.permissionsFor(client.user.id)?.has(PermissionFlagsBits.ManageWebhooks)) {
             let resp = {
-                "content": (await checkDirty(config.homeServer, message.replaceAll("\\n", "\n"), true))[1],
+                "content": await globalCensor(message.replaceAll("\\n", "\n")),
                 "avatarURL": cmd.guild.iconURL() || undefined,
-                "username": (await checkDirty(config.homeServer, cmd.guild.name.slice(0, 80), true))[1]
+                "username": limitLength(await globalCensor(cmd.guild.name), 80),
             };
             // Discord server name edge case
             if (resp?.username?.toLowerCase().includes("discord")) {

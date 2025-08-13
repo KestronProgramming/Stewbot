@@ -13,7 +13,7 @@ function applyContext(context={}) {
 
 const translate = require("@vitalets/google-translate-api").translate; // Import requires, even though it's greyed out
 const { escapeBackticks } = require("../utils.js");
-const { checkDirty } = require("./filter");
+const { checkDirty, globalCensor } = require("./filter");
 
 module.exports = {
 	data: {
@@ -58,7 +58,7 @@ module.exports = {
 			cmd.followUp({ content: `I have been asked not to translate that by this server`, ephemeral: true });
 			return;
 		}
-		t.text=(await checkDirty(config.homeServer,t.text,true))[1];
+		t.text = await globalCensor(config.homeServer);
 		cmd.followUp(`Attempted to translate${t.text !== cmd.options.getString("what") ? `:\n\`\`\`\n${escapeBackticks(t.text)}\n\`\`\`\n-# If this is incorrect, try using ${cmds.translate.mention} again and specify more.` : `, but I was unable to. Try using ${cmds.translate.mention} again and specify more.`}`);
 	}
 };

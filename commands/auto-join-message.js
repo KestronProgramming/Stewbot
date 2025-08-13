@@ -12,7 +12,7 @@ function applyContext(context = {}) {
 // #endregion CommandBoilerplate
 
 const config = require("../data/config.json");
-const { checkDirty } = require("./filter");
+const { globalCensor } = require("./filter");
 
 module.exports = {
 	data: {
@@ -56,7 +56,7 @@ module.exports = {
 		guild.ajm.active = cmd.options.getBoolean("active");
 		if (cmd.options.getChannel("channel") !== null) guild.ajm.channel = cmd.options.getChannel("channel").id;
 		if (cmd.options.getString("channel_or_dm") !== null) guild.ajm.dm = cmd.options.getString("channel_or_dm") === "dm";
-		if (cmd.options.getString("message") !== null) guild.ajm.message = (await checkDirty(config.homeServer, cmd.options.getString("message"), true))[1];
+		if (cmd.options.getString("message") !== null) guild.ajm.message = await globalCensor(cmd.options.getString("message"));
 
 		var disclaimers = [];
 

@@ -14,7 +14,7 @@ function applyContext(context={}) {
 const ms = require("ms")
 const { escapeBackticks } = require("../utils.js");
 const config = require("../data/config.json");
-const { checkDirty } = require("./filter");
+const { checkDirty, globalCensor } = require("./filter");
 
 async function finTimer(userId,force){
     const user = await userByID(userId);
@@ -131,19 +131,26 @@ module.exports = {
             var resp;
             var reminder="";
             if(cmd.options.getString("reminder")!==null){
-                reminder=(await checkDirty(config.homeServer,cmd.options.getString("reminder"),true))[1];
+                reminder = await globalCensor(cmd.options.getString("reminder"));
 
                 const guild = await guildByObj(cmd.guild);
                 if(cmd.guildId&&guild?.filter.active){
-                    reminder=(await checkDirty(cmd.guildId,reminder,true))[1];
+                    reminder = (await checkDirty(cmd.guildId, reminder, true))[1];
                 }
             }
 
             if(respondHere&&!cmd.channel?.id){
                 respondHere=false;
                 resp=await cmd.followUp({
-                    content:`Alright, I have set a timer that expires <t:${Math.round((Date.now()+timer)/1000)}:R> at <t:${Math.round((Date.now()+timer)/1000)}:f>. I was asked to ping you here, but I cannot do that in this channel. I will DM you instead.${reminder.length>0?`\n\`${reminder}\``:``}`,
-                    components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setLabel("Clear Timer").setCustomId(`clearTimer-${cmd.user.id}`).setStyle(ButtonStyle.Danger))]
+                    content: `Alright, I have set a timer that expires <t:${Math.round((Date.now() + timer) / 1000)}:R> at <t:${Math.round((Date.now() + timer) / 1000)}:f>. I was asked to ping you here, but I cannot do that in this channel. I will DM you instead.${reminder.length > 0 ? `\n\`${reminder}\`` : ``}`,
+                    components: [
+                        new ActionRowBuilder().addComponents(
+                            new ButtonBuilder()
+                                .setLabel("Clear Timer")
+                                .setCustomId(`clearTimer-${cmd.user.id}`)
+                                .setStyle(ButtonStyle.Danger)
+                        ).toJSON()
+                    ]
                 });
             }
             else{

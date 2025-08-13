@@ -23,7 +23,6 @@ const { sendHook, limitLength, notify } = require("../utils.js");
 const config = require("../data/config.json");
 const LRUCache = require("lru-cache").LRUCache;
 const ms = require("ms");
-const { varDependencies } = require("mathjs");
 // var RE2 = require("re2");
 
 
@@ -174,6 +173,12 @@ const checkDirty = global.checkDirty = async function (guildID, what, filter = f
 
 // Utils for only filtering output via the home server.
 let globalServerFilterCache = new LRUCache({ ttl: ms("5m"), max: 1000 });
+
+/** This function censors output against the global filter.
+ *  All Stewbot output with user-provided content should be run through this.
+ * @param {String} text - The text to sensor.
+ * @returns {Promise<String>} A promise for the filtered text.
+ */
 async function globalCensor(text) {
     if (!config.homeServer) return text;
 

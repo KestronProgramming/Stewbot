@@ -12,7 +12,7 @@ function applyContext(context={}) {
 // #endregion CommandBoilerplate
 
 const config = require("../data/config.json");
-const { checkDirty } = require("./filter");
+const { globalCensor } = require("./filter");
 
 module.exports = {
 	data: {
@@ -61,7 +61,7 @@ module.exports = {
 		}
 
 		if (cmd.options.getString("message") !== null) 
-			guild.alm.message = (await checkDirty(config.homeServer, cmd.options.getString("message"), true))[1];
+			guild.alm.message = await globalCensor(cmd.options.getString("message"));
 		
 		await guild.save();
 		cmd.followUp(`Auto leave messages configured.${disclaimers.map(d=>`\n\n${d}`).join("")}`);
