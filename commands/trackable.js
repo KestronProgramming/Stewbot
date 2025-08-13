@@ -11,7 +11,7 @@ function applyContext(context={}) {
 // #endregion CommandBoilerplate
 
 const config = require("../data/config.json");
-const { globalCensor } = require("./filter.js");
+const { censor } = require("./filter.js");
 const { inlineCode, isSudo } = require("../utils.js")
 const ms = require("ms");
 
@@ -143,9 +143,9 @@ async function getTrackableEmbed(tracker, {
 	let { owner, id, name, img, desc, tag, color, layout } = tracker;
 
 	// Filter output
-	name = await globalCensor(name);
-	desc = await globalCensor(desc);
-	tag = await globalCensor(tag);
+	name = await censor(name);
+	desc = await censor(desc);
+	tag = await censor(tag);
 
 	let response = {};
 

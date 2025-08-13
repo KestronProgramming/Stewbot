@@ -8,11 +8,12 @@ const client = require("./client.js");
 
 // Temp value for now to avoid circular references
 let messageDataCache, Guilds, GuildUsers;
-let globalCensor = (what) => what;
+let censor = (...args) => "";
 
 // This is so jank... but we use some functions that also use us, so short of splitting out each dep into it's own function...
 setTimeout(() => {
-    globalCensor = require("./commands/filter").globalCensor;
+    // @ts-ignore
+    censor = require("./commands/filter").censor;
     // @ts-ignore
     ({ messageDataCache, Guilds, GuildUsers } = require("./commands/modules/database"));
 }, 1);
@@ -90,11 +91,11 @@ module.exports = {
         return [true, null]
     },
 
-    async sendHook(what, msg) {
+    async sendHook(what, msg, skipFilter=false) {
         if (typeof what === "string") {
             what = { "content": what }
         }
-        what.content = await globalCensor(what.content);
+        if (!skipFilter) what.content = await censor(what.content, msg.guild);
 
         // Prevent pings
         what.allowedMentions = { parse: [] };

@@ -14,7 +14,7 @@ function applyContext(context={}) {
 const pieCols = require("../data/pieCols.json");
 const ChartDataLabels = require('chartjs-plugin-datalabels');
 const config = require("../data/config.json");
-const { checkDirty, globalCensor } = require("./filter");
+const { isDirty, censor } = require("./filter");
 // const Chart = require("chart.js")
 
 const { ChartJSNodeCanvas } = require('chartjs-node-canvas');
@@ -285,13 +285,15 @@ module.exports = {
     /** @param {import('discord.js').ChatInputCommandInteraction} cmd */
     async execute(cmd, context) {
 		applyContext(context);
-
-		if(await checkDirty(cmd.guild?.id,cmd.options.getString("prompt"))){
-			cmd.followUp({content:"This server doesn't want me to process that prompt.","ephemeral":true});
+		if (await isDirty(cmd.options.getString("prompt"), cmd.guild)) {
+			cmd.followUp({
+				content: "This server doesn't want me to process that prompt.",
+				ephemeral: true
+			});
 			return;
 		}
 		const configurationMessage = await cmd.followUp({ 
-			content: `**${await globalCensor(cmd.options.getString("prompt"))}**`, 
+			content: `**${await censor(cmd.options.getString("prompt"))}**`, 
 			ephemeral: true,
 			components: [new ActionRowBuilder().addComponents(
 				new ButtonBuilder().setCustomId("poll-addOption").setLabel("Add a poll option").setStyle(ButtonStyle.Primary),
@@ -461,12 +463,12 @@ module.exports = {
 					cmd.reply({content:"It looks like you've already generated the maximum amount of options!",ephemeral:true});
 					break;
 				}
-				if(await checkDirty(cmd.guild?.id,cmd.fields.getTextInputValue("poll-addedInp"))){
+				if(await isDirty(cmd.fields.getTextInputValue("poll-addedInp"), cmd.guild)){
 					cmd.reply({ephemeral:true,content:"I have been asked not to add this option by this server"});
 					break;
 				}
 				poll.options.push(cmd.fields.getTextInputValue("poll-addedInp"));
-				await globalCensor(`*${poll.title}**${poll.options.map((a,i)=>`\n${i}. ${a}`).join("")}`);
+				await censor(`*${poll.title}**${poll.options.map((a,i)=>`\n${i}. ${a}`).join("")}`);
 			break;
 			
 			case 'poll-removed':

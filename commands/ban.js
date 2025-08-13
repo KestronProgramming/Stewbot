@@ -13,7 +13,7 @@ function applyContext(context={}) {
 
 const ms = require("ms")
 const config = require("../data/config.json");
-const { globalCensor } = require("./filter");
+const { censor } = require("./filter");
 const { limitLength } = require("../utils");
 
 async function finTempBan(guildId, who, force) {
@@ -213,8 +213,8 @@ module.exports = {
 			try{
 				cmd.options.getUser("target").send({content:`## ${temp?`Temporarily b`:`B`}anned in ${cmd.guild.name}.${temp?`\n\nThis ban will expire <t:${Math.round((Date.now()+timer)/1000)}:R>, at <t:${Math.round((Date.now()+timer)/1000)}:f>.`:``}`,embeds:[{
 					type: EmbedType.Rich,
-					title: limitLength(await globalCensor(cmd.guild.name)),
-					description: reason ? await globalCensor(reason) : `They did not specify a reason`,
+					title: limitLength(await censor(cmd.guild.name)),
+					description: reason ? await censor(reason) : `They did not specify a reason`,
 					color: 0xff0000,
 					thumbnail: {
 						url: cmd.guild.iconURL(),
@@ -232,7 +232,7 @@ module.exports = {
 		if(temp){
 			const tempBanData = {
 				ends: Date.now() + timer,
-				reason: reason ? await globalCensor(reason) : `Unspecified reason.`,
+				reason: reason ? await censor(reason) : `Unspecified reason.`,
 				invoker: cmd.user.id, //If we can't unban the person at the end of the time, try to DM the one who banned them
 				private: cmd.options.getBoolean("private") ?? false
 			};

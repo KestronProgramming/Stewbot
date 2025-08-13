@@ -19,7 +19,7 @@ const fs = require("fs");
 const { ApplicationCommandOptionType } = require("discord.js")
 const ms = require("ms");
 const NodeCache = require("node-cache");
-const { checkDirty } = require("./filter");
+const { censor } = require("./filter");
 
 const config = require("../data/config.json")
 const INTERFACES = config.aiNodeInterfaces;
@@ -610,11 +610,11 @@ module.exports = {
         }
 
 
-        response = await postprocessAIMessage(limitLength(response))
-        response = (await checkDirty(cmd.guild?.id, response, true, true))[1];
+        response = await postprocessAIMessage(limitLength(response), cmd.guild)
+        response = await censor(response, cmd.guild, true);
 
         cmd.followUp({
-            content: await postprocessAIMessage(limitLength(response), cmd.guild),
+            content: response,
             allowedMentions: { parse: [] }
         });
 
@@ -683,7 +683,7 @@ module.exports = {
                 }
 
                 response = await postprocessAIMessage(response, msg.guild);
-                response = (await checkDirty(msg.guild?.id, response, true, true))[1];
+                response = await censor(response, guildStore, true);
 
                 // Let's trim emojis as reactions
                 var emojiEnding = /[\p{Emoji}\uFE0F]$/u;

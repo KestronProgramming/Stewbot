@@ -13,7 +13,7 @@ function applyContext(context={}) {
 
 const { notify } = require("../utils");
 const config = require("../data/config.json");
-const { checkDirty } = require("./filter");
+const { isDirty } = require("./filter");
 
 module.exports = {
 	data: {
@@ -47,32 +47,25 @@ module.exports = {
             wordDefinition = wordDefinition[0];
             
             if (wordDefinition?.meanings) {
-                if(await checkDirty(cmd.guild?.id,wordDefinition.word)||await checkDirty(config.homeServer,wordDefinition.word)){
-                    cmd.followUp({content:"I am not able to provide a definition for that word.",ephemeral:true});
+                if (await isDirty(wordDefinition.word, cmd.guild, true)) {
+                    cmd.followUp({
+                        content: "I am not able to provide a definition for that word.",
+                        ephemeral: true
+                    });
                     return;
                 }
 
                 let defs = [];
                 for (var i = 0; i < wordDefinition.meanings.length; i++) {
-                    for (var j = 0;j < wordDefinition.meanings[i].definitions.length;j++) {
-                        // Check definition and example against our filter, for home and main server
+                    for (var j = 0; j < wordDefinition.meanings[i].definitions.length; j++) {
+                        // Check definition and example against our filter, for this and home server
                         let foundOne =
-                            (await checkDirty(
-                                cmd.guild?.id,
-                                wordDefinition.meanings[i].definitions[j].example,
-                                false,
-                                true
-                            )) ||
-                            (await checkDirty(
-                                cmd.guild?.id,
-                                wordDefinition.meanings[i].definitions[j].definition,
-                                false,
-                                true
-                            ))
-                        
+                            (await isDirty(wordDefinition.meanings[i].definitions[j].example, cmd.guild, true)) ||
+                            (await isDirty(wordDefinition.meanings[i].definitions[j].definition, cmd.guild, true));
+
                         defs.push({
-                            name:"Type: " +wordDefinition.meanings[i].partOfSpeech,
-                            value:foundOne?"Blocked definition":wordDefinition.meanings[i].definitions[j].definition+(wordDefinition.meanings[i].definitions[j].example?"\nExample: " +wordDefinition.meanings[i].definitions[j].example:""),
+                            name: "Type: " + wordDefinition.meanings[i].partOfSpeech,
+                            value: foundOne ? "Blocked definition" : wordDefinition.meanings[i].definitions[j].definition + (wordDefinition.meanings[i].definitions[j].example ? "\nExample: " + wordDefinition.meanings[i].definitions[j].example : ""),
                             inline: true
                         });
                     }

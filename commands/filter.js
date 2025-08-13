@@ -2,7 +2,7 @@
 const Categories = require("./modules/Categories");
 const client = require("../client.js");
 const { Guilds, Users, GuildUsers, guildByID, userByID, guildByObj, userByObj, guildUserByObj } = require("./modules/database.js");
-const { Events, ContextMenuCommandBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType, AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType, AutoModerationRuleEventType, AutoModerationRuleTriggerType, AutoModerationActionType } = require("discord.js");
+const { Events, ContextMenuCommandBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType, AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType, AutoModerationRuleEventType, AutoModerationRuleTriggerType, AutoModerationActionType, Guild, Message } = require("discord.js");
 function applyContext(context = {}) {
     for (let key in context) {
         this[key] = context[key];
@@ -25,6 +25,11 @@ const LRUCache = require("lru-cache").LRUCache;
 const ms = require("ms");
 // var RE2 = require("re2");
 
+/** 
+ * Cache for guild.filter.blacklist
+ * @type {LRUCache<string, import("./modules/database.js").RawGuildDoc['filter']>} 
+ * */
+let guildFilterCache = new LRUCache({ ttl: ms("5s"), max: 50 });
 
 // This is a function built to support regex filters, which are currently not implemented
 // function verifyRegex(regexStr) {
@@ -60,7 +65,8 @@ function defangURL(message) {
     });
 }
 
-const checkDirty = global.checkDirty = async function (guildID, what, filter = false, applyGlobalFilter = false) { // This function is important enough we can make it global
+/** @deprecated Use `censor()` or `isDirty()` instead */
+const checkDirty = async function (guildID, what, filter = false, applyGlobalFilter = false) { // This function is important enough we can make it global
     // If filter is false, it returns: hasBadWords
     // If filter is true, it returns [hadBadWords, censoredMessage, wordsFound]
     // guildID can supply an array for the blacklist instead.
@@ -171,35 +177,130 @@ const checkDirty = global.checkDirty = async function (guildID, what, filter = f
     }
 };
 
-// Utils for only filtering output via the home server.
-let globalServerFilterCache = new LRUCache({ ttl: ms("5m"), max: 1000 });
+// Gets the home server blacklist, which is always enabled.
+async function getCachedHomeBlacklist() {
+    if (!config.homeServer) return [];
 
-/** This function censors output against the global filter.
- *  All Stewbot output with user-provided content should be run through this.
- * @param {String} text - The text to sensor.
- * @returns {Promise<String>} A promise for the filtered text.
- */
-async function globalCensor(text) {
-    if (!config.homeServer) return text;
-
-    if (!globalServerFilterCache.has("blacklist")) {
+    // Cache guild
+    if (!guildFilterCache.has("home-blacklist")) {
         const globalGuild = await Guilds.findOne({ id: config.homeServer })
-            .select("filter.blacklist");
+            .select("filter.blacklist")
+            .lean({ defaults: true });
 
-        globalServerFilterCache.set("blacklist", globalGuild.filter.blacklist);
-
+        guildFilterCache.set("home-blacklist", globalGuild.filter, {
+            "ttl": ms("5m") // Our guild won't change often, so.
+        });
     }
 
-    const filter = globalServerFilterCache.get("blacklist");
-    const filtered = await checkDirty(filter, text, true);
+    const blacklist = guildFilterCache.get("home-blacklist").blacklist;
 
-    if (!filtered[0]) return text;
-    else return filtered[1];
+    return blacklist;
 }
 
+/** @param {String|Guild|import("./modules/database.js").RawGuildDoc} guild */
+async function getCachedServerBlacklist(guild) {
+    // Resolve Guild to id
+    if (guild instanceof Guild) {
+        guild = guild.id;
+    }
+
+    // Populate cache
+    let guildId;
+    if (typeof (guild) == "string") {
+        guildId = guild;
+
+        // Confirm in cache
+        if (!guildFilterCache.has(guildId)) {
+            const globalGuild = await Guilds.findOne({ id: guildId })
+                .select("filter.blacklist")
+                .lean({ defaults: true });
+
+            guildFilterCache.set(guildId, globalGuild.filter);
+        }
+    } else /** It's a mongo object */ {
+        // Set directly
+        guildId = guild.id;
+        guildFilterCache.set(guildId, guild.filter);
+    }
+
+    // Set blacklist
+    const thisServerFilter = guildFilterCache.get(guildId);
+    return thisServerFilter.blacklist;
+}
+
+/** 
+ * This function censors output against the specified server and the home server.
+ * 
+ * @param {String} text - The text to censor.
+ * @param {String|Guild|import("./modules/database.js").RawGuildDoc} guild - The guild as a MongoDB object, guild ID, or discord.js object. A MongoDB object is preferable, as it requires less lookups.
+ * @param {boolean} [global=false] Whether to apply the home server filter. This should be applied to all output that looks like it is coming from stewbot, e.g. AI.
+ * 
+ * @returns {Promise<[ Boolean, String, String[] ]>} A promise for the filtered text and found words.
+ */
+async function censorWithFound(text, guild, global=false) {
+    // Start off blacklist with our baseline
+    let blacklist = global ? await getCachedHomeBlacklist() : [];
+
+    // Add server filter
+    if (guild) blacklist = blacklist.concat(await getCachedServerBlacklist(guild));
+
+    // @ts-ignore
+    const [wasFiltered, censoredText, foundWords ] = await checkDirty(blacklist, text, true);
+
+    if (!wasFiltered) return [ false, text, [] ];
+    else return [ wasFiltered, censoredText, foundWords ];
+}
+
+/** 
+ * This function censors output against the specified server and the home server.
+ * Providing just text will result in checking against the home server.
+ * 
+ * @param {String} text - The text to censor.
+ * @param {String|Guild|import("./modules/database.js").RawGuildDoc?} guild - The guild as a MongoDB object, guild ID, or discord.js object. A MongoDB object is preferable, as it requires less lookups.
+ * @param {boolean?} [global] Whether to apply the home server filter. This should be applied to all output that looks like it is coming from stewbot, e.g. AI.
+ * 
+ * @returns {Promise<String>} A promise for the filtered text.
+ */
+async function censor(text, guild=undefined, global=false) {
+    // If only text is provided, assume we're checking globally
+    if (!guild) global = true;
+
+    const [ wasFiltered, censoredText, foundWords ] = await censorWithFound(text, guild, global);
+    return censoredText;
+}
+
+/** 
+ * This function checks text against the specified server and the home server.
+ * Call without arguments to check against home server.
+ * 
+ * @param {String} text - The text to sensor.
+ * @param {String|Guild|import("./modules/database.js").RawGuildDoc?} guild - The guild as a MongoDB object, guild ID, or discord.js object. A MongoDB object is preferable, as it requires less lookups.
+ * @param {boolean?} [global=false] Whether to apply the home server filter. This should be applied to all output that looks like it is coming from stewbot, e.g. AI.
+ * 
+ * @returns {Promise<Boolean>} A promise for the filtered text and found words.
+ */
+async function isDirty(text, guild=undefined, global=false) {
+    // If only text is provided, assume we're checking globally
+    if (!guild) global = true;
+
+    // Start off blacklist with our baseline
+    let blacklist = global ? await getCachedHomeBlacklist() : [];
+
+    // Add server filter
+    if (guild) blacklist = blacklist.concat(await getCachedServerBlacklist(guild));
+
+    const dirty = await checkDirty(blacklist, text, false);
+
+    // @ts-ignore
+    return dirty;
+}
+
+
 module.exports = {
-    checkDirty,
-    globalCensor,
+    checkDirty,      // Deprecated
+    censorWithFound, // For knowing what was filtered, and if it was.
+    censor,          // Args: Text = Global  |  Text+Guild = Local  |  Text+Guild+Boolean = Global(?)+Local
+    isDirty,         // Args: Text = Global  |  Text+Guild = Local  |  Text+Guild+Boolean = Global(?)+Local
 
     data: {
         // Slash command data
@@ -437,30 +538,26 @@ module.exports = {
 
     /** 
      * @param {import('discord.js').Message} msg 
-     * @param {import("./modules/database.js").GuildDoc} guildStore 
-     * @param {import("./modules/database.js").GuildUserDoc} guildUserStore 
+     * @param {import("./modules/database.js").RawGuildDoc} guildStore 
+     * @param {import("./modules/database.js").RawGuildUserDoc} guildUserStore 
      * */
     async [Events.MessageCreate](msg, context, guildStore, guildUserStore) {
         if (!msg.guild) return;
+        if (msg.webhookId) return; // Ignore webhooks, since we post filters as webhooks.
+
         applyContext(context);
-
-        // const guild = await guildByObj(msg.guild);
-
-        // TODO: look into major caching here too
-        // const guild = await Guilds.findOrCreate({ id: msg.guildId })
-        //     .select("filter")
-        //     .lean({ virtuals: true });
-        const guild = guildStore;
 
         let wasFiltered = false;
 
         // Filter
-        if (guild?.filter?.active) {
+        if (guildStore?.filter?.active) {
             // @ts-ignore
-            let [filtered, filteredContent, foundWords] = await checkDirty(msg.guildId, msg.content, true);
+            let [filtered, filteredContent, foundWords] = await censorWithFound(msg.content, guildStore, false);
 
-            if (filtered && msg.webhookId === null) {
+            if (filtered) {
                 let originalContent = msg.content;
+
+                // Set this so that modules down the line are working with clean content, worst case.
                 msg.content = filteredContent;
 
                 const user = await userByObj(msg.author); // TODO: lean read if this isn't cached somewhere else?
@@ -473,8 +570,8 @@ module.exports = {
                 );
 
                 // Send webhook
-                msg.delete();
-                if (guild?.filter?.censor) {
+                msg.delete().catch(e=>null);
+                if (guildStore?.filter?.censor) {
                     var replyBlip = "";
                     if (msg.type === MessageType.Reply) {
                         var rMsg = await msg.fetchReference();
@@ -490,16 +587,20 @@ module.exports = {
                     const filteredMessageData = {
                         "username": msg.member?.nickname || msg.author.globalName || msg.author.username,
                         "avatarURL": msg.member?.displayAvatarURL(),
-                        "content": limitLength(`\`\`\`\nThe following message from ${msg.author.username} has been censored by Stewbot.\`\`\`${replyBlip}${msg.content.slice(0, 1800)}`),
+                        "content": 
+                            limitLength(
+                                `\`\`\`\nThe following message from ${msg.author.username} has been censored by Stewbot.\`\`\`${
+                                    replyBlip
+                                }${msg.content}`),
                     };
 
-                    sendHook(filteredMessageData, msg);
+                    sendHook(filteredMessageData, msg, true);
                 }
                 if (user.config.dmOffenses && msg.webhookId === null) {
                     try {
                         msg.author.send(
                             limitLength(
-                                `Your message in **${msg.guild.name}** was ${guild.filter.censor
+                                `Your message in **${msg.guild.name}** was ${guildStore.filter.censor
                                     ? "censored"
                                     : "deleted"
                                 } due to the following word${foundWords.length > 1 ? "s" : ""} being in the filter: ` +
@@ -513,11 +614,11 @@ module.exports = {
                         ).catch((e) => { });
                     } catch (e) { }
                 }
-                if (guild.filter.log && guild.filter.channel) {
-                    var c = client.channels.cache.get(guild.filter.channel);
+                if (guildStore.filter.log && guildStore.filter.channel) {
+                    var c = client.channels.cache.get(guildStore.filter.channel);
                     if (c.isSendable()) {
                         c.send(limitLength(
-                            `I have ${guild.filter.censor ? "censored" : "deleted"} a message from **${msg.author.username}** in <#${msg.channel.id}> for the following blocked word${foundWords.length > 1 ? "s" : ""}: ` +
+                            `I have ${guildStore.filter.censor ? "censored" : "deleted"} a message from **${msg.author.username}** in <#${msg.channel.id}> for the following blocked word${foundWords.length > 1 ? "s" : ""}: ` +
                             `||${foundWords.join("||, ||")}||\`\`\`\n` +
                             `${originalContent
                                 .replaceAll("`", "\\`") // Don't allow breaking out of code block
@@ -541,33 +642,39 @@ module.exports = {
         msg.filtered = wasFiltered;
     },
 
+    /**
+     * @param {Message} msg
+     * @param {import("./modules/database.js").RawGuildDoc} readGuild
+     * @param {import("./modules/database.js").RawGuildUserDoc} readGuildUser
+     */
     async [Events.MessageUpdate](msgO, msg, readGuild, readGuildUser) {
         if (msg.guild?.id === undefined || client.user.id === msg.author?.id) return; // Ignore self and DMs
         if (!readGuild?.filter?.active) return;
 
         // Filter edit handler
-        let [filtered, filteredContent, foundWords] = await checkDirty(msg.guildId, msg.content, true);
+        let [filtered, filteredContent, foundWords] = await censorWithFound(msg.content, readGuild, false);
 
         if (filtered) {
-            msg.delete();
+            if (msg.deletable) msg.delete().catch(e=>null);
 
             Users.updateOne({ id: msg.author.id }, {
                 $inc: { infractions: 1 }
             });
 
-            if (readGuild.filter.censor) {
+            if (readGuild.filter.censor && msg.channel.isSendable()) {
                 msg.channel.send({ content: `A post by <@${msg.author.id}> sent at <t:${Math.round(msg.createdTimestamp / 1000)}:f> <t:${Math.round(msg.createdTimestamp / 1000)}:R> has been deleted due to retroactively editing a blocked word into the message.`, allowedMentions: { parse: [] } });
             }
 
-            if (readGuild.config.dmOffenses && !msg.author.bot) {
-                const userSettings = await Users.findOne({ id: msg.author.id })
-                    .select("config.returnFiltered")
-                    .lean({ virtuals: true });
-                msg.author.send(limitLength(`Your message in **${msg.guild.name}** was deleted due to editing in the following word${foundWords.length > 1 ? "s" : ""} that are in the filter: ||${foundWords.join("||, ||")}||${userSettings.config.returnFiltered
-                        ? "```\n" + msg.content.replaceAll("`", "\\`") + "```"
-                        : ""
-                    }`)).catch(e => { });
-            }
+            // Don't DM on edit offense, *most* often this is due to discord retroactively fixing broken tensor links, I suspect.
+            // const userSettings = await Users.findOne({ id: msg.author.id })
+            //     .select("config.returnFiltered")
+            //     .lean({ virtuals: true });
+            // if (userSettings.dmOffenses && !msg.author.bot) {
+            //     msg.author.send(limitLength(`Your message in **${msg.guild.name}** was deleted due to editing in the following word${foundWords.length > 1 ? "s" : ""} that are in the filter: ||${foundWords.join("||, ||")}||${userSettings.config.returnFiltered
+            //         ? "```\n" + msg.content.replaceAll("`", "\\`") + "```"
+            //         : ""
+            //         }`)).catch(e => { });
+            // }
 
             if (readGuild.filter.log && readGuild.filter.channel) {
                 let logChannel = client.channels.cache.get(readGuild.filter.channel);
@@ -583,7 +690,7 @@ module.exports = {
 
         // Filter reactions
         if (readGuild?.filter?.active && react.message.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageMessages)) {
-            if (await checkDirty(react.message.guild.id, `${react._emoji}`)) {
+            if (await isDirty(`${react._emoji}`, readGuild)) {
                 react.remove();
                 if (readGuild.filter.log) {
                     var channel = client.channels.cache.get(readGuild.filter.channel);

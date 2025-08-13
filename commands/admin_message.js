@@ -13,7 +13,7 @@ function applyContext(context = {}) {
 
 const { limitLength } = require("../utils.js")
 const config = require("../data/config.json");
-const { globalCensor } = require("./filter");
+const { censor } = require("./filter");
 
 module.exports = {
     data: {
@@ -64,8 +64,8 @@ module.exports = {
                 await target.send({
                     embeds: [{
                         type: EmbedType.Rich,
-                        title: limitLength(await globalCensor(cmd.guild.name), 80),
-                        description: await globalCensor(message.replaceAll("\\n", "\n")),
+                        title: limitLength(await censor(cmd.guild.name), 80),
+                        description: await censor(message.replaceAll("\\n", "\n")),
                         color: 0x006400,
                         thumbnail: {
                             url: String(cmd.guild.iconURL() || ""),
@@ -90,9 +90,9 @@ module.exports = {
         // If we're supposed to post something:
         else if (cmd.channel.permissionsFor(client.user.id)?.has(PermissionFlagsBits.ManageWebhooks)) {
             let resp = {
-                "content": await globalCensor(message.replaceAll("\\n", "\n")),
+                "content": await censor(message.replaceAll("\\n", "\n")),
                 "avatarURL": cmd.guild.iconURL() || undefined,
-                "username": limitLength(await globalCensor(cmd.guild.name), 80),
+                "username": limitLength(await censor(cmd.guild.name), 80),
             };
             // Discord server name edge case
             if (resp?.username?.toLowerCase().includes("discord")) {

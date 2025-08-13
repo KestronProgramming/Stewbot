@@ -11,8 +11,7 @@ function applyContext(context = {}) {
 
 // #endregion CommandBoilerplate
 
-const config = require("../data/config.json");
-const { checkDirty, globalCensor } = require("./filter");
+const { censor } = require("./filter");
 
 module.exports = {
     data: {
@@ -47,7 +46,7 @@ module.exports = {
         applyContext(context);
 
         const who = cmd.options.getUser("who");
-        const what = await globalCensor(cmd.options.getString("what"));
+        const what = await censor(cmd.options.getString("what"));
         const severity = cmd.options.getInteger("severity");
 
         if (who.bot) {

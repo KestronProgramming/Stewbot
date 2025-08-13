@@ -12,7 +12,7 @@ function applyContext(context={}) {
 // #endregion CommandBoilerplate
 
 const config = require("../data/config.json");
-const { globalCensor } = require("./filter");
+const { censor } = require("./filter");
 
 async function checkPersistentDeletion(guildStore, channelId, messageId) {
     // If persistence is not active, or a new persistence message was posted, it was stewbot who deleted it.
@@ -96,7 +96,7 @@ module.exports = {
             cmd.followUp(`I have set your settings for this channel's persistent messages.`);
 
             var resp = {
-                "content": await globalCensor(guild.persistence.get(cmd.channel.id).content),
+                "content": await censor(guild.persistence.get(cmd.channel.id).content),
                 "avatarURL": cmd.guild.iconURL(),
                 "username": cmd.guild.name
             };

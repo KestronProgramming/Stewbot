@@ -13,8 +13,7 @@ function applyContext(context={}) {
 
 const ms = require("ms")
 const { escapeBackticks } = require("../utils.js");
-const config = require("../data/config.json");
-const { checkDirty, globalCensor } = require("./filter");
+const { censor } = require("./filter");
 
 async function finTimer(userId,force){
     const user = await userByID(userId);
@@ -131,12 +130,7 @@ module.exports = {
             var resp;
             var reminder="";
             if(cmd.options.getString("reminder")!==null){
-                reminder = await globalCensor(cmd.options.getString("reminder"));
-
-                const guild = await guildByObj(cmd.guild);
-                if(cmd.guildId&&guild?.filter.active){
-                    reminder = (await checkDirty(cmd.guildId, reminder, true))[1];
-                }
+                reminder = await censor(cmd.options.getString("reminder"), cmd.guild, true);
             }
 
             if(respondHere&&!cmd.channel?.id){

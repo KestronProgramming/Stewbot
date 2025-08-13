@@ -15,7 +15,7 @@ const fs = require("node:fs")
 const wotdList = fs.readFileSync(`./data/wordlist.txt`,"utf-8").split("\n");
 const { notify } = require("../utils");
 const config = require("../data/config.json");
-const { checkDirty } = require("./filter");
+const { isDirty } = require("./filter");
 
 module.exports = {
 	data: {
@@ -73,7 +73,7 @@ module.exports = {
 				cmd.reply({content:`Please enter a valid word.`,ephemeral:true});
 				return;
 			}
-			if (await checkDirty(config.homeServer, guess)) {
+			if (await isDirty(guess)) {
 				cmd.reply({content:`I am not willing to process this word.`,ephemeral:true});
 				return;
 			}

@@ -15,7 +15,7 @@ function applyContext(context={}) {
 const NodeCache = require("node-cache");
 const expTimeout = new NodeCache( { stdTTL: 60 } )
 const config = require("../data/config.json");
-const { globalCensor } = require("./filter");
+const { censor } = require("./filter");
 
 const { getLvl } = require("./rank.js")
 
@@ -61,7 +61,7 @@ module.exports = {
 		guild.levels.active=cmd.options.getBoolean("active");
 		if(cmd.options.getChannel("channel")!==null) guild.levels.channel=cmd.options.getChannel("channel").id;
 		if(cmd.options.getString("location")!==null) guild.levels.location=cmd.options.getString("location");
-		if(cmd.options.getString("message")!==null) guild.levels.msg=await globalCensor(cmd.options.getString("message"));
+		if(cmd.options.getString("message")!==null) guild.levels.msg=await censor(cmd.options.getString("message"));
 		var disclaimers=[];
 		if(guild.levels.channel===""&&guild.levels.location==="channel"){
 			guild.levels.location="DM";

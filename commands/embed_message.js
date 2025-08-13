@@ -14,7 +14,7 @@ function applyContext(context={}) {
 const { getPrimedEmbed } = require("./prime_embed.js")
 const { notify } = require("../utils");
 const config = require("../data/config.json");
-const { checkDirty, globalCensor } = require("./filter");
+const { isDirty, censor } = require("./filter");
 
 const kaProgramRegex =/\b(?!<)https?:\/\/(?:www\.)?khanacademy\.org\/(cs|computer-programming|hour-of-code|python-program)\/[a-z,\d,-]+\/\d+(?!>)\b/gi;
 const discordMessageRegex =/\b(?!<)https?:\/\/(ptb\.|canary\.)?discord(app)?.com\/channels\/(\@me|\d+)\/\d+\/\d+(?!>)\b/gi;
@@ -86,13 +86,10 @@ module.exports = {
                     if (mes.channel.isDMBased()) channelName = `DM with ${client.user.username}`
 
                     if (
-                        (await checkDirty(cmd.guild?.id, mes.content, false, true)) ||
-                        (await checkDirty(
-                            cmd.guild?.id,
-                            mes.author.globalName || mes.author.username, 
-                            false, true)) ||
-                        (await checkDirty(cmd.guild?.id, mes.guild.name, false, true)) ||
-                        (await checkDirty(cmd.guild?.id, channelName, false, true))
+                        (await isDirty(mes.content, cmd.guild, true)) ||
+                        (await isDirty(mes.author.globalName || mes.author.username, cmd.guild, true)) ||
+                        (await isDirty(mes.guild.name, cmd.guild, true)) ||
+                        (await isDirty(channelName, cmd.guild, true))
                     ) {
                         cmd.followUp(
                             `I'm sorry, I am unable to embed that message due to its content.`
@@ -216,10 +213,10 @@ module.exports = {
                 if (mes.channel.isDMBased()) channelName = `DM with ${client.user.username}`
 
                 if(
-                    await checkDirty(msg.guild?.id,mes.content) ||
-                    await checkDirty(msg.guild?.id || mes.author.globalName || mes.author.username) ||
-                    await checkDirty(msg.guild?.id, mes.guild.name) ||
-                    await checkDirty(msg.guild?.id, channelName)
+                    await isDirty(mes.content, guildStore) ||
+                    await isDirty(mes.author.globalName || mes.author.username, guildStore) ||
+                    await isDirty(mes.guild.name, guildStore) ||
+                    await isDirty(channelName, guildStore)
                 ){
                     embs.push(
                         new EmbedBuilder()
@@ -238,11 +235,11 @@ module.exports = {
                     .setTitle("(Jump to message)")
                     .setURL(links[i])
                     .setAuthor({
-                        name: await globalCensor(mes.member?.nickname || mes.author.globalName || mes.author.username),
+                        name: await censor(mes.member?.nickname || mes.author.globalName || mes.author.username),
                         iconURL: "" + mes.author.displayAvatarURL(),
                         url: "https://discord.com/users/" + mes.author.id,
                     })
-                    .setDescription(await globalCensor(mes.content) || null)
+                    .setDescription(await censor(mes.content) || null)
                     .setTimestamp(new Date(mes.createdTimestamp))
                     .setFooter({
                         text: channelName,

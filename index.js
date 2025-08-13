@@ -132,7 +132,7 @@ let commandListenerRegister = commandsLoadedPromise.then( commandsLoaded => {
     // Tune global handling - most of this is for backwards code compatibility.
     interceptors.push({
         // Ignore bots on MessageCreate
-        [Events.MessageCreate]: (handler, ...args) => (args[0].author.id === client.user?.id)
+        [Events.MessageCreate]: (handler, ...args) => (args[0].author.bot || args[0].author.id === client.user?.id)
     })
 
     for (const listenerName of Object.values(Events)) { // For every type of discord event

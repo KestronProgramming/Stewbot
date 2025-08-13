@@ -12,14 +12,14 @@ function applyContext(context = {}) {
 // #endregion CommandBoilerplate
 
 const config = require("../data/config.json");
-const { checkDirty, globalCensor } = require("./filter");
+const { isDirty, censor } = require("./filter");
 
 /** @returns {Promise<EmbedBuilder>} */
 async function getPrimedEmbed(userId, guildIn){
 	const user = await userByID(userId);
 
 	let mes=user.primedEmbed;
-	if(await checkDirty(guildIn,mes.content)||await checkDirty(guildIn,mes.author.name)||await checkDirty(guildIn,mes.server.name)||await checkDirty(guildIn,mes.server.channelName)){
+	if (await isDirty(mes.content, guildIn) || await isDirty(mes.author.name, guildIn) || await isDirty(mes.server.name, guildIn) || await isDirty(mes.server.channelName, guildIn)) {
 		return {
 			"type": "rich",
 			"title": `Blocked`,
@@ -34,7 +34,7 @@ async function getPrimedEmbed(userId, guildIn){
 			iconURL: "" + mes.author.icon,
 			url: "https://discord.com/users/" + mes.author.id
 		})
-		.setDescription(await globalCensor(mes.content) || null)
+		.setDescription(await censor(mes.content) || null)
 		.setTimestamp(new Date(mes.timestamp))
 		.setFooter({
 			text: mes.server.name + " / " + mes.server.channelName,

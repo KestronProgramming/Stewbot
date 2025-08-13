@@ -14,7 +14,7 @@ function applyContext(context={}) {
 const crypto = require('crypto');
 const { escapeBackticks } = require("../utils.js");
 const config = require("../data/config.json");
-const { checkDirty, globalCensor } = require("./filter");
+const { censor } = require("./filter");
 
 const m8ballResponses = ["So it would seem", "Yes", "No", "Perhaps", "Absolutely", "Positively", "Unfortunately", "I am unsure", "I do not know", "Absolutely not", "Possibly", "More likely than not", "Unlikely", "Probably not", "Probably", "Maybe", "Random answers is not the answer"];
 
@@ -125,8 +125,8 @@ module.exports = {
 			break;
 			case '8-ball':
 				const guild = await guildByObj(cmd.guild);
-				var ques = await globalCensor(cmd.options.getString("question"));
-				if (guild && guild.filter.active) ques = (await checkDirty(cmd.guildId, ques, true))[1];
+				var ques = await censor(cmd.options.getString("question"));
+				if (guild && guild.filter.active) ques = await censor(ques, guild, true);
 				cmd.followUp(
 					`I have generated a random response to the question \`${escapeBackticks(ques)}\`.\n` +
 					`:8ball: The answer is **${m8ballResponses[Math.floor(Math.random()*m8ballResponses.length)]}**.`);
