@@ -62,6 +62,14 @@ module.exports = {
                             {"name":"banned","value":"banned"}
                         )
                 )
+            )
+            .addSubcommand(command => command.setName("transfer").setDescription("Move a trackable into a user's inventory")
+                .addStringOption(option =>
+                    option.setName("id").setDescription("What trackable to edit?").setRequired(true)
+                )
+                .addUserOption(option =>
+                    option.setName("who").setDescription("Who to give it to?").setRequired(true)
+                )
             ),
 
         requiredGlobals: [],
@@ -129,13 +137,29 @@ module.exports = {
 
                     var trackable = await Trackables.findOne({ id });
 
-                    if (!trackable) cmd.followUp("I couldn't find this trackable");
+                    if (!trackable) return cmd.followUp("I couldn't find this trackable");
 
                     // @ts-ignore
                     trackable.status = status;
                     trackable.save();
                     
                     cmd.followUp("Done");
+                    break;
+
+                case "transfer":
+                    var id = cmd.options.getString("id");
+                    var who = cmd.options.getRole("who");
+
+                    var trackable = await Trackables.findOne({ current: `u${who.id}` });
+                    if (!trackable) return cmd.followUp("That user already has a trackable in their inventory.");
+
+                    await Trackables.updateOne(
+                        { id },
+                        { $set : { current: `u${who.id}` } }
+                    )
+
+                    await cmd.followUp("Done");
+
                     break;
             }
         }
