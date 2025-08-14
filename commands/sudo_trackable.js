@@ -84,7 +84,7 @@ module.exports = {
 
     /** @param {import('discord.js').ChatInputCommandInteraction} cmd */
     async execute(cmd) {
-        const isSudoUser = isSudo(cmd.user.id);
+        const isSudoUser = await isSudo(cmd.user.id);
 
         if (isSudoUser) {
             switch (cmd.options.getSubcommand()) {
