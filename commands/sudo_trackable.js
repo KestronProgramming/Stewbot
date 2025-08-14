@@ -1,7 +1,6 @@
 const { Trackables } = require("./modules/database.js")
 const { InteractionContextType: IT, ApplicationIntegrationType: AT, SlashCommandBuilder} = require("discord.js");
 
-const config = require("../data/config.json");
 const { getTrackableEditor } = require("./trackable.js")
 const { isSudo } = require("../utils.js");
 
@@ -90,7 +89,7 @@ module.exports = {
             switch (cmd.options.getSubcommand()) {
 
                 case "set_id":
-                    var ijd_from = cmd.options.getString("id_from");
+                    var id_from = cmd.options.getString("id_from");
                     var id_to = cmd.options.getString("id_to");
 
                     await Trackables.updateOne(
@@ -125,7 +124,7 @@ module.exports = {
                     var id = cmd.options.getString("id");
                     var trackable = await Trackables.findOne({ id });
 
-                    if (!trackable) cmd.followUp("I couldn't find this trackable");
+                    if (!trackable) return cmd.followUp("I couldn't find this trackable");
 
                     // @ts-ignores
                     cmd.followUp(getTrackableEditor(trackable, true));
