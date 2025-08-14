@@ -8,38 +8,31 @@ function applyContext(context={}) {
 		this[key] = context[key];
 	}
 }
-const exif = require('exif-parser');
-const sharp = require("sharp")
+
+const ExifReader = require('exifreader');
 
 // Attachment leak-checkers
-const filetypeCleaners = {
+const filetypeScanners = {
     'image/heic': async (attachment) => {
         try {
             const response = await fetch(attachment.url);
             const buffer = await getBufferFromFetch(response);
 
-            const metadata = await sharp(buffer).metadata();
+            const tags = await ExifReader.load(buffer)
+            let tagNames = Object.keys(tags).map(key => key.toLowerCase())
 
-            let leaked = false;
-            if (metadata.exif) {
-                const parser = exif.create(metadata.exif);
-                const result = parser.parse();
-                if (result.tags.GPSLatitude !== undefined) {
-                    leaked = true;
-                }
+            let leaks = false;
+            if (
+                tagNames.some(key => key.includes("gps")) || 
+                tagNames.some(key => key.includes("location")) || 
+                tagNames.some(key => key.includes("longitude")) || 
+                tagNames.some(key => key.includes("latitude"))
+            ) {
+                leaks = true;
             }
 
-            let finalBuffer = buffer;
-            if (leaked) {
-                finalBuffer = await sharp(buffer).toBuffer();
-            }
-            
-            return {
-                filename: attachment.name,
-                buffer: finalBuffer,
-                leaked: leaked,
-            };
-        } catch (e) {
+            return leaks;
+        } catch {
             return null;
         }
     }
@@ -59,7 +52,8 @@ const scamEmoji = process.env.beta ? "<:This_Post_May_Contain_A_Scam:13303202953
 
 const { URL } = require('url');
 const fs = require("node:fs")
-const { limitLength } = require("../utils.js")
+const { limitLength } = require("../utils.js");
+const { censor } = require("./filter");
 
 // Functions for ublock list checker
 async function loadBlocklist(url) {
@@ -371,34 +365,27 @@ module.exports = {
             if (msg.attachments.size > 0) {
                 const user = await userByObj(msg.author);
                 if (user.config.attachmentProtection) {
-                    const blacklistedFileTypes = Object.keys(filetypeCleaners);
+                    const blacklistedFileTypes = Object.keys(filetypeScanners);
                     const attachments = Array.from(msg.attachments.values());
 
                     const blacklistedAttachments = attachments.filter(att => blacklistedFileTypes.includes(att.contentType));
 
                     if (blacklistedAttachments.length === 0) return;
 
-                    const cleanedBlacklisted = new Map();
                     const leakedNames = [];
-                    const failedBlacklisted = [];
 
                     for (const attachment of blacklistedAttachments) {
-                        const cleaner = filetypeCleaners[attachment.contentType];
-                        let cleaned = null;
+                        const scanner = filetypeScanners[attachment.contentType];
+                        let leaks = null;
 
                         try {
-                            cleaned = await cleaner(attachment);
+                            leaks = await scanner(attachment);
                         } catch (error) {
-                            console.error(`Error cleaning attachment ${attachment.name}:`, error);
+                            console.error(`Error scanning attachment ${attachment.name}:`, error);
                         }
 
-                        if (cleaned) {
-                            cleanedBlacklisted.set(attachment, cleaned);
-                            if (cleaned.leaked) {
-                                leakedNames.push(attachment.name);
-                            }
-                        } else {
-                            failedBlacklisted.push(attachment.name);
+                        if (leaks === true) {
+                            leakedNames.push(attachment.name);
                         }
                     }
 
@@ -406,84 +393,38 @@ module.exports = {
 
                     if (!hasLeaked) return;
 
-                    const canManage = sendable && 
+                    const canDelete = sendable && 
                         ("permissionsFor" in msg.channel) &&
-                        msg.channel.permissionsFor(client.user).has(PermissionFlagsBits.ManageMessages) &&
-                        msg.channel.permissionsFor(client.user).has(PermissionFlagsBits.AttachFiles);
+                        msg.channel.permissionsFor(client.user).has(PermissionFlagsBits.ManageMessages);
 
-                    if (canManage) {
-                        let cleanedAttachments = [];
-                        let tooLargeAttachments = [...failedBlacklisted];
-                        const MAX_SIZE = 8 * 1024 * 1024; // 8MB in bytes
-
-                        // Add cleaned blacklisted attachments
-                        for (const [attachment, cleaned] of cleanedBlacklisted) {
-                            if (cleaned.buffer.length > MAX_SIZE) {
-                                tooLargeAttachments.push(attachment.name);
-                            } else {
-                                cleanedAttachments.push({
-                                    filename: cleaned.filename,
-                                    buffer: cleaned.buffer
-                                });
-                            }
-                        }
-
-                        // Fetch and add non-blacklisted attachments
-                        const nonBlacklisted = attachments.filter(att => !blacklistedFileTypes.includes(att.contentType));
-                        for (const attachment of nonBlacklisted) {
-                            try {
-                                const res = await fetch(attachment.url);
-                                const buffer = await getBufferFromFetch(res);
-                                
-                                if (buffer.length > MAX_SIZE) {
-                                    tooLargeAttachments.push(attachment.name);
-                                } else {
-                                    cleanedAttachments.push({
-                                        buffer,
-                                        filename: attachment.name
-                                    });
-                                }
-                            } catch (error) {
-                                console.error(`Error fetching attachment ${attachment.name}:`, error);
-                                tooLargeAttachments.push(attachment.name);
-                            }
-                        }
-
+                    if (canDelete) {
                         await msg.delete().catch(() => {});
 
                         let message = 
-                            `<@${msg.author.id}> your attachments contained sensitive data (e.g. the GPS/location the photo was taken), I have cleaned them and reuploaded your attachments.\n` +
+                            `<@${msg.author.id}> I deleted your message because the following attachments contained sensitive metadata (e.g. the GPS/location the photo was taken): \`${leakedNames.join('`, `')}\`\n` +
                             // @ts-ignore
                             `-# You can prevent this feature by running ${cmds.personal_config.mention}\n`;
-                        
-                        // Add warning about files that were too large
-                        if (tooLargeAttachments.length > 0) {
-                            message += `\n⚠️ The following files were too large to process automatically (>8MB) and need to be handled manually: ${tooLargeAttachments.join(', ')}\n`;
-                        }
                         
                         if (msg.content) 
                             message += 
                                 `\n` +
                                 `Below is the original message from <@${msg.author.id}>:\n` + 
-                                `>>> ` + limitLength(msg.content, 1700);
+                                `>>> ` + limitLength(await censor(msg.content, msg.guild, true), 2000 - (message.length + 200));
 
                         await msg.channel.send({
                             content: message,
-                            files: cleanedAttachments.map(f => ({
-                                attachment: f.buffer,
-                                name: f.filename
-                            }))
+                            allowedMentions: { users: [msg.author.id] }
                         });
                     } else {
                         await msg.author.send({
                             content: `⚠️ WARNING: \n` +
                                     `The attachments you uploaded in <#${msg.channel.id}> contain sensitive data (e.g., the GPS/location the photo was taken): ${leakedNames.join(', ')}\n` +
-                                    `I suggest deleting your message and stripping the metadata.\n` +
+                                    `I suggest deleting your message.\n` +
                                     `\n` +
-                                    `I tried to clean them myself, but do not have sufficient permissions in the server (\`Manage_Messages\`).\n` +
+                                    `I tried to delete it myself, but do not have sufficient permissions in the server (\`Manage_Messages\`).\n` +
                                     // @ts-ignore
                                     `-# You can prevent this feature by running ${cmds.personal_config.mention}`
-                        });
+                        }).catch(() => {});
                     }
                 }
             }

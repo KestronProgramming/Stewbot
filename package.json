@@ -14,6 +14,7 @@
     "cheerio": "^1.0.0",
     "compromise": "^14.14.4",
     "discord.js": "^14.20.0",
+    "exifreader": "^4.31.1",
     "fuse.js": "^7.1.0",
     "googleapis": "^148.0.0",
     "heic-convert": "^2.1.0",
@@ -31,7 +32,6 @@
     "rss-parser": "^3.13.0",
     "safe-regex": "^2.1.1",
     "sentiment": "^5.0.2",
-    "sharp": "^0.34.1",
     "sherlockjs": "^1.4.2",
     "turndown": "^7.2.0",
     "unzipper": "^0.12.3"
