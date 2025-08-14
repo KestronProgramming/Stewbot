@@ -257,6 +257,7 @@ async function getTrackableEmbed(tracker, {
 					.setCustomId('trackable_about')
 					.setLabel("What's this?")
 					.setStyle(ButtonStyle.Secondary)
+					.setEmoji("🪧")
 			).toJSON()
 		]
 	}
@@ -690,23 +691,25 @@ module.exports = {
 
 				if (!trackable) {
 					return cmd.followUp({
-						content: 
+						...textAsEmbed(
 							`You don't have a trackable!` +
-							`\n`+
+							`\n` +
 							// @ts-ignore
-							`Try finding one in your servers, create your own with ${cmds.trackable.create.mention}, or check [#find-a-trackable](<${config.invite}>).`,
+							`Try finding one in your servers, create your own with ${cmds.trackable.create.mention}, or check [#find-a-trackable](<${config.invite}>).`
+						),
 						ephemeral: true
 					});
 				}
 
 				const comingFrom = trackable.current;
 				const placingToo = `c${cmd.channelId}`;
+				const placingTooGuild = `g${cmd.guildId}`;
 				const serverName = cmd.guild?.name;
 
 				const serversSinceTarget = trackable.pastLocations
-					.filter(l => l[0] == "c")
+					.filter(l => l[0] == "g")
 					.reverse()
-					.indexOf(placingToo);
+					.indexOf(placingTooGuild);
 
 				if (serversSinceTarget == 0) {
 					return cmd.followUp({
@@ -776,12 +779,13 @@ module.exports = {
 
 				const comingFrom = trackable.current;
 				const placingToo = `c${cmd.channelId}`; // This prop should exist on user install.
+				const placingTooGuild = `g${cmd.guildId}`;
 				const serverName = cmd.guild?.name;
 
 				const serversSinceTarget = trackable.pastLocations
-					.filter(l => l[0] == "c")
+					.filter(l => l[0] == "g")
 					.reverse()
-					.indexOf(placingToo);
+					.indexOf(placingTooGuild);
 
 				if (serversSinceTarget == 0) {
 					return cmd.reply({
