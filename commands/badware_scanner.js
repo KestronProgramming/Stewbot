@@ -1,19 +1,15 @@
 // #region CommandBoilerplate
 const Categories = require("./modules/Categories");
 const client = require("../client.js");
-const { Guilds, Users, guildByID, userByID, guildByObj, userByObj } = require("./modules/database.js")
-const { Events, ContextMenuCommandBuilder, DiscordAPIError, InteractionContextType: IT, ApplicationIntegrationType: AT, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
+const { guildByObj, userByObj } = require("./modules/database.js")
+const { Events, DiscordAPIError, SlashCommandBuilder, PermissionFlagsBits}=require("discord.js");
 function applyContext(context={}) {
 	for (let key in context) {
 		this[key] = context[key];
 	}
 }
-
-// #endregion CommandBoilerplate
-
-// const exif = require('exif-parser'); // We could check if it has sensitive data before
-// const sharp = require("sharp")
-const heicConvert = require('heic-convert');
+const exif = require('exif-parser');
+const sharp = require("sharp")
 
 // Attachment leak-checkers
 const filetypeCleaners = {
@@ -22,23 +18,28 @@ const filetypeCleaners = {
             const response = await fetch(attachment.url);
             const buffer = await getBufferFromFetch(response);
 
-            // Sharp doesn't do heic apparently
-            // const convertedBuffer = await sharp(buffer)
-            //     .jpeg({ quality: 90 })
-            //     .toBuffer();
+            const metadata = await sharp(buffer).metadata();
 
-            const convertedBuffer = await heicConvert({
-                buffer: buffer,
-                format: 'JPEG',
-                quality: 0.7
-            });
+            let leaked = false;
+            if (metadata.exif) {
+                const parser = exif.create(metadata.exif);
+                const result = parser.parse();
+                if (result.tags.GPSLatitude !== undefined) {
+                    leaked = true;
+                }
+            }
+
+            let finalBuffer = buffer;
+            if (leaked) {
+                finalBuffer = await sharp(buffer).toBuffer();
+            }
             
             return {
-                filename: attachment.name.replace(/\.heic$/i, '.jpg'),
-                buffer: convertedBuffer,
-                leaked: true, // this needs further support...
+                filename: attachment.name,
+                buffer: finalBuffer,
+                leaked: leaked,
             };
-        } catch {
+        } catch (e) {
             return null;
         }
     }
@@ -59,7 +60,6 @@ const scamEmoji = process.env.beta ? "<:This_Post_May_Contain_A_Scam:13303202953
 const { URL } = require('url');
 const fs = require("node:fs")
 const { limitLength } = require("../utils.js")
-const config = require("../data/config.json");
 
 // Functions for ublock list checker
 async function loadBlocklist(url) {
@@ -169,7 +169,7 @@ function isUrlBlocked(url, blocklist) {
                 if (regex.test(url)) {
                     return true;
                 }
-            } catch (e) {
+            } catch {
                 console.error('Invalid regex pattern:', regexPattern);
             }
         }
@@ -206,7 +206,7 @@ function updateBlocklists() {
 
 // Functions for hidden URL alert
 function detectMismatchedDomains(markdown) {
-    // Extract markdown embeded links
+    // Extract markdown embedded links
     // const markdownRegex = /\[([^\s]+)\]\(([^\)]+)\)/;
     const markdownRegex = /\[<?([^\s\[\]]+)>?\]\(<?([^()\s]+)>?\)/;
 
@@ -310,9 +310,8 @@ module.exports = {
     /** 
      * @param {import('discord.js').Message} msg 
      * @param {import("./modules/database.js").GuildDoc} guildStore 
-     * @param {import("./modules/database.js").GuildUserDoc} guildUserStore 
      * */
-    async [Events.MessageCreate] (msg, context, guildStore, guildUserStore) {
+    async [Events.MessageCreate] (msg, context, guildStore) {
 		applyContext(context);
 
         // const guild = await guildByObj(msg.guild);
@@ -374,105 +373,117 @@ module.exports = {
                 if (user.config.attachmentProtection) {
                     const blacklistedFileTypes = Object.keys(filetypeCleaners);
                     const attachments = Array.from(msg.attachments.values());
-                
-                    const needsStripping = attachments.some(att => 
-                        blacklistedFileTypes.includes(att.contentType));
-                
-                    if (needsStripping) {
-                        // If we have permission to delete
-                        if (
-                            sendable && 
-                            ("permissionsFor" in msg.channel) &&
-                            msg.channel.permissionsFor(client.user).has(PermissionFlagsBits.ManageMessages) &&
-                            msg.channel.permissionsFor(client.user).has(PermissionFlagsBits.AttachFiles)
-                        ) {
-                            
-                            let cleanedAttachments = [];
-                            let tooLargeAttachments = [];
-                            const MAX_SIZE = 8 * 1024 * 1024; // 8MB in bytes
-                    
-                            for (const attachment of attachments) {
-                                const cleaner = filetypeCleaners[attachment.contentType];
-                                let cleaned = null;
+
+                    const blacklistedAttachments = attachments.filter(att => blacklistedFileTypes.includes(att.contentType));
+
+                    if (blacklistedAttachments.length === 0) return;
+
+                    const cleanedBlacklisted = new Map();
+                    const leakedNames = [];
+                    const failedBlacklisted = [];
+
+                    for (const attachment of blacklistedAttachments) {
+                        const cleaner = filetypeCleaners[attachment.contentType];
+                        let cleaned = null;
+
+                        try {
+                            cleaned = await cleaner(attachment);
+                        } catch (error) {
+                            console.error(`Error cleaning attachment ${attachment.name}:`, error);
+                        }
+
+                        if (cleaned) {
+                            cleanedBlacklisted.set(attachment, cleaned);
+                            if (cleaned.leaked) {
+                                leakedNames.push(attachment.name);
+                            }
+                        } else {
+                            failedBlacklisted.push(attachment.name);
+                        }
+                    }
+
+                    const hasLeaked = leakedNames.length > 0;
+
+                    if (!hasLeaked) return;
+
+                    const canManage = sendable && 
+                        ("permissionsFor" in msg.channel) &&
+                        msg.channel.permissionsFor(client.user).has(PermissionFlagsBits.ManageMessages) &&
+                        msg.channel.permissionsFor(client.user).has(PermissionFlagsBits.AttachFiles);
+
+                    if (canManage) {
+                        let cleanedAttachments = [];
+                        let tooLargeAttachments = [...failedBlacklisted];
+                        const MAX_SIZE = 8 * 1024 * 1024; // 8MB in bytes
+
+                        // Add cleaned blacklisted attachments
+                        for (const [attachment, cleaned] of cleanedBlacklisted) {
+                            if (cleaned.buffer.length > MAX_SIZE) {
+                                tooLargeAttachments.push(attachment.name);
+                            } else {
+                                cleanedAttachments.push({
+                                    filename: cleaned.filename,
+                                    buffer: cleaned.buffer
+                                });
+                            }
+                        }
+
+                        // Fetch and add non-blacklisted attachments
+                        const nonBlacklisted = attachments.filter(att => !blacklistedFileTypes.includes(att.contentType));
+                        for (const attachment of nonBlacklisted) {
+                            try {
+                                const res = await fetch(attachment.url);
+                                const buffer = await getBufferFromFetch(res);
+                                
+                                if (buffer.length > MAX_SIZE) {
+                                    tooLargeAttachments.push(attachment.name);
+                                } else {
+                                    cleanedAttachments.push({
+                                        buffer,
+                                        filename: attachment.name
+                                    });
+                                }
+                            } catch (error) {
+                                console.error(`Error fetching attachment ${attachment.name}:`, error);
+                                tooLargeAttachments.push(attachment.name);
+                            }
+                        }
+
+                        await msg.delete().catch(() => {});
+
+                        let message = 
+                            `<@${msg.author.id}> your attachments contained sensitive data (e.g. the GPS/location the photo was taken), I have cleaned them and reuploaded your attachments.\n` +
+                            // @ts-ignore
+                            `-# You can prevent this feature by running ${cmds.personal_config.mention}\n`;
                         
-                                if (cleaner) {
-                                    try {
-                                        cleaned = await cleaner(attachment);
-                                        
-                                        // Check if the cleaned attachment is too large
-                                        if (cleaned && cleaned.buffer.length > MAX_SIZE) {
-                                            tooLargeAttachments.push(attachment.name);
-                                            cleaned = null; // Don't include this attachment
-                                        }
-                                    } catch (error) {
-                                        console.error(`Error cleaning attachment ${attachment.name}:`, error);
-                                        tooLargeAttachments.push(attachment.name);
-                                    }
-                                }
+                        // Add warning about files that were too large
+                        if (tooLargeAttachments.length > 0) {
+                            message += `\n⚠️ The following files were too large to process automatically (>8MB) and need to be handled manually: ${tooLargeAttachments.join(', ')}\n`;
+                        }
+                        
+                        if (msg.content) 
+                            message += 
+                                `\n` +
+                                `Below is the original message from <@${msg.author.id}>:\n` + 
+                                `>>> ` + limitLength(msg.content, 1700);
 
-                                if (cleaned) {
-                                    cleanedAttachments.push(cleaned);
-                                } else if (!blacklistedFileTypes.includes(attachment.contentType)) {
-                                    // Pass through non-cleaned or unsupported files that don't need stripping
-                                    try {
-                                        const res = await fetch(attachment.url);
-                                        const buffer = await getBufferFromFetch(res);
-                                        
-                                        // Check if the non-cleaned attachment is too large
-                                        if (buffer.length <= MAX_SIZE) {
-                                            cleanedAttachments.push({
-                                                buffer,
-                                                filename: attachment.name
-                                            });
-                                        } else {
-                                            tooLargeAttachments.push(attachment.name);
-                                        }
-                                    } catch (error) {
-                                        console.error(`Error fetching attachment ${attachment.name}:`, error);
-                                        tooLargeAttachments.push(attachment.name);
-                                    }
-                                }
-                            }
-                    
-                            await msg.delete().catch(e => {});
-
-                            let message = 
-                                `<@${msg.author.id}> your attachments contained sensitive data (e.g. the GPS/location the photo was taken), I have cleaned them and reuploaded your attachments.\n` +
-                                // @ts-ignore
-                                `-# You can prevent this feature by running ${cmds.personal_config.mention}\n`;
-                            
-                            // Add warning about files that were too large
-                            if (tooLargeAttachments.length > 0) {
-                                message += `\n⚠️ The following files were too large to process automatically (>8MB) and need to be converted manually: ${tooLargeAttachments.join(', ')}\n`;
-                            }
-                            
-                            if (msg.content) 
-                                message += 
+                        await msg.channel.send({
+                            content: message,
+                            files: cleanedAttachments.map(f => ({
+                                attachment: f.buffer,
+                                name: f.filename
+                            }))
+                        });
+                    } else {
+                        await msg.author.send({
+                            content: `⚠️ WARNING: \n` +
+                                    `The attachments you uploaded in <#${msg.channel.id}> contain sensitive data (e.g., the GPS/location the photo was taken): ${leakedNames.join(', ')}\n` +
+                                    `I suggest deleting your message and stripping the metadata.\n` +
                                     `\n` +
-                                    `Below is the original message from <@${msg.author.id}>:\n` + 
-                                    `>>> ` + limitLength(msg.content, 1700);
-
-                            await msg.channel.send({
-                                content: message,
-                                files: cleanedAttachments.map(f => ({
-                                    attachment: f.buffer,
-                                    name: f.filename
-                                }))
-                            });
-                        }
-
-                        // if we can't delete, DM
-                        else {
-                            await msg.author.send({
-                                content: `⚠️ WARNING: \n` +
-                                        `The attachments you uploaded in <#${msg.channel.id}> are of a filetype that discord cannot process.\n` +
-                                        `These filetypes can contain data (e.g., the GPS/location the photo was taken). I suggest deleting your message and converting to a more standard format.\n` +
-                                        `\n` +
-                                        `I tried to clean them myself, but do not have sufficient permissions in the server (\`Manage_Messages\`).\n` +
-                                        // @ts-ignore
-                                        `-# You can prevent this feature by running ${cmds.personal_config.mention}`
-                            });
-                        }
+                                    `I tried to clean them myself, but do not have sufficient permissions in the server (\`Manage_Messages\`).\n` +
+                                    // @ts-ignore
+                                    `-# You can prevent this feature by running ${cmds.personal_config.mention}`
+                        });
                     }
                 }
             }

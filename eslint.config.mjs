@@ -25,6 +25,8 @@ export default defineConfig([
             ),
             // Allow redeclaring variables in switch cases
             "no-redeclare": ["warn", { "builtinGlobals": false }],
+            // Disable no-case-declarations rule
+            "no-case-declarations": "off",
         }
     },
 

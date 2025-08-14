@@ -1,8 +1,8 @@
 // #region CommandBoilerplate
 const Categories = require("./modules/Categories.js");
 const client = require("../client.js");
-const { Guilds, Users, guildByID, userByID, guildByObj, userByObj, Trackables } = require("./modules/database.js")
-const { Events, PermissionsBitField, MessageFlags, ContainerBuilder, AttachmentBuilder, ContextMenuCommandBuilder, TextDisplayBuilder, SeparatorSpacingSize, SeparatorBuilder, SectionBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
+const { Trackables } = require("./modules/database.js")
+const { Events, PermissionsBitField, AttachmentBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ModalBuilder, TextInputBuilder, TextInputStyle, StringSelectMenuBuilder}=require("discord.js");
 function applyContext(context={}) {
 	for (let key in context) {
 		this[key] = context[key];
@@ -164,7 +164,7 @@ async function getTrackableEmbed(tracker, {
 			iconURL: movedOn||isntHere ? img : undefined
 		})
 		// .setTitle(movedOn ? `${inlineCode(name)} was here!` : `${inlineCode(name)}`)
-		.setColor(tracker.color)
+		.setColor(color)
 		.setFooter({ text: `${owner == "special" ? "Special trackable" : "Trackable"} #${id}`, iconURL: trackableIcon });
 
 	let fields = [];
@@ -737,7 +737,7 @@ module.exports = {
 					...await getTrackableEmbed(trackable, {
 						"showPickUpRow": true
 					}),
-				}).catch(e => null);
+				}).catch(() => null);
 
 				trackable.currentMessageId = message?.id;
 				await trackable.save();
@@ -821,7 +821,7 @@ module.exports = {
 							"showPickUpRow": true,
 							"droppedBy": cmd.user.username
 						}),
-					}).catch(e => null);
+					}).catch(() => null);
 
 					cmd.deleteReply();
 				}
@@ -831,7 +831,7 @@ module.exports = {
 						...await getTrackableEmbed(trackable, {
 							"showPickUpRow": true
 						}),
-					}).catch(e => null);
+					}).catch(() => null);
 				}
 				
 				trackable.currentMessageId = message?.id;
