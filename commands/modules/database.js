@@ -68,12 +68,29 @@ let levelsSchema = new mongoose.Schema({
     msg: { type: String, default: "Congratulations ${USERNAME}, you have leveled up to level ${LVL}!" },
 }, { _id: false })
 
+// Old filter, kept for backwards compatibility
 let filterSchema = new mongoose.Schema({
     active: { type: Boolean, default: false },
     censor: { type: Boolean, default: true },
     log: { type: Boolean, default: false },
     channel: { type: String, default: "" },
-    blacklist: [ String ], // TODO: rewrite this field into a filter item field, allowing regex and per-item stuff
+    blacklist: [ String ],
+})
+
+let filterV2Schema = new mongoose.Schema({
+    active: { type: Boolean, default: false },
+    actions: [String],
+    log: { type: Boolean, default: false },
+    channel: { type: String, default: "" },
+    evasions: { type: Boolean, default: true },
+    conjugations: { type: Boolean, default: false },
+    blacklist: [ new mongoose.Schema({
+        word: { type: String, required: false },
+        regex: { type: String, required: false },
+        actions: { type: [String], required: false },
+        evasions: { type: Boolean, required: false },
+        conjugations: { type: Boolean, required: false },
+    }) ],
 })
 
 let guildLogsSchema = new mongoose.Schema({
@@ -201,6 +218,7 @@ let guildSchema = new mongoose.Schema({
     counting: { type: countingSchema, default: {} },
     logs: { type: guildLogsSchema, default: {} },
     filter: { type: filterSchema, default: {} },
+    filterV2: { type: filterV2Schema, default: {} },
     sentWelcome: { type: Boolean, default: false },
     autoJoinRoles: [ String ],
     blockedCommands: [ String ],
