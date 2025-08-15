@@ -297,10 +297,10 @@ async function isDirty(text, guild=undefined, global=false) {
 
 
 module.exports = {
-    checkDirty,      // Deprecated
-    censorWithFound, // For knowing what was filtered, and if it was.
-    censor,          // Args: Text = Global  |  Text+Guild = Local  |  Text+Guild+Boolean = Global(?)+Local
-    isDirty,         // Args: Text = Global  |  Text+Guild = Local  |  Text+Guild+Boolean = Global(?)+Local
+    checkDirty: checkDirty,           // Deprecated
+    censorWithFound: censorWithFound, // For knowing what was filtered, and if it was.
+    censor: censor,                   // Args: Text = Global  |  Text+Guild = Local  |  Text+Guild+Boolean = Global(?)+Local
+    isDirty: isDirty,                 // Args: Text = Global  |  Text+Guild = Local  |  Text+Guild+Boolean = Global(?)+Local
 
     data: {
         // Slash command data

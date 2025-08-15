@@ -48,7 +48,7 @@ module.exports = {
 		requiredGlobals: [],
 
 		help: {
-			helpCategories: [""],
+			helpCategories: [Categories.Safety],
 			shortDesc: "This command is used in the event of an automatic spam timeout",
 			detailedDesc: 
 				`If I detect a hacked or spam account, I will require the user to run this command before being untimeouted. Simply press the buttons to enter the displayed code and press enter.`

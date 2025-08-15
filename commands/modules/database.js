@@ -25,7 +25,9 @@
 
 const { OAuth2Guild, Guild, User } = require('discord.js');
 const { notify } = require("../../utils");
-const NodeCache = require('node-cache');
+// const NodeCache = require('node-cache');
+const { LRUCache } = require('lru-cache');
+const ms = require("ms");
 const mongoose = require("mongoose");
 const { mongooseLeanVirtuals } = require('mongoose-lean-virtuals');
 const mongooseLeanDefaults = require('mongoose-lean-defaults').default;
@@ -34,7 +36,9 @@ mongoose.plugin(mongooseLeanVirtuals)
 mongoose.set('setDefaultsOnInsert', false);
 
 // Message guild cache allows us to have less calls to the DB, and invalidate cache when we save DB changes
-const messageDataCache = new NodeCache({ stdTTL: 5, checkperiod: 30 });
+// const messageDataCache = new NodeCache({ stdTTL: 5, checkperiod: 5 });
+const messageDataCache = new LRUCache({ ttl: ms("5s"), max: 100 });
+
 const config = require("../../data/config.json");
 
 
@@ -166,6 +170,7 @@ let guildConfigSchema = new mongoose.Schema({
     antihack_auto_delete: { type: Boolean, default: true, required: false },
     domain_scanning: { type: Boolean, default: true },
     fake_link_check: { type: Boolean, default: true },
+    format_exploit_check: { type: Boolean, default: true },
     ai: { type: Boolean, default: true },
     embedPreviews: { type: Boolean, default: true },
     levelUpMsgs: { type: Boolean, default: false },
@@ -556,10 +561,10 @@ async function guildUserByObj(guild, userID, updateData={}) {
 
 
 // Cache invalidators
-guildSchema.post('save', doc => { messageDataCache.del(doc.id || "") });
-guildSchema.post('findOneAndUpdate', doc => { messageDataCache.del(doc.id || "") });
-guildUserSchema.post('save', doc => { messageDataCache.del(`${doc.guildId}>${doc.userId}` || "") });
-guildUserSchema.post('findOneAndUpdate', doc => { messageDataCache.del(`${doc.guildId}>${doc.userId}` || "") });
+guildSchema.post('save', doc => { messageDataCache.delete(doc.id || "") });
+guildSchema.post('findOneAndUpdate', doc => { messageDataCache.delete(doc.id || "") });
+guildUserSchema.post('save', doc => { messageDataCache.delete(`${doc.guildId}>${doc.userId}` || "") });
+guildUserSchema.post('findOneAndUpdate', doc => { messageDataCache.delete(`${doc.guildId}>${doc.userId}` || "") });
 
 
 // Set plugins and define docs

@@ -1,15 +1,13 @@
-// #region CommandBoilerplate
 const Categories = require("./modules/Categories");
 const client = require("../client.js");
 const { guildByObj, userByObj } = require("./modules/database.js")
 const { Events, DiscordAPIError, SlashCommandBuilder, PermissionFlagsBits}=require("discord.js");
-function applyContext(context={}) {
-	for (let key in context) {
-		this[key] = context[key];
-	}
-}
-
 const ExifReader = require('exifreader');
+const { URL } = require('url');
+const fs = require("node:fs")
+const { limitLength } = require("../utils.js");
+const { censor } = require("./filter");
+const linkify = require('linkifyjs');
 
 // Attachment leak-checkers
 const filetypeScanners = {
@@ -48,12 +46,10 @@ const blocklists = [
 	}
 ]
 
+// If we can't sent messages, warn with an emoji (added to bot in dev console)
 const scamEmoji = process.env.beta ? "<:This_Post_May_Contain_A_Scam:1330320295357055067>" : '<:This_Post_May_Contain_A_Scam:1330318400668565534>'
 
-const { URL } = require('url');
-const fs = require("node:fs")
-const { limitLength } = require("../utils.js");
-const { censor } = require("./filter");
+
 
 // Functions for ublock list checker
 async function loadBlocklist(url) {
@@ -237,6 +233,44 @@ function detectMismatchedDomains(markdown) {
     return null;
 }
 
+function hasFormatExploit(text="") {
+    // This function checks for formatting exploits, currently just 
+    //   when a ton of formatting chars are used to lag the discord 
+    //   renderer into giving up on rendering the message.
+
+    const numFormattingChars = text.match(/[*_>|!~`]/g)?.length || 0;
+    if (!numFormattingChars) return false;
+
+
+    // We use simple rules to check if something is a formatting exploit:
+    // - It contains 300 or more formatting characters. 
+    // - Formatting characters are 20% of the ascii characters in the message or more.
+
+    if (numFormattingChars < 300) return false;
+    
+    const numAsciiText = text.replace(/[^\x00-\x7F]/g, '').length;
+    if (100 / numAsciiText * numFormattingChars < 20) return false;
+
+    // Likely a formatting exploit.
+    return true;
+}
+
+function detectMalembedLink(text) {
+    // See https://medium.com/@lenoctambule/discords-preview-bot-redirection-vulnerability-c8b08fe3721b
+
+    // We use a library to collect URLs to avoid workarounds.
+    // NOTE: On updates, make sure this library still parses links with backticks.
+    let links = linkify.find(text)
+        .filter(item => item?.type == "url" && item?.isLink)
+        .map(item => item.href);
+
+    // @ characters are valid in links to include emails or things
+    // So we'll just make sure they don't have backticks
+    if (links.some(link => link.includes("`"))) return true;
+    
+    return false;
+}
+
 async function getBufferFromFetch(res) {
     const buffer = await res.arrayBuffer();
     return Buffer.from(buffer);
@@ -252,8 +286,10 @@ module.exports = {
             ).addBooleanOption(option=>
                 option.setName("fake_link_check").setDescription("Check if a link uses markdown to look like it leads somewhere else?")
             ).addBooleanOption(option=>
+                option.setName("format_exploits").setDescription("Warn about messages that seem to abuse discord formatting in unintended ways?").setRequired(false)
+            ).addBooleanOption(option=>
                 option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
-            ).setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers),
+            ).setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
             
 		// Optional fields
 		extra: {"contexts": [0], "integration_types": [0]},
@@ -281,8 +317,6 @@ module.exports = {
 
     /** @param {import('discord.js').ChatInputCommandInteraction} cmd */
     async execute(cmd, context) {
-        applyContext(context);
-
         const updates = {};
 
         if (cmd.options.getBoolean("domain_scanning") !== null) {
@@ -291,6 +325,10 @@ module.exports = {
 
         if (cmd.options.getBoolean("fake_link_check") !== null) {
             updates["config.fake_link_check"] = cmd.options.getBoolean("fake_link_check");
+        }
+
+        if (cmd.options.getBoolean("format_exploits") !== null) {
+            updates["config.format_exploit_check"] = cmd.options.getBoolean("format_exploits");
         }
 
         // Only update if we have changes to make
@@ -306,20 +344,34 @@ module.exports = {
      * @param {import("./modules/database.js").GuildDoc} guildStore 
      * */
     async [Events.MessageCreate] (msg, context, guildStore) {
-		applyContext(context);
-
-        // const guild = await guildByObj(msg.guild);
-        const guild = guildStore;
-
         try {
             const sendable = msg.channel.isSendable();
             const reactable = ("permissionsFor" in msg.channel) && msg.channel.permissionsFor(client.user).has(PermissionFlagsBits.AddReactions);
 
             if (!sendable && !reactable) return;
 
+            // Hidden content via format exploits
+            if (msg.guild && !(guildStore.config.format_exploit_check === false)) {
+                if (hasFormatExploit(msg.content) || detectMalembedLink(msg.content)) {
+                    if (sendable) {
+                        return await msg.reply(
+                            `## :warning: WARNING :warning:\n` +
+                            `This message appears to contain **hidden content** via abusing discord formatting. Links may not lead where embeds show.\n` +
+                            `\n` +
+                            `-# If you need to disable this feature, run ${"`/badware_scanner format_exploits:false`"}` +
+                            // @ts-ignore
+                            `-# This is a **new feature**. If you encounter issues, please report details with ${cmds.report_problem.mention}`
+                        );
+                    }
+                    else if (reactable) {
+                        await msg.react('⚠️');
+                        return await msg.react(scamEmoji);
+                    }
+                }
+            }
             
             // Check domain
-            if (msg.guild && !(guild.config.domain_scanning === false)) {
+            if (msg.guild && !(guildStore.config.domain_scanning === false)) {
                 const urlRegex = /https?:\/\/[^\s/$.?#].[^\s]*/g;
                 const links = msg.content.match(urlRegex) || [];
                 for (const link of links) {
@@ -340,8 +392,28 @@ module.exports = {
                 }
             }
 
-            // Check for link hiding behind fake link
-            if (msg.guild && !(guild.config.fake_link_check === false)) {
+            // Check for fake link, or explicitly blocked links
+            if (msg.guild && !(guildStore.config.fake_link_check === false)) {
+
+                // Warn about discord reset link
+                if (msg.content?.toLowerCase().includes("discord://-/reset")) {
+                    if (sendable) {
+                        return await msg.reply({
+                            content:
+                                `## :warning: WARNING :warning:\n` +
+                                `The link in this message will **reset your discord client** and force a password reset.\n` +
+                                `\n` +
+                                `-# If you need to disable this feature, run ${"`/badware_scanner fake_link_check:false`"}`,
+                            allowedMentions:{parse:[]}
+                        })
+                    } else if (reactable) {
+                        // await msg.react('🛑');
+                        await msg.react('⚠️');
+                        return await msg.react(scamEmoji);
+                    }
+                }
+
+                // Warn about other fake links
                 const fakeLink = detectMismatchedDomains(msg.content);
                 if (fakeLink) {
                     if (sendable) {
@@ -443,9 +515,8 @@ module.exports = {
 	},
 
 
+    // Daily update our uBlock lists
     async daily(context) {
-        applyContext(context);
-
         // Update badware blocklists
         updateBlocklists()
     }

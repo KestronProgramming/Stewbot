@@ -194,8 +194,8 @@ module.exports = {
                     { guildId: guildId, userId: userId },
                     (createGuildUser ? { inServer: true } : {}), // set inServer since we're fetching them
                     { new: true, setDefaultsOnInsert: false, upsert: true }
-                ).lean({ virtuals: true }).then(data => {
-                    messageDataCache.set(guildUserKey, data);
+                ).lean({ virtuals: true, defaults: true }).then(data => {
+                    messageDataCache.set(guildUserKey, Object(data));
                     return data;
                 }),
 
@@ -204,8 +204,10 @@ module.exports = {
                     { id: guildId },
                     {},
                     { new: true, upsert: true, setDefaultsOnInsert: true }
-                ).lean({ virtuals: true }).then(data => {
-                    messageDataCache.set(guildKey, data);
+                )
+                .lean({ virtuals: true, defaults: true })
+                .then(data => {
+                    messageDataCache.set(guildKey, Object(data));
                     return data;
                 }),
 
@@ -214,8 +216,8 @@ module.exports = {
                     { id: config.homeServer },
                     {},
                     { new: true, setDefaultsOnInsert: false, upsert: true }
-                ).lean({ virtuals: true }).then(data => {
-                    messageDataCache.set(homeGuildKey, data, ms("5 min") / 1000);
+                ).lean({ virtuals: true, defaults: true }).then(data => {
+                    messageDataCache.set(homeGuildKey, Object(data), ms("5 min") / 1000);
                     return data;
                 })
             ]);
