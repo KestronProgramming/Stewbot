@@ -83,7 +83,7 @@ let filterV2Schema = new mongoose.Schema({
     log: { type: Boolean, default: false },
     channel: { type: String, default: "" },
     evasions: { type: Boolean, default: true },
-    conjugations: { type: Boolean, default: false },
+    conjugations: { type: Boolean, default: true },
     timeout_length: { type: Number, default: 0 }, // in seconds
     blacklist: [ new mongoose.Schema({
         word: { type: String, required: false },

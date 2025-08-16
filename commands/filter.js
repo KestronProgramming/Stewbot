@@ -535,16 +535,21 @@ module.exports = {
             case "config":
                 var disclaimers = [];
 
-                var channel = cmd.options.getChannel("channel")
-                var timeout_length_s = cmd.options.getNumber("timeout_length_s")
-                var to_log = cmd.options.getBoolean("log")
-                var actions = cmd.options.getString("actions").split("+")
+                var channel = cmd.options.getChannel("log_channel");
+                var timeout_length_s = cmd.options.getNumber("timeout_length_s");
+                var to_log = cmd.options.getBoolean("log");
+                var actions = cmd.options.getString("actions").split("+");
+                var conjugations = cmd.options.getBoolean("conjugations");
+                var evasions = cmd.options.getBoolean("evasions");
 
                 guild.filterV2.active = cmd.options.getBoolean("active");
 
                 if (actions) guild.filterV2.actions = actions;
                 if (to_log !== null) guild.filterV2.log = to_log;
                 if (channel !== null) guild.filterV2.channel = channel.id;
+                if (evasions !== null) guild.filterV2.evasions = evasions;
+                if (conjugations !== null) guild.filterV2.conjugations = conjugations;
+                if (timeout_length_s !== null) guild.filterV2.timeout_length = timeout_length_s;
                 if (timeout_length_s !== null) guild.filterV2.timeout_length = timeout_length_s;
 
                 if (guild.filterV2.actions.includes("censor") && !cmd.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageWebhooks)) {
@@ -736,7 +741,7 @@ module.exports = {
         }
     },
 
-    async [Events.MessageReactionAdd](react, user, readGuild) {
+    async [Events.MessageReactionAdd](react, user, details, readGuild) {
         if (react.message.guildId === null) return;
 
         // Filter reactions

@@ -275,7 +275,7 @@
     },
     {
         "name": "filter add",
-        "mention": "</filter add:1403120086503653478>",
+        "mention": "`filter` Module",
         "helpCategories": [
             "Administration",
             "Configuration",
@@ -286,7 +286,7 @@
     },
     {
         "name": "filter remove",
-        "mention": "</filter remove:1403120086503653478>",
+        "mention": "`filter` Module",
         "helpCategories": [
             "Administration",
             "Configuration",
