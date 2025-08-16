@@ -513,7 +513,7 @@
             "Configuration"
         ],
         "shortDesc": "Configure the bot for you personally",
-        "detailedDesc": "Configure options for your personal interactions with the bot. This includes options such as if the bot tells you when you're filtered, if it automatically embeds certain links you post, or if you want it to not ping you whenb you level up in a server. You can also set your timezone for use with </timestamp:1403120086692139099>"
+        "detailedDesc": "Configure options for your personal interactions with the bot. This includes options such as if the bot tells you when you're filtered, if it automatically embeds certain links you post, or if you want it to not ping you when you level up in a server. You can also set your timezone for use with </timestamp:1403120086692139099>"
     },
     {
         "name": "pin",
@@ -776,7 +776,7 @@
     },
     {
         "name": "trackable about",
-        "mention": "</trackable about:1404500688284946514>",
+        "mention": "</trackable about:1406328783539273978>",
         "helpCategories": [
             "General",
             "Entertainment",
@@ -787,7 +787,7 @@
     },
     {
         "name": "trackable create",
-        "mention": "</trackable create:1404500688284946514>",
+        "mention": "</trackable create:1406328783539273978>",
         "helpCategories": [
             "General",
             "Entertainment",
@@ -798,7 +798,7 @@
     },
     {
         "name": "trackable inventory",
-        "mention": "</trackable inventory:1404500688284946514>",
+        "mention": "</trackable inventory:1406328783539273978>",
         "helpCategories": [
             "General",
             "Entertainment",

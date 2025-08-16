@@ -29,6 +29,8 @@ module.exports = {
 			.setDescription("Configure the bot for you personally").addBooleanOption(option=>
 				option.setName("ai_pings").setDescription("Respond with an AI message to pings or DMs")
 			).addBooleanOption(option=>
+				option.setName("trackable_expiration_dm").setDescription("Should I message you before your trackable expires?")
+			).addBooleanOption(option=>
 				option.setName("dm_infractions").setDescription("If you get filtered, should I DM you?")
 			).addBooleanOption(option=>
 				option.setName("dm_infraction_content").setDescription("If dm_infractions is true, should I include the content of the filtered message?")
@@ -54,7 +56,7 @@ module.exports = {
 			helpCategories: [Categories.General, Categories.Bot, Categories.Configuration],
 			shortDesc: "Configure the bot for you personally",//Should be the same as the command setDescription field
 			detailedDesc: //Detailed on exactly what the command does and how to use it
-				`Configure options for your personal interactions with the bot. This includes options such as if the bot tells you when you're filtered, if it automatically embeds certain links you post, or if you want it to not ping you whenb you level up in a server. You can also set your timezone for use with ${cmds.timestamp.mention}`
+				`Configure options for your personal interactions with the bot. This includes options such as if the bot tells you when you're filtered, if it automatically embeds certain links you post, or if you want it to not ping you when you level up in a server. You can also set your timezone for use with ${cmds.timestamp.mention}`
 		},
 	},
 
@@ -65,6 +67,7 @@ module.exports = {
 		const user = await userByObj(cmd.user);
 		
 		if (cmd.options.getBoolean("ai_pings") !== null) user.config.aiPings = cmd.options.getBoolean("ai_pings");
+		if (cmd.options.getBoolean("trackableNotifsSilenced") !== null) user.config.trackableNotifsSilenced = cmd.options.getBoolean("trackableNotifsSilenced");
 		if (cmd.options.getBoolean("dm_infractions") !== null) user.config.dmOffenses = cmd.options.getBoolean("dm_infractions");
 		if (cmd.options.getBoolean("dm_infraction_content") !== null) user.config.returnFiltered = cmd.options.getBoolean("dm_infraction_content");
 		if (cmd.options.getBoolean("embeds") !== null) user.config.embedPreviews = cmd.options.getBoolean("embeds");

@@ -290,6 +290,7 @@ let primedEmbedSchema = new mongoose.Schema({
 });
 
 let userConfigSchema = new mongoose.Schema({
+    trackableNotifsSilenced: { type: Boolean, default: false },
     beenAIDisclaimered: { type: Boolean, default: false },
     aiPings: { type: Boolean, default: true },
     dmOffenses: { type: Boolean, default: true },
@@ -319,7 +320,6 @@ let userSchema = new mongoose.Schema({
     hat_pull: hatPullSchema, // This one does not need defaults, it is checked for existence
     timer: timerSchema,
     captcha: Boolean,
-    
 });
 
 let trackableSchema = new mongoose.Schema({
@@ -345,6 +345,9 @@ let trackableSchema = new mongoose.Schema({
     pastLocations: { type: [String], required: true, default: [] },
     status: { type: String, required: true, enum: ["editing", "published", "banned"], default: "editing" },
 
+    expirationWarnedAboutAt: { type: Number, required: false }, // For expiration - this needs to be unset when moved around
+
+    // Current location for linking
     currentGuildId: String,
     currentMessageId: String,
 });

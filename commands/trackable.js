@@ -1,18 +1,12 @@
 // #region CommandBoilerplate
 const Categories = require("./modules/Categories.js");
 const client = require("../client.js");
-const { Trackables } = require("./modules/database.js")
+const { Trackables, Users } = require("./modules/database.js")
 const { Events, PermissionsBitField, AttachmentBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ModalBuilder, TextInputBuilder, TextInputStyle, StringSelectMenuBuilder}=require("discord.js");
-function applyContext(context={}) {
-	for (let key in context) {
-		this[key] = context[key];
-	}
-}
-// #endregion CommandBoilerplate
-
+const cron = require('node-cron');
 const config = require("../data/config.json");
 const { censor } = require("./filter.js");
-const { inlineCode, isSudo } = require("../utils.js")
+const { inlineCode, isSudo, cronJob } = require("../utils.js")
 const ms = require("ms");
 
 // Defined at boot
@@ -102,7 +96,7 @@ function generateUnknownName() {
 
 function generateExpiredText(trackable) {
 	let text = expiredText[Math.floor(Math.random() * expiredText.length)];
-	text = text.replaceAll("${name}", trackable.name);
+	text = text.replaceAll("${name}", inlineCode(trackable.name));
 	return text;
 }
 
@@ -526,7 +520,6 @@ module.exports = {
 
     /** @param {import('discord.js').ChatInputCommandInteraction} cmd */
     async execute(cmd, context, deferedResponse) {
-		applyContext(context);
 		switch(cmd.options.getSubcommand()){
 			case "about":
 				return await cmd.followUp(aboutTrackables);
@@ -731,7 +724,8 @@ module.exports = {
 				trackable.pastLocations.push(comingFrom);
 				trackable.currentGuildId = cmd.guildId;
 				trackable.placed = Date.now();
-
+				trackable.expirationWarnedAboutAt = undefined;
+				
 				// Check if we have access to send directly in the channel
 				const message = await cmd.followUp({
 					...await getTrackableEmbed(trackable, {
@@ -753,6 +747,20 @@ module.exports = {
 		const isInSudoChannel = cmd.channelId == process.env.trackablesNotices;
 
 		try {
+
+			// Notifs
+			if (cmd.customId === "silence_trackable_expiry_notifs") {
+				await Users.updateOne(
+					{ id: cmd.user.id }, 
+					{
+						$set: { "config.trackableNotifsSilenced": true }
+					}, 
+					{ upsert: true }
+				);
+
+				// @ts-ignore
+				cmd.reply(`I silenced these notifications. You can turn them back on with ${cmds.personal_config.mention}`)
+			}
 
 			// Placing button
 			if (cmd.customId.startsWith("t-place") && cmd.isButton()) {
@@ -812,6 +820,7 @@ module.exports = {
 				trackable.pastLocations.push(comingFrom);
 				trackable.currentGuildId = cmd.guildId;
 				trackable.placed = Date.now();
+				trackable.expirationWarnedAboutAt = undefined;
 
 				let message;
 				
@@ -904,6 +913,7 @@ module.exports = {
 					trackable.current = goingTo;
 					trackable.currentName = `${inlineCode(cmd.user.username)}'s Inventory`
 					trackable.placed = Date.now();
+					trackable.expirationWarnedAboutAt = undefined;
 
 					await trackable.save();
 					await cmd.update({
@@ -1111,6 +1121,7 @@ module.exports = {
 				return cmd.reply("Blacklisted that trackable. Delete the image if it needs to be retroactively hidden.");
 
 			}
+
 		} catch (error) {
 			// Send error message if interaction hasn't been replied to
 			if (!cmd.replied && !cmd.deferred) {
@@ -1132,61 +1143,157 @@ module.exports = {
 		aboutTrackables.embeds[0].description = aboutTrackables.embeds[0].description
 			// @ts-ignore
 			.replaceAll("/trackable create", cmds.trackable.create.mention)
-	},
-
-	async daily() {
-		let timeoutLimit = ms("7d");
-		// let timeoutLimit = ms("1s");
-		let olderThan = Date.now() - timeoutLimit;
-
-		let hubLoc = `c${trackablesHub.id}`;
-
-		const expiredFilter = {
-			status: "published",
-			placed: { $lt: olderThan },
-			current: { $ne: hubLoc }
-		}
-
-		let expiredTrackables = await Trackables.find(expiredFilter);
-
-		await Trackables.updateMany(expiredFilter, [
-			{
-				$set: {
-					placed: Date.now(),
-					current: hubLoc,
-					currentName: `[#find-a-trackable](<${config.invite}>)`,
-					pastLocations: {
-						$concatArrays: [
-							{ $ifNull: ["$pastLocations", []] },
-							{
-								$cond: [
-									{ $ne: ["$current", null] },
-									[{ $toString: "$current" }],
-									[]
-								]
-							},
-							// [hubLoc]
-						]
-					}
-				}
-			},
-			{
-				$unset: ["currentGuildId", "currentMessageId"]
-			}
-		]);
-
-
-		// Repost each Trackable to the archive
-		for (const trackable of expiredTrackables) {
-			// Await to avoid ratelimits
-			await trackablesHub?.send({
-				content: 
-					generateExpiredText +
-					"-# This trackable timed out! It will sit here until someone picks it up.",
-				...await getTrackableEmbed(trackable, {
-					"showPickUpRow": true
-				})
-			}).catch(console.log)
-		}
 	}
 };
+
+// Hourly check expiring trackables
+let hourly = cronJob('0 * * * *', async () => {
+	// DM holders of trackables that are expiring soon.
+	let warnAboutTrackables = {
+		status: "published",
+		current: { $regex: "^u" },
+		placed: { 
+			$lt: Date.now() - ms("2d")
+		},
+		expirationWarnedAboutAt: { $exists: false }
+	}
+
+	// Find users who need warning but haven't silenced it
+	let notifTrackables = await Trackables.aggregate([
+		// Find all expiring-soon trackables
+		{ $match: warnAboutTrackables },
+
+		// Trim current to just be the ID
+		{ $addFields: { 
+			current: {
+				$substrCP: [ "$current", 1, {
+					$subtract: [ { $strLenCP: "$current" }, 1 ]
+				} ]
+			}
+		} },
+		// Find a user config that matches this user where they blocked trackable notifs
+		{ $lookup: {
+			from: "users",
+			let: { currentId: "$current" },
+			pipeline: [ {
+				$match: { $expr: {
+					$and: [
+						{ $eq: [ "$config.trackableNotifsSilenced", true ] },
+						{ $eq: ["$id", "$$currentId"] }
+					]
+				} }
+			} ],
+			as: "disabled"
+		} },
+		// Make sure we didn't match anybody who disabled it
+		{ $match: { disabled: { $eq: [] } } }
+	]);
+
+	// Mark these as warned about
+	await Trackables.updateMany(warnAboutTrackables, {
+		$set: { expirationWarnedAboutAt: Date.now() + ms("1m") } // Make sure it's set "into" this hour so that lag doesn't make expiring them an hour off
+	})
+
+	let expiresAtTimestamp = `<t:${Math.floor((Date.now() + ms("24h")) /1000)}:R>`
+
+	for (const trackable of notifTrackables) {
+		let holderId = trackable.current;
+		let holdingUser;
+		try {
+			holdingUser = await client.users.fetch(holderId);
+		} catch {}
+		if (!holdingUser) continue;
+
+		await holdingUser.send({
+			embeds: [
+				new EmbedBuilder()
+					.setDescription(
+						`Your current trackable, ${inlineCode(trackable.name)}, will expire ${expiresAtTimestamp}!\n` +
+						// @ts-ignore
+						`[Add me to your apps](${config.install}) if you haven't yet, then place the trackable in a server with ${cmds.trackable.place.mention}.`
+					)
+					.setThumbnail(trackable.img)
+			],
+			components: [
+				new ActionRowBuilder().addComponents(
+					new ButtonBuilder()
+						.setCustomId('trackable_about')
+						.setLabel("What's this?")
+						.setStyle(ButtonStyle.Primary)
+						.setEmoji("🪧"),
+					new ButtonBuilder()
+						.setCustomId('silence_trackable_expiry_notifs')
+						.setEmoji("🔕")
+						.setLabel("Don't show again")
+						.setStyle(ButtonStyle.Secondary)
+				).toJSON()
+			]
+		}).catch(e => null)
+	}
+
+
+	// Find expired ones that have been warned about and move into #find-a-trackable
+	let hubLoc = `c${trackablesHub.id}`;
+
+	const expiredFilter = {
+		status: "published",
+		placed: { 
+			$lt: Date.now() - ms("3d") // All that have not moved for 3 days
+		},
+
+		// Ones in the hub don't expire
+		current: { $ne: hubLoc },
+		
+		// If a user holds it, we have to have warned them, otherwise if it's in a channel expire without warning
+		$or: [
+			{
+				current: { $regex: /^u/ },
+				expirationWarnedAboutAt: { $lt: Date.now() - ms("23h") }
+			},
+			{
+				current: { $not: { $regex: /^u/ } }
+			}
+		]
+	}
+
+	let expiredTrackables = await Trackables.find(expiredFilter);
+
+	await Trackables.updateMany(expiredFilter, [
+		{
+			$set: {
+				placed: Date.now(),
+				current: hubLoc,
+				currentName: `[#find-a-trackable](<${config.invite}>)`,
+				pastLocations: {
+					$concatArrays: [
+						{ $ifNull: ["$pastLocations", []] },
+						{
+							$cond: [
+								{ $ne: ["$current", null] },
+								[{ $toString: "$current" }],
+								[]
+							]
+						},
+					]
+				}
+			}
+		},
+		{
+			$unset: ["currentGuildId", "currentMessageId", "expirationWarnedAboutAt"]
+		}
+	]);
+
+	// Repost each Trackable to the archive
+	for (const trackable of expiredTrackables) {
+		// Await to avoid ratelimits
+		await trackablesHub?.send({
+			content: 
+				generateExpiredText(trackable) +
+				"\n-# This trackable timed out! It will sit here until someone picks it up.",
+				
+			...await getTrackableEmbed(trackable, {
+				"showPickUpRow": true
+			})
+		}).catch(console.log)
+	}
+});
