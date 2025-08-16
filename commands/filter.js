@@ -262,6 +262,14 @@ async function isDirty(text, guild=undefined, global=false) {
     return dirty;
 }
 
+const possibleActions = [
+    { name: "Censor (recommended, default)", value: "censor" },
+    { name: "Censor + Timeout", value: "censor+timeout" },
+    { name: "Delete", value: "delete" },
+    { name: "Delete + Timeout", value: "delete+timeout" },
+    { name: "Timeout Only", value: "timeout" },
+]
+
 module.exports = {
     censorWithFound: censorWithFound, // For knowing what was filtered, and if it was.
     censor: censor,                   // Args: Text = Global  |  Text+Guild = Local  |  Text+Guild+Boolean = Global(?)+Local
@@ -275,12 +283,7 @@ module.exports = {
             )
             .addStringOption(option =>
                 option.setName("actions").setDescription("What actions should I take on offending messages?")
-                .addChoices(
-                    { name: "Censor (recommended, default)", value: "censor" },
-                    { name: "Censor + Timeout", value: "censor+timeout" },
-                    { name: "Delete", value: "delete" },
-                    { name: "Delete + Timeout", value: "delete+timeout" },
-                )
+                .addChoices(possibleActions)
             )
             .addBooleanOption(option =>
                 option.setName("log").setDescription("Post a summary of filtered messages to a staff channel? (Must set 'channel' on this command if true)")
@@ -289,13 +292,13 @@ module.exports = {
                 option.setName("log_channel").setDescription("Which channel should I post summaries of deleted messages to?").addChannelTypes(ChannelType.GuildText)
             )
             .addBooleanOption(option =>
-                option.setName("conjugations").setDescription("Also filter likely conjugation?").setRequired(true)
+                option.setName("conjugations").setDescription("Also filter likely conjugation?")
             )
             .addBooleanOption(option =>
-                option.setName("evasions").setDescription("Also filter ev@si0ns?").setRequired(true)
+                option.setName("evasions").setDescription("Also filter ev@si0ns?")
             )
             .addBooleanOption(option =>
-                option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
+                option.setName("private").setDescription("Make the response ephemeral?")
             )
         ).addSubcommand(command =>
             command.setName("add_word").setDescription('Add a word to the filter')
@@ -303,30 +306,56 @@ module.exports = {
                     option.setName("word").setDescription("The word to blacklist").setRequired(true)
                 )
                 .addStringOption(option =>
-                    option.setName("actions").setDescription("What actions should I take?").setRequired(true)
+                    option.setName("actions").setDescription("What actions should I take on offending messages?")
+                    .addChoices(possibleActions)
                 )
                 .addBooleanOption(option =>
-                    option.setName("conjugations").setDescription("Also filter likely conjugation?").setRequired(true)
+                    option.setName("conjugations").setDescription("Also filter likely conjugation?").setRequired(false)
                 )
                 .addBooleanOption(option =>
-                    option.setName("evasions").setDescription("Also filter ev@si0ns?").setRequired(true)
+                    option.setName("evasions").setDescription("Also filter ev@si0ns?").setRequired(false)
+                )
+                .addNumberOption(option =>
+                    option.setName("timeout_length").setDescription("If applying a timeout, how long should it be?").setRequired(false)
                 )
                 .addBooleanOption(option =>
                     option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
                 )
         ).addSubcommand(command =>
-            command.setName("remove").setDescription('Remove a word from the filter').addStringOption(option =>
+            command.setName("edit_word").setDescription('Add a word to the filter')
+                .addStringOption(option =>
+                    option.setName("word").setDescription("The word to blacklist").setRequired(true)
+                )
+                .addStringOption(option =>
+                    option.setName("actions").setDescription("What actions should I take on offending messages?")
+                    .addChoices(possibleActions)
+                )
+                .addBooleanOption(option =>
+                    option.setName("conjugations").setDescription("Also filter likely conjugation?").setRequired(false)
+                )
+                .addBooleanOption(option =>
+                    option.setName("evasions").setDescription("Block filter ev@si0ns?").setRequired(false)
+                )
+                .addNumberOption(option =>
+                    option.setName("timeout_length_s").setDescription("If applying a timeout, how long should it be in seconds?").setRequired(false)
+                )
+                .addBooleanOption(option =>
+                    option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
+                )
+        ).addSubcommand(command =>
+            command.setName("remove_word").setDescription('Remove a word from the filter').addStringOption(option =>
                 option.setName("word").setDescription("The word to remove from the blacklist").setRequired(true)
             ).addBooleanOption(option =>
                 option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
             )
         ).addSubcommand(command =>
+            // TODO: import from server ID
             command.setName("import").setDescription("Import a CSV wordlist").addAttachmentOption(option =>
-                option.setName("file").setDescription("A .csv with comma seperated words you'd like to block").setRequired(true)
+                option.setName("file").setDescription("A .csv with comma separated words you'd like to block").setRequired(true)
             ).addBooleanOption(option =>
                 option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
             )
-        ).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
+        ).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages & PermissionFlagsBits.ModerateMembers),
 
         extra: { "contexts": [0], "integration_types": [0], "cat": 6 },
 
@@ -364,6 +393,8 @@ module.exports = {
         },
     },
 
+    // TODO: find punishment for all matching words, prioritize the highest
+
     /** @param {import('discord.js').ChatInputCommandInteraction} cmd */
     async execute(cmd) {
         const word = cmd.options.getString("word");
@@ -371,8 +402,8 @@ module.exports = {
         const guild = await guildByObj(cmd.guild);
 
         if (!cmd.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageMessages)) {
-            guild.filter.active = false;
-            cmd.followUp(`I cannot run a filter for this server. I need the MANAGE_MESSAGES permission first, otherwise I cannot delete messages.`);
+            guild.filterV2.active = false;
+            cmd.followUp(`I cannot run a filter for this server. I need the \`MANAGE_MESSAGES\` permission first, otherwise I cannot delete messages.`);
             return;
         }
         switch (cmd.options.getSubcommand()) {
@@ -402,7 +433,7 @@ module.exports = {
                 if (conjugations !== null) wordRef.conjugations = conjugations;
 
                 var disclaimers = [];
-                if (!guild.filter.active) {
+                if (!guild.filterV2.active) {
                     // @ts-ignore
                     disclaimers.push(`- The filter for this server is currently disabled. To enable it, use ${cmds.filter.config.mention}.`)
                 }
@@ -463,11 +494,15 @@ module.exports = {
 
             case "remove_word":
                 var filterWord = cmd.options.getString("word");
+
                 var wordRef = guild.filterV2.blacklist
                     .find(item => item.word == filterWord);
                 
-                if (guild.filter.blacklist.includes(word)) {
-                    guild.filter.blacklist.splice(guild.filter.blacklist.indexOf(word), 1);
+                if (wordRef) {
+                    // @ts-ignore
+                    guild.filterV2.blacklist = guild.filterV2.blacklist.filter(
+                        word => word.word !== filterWord
+                    );
                     cmd.followUp(`Alright, I have removed ||${word}|| from the filter.`);
                 }
                 else {
@@ -501,6 +536,7 @@ module.exports = {
                 var disclaimers = [];
 
                 var channel = cmd.options.getChannel("channel")
+                var timeout_length_s = cmd.options.getNumber("timeout_length_s")
                 var to_log = cmd.options.getBoolean("log")
                 var actions = cmd.options.getString("actions").split("+")
 
@@ -509,6 +545,7 @@ module.exports = {
                 if (actions) guild.filterV2.actions = actions;
                 if (to_log !== null) guild.filterV2.log = to_log;
                 if (channel !== null) guild.filterV2.channel = channel.id;
+                if (timeout_length_s !== null) guild.filterV2.timeout_length = timeout_length_s;
 
                 if (guild.filterV2.actions.includes("censor") && !cmd.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageWebhooks)) {
                     guild.filterV2.actions = guild.filterV2.actions.filter(a => a !== "censor");
