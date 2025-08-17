@@ -170,7 +170,7 @@ async function getTrackableEmbed(tracker, {
 	// Reach
 	const serverCount = unique(
 		tracker.pastLocations
-			.filter(loc => loc.startsWith('c')) // Only servers
+			.filter(loc => loc.startsWith('g')) // Only servers
 	).length;
 	fields.push({
 		name: "Reach",
