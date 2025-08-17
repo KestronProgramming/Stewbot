@@ -315,8 +315,8 @@ module.exports = {
                 .addBooleanOption(option =>
                     option.setName("evasions").setDescription("Also filter ev@si0ns?").setRequired(false)
                 )
-                .addNumberOption(option =>
-                    option.setName("timeout_length").setDescription("If applying a timeout, how long should it be?").setRequired(false)
+                .addStringOption(option =>
+                    option.setName("timeout_length").setDescription("If applying a timeout, how long should it be? e.g. '5 minutes'").setRequired(false)
                 )
                 .addBooleanOption(option =>
                     option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
@@ -336,8 +336,8 @@ module.exports = {
                 .addBooleanOption(option =>
                     option.setName("evasions").setDescription("Block filter ev@si0ns?").setRequired(false)
                 )
-                .addNumberOption(option =>
-                    option.setName("timeout_length_s").setDescription("If applying a timeout, how long should it be in seconds?").setRequired(false)
+                .addStringOption(option =>
+                    option.setName("timeout_length").setDescription("If applying a timeout, how long should it be? e.g. '5 minutes'").setRequired(false)
                 )
                 .addBooleanOption(option =>
                     option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
@@ -410,10 +410,26 @@ module.exports = {
 
             case "add_word":
             case "edit_word":
+                var disclaimers = [];
+
                 var filterWord = cmd.options.getString("word");
                 var actions = cmd.options.getString("actions").split("+");
                 var conjugations = cmd.options.getBoolean("conjugations");
                 var evasions = cmd.options.getBoolean("evasions");
+
+                var timeoutInMS;
+
+                if (timeout_length !== null) {
+                    const isTimeouting = actions.includes("timeout");
+
+                    timeoutInMS = ms(timeout_length);
+                    if (timeoutInMS && !isTimeouting) {
+                        disclaimers.push(`- You specified a timeout time, but you didn't say to timeout. If you want timeouts for being filtered, please specify that in the \`actions\` input.`)
+                    }
+                    else {
+                        disclaimers.push(`- I couldn't understand the timeout length you specified${isTimeouting ? " so I will use global settings for this word" : ""}. Please provide a value like \`45 seconds\` or \`5 minutes\``)
+                    }
+                }
 
                 var wordRef = guild.filterV2.blacklist
                     .find(item => item.word == filterWord);
@@ -430,9 +446,9 @@ module.exports = {
                 
                 if (actions !== null) wordRef.actions = actions;
                 if (evasions !== null) wordRef.evasions = evasions;
+                if (timeoutInMS !== null) wordRef.timeout_length = timeoutInMS;
                 if (conjugations !== null) wordRef.conjugations = conjugations;
 
-                var disclaimers = [];
                 if (!guild.filterV2.active) {
                     // @ts-ignore
                     disclaimers.push(`- The filter for this server is currently disabled. To enable it, use ${cmds.filter.config.mention}.`)
@@ -536,7 +552,7 @@ module.exports = {
                 var disclaimers = [];
 
                 var channel = cmd.options.getChannel("log_channel");
-                var timeout_length_s = cmd.options.getNumber("timeout_length_s");
+                var timeout_length = cmd.options.getNumber("timeout_length");
                 var to_log = cmd.options.getBoolean("log");
                 var actions = cmd.options.getString("actions").split("+");
                 var conjugations = cmd.options.getBoolean("conjugations");
@@ -549,8 +565,22 @@ module.exports = {
                 if (channel !== null) guild.filterV2.channel = channel.id;
                 if (evasions !== null) guild.filterV2.evasions = evasions;
                 if (conjugations !== null) guild.filterV2.conjugations = conjugations;
-                if (timeout_length_s !== null) guild.filterV2.timeout_length = timeout_length_s;
-                if (timeout_length_s !== null) guild.filterV2.timeout_length = timeout_length_s;
+
+                if (timeout_length !== null) {
+                    const isTimeouting = actions.includes("timeout");
+
+                    let timeoutInMS = ms(timeout_length);
+                    if (timeoutInMS) {
+                        guild.filterV2.timeout_length = timeoutInMS;
+                        if (!isTimeouting) {
+                            disclaimers.push(`- You specified a timeout time, but you didn't say to timeout. If you want timeouts for being filtered, please specify that in the \`actions\` input.`)
+                        }
+                    }
+                    else {
+                        // disclaimers.push(`- I couldn't understand the timeout length you specified${isTimeouting ? " so I will use global settings for this word" : ""}. Please provide a value like \`45 seconds\` or \`5 minutes\``)
+                        disclaimers.push(`- I couldn't understand the timeout length you specified${isTimeouting ? " so I can't timeout" : ""}. Please provide a value like \`45 seconds\` or \`5 minutes\``)
+                    }
+                }
 
                 if (guild.filterV2.actions.includes("censor") && !cmd.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageWebhooks)) {
                     guild.filterV2.actions = guild.filterV2.actions.filter(a => a !== "censor");

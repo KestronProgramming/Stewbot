@@ -84,11 +84,12 @@ let filterV2Schema = new mongoose.Schema({
     channel: { type: String, default: "" },
     evasions: { type: Boolean, default: true },
     conjugations: { type: Boolean, default: true },
-    timeout_length: { type: Number, default: 0 }, // in seconds
+    timeout_length: { type: Number, default: 0 }, // in ms
     blacklist: [ new mongoose.Schema({
         word: { type: String, required: false },
         regex: { type: String, required: false },
         actions: { type: [String], required: false },
+        timeout_length: { type: Number, default: 0 },
         evasions: { type: Boolean, required: false },
         conjugations: { type: Boolean, required: false },
     }) ],
