@@ -539,7 +539,7 @@
     },
     {
         "name": "poll",
-        "mention": "</poll:1403120086612709462>",
+        "mention": "</poll:1406497261642584095>",
         "helpCategories": [
             "Entertainment",
             "Server_Only"
@@ -776,7 +776,7 @@
     },
     {
         "name": "trackable about",
-        "mention": "</trackable about:1404500688284946514>",
+        "mention": "</trackable about:1406328783539273978>",
         "helpCategories": [
             "General",
             "Entertainment",
@@ -787,7 +787,7 @@
     },
     {
         "name": "trackable create",
-        "mention": "</trackable create:1404500688284946514>",
+        "mention": "</trackable create:1406328783539273978>",
         "helpCategories": [
             "General",
             "Entertainment",
@@ -798,7 +798,7 @@
     },
     {
         "name": "trackable inventory",
-        "mention": "</trackable inventory:1404500688284946514>",
+        "mention": "</trackable inventory:1406328783539273978>",
         "helpCategories": [
             "General",
             "Entertainment",

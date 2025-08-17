@@ -65,9 +65,9 @@ async function notify(what, useWebhook = false) {
 }
 
 module.exports = {
-    limitLength,
-    escapeBackticks,
-    notify,
+    limitLength: limitLength,
+    escapeBackticks: escapeBackticks,
+    notify: notify,
 
     // A centralized permission-checking function for users and roles
     /** @returns {Promise<[Boolean, String]>} */
