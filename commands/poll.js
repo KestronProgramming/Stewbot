@@ -468,7 +468,9 @@ module.exports = {
 					break;
 				}
 				poll.options.push(cmd.fields.getTextInputValue("poll-addedInp"));
-				await censor(`*${poll.title}**${poll.options.map((a,i)=>`\n${i}. ${a}`).join("")}`);
+				cmd.update(
+					await censor(`**${poll.title}**${poll.options.map((a,i)=>`\n${i}. ${a}`).join("")}`)
+				)
 			break;
 			
 			case 'poll-removed':
