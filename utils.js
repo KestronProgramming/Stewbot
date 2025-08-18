@@ -5,6 +5,7 @@ const { PermissionFlagsBits, Message } = require("discord.js")
 const config = require("./data/config.json");
 const ms = require("ms");
 const client = require("./client.js");
+const cron = require('node-cron');
 
 // Temp value for now to avoid circular references
 let messageDataCache, Guilds, GuildUsers;
@@ -34,7 +35,7 @@ async function notify(what, useWebhook = false) {
     try {
         console.log(what);
         if (useWebhook) {
-            const webhook = process.env.beta ? process.env.betaWebhook : process.env.logWebhook;
+            const webhook = process.env.beta ? process.env.betaLogWebhook : process.env.logWebhook;
             if (!webhook) return
 
             await fetch(webhook, {
@@ -52,7 +53,7 @@ async function notify(what, useWebhook = false) {
             try {
                 let channelId = process.env.beta ? config.betaNoticeChannel : config.noticeChannel;
                 const channel = await client.channels.fetch(channelId);
-                if (!channel || !("send" in channel)) return;
+                if (!channel || !("send" in channel)) throw new Error("Log channel not found");
                 channel.send(limitLength(what));
             } catch (e) {
                 console.log("Couldn't send notify, retrying with webhook");
@@ -64,10 +65,22 @@ async function notify(what, useWebhook = false) {
     }
 }
 
+// Wrapper for cron.schedule that sends errors to notify instead of just printing like cron does by default
+const cronJob = (schedule, task, options = {}) => {
+    return cron.schedule(schedule, async () => {
+        try {
+            await task()?.catch?.(notify);
+        } catch (error) {
+            notify(error);
+        }
+    }, options);
+};
+
 module.exports = {
     limitLength: limitLength,
     escapeBackticks: escapeBackticks,
     notify: notify,
+    cronJob: cronJob,
 
     // A centralized permission-checking function for users and roles
     /** @returns {Promise<[Boolean, String]>} */

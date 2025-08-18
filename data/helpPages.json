@@ -513,7 +513,7 @@
             "Configuration"
         ],
         "shortDesc": "Configure the bot for you personally",
-        "detailedDesc": "Configure options for your personal interactions with the bot. This includes options such as if the bot tells you when you're filtered, if it automatically embeds certain links you post, or if you want it to not ping you whenb you level up in a server. You can also set your timezone for use with </timestamp:1403120086692139099>"
+        "detailedDesc": "Configure options for your personal interactions with the bot. This includes options such as if the bot tells you when you're filtered, if it automatically embeds certain links you post, or if you want it to not ping you when you level up in a server. You can also set your timezone for use with </timestamp:1403120086692139099>"
     },
     {
         "name": "pin",
@@ -536,6 +536,16 @@
         ],
         "shortDesc": "Check uptime stats",
         "detailedDesc": "The standard command to check if the bot is online, how long it's been online for, and in how many places it's installed."
+    },
+    {
+        "name": "poll",
+        "mention": "</poll:1406623727201943564>",
+        "helpCategories": [
+            "Entertainment",
+            "Server_Only"
+        ],
+        "shortDesc": "Make a poll with automatically tracked options",
+        "detailedDesc": "Posts a poll with an automatically updated pie chart representing the response density."
     },
     {
         "name": "prime_embed",

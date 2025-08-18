@@ -305,6 +305,9 @@ module.exports = {
                 .addStringOption(option =>
                     option.setName("word").setDescription("The word to blacklist").setRequired(true)
                 )
+                .addBooleanOption(option =>
+                    option.setName("use_global_options").setDescription("This will remove word specific settings, defaulting back to global settings.").setRequired(false)
+                )
                 .addStringOption(option =>
                     option.setName("actions").setDescription("What actions should I take on offending messages?")
                     .addChoices(possibleActions)
@@ -325,6 +328,9 @@ module.exports = {
             command.setName("edit_word").setDescription('Add a word to the filter')
                 .addStringOption(option =>
                     option.setName("word").setDescription("The word to blacklist").setRequired(true)
+                )
+                .addBooleanOption(option =>
+                    option.setName("use_global_options").setDescription("This will remove word specific settings, defaulting back to global settings.").setRequired(false)
                 )
                 .addStringOption(option =>
                     option.setName("actions").setDescription("What actions should I take on offending messages?")
@@ -416,15 +422,17 @@ module.exports = {
                 var actions = cmd.options.getString("actions").split("+");
                 var conjugations = cmd.options.getBoolean("conjugations");
                 var evasions = cmd.options.getBoolean("evasions");
+                var timeout_length = cmd.options.getString("timeout_length");
 
                 var timeoutInMS;
 
                 if (timeout_length !== null) {
                     const isTimeouting = actions.includes("timeout");
-
-                    timeoutInMS = ms(timeout_length);
-                    if (timeoutInMS && !isTimeouting) {
-                        disclaimers.push(`- You specified a timeout time, but you didn't say to timeout. If you want timeouts for being filtered, please specify that in the \`actions\` input.`)
+                    try {
+                        timeoutInMS = ms(timeout_length);
+                    } catch {}
+                    if (timeoutInMS) {
+                        if (!isTimeouting) disclaimers.push(`- You specified a timeout length, but you didn't say to timeout. If you want timeouts for being filtered, please specify that in the \`actions\` input.`)
                     }
                     else {
                         disclaimers.push(`- I couldn't understand the timeout length you specified${isTimeouting ? " so I will use global settings for this word" : ""}. Please provide a value like \`45 seconds\` or \`5 minutes\``)
@@ -435,9 +443,10 @@ module.exports = {
                     .find(item => item.word == filterWord);
 
                 if (!wordRef) {
-                    let newRef = {
+                    let newRef = guild.filterV2.blacklist.create({
                         word: filterWord
-                    }
+                    });
+                        
                     guild.filterV2.blacklist.push(newRef);
 
                     // @ts-ignore
@@ -552,7 +561,7 @@ module.exports = {
                 var disclaimers = [];
 
                 var channel = cmd.options.getChannel("log_channel");
-                var timeout_length = cmd.options.getNumber("timeout_length");
+                var timeout_length = cmd.options.getString("timeout_length");
                 var to_log = cmd.options.getBoolean("log");
                 var actions = cmd.options.getString("actions").split("+");
                 var conjugations = cmd.options.getBoolean("conjugations");
@@ -573,7 +582,7 @@ module.exports = {
                     if (timeoutInMS) {
                         guild.filterV2.timeout_length = timeoutInMS;
                         if (!isTimeouting) {
-                            disclaimers.push(`- You specified a timeout time, but you didn't say to timeout. If you want timeouts for being filtered, please specify that in the \`actions\` input.`)
+                            disclaimers.push(`- You specified a timeout length, but you didn't say to timeout. If you want timeouts for being filtered, please specify that in the \`actions\` input.`)
                         }
                     }
                     else {

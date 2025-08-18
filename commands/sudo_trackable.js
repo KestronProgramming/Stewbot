@@ -154,7 +154,14 @@ module.exports = {
 
                     await Trackables.updateOne(
                         { id },
-                        { $set : { current: `u${who.id}` } }
+                        { 
+                            $set: { 
+                                current: `u${who.id}`,
+                                placed: Date.now(),
+                                currentName: `Moved by admin`,
+                            },
+                            $unset: [ "expirationWarnedAboutAt" ]
+                        }
                     )
 
                     await cmd.followUp("Done");
