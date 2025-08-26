@@ -138,19 +138,30 @@ async function doEmojiboardReaction(react) {
             guild.save();
             return;
         }
-        var hook = await c.fetchWebhooks();
-        hook = hook.find(h => h.token);
+        if (!("fetchWebhooks" in c)) return;
+        let webhooks = await c.fetchWebhooks();
+        let hook = webhooks.find(h => h.token);
         if (hook) {
-            let response = await hook.send(resp);
+            let response = await hook.send({
+                ...resp,
+                allowedMentions: { parse: [] }
+            });
             emojiboard.posted.set(react.message.id, `webhook${response.id}`);
         }
         else {
-            const hook = await client.channels.cache.get(emojiboard.channel).createWebhook({
+            let c = await client.channels.cache.get(emojiboard.channel);
+            if (!("createWebhook" in c)) return;
+
+            const hook = await c.createWebhook({
                 name: config.name,
                 avatar: config.pfp,
             });
 
-            let response = await hook.send(resp);
+            let response = await hook.send({
+                ...resp,
+                allowedMentions: { parse: [] }
+            });
+
             emojiboard.posted.set(react.message.id, `webhook${response.id}`);
         }
     }

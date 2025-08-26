@@ -6,8 +6,6 @@ data/filterCache
 env.json
 node_modules
 checkmate.js
-tempDne.jpg
-tempPoll.png
 Database
 storage.json
 storage*.json
@@ -20,3 +18,4 @@ temp/
 dump*
 stew*-backup.zip
 backup.zip
+.idea
