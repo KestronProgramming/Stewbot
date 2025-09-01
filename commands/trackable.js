@@ -18,40 +18,42 @@ const trackableIcon = "https://cdn.discordapp.com/attachments/122925661979213835
 const aboutTrackables = {
 	ephemeral: false,
 	content: "About trackables",
-	embeds: [{
-		"title": "About trackables",
-		"description":
-			`With trackables you can release your image to travel across any server. A trackable can be picked up and placed down from server to server. Each person and server is counted on the trackable.\n` +
-			`\n` +
-			// @ts-ignore
-			`[Add Stewbot to your profile](${config.install}) to make and track your own! /trackable create\n` +
-			`\n` +
-			`If a trackable is not moved for one week, it will be sent to a special channel in [#find-a-trackable](${config.invite}) where **you can pick it up** for a new adventure!`,
-		"color": 0x006400,
-		"thumbnail": {
-			"url": "https://media.discordapp.net/attachments/1221938602397667430/1403786745241272461/OIG2.dPKlYcycwt4DCcIAYeBX.jpg?ex=6898d1c9&is=68978049&hm=4187e9fcf2161b161f45fb467825740450adef00106589d12a07303be7624051&=&width=1708&height=1708"
+	embeds: [
+		{
+			"title": "About trackables",
+			"description":
+				`With trackables you can release your image to travel across any server. A trackable can be picked up and placed down from server to server. Each person and server is counted on the trackable.\n` +
+				`\n` +
+				// @ts-ignore
+				`[Add Stewbot to your profile](${config.install}) to make and track your own! /trackable create\n` +
+				`\n` +
+				`If a trackable is not moved for one week, it will be sent to a special channel in [#find-a-trackable](${config.invite}) where **you can pick it up** for a new adventure!`,
+			"color": 0x006400,
+			"thumbnail": {
+				"url": "https://media.discordapp.net/attachments/1221938602397667430/1403786745241272461/OIG2.dPKlYcycwt4DCcIAYeBX.jpg?ex=6898d1c9&is=68978049&hm=4187e9fcf2161b161f45fb467825740450adef00106589d12a07303be7624051&=&width=1708&height=1708"
+			},
+			"footer": {
+				"text": "Stewbot",
+				"icon_url": "https://stewbot.kestron.software/stewbot.jpg"
+			}
 		},
-		"footer": {
-			"text": "Stewbot",
-			"icon_url": "https://stewbot.kestron.software/stewbot.jpg"
-		}
-	},
-	{
-		"description":
-			`To celebrate the launch of Trackables, we're giving away one month of Nitro to:\n1. The user who moves the most trackables\n`+
-			`2. The creator of the trackable that gets moved the most\n`+
-			`\n`+
-			`Good luck! Join [Kestron Central](<${config.invite}>) for giveaway updates and to find more trackables!`,
-		"fields": [],
-		"color": 15764728,
-		"title": "🥳 Nitro Giveaway!",
-		"footer": {
-			"text": "🎉Nitro Giveaway"
-		},
-		"thumbnail": {
-			"url": "https://media.discordapp.net/attachments/1229256619792138351/1404159977987248180/image.png?ex=689b7ee2&is=689a2d62&hm=e8165f6e4c51e37a83921140d15f2125c61089684f76ad7806183824679cfc35&=&format=webp&quality=lossless&width=1843&height=1843"
-		}
-	}]
+		// {
+		// 	"description":
+		// 		`To celebrate the launch of Trackables, we're giving away one month of Nitro to:\n1. The user who moves the most trackables\n`+
+		// 		`2. The creator of the trackable that gets moved the most\n`+
+		// 		`\n`+
+		// 		`Good luck! Join [Kestron Central](<${config.invite}>) for giveaway updates and to find more trackables!`,
+		// 	"fields": [],
+		// 	"color": 15764728,
+		// 	"title": "🥳 Nitro Giveaway!",
+		// 	"footer": {
+		// 		"text": "🎉Nitro Giveaway"
+		// 	},
+		// 	"thumbnail": {
+		// 		"url": "https://media.discordapp.net/attachments/1229256619792138351/1404159977987248180/image.png?ex=689b7ee2&is=689a2d62&hm=e8165f6e4c51e37a83921140d15f2125c61089684f76ad7806183824679cfc35&=&format=webp&quality=lossless&width=1843&height=1843"
+		// 	}
+		// }
+	]
 }
 
 const expiredText = [
