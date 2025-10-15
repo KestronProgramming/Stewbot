@@ -190,6 +190,16 @@ module.exports = {
 				).addBooleanOption(option=>
 					option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 				)
+			).addSubcommand(command =>
+				command.setName("minesweeper").setDescription("Play Minesweeper!")..addIntegerOption(option =>
+                        option.setName("width").setDescription("Width of the map? (Default: 10)").setMinValue(3).setMaxValue(10).setRequired(false)
+                    ).addIntegerOption(option =>
+                        option.setName("height").setDescription("Height of the map? (Default: 10)").setMinValue(3).setMaxValue(10).setRequired(false)
+                    ).addIntegerOption(option =>
+                        option.setName("mines").setDescription("How many mines are there on the board? (Default: 10)").setMinValue(1).setMaxValue(99).setRequired(false)
+                    ).addBooleanOption(option=>
+						option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
+					)
 			),
 		
 		// Optional fields
@@ -366,6 +376,16 @@ module.exports = {
 					`I played: ${computerChoice} ${emojified[computerChoice]}\n` +
 					`\n${won==0?`We`:`You`} ${won==0?`tied`:won==1?`lost`:`won`}! ${won==1?":stew:":""}`
 				cmd.followUp(result);
+			break;
+			case 'minesweeper':
+				var mapWidth = cmd.options.getNumber("height");
+				var mapHeight = cmd.options.getNumber("height");
+				var mines = cmd.options.getNumber("mines");
+				const minesweeperFollowUp =
+					`Height: ${mapWidth}\n` +
+					`Width: ${mapHeight}\n` +
+					`Mines: ${mines}`
+				cmd.followUp(minesweeperFollowUp);
 			break;
 		}
 	},
