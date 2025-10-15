@@ -190,12 +190,12 @@ module.exports = {
 				).addBooleanOption(option=>
 					option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 				)
-			).addSubcommand(command =>
-				command.setName("minesweeper").setDescription("Play Minesweeper!")..addIntegerOption(option =>
+			).addSubcommand(command=>
+				command.setName("minesweeper").setDescription("Play Minesweeper!").addIntegerOption(option=>
                         option.setName("width").setDescription("Width of the map? (Default: 10)").setMinValue(3).setMaxValue(10).setRequired(false)
-                    ).addIntegerOption(option =>
+                    ).addIntegerOption(option=>
                         option.setName("height").setDescription("Height of the map? (Default: 10)").setMinValue(3).setMaxValue(10).setRequired(false)
-                    ).addIntegerOption(option =>
+                    ).addIntegerOption(option=>
                         option.setName("mines").setDescription("How many mines are there on the board? (Default: 10)").setMinValue(1).setMaxValue(99).setRequired(false)
                     ).addBooleanOption(option=>
 						option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
