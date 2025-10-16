@@ -191,7 +191,9 @@ module.exports = {
 					option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
 				)
 			).addSubcommand(command =>
-				command.setName("minesweeper").setDescription("Play Minesweeper!").addIntegerOption(option =>
+				command.setName("minesweeper").setDescription("Play Minesweeper!").addBooleanOption(option =>
+					option.setName("device").setDescription("On Computer? (Default: true)").setRequired(false)
+				).addIntegerOption(option =>
 					option.setName("width").setDescription("Width of the map? (Default: 10)").setMinValue(3).setMaxValue(10).setRequired(false)
 				).addIntegerOption(option =>
 					option.setName("height").setDescription("Height of the map? (Default: 10)").setMinValue(3).setMaxValue(10).setRequired(false)
@@ -378,9 +380,10 @@ module.exports = {
 				cmd.followUp(result);
 				break;
 			case 'minesweeper':
-				let mapWidth = cmd.options.getInteger("width") || 10;
-				let mapHeight = cmd.options.getInteger("height") || 10;
-				let mines = cmd.options.getInteger("mines") || 10;
+				let mapWidth = cmd.options.getInteger("width") ?? 10;
+				let mapHeight = cmd.options.getInteger("height") ?? 10;
+				let mines = cmd.options.getInteger("mines") ?? 10;
+				let onComputer = cmd.options.getBoolean("device") ?? true;
 				if (mines >= mapWidth * mapHeight - 1) {
 					mines = mapWidth * mapHeight - 1;
 				}
@@ -389,7 +392,12 @@ module.exports = {
 				let coveredUp = [];
 				let Checklist = [];
 				let Virus = [];
-				let emojis = ["0️⃣", "1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "💣"];
+				var emojis = [];
+				if (onComputer) {
+					emojis = ["0️⃣", "1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "💣"];
+				} else {
+					emojis = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "B"];
+				}
 				let placeholder;
 				let NumBombs = 0;
 				let clicked = false;
@@ -503,9 +511,17 @@ module.exports = {
 						let placeholder = "";
 						for (let j = 0; j < mapWidth; j++) {
 							if (coveredUp[(i * mapWidth) + j][0]) {
-								placeholder += "||" + emojis[mapArr[(i * mapWidth) + j]] + "||";
+								if (onComputer) {
+									placeholder += "||" + emojis[mapArr[(i * mapWidth) + j]] + "||";
+								} else {
+									placeholder += "||\`" + emojis[mapArr[(i * mapWidth) + j]] + "\`|| ";
+								}
 							} else {
-								placeholder += "" + emojis[mapArr[(i * mapWidth) + j]];
+								if (onComputer) {
+									placeholder += "" + emojis[mapArr[(i * mapWidth) + j]];
+								} else {
+									placeholder += "\`" + emojis[mapArr[(i * mapWidth) + j]] + "\` ";
+								}
 							}
 						}
 						minesweeperFollowUp += `${placeholder}\n`;
