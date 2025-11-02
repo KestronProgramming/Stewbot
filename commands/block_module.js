@@ -126,6 +126,8 @@ module.exports = {
                     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator), 
                     //  ^ From my limited testing, "Administrator" is the only perm that lets you enable/disable bot commands
 
+		extra: {"contexts": [0], "integration_types": [0]},
+
 		requiredGlobals: ["commands"],
 
 		help: {

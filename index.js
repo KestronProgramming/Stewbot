@@ -192,6 +192,21 @@ client.on(Events.InteractionCreate, async cmd=>{
     const commandScript = commands[cmd.commandName];
     if (!commandScript && (cmd.isCommand() || cmd.isAutocomplete())) return; // Ignore any potential cache issues 
 
+    // Check permissions manually due to Discord security bugs on interpreting
+    if ((cmd.isChatInputCommand() || cmd.isMessageContextMenuCommand()) && commandScript?.data?.command?.default_member_permissions) {
+        const requiredPermissions = BigInt(commandScript.data.command.default_member_permissions);
+        if (requiredPermissions && cmd.member && cmd.guild) {
+            const memberPermissions = BigInt(cmd.member.permissions);
+            if ((memberPermissions & requiredPermissions) !== requiredPermissions) {
+                await cmd.reply({ 
+                    content: "You don't have permission to use this command.", 
+                    ephemeral: true 
+                });
+                return;
+            }
+        }
+    }
+
     //// Manage deferring
     let deferedResponse;
     if(cmd.isChatInputCommand() || cmd.isMessageContextMenuCommand()) { 

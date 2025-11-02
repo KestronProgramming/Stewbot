@@ -81,6 +81,8 @@ module.exports = {
 			)
 			.setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
             
+        extra: {"contexts": [0], "integration_types": [0]},
+
         requiredGlobals: [],
         help: {
             helpCategories: [""],//Do not show in any automated help pages

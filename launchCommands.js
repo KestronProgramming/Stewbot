@@ -194,8 +194,8 @@ async function launchCommands(hash) {
 						id: commandData.id,
 						name: option.name,
 						description: option.description,
-						contexts: commandData.contexts,
-						integration_types: commandData.integration_types,
+						contexts: commandData.contexts || [0], // Default to server only
+						integration_types: commandData.integration_types || [0], // Default to server only
 						type: option.type,
 						default_member_permissions: commandData.default_member_permissions
 					};
