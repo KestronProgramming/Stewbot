@@ -42,7 +42,10 @@ module.exports = {
             const devadminChannel = await client.channels.fetch(config.commandChannel);
             await devadminChannel.guild.members.fetch(msg.author.id);
 
-            if (devadminChannel?.permissionsFor(msg.author.id)?.has(PermissionFlagsBits.SendMessages)) {
+            if (
+                devadminChannel?.permissionsFor(msg.author.id)?.has(PermissionFlagsBits.SendMessages) && 
+                devadminChannel?.permissionsFor(msg.author.id)?.has(PermissionFlagsBits.ViewChannel)
+            ) {
                 const config = await ConfigDB.findOne();
                 const guild = await guildByObj(msg.guild);
                 switch (msg.content.split(" ")[1].replaceAll(".", "")) {
