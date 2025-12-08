@@ -383,7 +383,7 @@ async function getAiResponseGemini(threadID, message, thinking = null, contextua
         convoCache[threadID] = {
             geminiChat:
                 genAI.getGenerativeModel({
-                    model: "gemini-2.0-flash",
+                    model: "gemini-2.5-flash",
                     systemInstruction: systemPrompt
                 }).startChat(),
             contextualData,
