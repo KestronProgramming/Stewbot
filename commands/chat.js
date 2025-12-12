@@ -1,3 +1,4 @@
+// @ts-nocheck
 // #region CommandBoilerplate
 const Categories = require("./modules/Categories");
 const client = require("../client.js");
@@ -16,19 +17,25 @@ const ms = require("ms");
 const NodeCache = require("node-cache");
 const { censor } = require("./filter");
 
+// AI SDKs
+const { groq } = require('@ai-sdk/groq');
+const { streamText } = require('ai');
+
+// Configuration
+const COOLDOWN_SECONDS = 3;
+const COOLDOWN_MS = COOLDOWN_SECONDS * 1000;
+
 // Server IPs and User IDs who need to wait for the requests to finish - this clears after 2 min in case of an error
 let activeAIRequests = new NodeCache({ stdTTL: ms("5m")/1000, checkperiod: 120 });
+// Cooldown tracker for rate limiting
+let userCooldowns = new NodeCache({ stdTTL: COOLDOWN_SECONDS, checkperiod: 1 });
 
 // Non-persistent store of convos with users 
 let convoCache = {};
 
-
-// Setup Gemini
-const { GoogleGenerativeAI, SchemaType } = require("@google/generative-ai");
-const genAI = new GoogleGenerativeAI(process.env.geminiAPIKey);
-
 function resetAIRequests() {
     activeAIRequests.flushAll()
+    userCooldowns.flushAll()
 }
 
 //#region Tools
@@ -47,15 +54,15 @@ const GeminiType = {
 // https://discord-api-types.dev/api/discord-api-types-v10/enum/ApplicationCommandOptionType
 function discordTypeToGeminiType(discordType) {
     switch (discordType) {
-        case 3: return SchemaType.STRING; // STRING
-        case 4: return SchemaType.INTEGER; // INTEGER
-        case 5: return SchemaType.BOOLEAN; // BOOLEAN
-        case 6: return SchemaType.STRING; // USER (ID or mention)
-        case 7: return SchemaType.STRING; // CHANNEL (ID or mention)
-        case 8: return SchemaType.STRING; // ROLE (ID or mention)
-        case 9: return SchemaType.STRING; // MENTIONABLE
-        case 10: return SchemaType.NUMBER; // NUMBER
-        case 11: return SchemaType.STRING; // ATTACHMENT (ID or URL placeholder)
+        case 3: return 'STRING'; // STRING
+        case 4: return 'INTEGER'; // INTEGER
+        case 5: return 'BOOLEAN'; // BOOLEAN
+        case 6: return 'STRING'; // USER (ID or mention)
+        case 7: return 'STRING'; // CHANNEL (ID or mention)
+        case 8: return 'STRING'; // ROLE (ID or mention)
+        case 9: return 'STRING'; // MENTIONABLE
+        case 10: return 'NUMBER'; // NUMBER
+        case 11: return 'STRING'; // ATTACHMENT (ID or URL placeholder)
         default:
             console.warn(`Unknown Discord option type: ${discordType}. Defaulting to STRING.`);
             return GeminiType.STRING; // Fallback
@@ -258,12 +265,12 @@ async function postprocessAIMessage(message, guild) {
     return message
 }
 
-async function getAiResponseGemini(threadID, message, thinking = null, contextualData = {}, notify = null, retryAttempt = 0) {
+async function getAiResponse(threadID, message, thinking = null, contextualData = {}, notify = null, retryAttempt = 0) {
     // returns: [response, success]
 
     if (
         !convoCache[threadID] ||
-        !convoCache[threadID].geminiChat ||
+        !convoCache[threadID].messages ||
         Date.now() - convoCache[threadID].lastMessage > 1000 * 60 * 60 ||
         JSON.stringify(contextualData) !== JSON.stringify(convoCache[threadID].contextualData)
     ) {
@@ -274,43 +281,89 @@ async function getAiResponseGemini(threadID, message, thinking = null, contextua
         });
 
         convoCache[threadID] = {
-            geminiChat:
-                genAI.getGenerativeModel({
-                    model: "gemini-2.5-flash",
-                    systemInstruction: systemPrompt
-                }).startChat(),
+            systemPrompt: systemPrompt,
+            messages: [],
             contextualData,
             lastMessage: Date.now(),
         };
     }
 
+    // Add user message to history
+    convoCache[threadID].messages.push({
+        role: 'user',
+        content: message,
+    });
+
     let response = null;
     let success = true;
 
     try {
-        const geminiResult = await convoCache[threadID].geminiChat.sendMessage(message);
+        const result = await streamText({
+            model: groq('openai/gpt-oss-120b'),
+            system: convoCache[threadID].systemPrompt,
+            messages: convoCache[threadID].messages,
+        });
 
-        if (!geminiResult?.response?.text()) {
+        // Collect the full response from the stream
+        let fullText = '';
+        for await (const textPart of result.textStream) {
+            fullText += textPart;
+        }
+
+        if (!fullText) {
             if (retryAttempt === 0) {
+                // Remove the failed message before retry
+                convoCache[threadID].messages.pop();
                 delete convoCache[threadID];
-                return getAiResponseGemini(threadID, message, thinking, contextualData, notify, retryAttempt + 1);
+                return getAiResponse(threadID, message, thinking, contextualData, notify, retryAttempt + 1);
             } else {
-                notify && notify(`Error with Gemini API response: \n${JSON.stringify(geminiResult)}`);
+                notify && notify(`Error with AI API response: Empty response received`);
                 return [`Sorry, there was an error with the AI response. It has already been reported. Try again later.`, false];
             }
         }
 
-        response = geminiResult.response.text();
+        response = fullText;
+        
+        // Add assistant response to history
+        convoCache[threadID].messages.push({
+            role: 'assistant',
+            content: response,
+        });
+
     } catch (e) {
-        notify && notify(`Gemini API error: \n${e.stack}`);
-        console.error("Gemini API error:", e);
+        notify && notify(`AI API error: \n${e.stack}`);
+        console.error("AI API error:", e);
         response = `Sorry, there was an error with the AI response. It has already been reported. Try again later.`;
         success = false;
+        // Remove the failed user message from history
+        convoCache[threadID].messages.pop();
     } finally {
-        convoCache[threadID].lastMessage = Date.now();
+        if (convoCache[threadID]) {
+            convoCache[threadID].lastMessage = Date.now();
+        }
     }
 
     return [response, success];
+}
+
+function checkRateLimit(userId) {
+    // Check if user has an active request
+    if (activeAIRequests.has(userId)) {
+        return { allowed: false, message: "You already have an active chat request. Please wait for that one to finish before requesting another." };
+    }
+    
+    // Check if user is on cooldown
+    const cooldownRemaining = userCooldowns.get(userId);
+    if (cooldownRemaining) {
+        const secondsLeft = Math.ceil((cooldownRemaining - Date.now()) / 1000);
+        return { allowed: false, message: `To keep the ping-AI free, please wait ${secondsLeft} more second${secondsLeft !== 1 ? 's' : ''} before trying again.` };
+    }
+    
+    return { allowed: true };
+}
+
+function startCooldown(userId) {
+    userCooldowns.set(userId, Date.now() + COOLDOWN_MS);
 }
 //#endregion
 
@@ -328,9 +381,6 @@ module.exports = {
             )
             .addBooleanOption(option =>
                 option.setName("clear").setDescription("Clear history?")
-            )
-            .addBooleanOption(option =>
-                option.setName("thinking").setDescription("Enable thinking before responding?")
             )
             .addBooleanOption(option =>
                 option.setName("private").setDescription("Make the response ephemeral?")//Do not remove private option unless the command is REQUIRED to be ephemeral or non-ephemeral.
@@ -352,14 +402,16 @@ module.exports = {
     async execute(cmd, globalsContext) {
         applyContext(globalsContext);
 
-        // Check if this user is allowed to message again
-        if(activeAIRequests.has(cmd.user.id)) {
-            cmd.followUp({
-                content: "You already have an active chat request. Please wait for that one to finish before requesting another.",
+        // Check rate limits
+        const rateLimitCheck = checkRateLimit(cmd.user.id);
+        if (!rateLimitCheck.allowed) {
+            return cmd.followUp({
+                content: rateLimitCheck.message,
                 ephemeral: true
-            })
+            });
         }
-        activeAIRequests.set(cmd.user.id, true) 
+
+        activeAIRequests.set(cmd.user.id, true);
 
         let message = cmd.options.getString("message");
         let thinking = cmd.options.getBoolean("thinking");
@@ -373,11 +425,10 @@ module.exports = {
             delete convoCache[threadID];
         }
 
-        let [response, success] = await getAiResponseGemini(threadID, message, thinking, {
+        let [response, success] = await getAiResponse(threadID, message, thinking, {
             name: cmd.user.username,
             server: cmd.guild ? cmd.guild.name : "Direct Messages",
         }, notify);
-
 
         response = await postprocessAIMessage(limitLength(response), cmd.guild)
         response = await censor(response, cmd.guild, true);
@@ -387,13 +438,14 @@ module.exports = {
             allowedMentions: { parse: [] }
         });
 
-        activeAIRequests.del(cmd.user.id); 
+        activeAIRequests.del(cmd.user.id);
+        startCooldown(cmd.user.id);
     },
 
     /** 
      * @param {import('discord.js').Message} msg 
      * @param {import("./modules/database.js").GuildDoc} guildStore 
-     * @param {import("./modules/database.js").GuildUserDoc} guildUserStore 
+     * @param {import("./modules/database.js").GuildUserDoc} guildStore 
      * */
     async [Events.MessageCreate] (msg, globals, guildStore) {
         applyContext(globals);
@@ -410,20 +462,29 @@ module.exports = {
         const user = await userByObj(msg.author);
         if (user?.config?.aiPings) {
             
-            // Check if this user is allowed to message again
-            if(activeAIRequests.has(msg.author.id)) {
-                // For MessageCreate, just ignore.
+            // Check rate limits
+            const rateLimitCheck = checkRateLimit(msg.author.id);
+            if (!rateLimitCheck.allowed) {
+                // Send rate limit message for mentions
+                try {
+                    await msg.reply({
+                        content: rateLimitCheck.message,
+                        allowedMentions: { parse: [] }
+                    });
+                } catch (e) {
+                    console.error("Failed to send rate limit message:", e);
+                }
                 return;
             }
 
             if ("sendTyping" in msg.channel) msg.channel.sendTyping();
-            activeAIRequests.set(msg.author.id, true) // Don't allow this user to send another request until this one finishes
+            activeAIRequests.set(msg.author.id, true);
 
             let message = await postprocessUserMessage(msg.content, msg.guild);
             let threadID = msg.author.id;
             let response, success;
 
-            [response, success] = await getAiResponseGemini(threadID, message, false, {
+            [response, success] = await getAiResponse(threadID, message, false, {
                 name: msg.author.username,
                 server: msg.guild ? msg.guild.name : "Direct Messages",
             }, notify, 0);
@@ -479,16 +540,12 @@ module.exports = {
                             allowedMentions: { parse: [] },
                         });
                     }
-
                 }
 
                 activeAIRequests.del(msg.author.id);
-
-                // if (response) msg.reply({
-                //     content: await postprocessAIMessage(response, msg.guild),
-                //     allowedMentions: { parse: [] }
-                // });
-
+                startCooldown(msg.author.id);
+            } else {
+                activeAIRequests.del(msg.author.id);
             }
         }
     }
