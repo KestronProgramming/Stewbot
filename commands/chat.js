@@ -1,29 +1,20 @@
 // #region CommandBoilerplate
 const Categories = require("./modules/Categories");
 const client = require("../client.js");
-const { Guilds, Users, ConfigDB, guildByID, userByID, guildByObj, userByObj } = require("./modules/database.js")
-const { Events, ContextMenuCommandBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
+const { userByObj } = require("./modules/database.js")
+const { Events, SlashCommandBuilder}=require("discord.js");
 function applyContext(context={}) {
 	for (let key in context) {
 		this[key] = context[key];
 	}
 }
-
 // #endregion CommandBoilerplate
 
 const { limitLength, notify } = require("../utils.js")
-const dgram = require('dgram');
-const os = require('os');
-const { Ollama } = require('ollama');
 const fs = require("fs");
-const { ApplicationCommandOptionType } = require("discord.js")
 const ms = require("ms");
 const NodeCache = require("node-cache");
 const { censor } = require("./filter");
-
-const config = require("../data/config.json")
-const INTERFACES = config.aiNodeInterfaces;
-const BROADCAST_PORT = config.aiNodePort;
 
 // Server IPs and User IDs who need to wait for the requests to finish - this clears after 2 min in case of an error
 let activeAIRequests = new NodeCache({ stdTTL: ms("5m")/1000, checkperiod: 120 });
@@ -37,7 +28,6 @@ const { GoogleGenerativeAI, SchemaType } = require("@google/generative-ai");
 const genAI = new GoogleGenerativeAI(process.env.geminiAPIKey);
 
 function resetAIRequests() {
-    // Sometimes this can get off - TODO: use ollama.ps to reset when the model is unloaded
     activeAIRequests.flushAll()
 }
 
@@ -201,103 +191,6 @@ function convertCommandsToTools(commandsLoaded) {
 }
 //#endregion
 
-//#region Networking
-// Function to get IP and broadcast address for specified interfaces
-function getInterfaceDetails(interfaceName) {
-    const interfaces = os.networkInterfaces();
-    const iface = interfaces[interfaceName];
-    if (!iface) {
-        if (process.env.beta) return null;
-        throw new Error(`Interface ${interfaceName} not found`);
-    }
-    const ipv4 = iface.find((info) => info.family === 'IPv4' && !info.internal);
-    if (!ipv4) {
-        throw new Error(`IPv4 address not found on interface ${interfaceName}`);
-    }
-    const ipParts = ipv4.address.split('.').map(Number);
-    const maskParts = ipv4.netmask.split('.').map(Number);
-    const broadcastParts = ipParts.map((part, i) => part | (~maskParts[i] & 0xff));
-    return {
-        localIP: ipv4.address,
-        broadcastIP: broadcastParts.join('.'),
-    };
-}
-
-// Function to send multicasts to interfaces with stewbot AI nodes
-async function multicastRequest(message, waitTimeMs) {
-    const results = [];
-
-    const promises = INTERFACES.map((iface) =>
-        new Promise((resolve, reject) => {
-            try {
-                const interfaceDetails = getInterfaceDetails(iface);
-                if (!interfaceDetails) {
-                    resolve([]); // Beta clones don't have the same interface setup
-                    return null;
-                }
-                const { localIP, broadcastIP } = interfaceDetails;
-                console.log(`Using ${iface}: IP=${localIP}, Broadcast=${broadcastIP}`);
-
-                const server = dgram.createSocket('udp4');
-                const discovered = [];
-
-                server.bind(BROADCAST_PORT, localIP, () => {
-                    server.setBroadcast(true);
-                    console.log(`Bound to ${iface} (${localIP})`);
-
-                    const bufferMessage = Buffer.from(message);
-                    server.send(bufferMessage, 0, bufferMessage.length, BROADCAST_PORT, broadcastIP, (err) => {
-                        if (err) {
-                            console.error(`Broadcast error on ${iface}:`, err);
-                            reject(err);
-                        } else {
-                            console.log(`Broadcast message sent on ${iface}`);
-                        }
-                    });
-                });
-
-                // Collect responses
-                server.on('message', (msg, rinfo) => {
-                    console.log(`Response from ${rinfo.address}:${rinfo.port} -> ${msg.toString()}`);
-                    discovered.push({ ip: rinfo.address, port: rinfo.port, data: msg.toString() });
-                });
-
-                // Close the server after the wait time
-                setTimeout(() => {
-                    server.close(() => {
-                        console.log(`Stopped listening on ${iface}`);
-                        resolve(discovered);
-                    });
-                }, waitTimeMs);
-            } catch (error) {
-                console.error(`Error on ${iface}:`, error.message);
-                reject(error);
-            }
-        })
-    );
-
-    // Await all interface discoveries and merge results
-    const allResults = await Promise.all(promises);
-    allResults.forEach((result) => results.push(...result));
-    return results;
-}
-
-async function getAvailableOllamaServers() {
-    let ollamaInstances = [];
-    const waitTimeMs = 500;
-    const responses = await multicastRequest('ollama_discovery_request', waitTimeMs);
-    responses.forEach(server => {
-        ollamaInstances.push(new Ollama({ host: `http://${server.ip}:${server.data}` }))
-    })
-    console.log(`${ollamaInstances.length} available servers`);
-
-    // Remove servers with active requests
-    ollamaInstances = ollamaInstances.filter((instance) => !activeAIRequests.get(instance.config.host));
-
-    return ollamaInstances;
-}
-//#endregion
-
 //#region AI
 async function postprocessUserMessage(message, guild) {
     message = message.replace(/<@!?(\d+)>/g, (match, userId) => {
@@ -419,121 +312,6 @@ async function getAiResponseGemini(threadID, message, thinking = null, contextua
 
     return [response, success];
 }
-
-async function getAiResponseOllama(threadID, message, thinking = null, contextualData = {}, notify = null, retryAttempt = 0, ollamaInstances = null) {
-    // returns: [response, success]
-
-    // First, find all currently available servers if they have not already been provided in the command input
-    // (they are provided by the message handler so it can check avaialble servers and send typing indicator when there is an available server)
-    if (!ollamaInstances) ollamaInstances = await getAvailableOllamaServers();
-
-    if (ollamaInstances.length === 0) {
-        return [`Sorry, there are no available AI servers. Try again later.\n\n` +
-            `We host our own AI servers. If you would like to support this project, feel free to join the [Support Server](<${config.invite}>) and see how you can help!`,
-            false];
-    }
-
-    // Choose a random server
-    const randomIndex = Math.floor(Math.random() * ollamaInstances.length);
-    const chosenInstance = ollamaInstances[randomIndex];
-
-    // Mark as busy
-    activeAIRequests.set(chosenInstance.config.host, true);
-
-    let response = null;
-
-    try {
-        // Build context
-        const oneHour = 1000 * 60 * 60;
-        if (
-            !convoCache[threadID] ||
-            !convoCache[threadID].context || // Add check for context existence
-            Date.now() - convoCache[threadID].lastMessage > oneHour ||
-            JSON.stringify(contextualData) !== JSON.stringify(convoCache[threadID].contextualData)
-        ) {
-            const context = [];
-
-            let systemPrompt = (await fs.promises.readFile("./data/system.prompt")).toString();
-            if (process.env.beta) systemPrompt = systemPrompt.replaceAll("Stewbot", "Stewbeta");
-            Object.keys(contextualData).forEach((key) => {
-                systemPrompt = systemPrompt.replaceAll(`{${key}}`, contextualData[key]);
-            })
-            context.push({ "role": "system", "content": systemPrompt })
-
-            convoCache[threadID] = {
-                context,
-                contextualData,
-                lastMessage: Date.now()
-            };
-        }
-
-        // Enable / disable models
-        // NOTE 1: Works best on models like granite3.2 that have been trained to enable thinking on the fly
-        // NOTE 2: To make it actually hot swappable it might be best to put the thinkingPrompt right above the message they turned it on for...
-        //          But idk if that would override this system prompt
-        let thinkingDefined = thinking !== null;
-        if (thinkingDefined) {
-            const thinkingFlag = { "role": "control", "content": "thinking" }; // This makes the model think
-            const thinkingPrompt = `\n\nYou can write down your thought process *before* responding. Write your thoughts after 'Here is my thought process:' and aftwards, write your response after 'Here is my response:' for each user query.`;
-            if (thinking) {
-                // Add the thinking switch
-                if (!convoCache[threadID].context.some(item => item.role === 'control' && item.content === 'thinking')) {
-                    convoCache[threadID].context.unshift(thinkingFlag);
-
-                    let systemIndex = convoCache[threadID].context.findIndex(item => item.role === 'system');
-                    if (systemIndex !== -1) {
-                        convoCache[threadID].context[systemIndex].content += thinkingPrompt;
-                    }
-                }
-            } else {
-                // Filter out the thinking switch
-                convoCache[threadID].context = convoCache[threadID].context
-                    .filter(item => !(item.role === 'control' && item.content === 'thinking'));
-
-                let systemIndex = convoCache[threadID].context.findIndex(item => item.role === 'system');
-                if (systemIndex !== -1) {
-                    convoCache[threadID].context[systemIndex].content = convoCache[threadID].context[systemIndex].content.replace(thinkingPrompt, '');
-                }
-            }
-        }
-
-        convoCache[threadID].context.push({ "role": "user", "content": message })
-
-        const AIResult = await ollamaInstances[0].chat({
-            model: config.aiModel,
-            messages: convoCache[threadID].context,
-            options: {
-                temperature: config.aiTemp
-            },
-        })
-
-        // Check for an error
-        if (!AIResult?.message?.content) {
-            if (retryAttempt === 0) {
-                delete convoCache[threadID];
-                return getAiResponseOllama(threadID, message, thinking, contextualData, notify, retryAttempt + 1, ollamaInstances);
-            } else {
-                notify && notify(`Error with AI API response: \n${JSON.stringify(AIResult)}`);
-                return [`Sorry, there was an error with the AI response. It has already been reported. Try again later.`, false];
-            }
-        }
-
-        convoCache[threadID].context.push(AIResult.message);
-
-        response = AIResult.message.content;
-    }
-    catch (e) {
-        notify && notify(`AI API response has no content: \n${e.stack}`)
-        console.log(e);
-        response = `Sorry, there was an error with the AI response. It has already been reported. Try again later.`;
-    }
-    finally {
-        // Mark the server as available
-        activeAIRequests.del(chosenInstance.config.host);
-    }
-
-    return [response, true];
-}
 //#endregion
 
 module.exports = {
@@ -585,7 +363,6 @@ module.exports = {
 
         let message = cmd.options.getString("message");
         let thinking = cmd.options.getBoolean("thinking");
-        let gemini = cmd.options.getBoolean("gemini") ?? true;
 
         const clearHistory = cmd.options.getBoolean("clear");
         const threadID = cmd.user.id;
@@ -596,18 +373,10 @@ module.exports = {
             delete convoCache[threadID];
         }
 
-        let response, success;
-        if (gemini) {
-            [response, success] = await getAiResponseGemini(threadID, message, thinking, {
-                name: cmd.user.username,
-                server: cmd.guild ? cmd.guild.name : "Direct Messages",
-            }, notify);
-        } else {
-            [response, success] = await getAiResponseOllama(threadID, message, thinking, {
-                name: cmd.user.username,
-                server: cmd.guild ? cmd.guild.name : "Direct Messages",
-            }, notify);
-        }
+        let [response, success] = await getAiResponseGemini(threadID, message, thinking, {
+            name: cmd.user.username,
+            server: cmd.guild ? cmd.guild.name : "Direct Messages",
+        }, notify);
 
 
         response = await postprocessAIMessage(limitLength(response), cmd.guild)
@@ -626,7 +395,7 @@ module.exports = {
      * @param {import("./modules/database.js").GuildDoc} guildStore 
      * @param {import("./modules/database.js").GuildUserDoc} guildUserStore 
      * */
-    async [Events.MessageCreate] (msg, globals, guildStore, guildUserStore) {
+    async [Events.MessageCreate] (msg, globals, guildStore) {
         applyContext(globals);
 
         if (!("send" in msg.channel)) return;
@@ -640,12 +409,6 @@ module.exports = {
         // Then as long as the user did not blacklist it
         const user = await userByObj(msg.author);
         if (user?.config?.aiPings) {
-            const botSettings = await ConfigDB.findOne().lean();
-
-            // Check for available servers before sending typing indicator
-            // let ollamaInstances = null;
-            // if (!botSettings.useGlobalGemini) ollamaInstances = await getAvailableOllamaServers();
-            // if (!botSettings.useGlobalGemini && ollamaInstances?.length === 0) return; // Don't send typing if no ollama servers and not using gemini
             
             // Check if this user is allowed to message again
             if(activeAIRequests.has(msg.author.id)) {
@@ -660,19 +423,10 @@ module.exports = {
             let threadID = msg.author.id;
             let response, success;
 
-            if (botSettings.useGlobalGemini) {
-                [response, success] = await getAiResponseGemini(threadID, message, false, {
-                    name: msg.author.username,
-                    server: msg.guild ? msg.guild.name : "Direct Messages",
-                }, notify, 0);
-            } else {
-                return; // Disable for now
-                // [response, success] = await getAiResponseOllama(threadID, message, false, { // Disable thinking on replies for now. Consider setting to null later to default to last
-                //     name: msg.author.username,
-                //     server: msg.guild ? msg.guild.name : "Direct Messages",
-                // }, notify, 0, ollamaInstances);
-            }
-
+            [response, success] = await getAiResponseGemini(threadID, message, false, {
+                name: msg.author.username,
+                server: msg.guild ? msg.guild.name : "Direct Messages",
+            }, notify, 0);
 
             if (success) { // Only reply if it worked, don't send error codes in reply to replies
                 let stillExists; // Message could have been deleted/filtered since sending
