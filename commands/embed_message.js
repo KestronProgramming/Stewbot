@@ -1,8 +1,8 @@
 // #region CommandBoilerplate
 const Categories = require("./modules/Categories");
 const client = require("../client.js");
-const { Guilds, Users, guildByID, userByID, guildByObj, userByObj } = require("./modules/database.js")
-const { Events, ContextMenuCommandBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
+const { Users, userByObj } = require("./modules/database.js")
+const { Events, SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits}=require("discord.js");
 function applyContext(context={}) {
 	for (let key in context) {
 		this[key] = context[key];
@@ -13,7 +13,6 @@ function applyContext(context={}) {
 
 const { getPrimedEmbed } = require("./prime_embed.js")
 const { notify } = require("../utils");
-const config = require("../data/config.json");
 const { isDirty, censor } = require("./filter");
 
 const kaProgramRegex =/\b(?!<)https?:\/\/(?:www\.)?khanacademy\.org\/(cs|computer-programming|hour-of-code|python-program)\/[a-z,\d,-]+\/\d+(?!>)\b/gi;
@@ -73,7 +72,7 @@ module.exports = {
                     // @ts-ignore
                     const failedMessage = `Failed to embed message. Try opening the context menu (holding down on mobile, right clicking on desktop) and pressing Apps -> prime_embed, then use ${cmds.embed_message.mention} and type **PRIMED** into it. If I'm not in the server you want to embed a message from, you can use me anywhere by pressing my profile, then Add App, then Use it Everywhere.`;
 
-                    var channelLinked = await client.channels.fetch(slashes[slashes.length - 2]).catch(e => null);
+                    var channelLinked = await client.channels.fetch(slashes[slashes.length - 2]).catch(() => null);
 
                     if (!channelLinked || !("messages" in channelLinked)) {
                         return cmd.followUp(failedMessage);
@@ -114,7 +113,7 @@ module.exports = {
                         });
 
                     var attachedImg=false;
-                    mes.attachments.forEach((attached,i) => {
+                    mes.attachments.forEach((attached) => {
                         let url = attached.url;
                         if(attachedImg||!(/(png|jpe?g)/i.test(url))){ // TODO: increase embeded attachment types
                             fils.push(url);
@@ -153,9 +152,8 @@ module.exports = {
     /** 
      * @param {import('discord.js').Message} msg 
      * @param {import("./modules/database.js").GuildDoc} guildStore 
-     * @param {import("./modules/database.js").GuildUserDoc} guildUserStore 
      * */
-    async [Events.MessageCreate] (msg, context, guildStore, guildUserStore) {
+    async [Events.MessageCreate] (msg, context, guildStore) {
 		applyContext(context);
 
         // Discord message embeds
@@ -247,7 +245,7 @@ module.exports = {
                     });
 
                 var attachedImg = false;
-                mes.attachments.forEach((attached, i) => {
+                mes.attachments.forEach((attached) => {
                     let url = attached.url;
                     if (attachedImg || !(/(png|jpe?g)/i.test(url))) {
                         fils.push(url);

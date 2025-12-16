@@ -1,8 +1,8 @@
 // #region CommandBoilerplate
 const Categories = require("./modules/Categories");
 const client = require("../client.js");
-const { Guilds, Users, guildByID, userByID, guildByObj, userByObj, keyEncode, keyDecode } = require("./modules/database.js")
-const { ContextMenuCommandBuilder, AttachmentBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType, GuildMember}=require("discord.js");
+const { guildByObj, keyEncode, keyDecode } = require("./modules/database.js")
+const { AttachmentBuilder, SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ModalBuilder, TextInputBuilder, TextInputStyle, PermissionFlagsBits, GuildMember}=require("discord.js");
 function applyContext(context={}) {
 	for (let key in context) {
 		this[key] = context[key];
@@ -14,8 +14,6 @@ function applyContext(context={}) {
 /** @type {Array<[string, string]>} */
 // @ts-ignore
 const pieCols = require("../data/pieCols.json");
-const ChartDataLabels = require('chartjs-plugin-datalabels');
-const config = require("../data/config.json");
 const { isDirty, censor } = require("./filter");
 // const Chart = require("chart.js")
 

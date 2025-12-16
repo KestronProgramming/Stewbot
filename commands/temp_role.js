@@ -1,17 +1,16 @@
 // #region CommandBoilerplate
 const Categories = require("./modules/Categories");
 const client = require("../client.js");
-const { Guilds, Users, guildByID, userByID, guildByObj, userByObj, guildUserByObj, guildUserByID, GuildUsers } = require("./modules/database.js")
-const { ContextMenuCommandBuilder, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType, Events, GuildMember}=require("discord.js");
+const { guildUserByObj, GuildUsers } = require("./modules/database.js")
+const { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionFlagsBits, Events, GuildMember}=require("discord.js");
 function applyContext(context={}) {
 	for (let key in context) {
 		this[key] = context[key];
-	}
+	} 
 }
 
 // #endregion CommandBoilerplate
 
-const ms = require("ms")
 
 async function removeTempRole(guildId, userId, roleId) {
     const guild = await client.guilds.fetch(guildId);
@@ -26,10 +25,10 @@ async function removeTempRole(guildId, userId, roleId) {
     if (role === null || role === undefined || user === null || user === undefined) return;
     
     if (user.roles.cache.has(role.id)) {
-        user.roles.remove(role).catch(e => { });
+        user.roles.remove(role).catch(() => { });
     }
     else{
-        user.roles.add(role).catch(e=>{});
+        user.roles.add(role).catch(()=>{});
     }
 
     guildUser.tempRoles.delete(roleId);
@@ -147,11 +146,11 @@ module.exports = {
         var added;
         if (targetMember.roles.cache.has(role.id)) {
             added=false;
-            targetMember.roles.remove(role.id).catch(e=>{});
+            targetMember.roles.remove(role.id).catch(()=>{});
         }
         else {
             added=true;
-            targetMember.roles.add(role.id).catch(e=>{});
+            targetMember.roles.add(role.id).catch(()=>{});
         }
 
         guildUser.tempRoles.set(role.id, Date.now()+timer);

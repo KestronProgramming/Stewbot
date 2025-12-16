@@ -1,8 +1,7 @@
 // #region CommandBoilerplate
 const Categories = require("./modules/Categories");
-const client = require("../client.js");
-const { Guilds, Users, ConfigDB, guildByID, userByID, guildByObj, userByObj } = require("./modules/database.js")
-const { ContextMenuCommandBuilder, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
+const { ConfigDB } = require("./modules/database.js")
+const { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ModalBuilder, TextInputBuilder, TextInputStyle}=require("discord.js");
 function applyContext(context={}) {
 	for (let key in context) {
 		this[key] = context[key];
@@ -16,7 +15,6 @@ const wotdList = fs.readFileSync(`./data/wordlist.txt`, "utf-8")
     .split("\n")
     .map(word => word.trim().toLowerCase());
 const { notify } = require("../utils");
-const config = require("../data/config.json");
 const { isDirty } = require("./filter");
 
 module.exports = {

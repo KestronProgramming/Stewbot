@@ -1,13 +1,8 @@
 // #region CommandBoilerplate
 const Categories = require("./modules/Categories");
 const client = require("../client.js");
-const { Guilds, GuildUsers, Users, guildByID, userByID, guildByObj, userByObj } = require("./modules/database.js")
-const { Events, ContextMenuCommandBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType, AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType } = require("discord.js");
-function applyContext(context = {}) {
-    for (let key in context) {
-        this[key] = context[key];
-    }
-}
+const { Guilds, guildByObj } = require("./modules/database.js")
+const { Events, PermissionFlagsBits } = require("discord.js");
 
 // #endregion CommandBoilerplate
 
@@ -16,11 +11,11 @@ const { notify } = require("../utils")
 
 async function sendWelcome(guild) {
     guild = await client.guilds.fetch(guild.id); // fetch the full guild
-    for (const [channelId, chan] of guild.channels.cache) {
+    for (const [, chan] of guild.channels.cache) {
         const perms = chan?.permissionsFor?.(client.user.id);
         if (chan?.isTextBased?.() && perms?.has(PermissionFlagsBits.ViewChannel) && chan.isSendable()) {
             const messages = await chan?.messages?.fetch({ limit: 3 });
-            if (messages) for (const [msgId, msg] of messages) {
+            if (messages) for (const [, msg] of messages) {
                 const guildStore = await guildByObj(guild);
                 if (
                     !guildStore.sentWelcome && (
@@ -158,7 +153,7 @@ module.exports = {
             const knownGuild = await Guilds.findOne({ id: guild.id })
                 .select("sentWelcome")
                 .lean()
-                .catch(e => null);
+                .catch(() => null);
 
             if (!knownGuild) {
                 notify("Added to **new server** (detected on boot scan)")

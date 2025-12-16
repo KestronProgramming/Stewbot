@@ -1,8 +1,8 @@
 // #region CommandBoilerplate
 const Categories = require("./modules/Categories");
 const client = require("../client.js");
-const { Guilds, Users, GuildUsers, guildByID, userByID, guildByObj, guildUserByObj, guildUserByID, userByObj } = require("./modules/database.js")
-const { Events, ContextMenuCommandBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
+const { Guilds, guildByObj, guildUserByObj, guildUserByID } = require("./modules/database.js")
+const { Events, SlashCommandBuilder, PermissionFlagsBits}=require("discord.js");
 function applyContext(context={}) {
 	for (let key in context) {
 		this[key] = context[key];
@@ -80,7 +80,7 @@ module.exports = {
 						var role = await member.guild.roles.fetch(roleId);
 						if (role && role.id !== member.guild.id) {
 							if (myRole > role.rawPosition) {
-								member.roles.add(role).catch(e => null);
+								member.roles.add(role).catch(() => null);
 								addedStickyRoles++;
 							}
 						}
@@ -95,7 +95,7 @@ module.exports = {
 		if (addedStickyRoles > 0) member.addedStickyRoles = true;
 	},
 
-	async [Events.GuildMemberRemove] (member, readGuildStore) {
+	async [Events.GuildMemberRemove] (member) {
 		// Save all this user's roles
 		await guildUserByID(member.guild.id, member.id, {
 			"roles": member.roles.cache.map(r => r.id) 

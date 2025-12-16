@@ -1,8 +1,9 @@
 // #region CommandBoilerplate
 const Categories = require("./modules/Categories");
 const client = require("../client.js");
-const { Guilds, Users, guildByID, userByID, guildByObj, userByObj } = require("./modules/database.js")
-const { Events, ContextMenuCommandBuilder, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
+const { guildByID, guildByObj } = require("./modules/database.js")
+const { Events, SlashCommandBuilder, PermissionFlagsBits}=require("discord.js");
+// const NodeCache = require("node-cache");
 function applyContext(context={}) {
 	for (let key in context) {
 		this[key] = context[key];
@@ -10,6 +11,8 @@ function applyContext(context={}) {
 }
 
 // #endregion CommandBoilerplate
+
+// const justUpdatedUsers = new NodeCache({ stdTTL: 1, checkperiod: 1 });
 
 async function checkTagUpdate(packet) {
     if (packet.t !== 'GUILD_MEMBER_UPDATE') return;
@@ -25,18 +28,22 @@ async function checkTagUpdate(packet) {
     if (guild.guildTagRole && guild.guildTagRoleActive) {
         // If the guild is set to apply tags
         
-        const discordGuild = await client.guilds.fetch(guildFromPacket).catch(e => null);
+        const discordGuild = await client.guilds.fetch(guildFromPacket).catch(() => null);
         if (discordGuild) {
             try {
                 const member = await discordGuild.members.fetch(packet.d.user.id);
                 const role = discordGuild.roles.cache.get(guild.guildTagRole);
                 const memberHasRole = member.roles.cache.get(role.id);
                 if (member && role) {
-                    if (isGuildsTag && !memberHasRole) 
+                    if (isGuildsTag && !memberHasRole) {
                         await member.roles.add(role, "Applied for adopting Guild Tag");
+						// justUpdatedUsers.set(member.id,"added");
+					}
                     
-                    if (!isGuildsTag && memberHasRole)
+                    if (!isGuildsTag && memberHasRole){
                         await member.roles.remove(role, "Removed for removing Guild Tag");
+						// justUpdatedUsers.set(member.id,"removed");
+					}
                 }
             } catch (e) { console.log(e); }
         }
@@ -123,4 +130,20 @@ You can disable the feature using the \`active\` flag.`,
 	async [Events.Raw] (packet) {
 		checkTagUpdate(packet);
 	},
+
+	// WIP
+	// /**
+	//  * @param {import('discord.js').GuildMember | import('discord.js').PartialGuildMember} oldMember - The member before the update.
+	//  * @param {import('discord.js').GuildMember} newMember - The member after the update.
+	//  */
+	// async [Events.GuildMemberUpdate] (oldMember,newMember) {
+	// 	if(justUpdatedUsers.has(newMember.id)) return;
+	// 	const guild = await guildByObj(newMember.guild);
+	// 	if(!oldMember.roles.cache.find(r => r.id === guild.guildTagRole)&&newMember.roles.cache.find(r => r.id === guild.guildTagRole)){
+	// 		//Role added out of turn
+	// 	}
+	// 	else if(oldMember.roles.cache.find(r => r.id === guild.guildTagRole)&&!newMember.roles.cache.find(r => r.id === guild.guildTagRole)){
+	// 		//Role removed out of turn
+	// 	}
+	// },
 };

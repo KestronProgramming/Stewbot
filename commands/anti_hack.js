@@ -1,13 +1,13 @@
 // #region CommandBoilerplate
 const Categories = require("./modules/Categories");
 const client = require("../client.js");
-const { Guilds, Users, GuildUsers, guildByID, userByID, guildUserByID, guildByObj, userByObj, guildUserByObj } = require("./modules/database.js")
-const { Events, GuildChannel, ContextMenuCommandBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
+const { guildByID, guildByObj, userByObj, guildUserByObj } = require("./modules/database.js")
+const { Events, InteractionContextType: IT, ApplicationIntegrationType: AT, SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionFlagsBits}=require("discord.js");
 function applyContext(context={}) {
     for (let key in context) {
         this[key] = context[key];
     }
-}
+} 
 
 // #endregion CommandBoilerplate
 
@@ -210,13 +210,13 @@ module.exports = {
                                             let badMess = await channel.messages?.fetch(
                                                 cache[msg.guild.id].users[msg.author.id].lastMessages[i].split("/")[1]
                                             );
-                                            badMess.delete().catch(e=>{}); // TODO: make one bulk-delete request instead of 4
+                                            badMess.delete().catch(()=>{}); // TODO: make one bulk-delete request instead of 4
                                         }
                                         catch(e){ console.log(e) }
                                     }
                                     
                                     // Finally, delete this current trigger message
-                                    msg.delete().catch(e=>{});
+                                    msg.delete().catch(()=>{});
                                     
                                     // Since they are deleted, now ignore them
                                     cache[msg.guild.id].users[msg.author.id].lastMessages = []
@@ -309,7 +309,7 @@ module.exports = {
                 var target=cmd.guild.members.cache.get(cmd.customId.split("-")[1]);
                 if(target){
                     target.ban({reason:`Detected high spam activity with high profile pings and/or a URL, was instructed to ban by ${cmd.user.username}.`});
-                    cmd.message.delete().catch(e=>{});
+                    cmd.message.delete().catch(()=>{});
                 }
                 else{
                     cmd.reply({content:`I was unable to find the target in question.`,ephemeral:true});
@@ -329,7 +329,7 @@ module.exports = {
                                     cmd.customId.split("-")[1]
                                 ].lastMessages[i].split("/")[1]
                             );
-                            badMess.delete().catch(e=>{});
+                            badMess.delete().catch(()=>{});
                             cache[cmd.guild.id].users[cmd.customId.split("-")[1]].lastMessages.splice(i, 1);
                             i--;
                         }
@@ -352,7 +352,7 @@ module.exports = {
                     });
 
                     target.timeout(null);
-                    cmd.message.delete().catch(e=>{});;
+                    cmd.message.delete().catch(()=>{});;
                 }
                 else{
                     cmd.reply({content:`I was unable to find the target in question.`,ephemeral:true});
@@ -370,7 +370,7 @@ module.exports = {
                     target.kick(`Detected high spam activity with high profile pings and/or a URL, was instructed to kick by ${cmd.user.username}.`);
                     // await cmd.reply({content:`Done. Do you wish to delete the messages in question as well?`,components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId("del-"+target.id).setLabel("Yes").setStyle(ButtonStyle.Success))],ephemeral:true});
                     await cmd.reply({content:`Attempted to kick.`, ephemeral:true});
-                    cmd.message.delete().catch(e=>{});;
+                    cmd.message.delete().catch(()=>{});;
                 }
                 else{
                     cmd.reply({content:`I was unable to find the target in question.`,ephemeral:true});
@@ -389,8 +389,8 @@ module.exports = {
                                 cache[cmd.guild.id].users[
                                     cmd.customId.split("-")[1]
                                 ].lastMessages[i].split("/")[1]
-                            ).catch(e => null);
-                            badMess?.delete().catch(e => null);
+                            ).catch(() => null);
+                            badMess?.delete().catch(() => null);
                             cache[cmd.guild.id].users[cmd.customId.split("-")[1]].lastMessages.splice(i,1);
                             i--;
                         }
@@ -422,14 +422,14 @@ module.exports = {
                                 cmd.customId.split("-")[1]
                             ].lastMessages[i].split("/")[1]
                         );
-                        badMess.delete().catch(e => null);
+                        badMess.delete().catch(() => null);
                         cache[cmd.guild.id].users[cmd.customId.split("-")[1]].lastMessages.splice(i,1);
                         i--;
                     }
                     catch(e){console.log(e)}
                 }
                 await cmd.reply({content:`Done.`,ephemeral:true});
-                cmd.message.delete().catch(e=>{});;
+                cmd.message.delete().catch(()=>{});
             }
             else{
                 cmd.reply({content:`You do not have sufficient permissions to delete messages.`,ephemeral:true});

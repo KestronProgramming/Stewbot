@@ -1,13 +1,8 @@
 // #region CommandBoilerplate
 const Categories = require("./modules/Categories");
 const client = require("../client.js");
-const { Guilds, GuildUsers, Users, guildByID, userByID, guildByObj, userByObj } = require("./modules/database.js")
-const { Events, ContextMenuCommandBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
-function applyContext(context={}) {
-	for (let key in context) {
-		this[key] = context[key];
-	}
-}
+const { Guilds, GuildUsers } = require("./modules/database.js")
+const { Events }=require("discord.js");
 
 // #endregion CommandBoilerplate
 
@@ -25,8 +20,6 @@ module.exports = {
                 This module preforms critical bot functionality and management, rather than public facing tools.`,
 		},
 	},
-
-
 	
 	// Staff notifs
 
@@ -38,7 +31,7 @@ module.exports = {
 		notify("Ratelimited -\n\n" + data);
 	},
 
-	async [Events.GuildCreate] (guild) {
+	async [Events.GuildCreate] () {
 		notify(`Added to **a new server**!`);
 	},
 

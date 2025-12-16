@@ -316,7 +316,7 @@ module.exports = {
 	},
 
     /** @param {import('discord.js').ChatInputCommandInteraction} cmd */
-    async execute(cmd, context) {
+    async execute(cmd) {
         const updates = {};
 
         if (cmd.options.getBoolean("domain_scanning") !== null) {
@@ -343,7 +343,7 @@ module.exports = {
      * @param {import('discord.js').Message} msg 
      * @param {import("./modules/database.js").GuildDoc} guildStore 
      * */
-    async [Events.MessageCreate] (msg, context, guildStore) {
+    async [Events.MessageCreate] (msg, guildStore) {
         try {
             const sendable = msg.channel.isSendable();
             const reactable = ("permissionsFor" in msg.channel) && msg.channel.permissionsFor(client.user).has(PermissionFlagsBits.AddReactions);
@@ -516,7 +516,7 @@ module.exports = {
 
 
     // Daily update our uBlock lists
-    async daily(context) {
+    async daily() {
         // Update badware blocklists
         updateBlocklists()
     }

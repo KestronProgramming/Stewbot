@@ -1,8 +1,8 @@
 // #region CommandBoilerplate
 const Categories = require("./modules/Categories");
 const client = require("../client.js");
-const { Guilds, Users, GuildUsers, guildByID, userByID, guildByObj, userByObj, guildUserByObj } = require("./modules/database.js");
-const { Events, ContextMenuCommandBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType, AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType, AutoModerationRuleEventType, AutoModerationRuleTriggerType, AutoModerationActionType, Guild, Message } = require("discord.js");
+const { Guilds, Users, GuildUsers, guildByObj, userByObj } = require("./modules/database.js");
+const { Events, SlashCommandBuilder, PermissionFlagsBits, ChannelType, MessageType, AutoModerationRuleEventType, AutoModerationRuleTriggerType, AutoModerationActionType, Guild, Message } = require("discord.js");
 function applyContext(context = {}) {
     for (let key in context) {
         this[key] = context[key];
@@ -542,9 +542,8 @@ module.exports = {
     /** 
      * @param {import('discord.js').Message} msg 
      * @param {import("./modules/database.js").RawGuildDoc} guildStore 
-     * @param {import("./modules/database.js").RawGuildUserDoc} guildUserStore 
-     * */
-    async [Events.MessageCreate](msg, context, guildStore, guildUserStore) {
+=     * */
+    async [Events.MessageCreate](msg, context, guildStore) {
         if (!msg.guild) return;
         if (msg.webhookId) return; // Ignore webhooks, since we post filters as webhooks.
 
@@ -573,7 +572,7 @@ module.exports = {
                 );
 
                 // Send webhook
-                msg.delete().catch(e=>null);
+                msg.delete().catch(()=>null);
                 if (guildStore?.filter?.censor) {
                     var replyBlip = "";
                     if (msg.type === MessageType.Reply) {
@@ -614,7 +613,7 @@ module.exports = {
                                     : ""
                                 }`
                             )
-                        ).catch((e) => { });
+                        ).catch(() => { });
                     } catch (e) { }
                 }
                 if (guildStore.filter.log && guildStore.filter.channel) {
@@ -648,9 +647,8 @@ module.exports = {
     /**
      * @param {Message} msg
      * @param {import("./modules/database.js").RawGuildDoc} readGuild
-     * @param {import("./modules/database.js").RawGuildUserDoc} readGuildUser
      */
-    async [Events.MessageUpdate](msgO, msg, readGuild, readGuildUser) {
+    async [Events.MessageUpdate](_, msg, readGuild) {
         if (msg.guild?.id === undefined || client.user.id === msg.author?.id) return; // Ignore self and DMs
         if (!readGuild?.filter?.active) return;
 
@@ -658,7 +656,7 @@ module.exports = {
         let [filtered, filteredContent, foundWords] = await censorWithFound(msg.content, readGuild, false);
 
         if (filtered) {
-            if (msg.deletable) msg.delete().catch(e=>null);
+            if (msg.deletable) msg.delete().catch(()=>null);
 
             Users.updateOne({ id: msg.author.id }, {
                 $inc: { infractions: 1 }
@@ -688,7 +686,7 @@ module.exports = {
         }
     },
 
-    async [Events.MessageReactionAdd](react, user, details, readGuild, readGuildUser) {
+    async [Events.MessageReactionAdd](react, user, _details, readGuild) {
         if (react.message.guildId === null) return;
 
         // Filter reactions

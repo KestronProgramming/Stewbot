@@ -1,8 +1,8 @@
 // #region CommandBoilerplate
 const Categories = require("./modules/Categories");
 const client = require("../client.js");
-const { Guilds, Users, guildByID, userByID, guildByObj, userByObj } = require("./modules/database.js")
-const { ContextMenuCommandBuilder, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType, Events}=require("discord.js");
+const { Guilds, guildByID, guildByObj } = require("./modules/database.js")
+const { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionFlagsBits, Events }=require("discord.js");
 function applyContext(context={}) {
 	for (let key in context) {
 		this[key] = context[key];
@@ -26,23 +26,23 @@ async function finTempSlow(guildId, channel, force){
         return;
     }
     if(!("permissionsFor" in chan) || !("setRateLimitPerUser" in chan)){
-        (await client.users.fetch(guild.tempSlow.get(channel).invoker)).send(`<#${channel}> does not seem to support slowmode.`).catch(e=>{});
+        (await client.users.fetch(guild.tempSlow.get(channel).invoker)).send(`<#${channel}> does not seem to support slowmode.`).catch(()=>{});
         guild.tempSlow.delete(channel);
         return;
     }
     if(chan===null||chan===undefined){
-        (await client.users.fetch(guild.tempSlow.get(channel).invoker)).send(`I was unable to remove the temporary slowmode setting in <#${channel}>.`).catch(e=>{});
+        (await client.users.fetch(guild.tempSlow.get(channel).invoker)).send(`I was unable to remove the temporary slowmode setting in <#${channel}>.`).catch(()=>{});
         guild.tempSlow.delete(channel);
         return;
     }
     if(!chan.permissionsFor(client.user.id).has(PermissionFlagsBits.ManageChannels)){
-        (await client.users.fetch(guild.tempSlow.get(channel).invoker)).send(`I was unable to remove the temporary slowmode setting in <#${channel}> due to not having the \`ManageChannels\` permission.`).catch(e=>{});
+        (await client.users.fetch(guild.tempSlow.get(channel).invoker)).send(`I was unable to remove the temporary slowmode setting in <#${channel}> due to not having the \`ManageChannels\` permission.`).catch(()=>{});
         guild.tempSlow.delete(channel);
         return;
     }
     chan.setRateLimitPerUser(guild.tempSlow.get(channel).origMode);
     if(!guild.tempSlow.get(channel).private){
-        if (chan.isSendable()) chan.send(`Temporary slowmode setting reverted.`).catch(e=>{});
+        if (chan.isSendable()) chan.send(`Temporary slowmode setting reverted.`).catch(()=>{});
         guild.tempSlow.delete(channel);
     }
 

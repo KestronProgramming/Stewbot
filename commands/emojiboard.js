@@ -1,8 +1,8 @@
 // #region CommandBoilerplate
 const Categories = require("./modules/Categories");
 const client = require("../client.js");
-const { Guilds, Users, guildByID, userByID, guildByObj, userByObj } = require("./modules/database.js")
-const { Events, ContextMenuCommandBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType, AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType, Component } = require("discord.js");
+const { Guilds, guildByID, guildByObj } = require("./modules/database.js")
+const { Events, InteractionContextType: IT, ApplicationIntegrationType: AT, SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits, ChannelType } = require("discord.js");
 function applyContext(context = {}) {
     for (let key in context) {
         this[key] = context[key];
@@ -104,7 +104,7 @@ async function doEmojiboardReaction(react) {
             return;
         }
         try {
-            member.timeout(emojiboard.length, `I was configured with /groupmute_config to do so.`).catch(e => { });
+            member.timeout(emojiboard.length, `I was configured with /groupmute_config to do so.`).catch(() => { });
         }
         catch (e) { }
         return;//If it's a groupmute, don't bother with emojiboard stuff.
@@ -407,7 +407,7 @@ module.exports = {
     },
 
     async executeView(cmd, guild) {
-        const emojiboards = Array.from(guild.emojiboards.entries()).filter(([emoji, board]) => !board.isMute);
+        const emojiboards = Array.from(guild.emojiboards.entries()).filter(([_, board]) => !board.isMute);
 
         if (emojiboards.length === 0) {
             cmd.followUp("No emojiboards are currently configured for this server.");
@@ -442,14 +442,14 @@ module.exports = {
         cmd.followUp({ embeds: [embed] });
     },
 
-    async [Events.MessageReactionAdd](react, user, details, readGuild, readGuildUser) {
+    async [Events.MessageReactionAdd](react) {
         if (!react.message.guildId) return;
 
         // OPTIMIZE: we can save a DB query on reactions if we make this use the passed readonly guild.
         doEmojiboardReaction(react);
     },
 
-    async [Events.MessageDelete](msg, guildStore) {
+    async [Events.MessageDelete](msg) {
         // Emojiboard deleted handlers
         const postToRedact = await Guilds.aggregate([
             // Find which emojiboard contains this posted msg ID

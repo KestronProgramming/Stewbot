@@ -1,4 +1,3 @@
-// @ts-nocheck
 // #region CommandBoilerplate
 const Categories = require("./modules/Categories");
 const client = require("../client.js");
@@ -431,7 +430,7 @@ module.exports = {
         }, notify);
 
         response = await postprocessAIMessage(limitLength(response), cmd.guild)
-        response = await censor(response, cmd.guild, true);
+        response = await censor(String(response), cmd.guild, true);
 
         cmd.followUp({
             content: response,

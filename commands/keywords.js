@@ -1,8 +1,6 @@
 // #region CommandBoilerplate
 const Categories = require("./modules/Categories");
-const client = require("../client.js");
-const { Guilds, Users, guildByID, userByID, guildByObj, userByObj } = require("./modules/database.js")
-const { Events, ContextMenuCommandBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType, AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType } = require("discord.js");
+const { Events } = require("discord.js");
 function applyContext(context = {}) {
     for (const key in context) {
         this[key] = context[key];
@@ -18,9 +16,6 @@ function applyContext(context = {}) {
 
 
 //Old variables from back in the day, may be unoptimized, unused, or otherwise
-let printer = false;
-let printTag = "";
-let capsT = 0;
 const keyword = [
     {
         keywords: ['thank', 'you', 'stewbot'],
@@ -227,7 +222,6 @@ module.exports = {
             }
         }
 
-        capsT--;
         for (var i = 0; i < keyword.length; i++) {
             if (keyword[i].timeout !== 0) {
                 keyword[i].timeout--;
@@ -237,7 +231,7 @@ module.exports = {
                 keyword[i].timeout = 12;
                 if (keyword[i].message && keyword[i].timeout === 0) {
                     try {
-                        msg.author.send(keyword[i].dm).catch(e => { });
+                        msg.author.send(keyword[i].dm).catch(() => { });
                     }
                     catch (e) { }
                 }
@@ -254,7 +248,7 @@ module.exports = {
                     msg.reply(keyword[i].response);
                     if (keyword[i].message) {
                         try {
-                            msg.author.send(keyword[i].dm).catch(e => { });
+                            msg.author.send(keyword[i].dm).catch(() => { });
                         }
                         catch (e) { }
                     }

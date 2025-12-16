@@ -1,8 +1,7 @@
 // #region CommandBoilerplate
 const Categories = require("./modules/Categories");
 const client = require("../client.js");
-const { Guilds, Users, guildByID, userByID, guildByObj, userByObj } = require("./modules/database.js")
-const { ContextMenuCommandBuilder, AttachmentBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType, AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType } = require("discord.js");
+const { AttachmentBuilder, SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ModalBuilder, TextInputBuilder, TextInputStyle, PermissionFlagsBits } = require("discord.js");
 function applyContext(context = {}) {
 	for (let key in context) {
 		this[key] = context[key];
@@ -94,7 +93,6 @@ function score(game, char) {
 	return score;
 }
 function tallyRac() {
-	let scores = [];
 	let playerObjects = []; // we're gonna manage this the right way
 	for (var i = 0; i < rac.players.length; i++) {
 		const playerScore = score(rac.board, rac.icons[i]);
@@ -162,7 +160,6 @@ function randomName() {
  * @returns {number[]} Array of valid neighbor indices
  */
 function getNeighborIndices(index, width, height) {
-    const totalCells = width * height;
     const row = Math.floor(index / width);
     const col = index % width;
     const neighbors = [];
@@ -478,7 +475,7 @@ module.exports = {
 					cmd.followUp(`**Would you Rather**\n🅰️: ${firstQuest}\n🅱️: ${nextQuest}\n\n-# *\\*Disclaimer: All WYRs are provided by a third party API*`);
 					if (cmd.channel?.permissionsFor?.(client.user.id).has(PermissionFlagsBits.AddReactions)) {
 						let msg = await cmd.fetchReply();
-						msg.react("🅰️").then(a => msg.react("🅱️").catch(e => null)).catch(e => null);
+						msg.react("🅰️").then(() => msg.react("🅱️").catch(() => null)).catch(() => null);
 					}
 				});
 				break;

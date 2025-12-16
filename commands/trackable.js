@@ -3,7 +3,6 @@ const Categories = require("./modules/Categories.js");
 const client = require("../client.js");
 const { Trackables, Users } = require("./modules/database.js")
 const { Events, PermissionsBitField, AttachmentBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ModalBuilder, TextInputBuilder, TextInputStyle, StringSelectMenuBuilder}=require("discord.js");
-const cron = require('node-cron');
 const config = require("../data/config.json");
 const { censor } = require("./filter.js");
 const { inlineCode, isSudo, cronJob } = require("../utils.js")
@@ -521,7 +520,7 @@ module.exports = {
 	},
 
     /** @param {import('discord.js').ChatInputCommandInteraction} cmd */
-    async execute(cmd, context, deferedResponse) {
+    async execute(cmd, _context, deferedResponse) {
 		switch(cmd.options.getSubcommand()){
 			case "about":
 				return await cmd.followUp(aboutTrackables);
@@ -1156,7 +1155,7 @@ module.exports = {
 };
 
 // Hourly check expiring trackables
-let hourly = cronJob('0 * * * *', async () => {
+cronJob('0 * * * *', async () => {
 	// DM holders of trackables that are expiring soon.
 	let warnAboutTrackables = {
 		status: "published",
@@ -1237,7 +1236,7 @@ let hourly = cronJob('0 * * * *', async () => {
 						.setStyle(ButtonStyle.Secondary)
 				).toJSON()
 			]
-		}).catch(e => null)
+		}).catch(() => null)
 	}
 
 

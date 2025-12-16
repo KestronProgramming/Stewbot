@@ -1,13 +1,6 @@
 // #region CommandBoilerplate
 const Categories = require("./modules/Categories");
-const client = require("../client.js");
-const { Guilds, Users, guildByID, userByID, guildByObj, userByObj } = require("./modules/database.js")
-const { Events, ContextMenuCommandBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
-function applyContext(context={}) {
-	for (let key in context) {
-		this[key] = context[key];
-	}
-}
+const { Events }=require("discord.js");
 
 // #endregion CommandBoilerplate
 
@@ -85,7 +78,7 @@ module.exports = {
             var [emoji, toReact] = textToEmojiSentiment(msg.content);
             if (toReact) {
                 // @ts-ignore
-                msg.react(emoji).catch((e) => {});
+                msg.react(emoji).catch(() => {});
             }
         }
 	}

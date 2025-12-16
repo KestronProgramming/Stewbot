@@ -1,8 +1,8 @@
 // #region CommandBoilerplate
 const Categories = require("./modules/Categories");
 const client = require("../client.js");
-const { Guilds, Users, GuildUsers, guildByID, userByID, guildByObj, userByObj, guildUserByObj } = require("./modules/database.js")
-const { ContextMenuCommandBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType, AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType, Component, GuildMember } = require("discord.js");
+const { Guilds, GuildUsers, guildByObj, guildUserByObj } = require("./modules/database.js")
+const { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits, GuildMember } = require("discord.js");
 function applyContext(context = {}) {
     for (let key in context) {
         this[key] = context[key];
@@ -154,7 +154,6 @@ module.exports = {
                     break;
                 }
 
-                var searchId = cmd.options.getUser("who")?.id || cmd.user.id; // TODO: unused rn
                 var leaderboard = "";
                 var emote = emoji ? getEmojiFromMessage(emoji) : ""; // Emoji formatted for the leaderboards
 
@@ -235,7 +234,7 @@ module.exports = {
                 // Process into easier to read format
                 let leaders = []; // [name, highestNum, id]
                 for (const guild of topCountingGuilds) {
-                    const discordGuild = await client.guilds.fetch(guild.id).catch(e=>null);
+                    const discordGuild = await client.guilds.fetch(guild.id).catch(()=>null);
                     const guildName = discordGuild?.name
                         ? await isDirty(discordGuild.name, cmd.guild?.id, true) 
                             ? "[Blocked name]" 
@@ -297,7 +296,7 @@ module.exports = {
                         infractions: { $gt: requestedUserInfractions },
                     }) + 1;
 
-                    const discordUser = await client.users.fetch(usr).catch(e=>null);
+                    const discordUser = await client.users.fetch(usr).catch(()=>null);
 
                     const profanityEmbed = new EmbedBuilder()
                         .setTitle(`Profanity rank for ${cmd.guild.name}`)
@@ -387,7 +386,7 @@ module.exports = {
                         }
                     }) + 1;
 
-                    const discordUser = await client.users.fetch(usr).catch(e=>null);
+                    const discordUser = await client.users.fetch(usr).catch(()=>null);
 
                     const cleanEmbed = new EmbedBuilder()
                         .setTitle(`Cleanliness rank for ${cmd.guild.name}`)

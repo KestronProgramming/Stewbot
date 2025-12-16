@@ -2,8 +2,8 @@
 const Categories = require("./modules/Categories");
 const client = require("../client.js");
 const ms = require("ms");
-const { Guilds, Users, guildByID, userByID, guildByObj, userByObj } = require("./modules/database.js")
-const { ContextMenuCommandBuilder, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType, Events}=require("discord.js");
+const { Users, userByID, userByObj } = require("./modules/database.js")
+const { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionFlagsBits, Events}=require("discord.js");
 function applyContext(context={}) {
 	for (let key in context) {
 		this[key] = context[key];
@@ -41,11 +41,11 @@ async function finHatPull(userId, force){
         // TODO: use secure random here, just because we can
         winners.push(user.hat_pull.entered[Math.floor(Math.random()*user.hat_pull.entered.length)]);
     }
-    const chan = await client.channels.fetch(user.hat_pull.location.split("/")[1]).catch(e => null);
+    const chan = await client.channels.fetch(user.hat_pull.location.split("/")[1]).catch(() => null);
     if(!chan || !chan.isTextBased?.()){
         (await client.users.fetch(userId)).send(
             `I could not end the hat pull.\n`+
-            `https://discord.com/channels/${user.hat_pull.location}${winners.map(a=>`\n- <@${a}>`).join("")}`).catch(e=>{});
+            `https://discord.com/channels/${user.hat_pull.location}${winners.map(a=>`\n- <@${a}>`).join("")}`).catch(()=>{});
         await user.updateOne({ $unset: { "hat_pull": 1 } })
         return;
     }

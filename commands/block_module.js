@@ -1,8 +1,7 @@
 // #region CommandBoilerplate
 const Categories = require("./modules/Categories");
-const client = require("../client.js");
-const { Guilds, Users, guildByID, userByID, guildByObj, userByObj } = require("./modules/database.js")
-const { Events, ContextMenuCommandBuilder, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
+const { guildByObj } = require("./modules/database.js")
+const { Events, SlashCommandBuilder, PermissionFlagsBits}=require("discord.js");
 function applyContext(context={}) {
 	for (let key in context) {
 		this[key] = context[key];
@@ -62,7 +61,6 @@ function getCommandFromPath(cmdPath) {
 
 function getCommandBlockMessageFromPath(cmdPath) { // Subcommands make this hard to use the other function for
     var [commandName, subcommandName] = cmdPath.split(" ");
-    // @ts-ignore
     var command = commands[commandName];
     let help = command?.data?.help;
     if (subcommandName) {
@@ -88,7 +86,6 @@ function isModuleBlocked(listener, guild, globalGuild, isAdmin) {
         guildBlocklist = guildBlocklist.map(blockCommand => blockCommand.replace(/^\//, '')) // Backwards compatibility with block_command which had a leading /
         if (guildBlocklist.includes(name) || guildBlocklist.includes(commandPath)) {
             let err = "This command has been blocked by this server.";
-            // @ts-ignore
             if (isAdmin) err += `\nYou can use ${cmds.block_module.mention} to unblock it.`;
             return [ true, err ];
         }

