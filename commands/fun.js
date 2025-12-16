@@ -150,6 +150,191 @@ function randomName() {
 	return nameR[0].toUpperCase() + nameR.slice(1);
 }
 
+// ============================================
+// MINESWEEPER GAME GENERATOR
+// ============================================
+
+/**
+ * Gets all valid neighbor indices for a given cell position
+ * @param {number} index - The cell index in the flat board array
+ * @param {number} width - Board width
+ * @param {number} height - Board height
+ * @returns {number[]} Array of valid neighbor indices
+ */
+function getNeighborIndices(index, width, height) {
+    const totalCells = width * height;
+    const row = Math.floor(index / width);
+    const col = index % width;
+    const neighbors = [];
+    
+    // Check all 8 directions: top-left, top, top-right, left, right, bottom-left, bottom, bottom-right
+    for (let deltaRow = -1; deltaRow <= 1; deltaRow++) {
+        for (let deltaCol = -1; deltaCol <= 1; deltaCol++) {
+            // Skip the center cell (the cell itself)
+            if (deltaRow === 0 && deltaCol === 0) continue;
+            
+            const newRow = row + deltaRow;
+            const newCol = col + deltaCol;
+            
+            // Check if the neighbor is within bounds
+            if (newRow >= 0 && newRow < height && newCol >= 0 && newCol < width) {
+                neighbors.push(newRow * width + newCol);
+            }
+        }
+    }
+    
+    return neighbors;
+}
+
+/**
+ * Recursively reveals all connected cells that have zero adjacent mines
+ * @param {number} startIndex - The starting cell index
+ * @param {number[]} board - The game board (9 = mine, 0-8 = count)
+ * @param {boolean[]} revealed - Which cells are currently revealed
+ * @param {number} width - Board width
+ * @param {number} height - Board height
+ */
+function revealConnectedZeros(startIndex, board, revealed, width, height) {
+    const toProcess = [startIndex];
+    const processed = new Set();
+    
+    while (toProcess.length > 0) {
+        const currentIndex = toProcess.pop();
+        
+        // Skip if already processed
+        if (processed.has(currentIndex)) continue;
+        processed.add(currentIndex);
+        
+        // Reveal this cell
+        revealed[currentIndex] = true;
+        
+        // If this cell has zero adjacent mines, reveal its neighbors too
+        if (board[currentIndex] === 0) {
+            const neighbors = getNeighborIndices(currentIndex, width, height);
+            
+            for (const neighborIndex of neighbors) {
+                // Only process unrevealed, non-mine neighbors
+                if (!revealed[neighborIndex] && board[neighborIndex] !== 9) {
+                    revealed[neighborIndex] = true;
+                    
+                    // If neighbor is also a zero, add it to the queue
+                    if (board[neighborIndex] === 0 && !processed.has(neighborIndex)) {
+                        toProcess.push(neighborIndex);
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Generates a complete Minesweeper game board
+ * @param {number} width - Board width
+ * @param {number} height - Board height
+ * @param {number} mineCount - Number of mines to place
+ * @param {boolean} autoRevealStart - Whether to auto-reveal a safe starting area
+ * @returns {Object} Object containing board data and revealed state
+ */
+function generateMinesweeper(width, height, mineCount, autoRevealStart = false) {
+    const totalCells = width * height;
+    const MINE_VALUE = 9;
+    
+    // Initialize board with all zeros
+    const board = new Array(totalCells).fill(0);
+    const revealed = new Array(totalCells).fill(false);
+    
+    // Ensure mine count doesn't exceed available cells
+    const actualMineCount = Math.min(mineCount, totalCells - 1);
+    
+    // Place mines randomly
+    let minesPlaced = 0;
+    while (minesPlaced < actualMineCount) {
+        const randomIndex = Math.floor(Math.random() * totalCells);
+        
+        // Only place mine if cell doesn't already have one
+        if (board[randomIndex] !== MINE_VALUE) {
+            board[randomIndex] = MINE_VALUE;
+            minesPlaced++;
+        }
+    }
+    
+    // Calculate numbers for non-mine cells
+    for (let i = 0; i < totalCells; i++) {
+        // Skip mine cells
+        if (board[i] === MINE_VALUE) continue;
+        
+        // Count adjacent mines
+        const neighbors = getNeighborIndices(i, width, height);
+        let adjacentMines = 0;
+        
+        for (const neighborIndex of neighbors) {
+            if (board[neighborIndex] === MINE_VALUE) {
+                adjacentMines++;
+            }
+        }
+        
+        board[i] = adjacentMines;
+    }
+    
+    // Always reveal at least one safe starting cell
+    // Find a random cell with zero adjacent mines
+    const zeroCells = [];
+    for (let i = 0; i < totalCells; i++) {
+        if (board[i] === 0) {
+            zeroCells.push(i);
+        }
+    }
+    
+    // If we found any zero cells, reveal one (and optionally its connected area)
+    if (zeroCells.length > 0) {
+        const randomZeroIndex = zeroCells[Math.floor(Math.random() * zeroCells.length)];
+        
+        if (autoRevealStart) {
+            // Reveal the entire connected zero area (start_me = true)
+            revealConnectedZeros(randomZeroIndex, board, revealed, width, height);
+        } else {
+            // Just reveal the single random zero cell (start_me = false)
+            // This keeps us under Discord's 100 spoiler tag limit, which causes a square to be unrevealed if a 10*10 board. We apply this rule everywhere else for consistency.
+            revealed[randomZeroIndex] = true;
+        }
+    }
+    
+    return { board, revealed };
+}
+
+/**
+ * Formats the Minesweeper board for Discord markdown
+ * @param {number[]} board - The game board
+ * @param {boolean[]} revealed - Which cells are revealed
+ * @param {string[]} emojis - Emoji set to use (0-8 for numbers, 9 for mine)
+ * @param {number} width - Board width
+ * @param {number} height - Board height
+ * @returns {string} Formatted Discord message
+ */
+function formatMinesweeperBoard(board, revealed, emojis, width, height) {
+    let output = '';
+    
+    for (let row = 0; row < height; row++) {
+        let rowText = '';
+        
+        for (let col = 0; col < width; col++) {
+            const index = row * width + col;
+            const cellEmoji = emojis[board[index]];
+            
+            // Wrap in spoiler tags if not revealed
+            if (revealed[index]) {
+                rowText += cellEmoji;
+            } else {
+                rowText += `||${cellEmoji}||`;
+            }
+        }
+        
+        output += rowText + '\n';
+    }
+    
+    return output;
+}
+
 module.exports = {
 	data: {
 		// Slash command data
@@ -192,7 +377,9 @@ module.exports = {
 				)
 			).addSubcommand(command =>
 				command.setName("minesweeper").setDescription("Play Minesweeper!").addBooleanOption(option =>
-					option.setName("device").setDescription("On Computer? (Default: true)").setRequired(false)
+					option.setName("device").setDescription("Use Ascii instead of Emojis? (Default: false)").setRequired(false)
+				).addBooleanOption(option =>
+					option.setName("start_me").setDescription("Reveal a section of the board to start? (Default: false)").setRequired(false)
 				).addIntegerOption(option =>
 					option.setName("width").setDescription("Width of the map? (Default: 10)").setMinValue(3).setMaxValue(10).setRequired(false)
 				).addIntegerOption(option =>
@@ -380,156 +567,31 @@ module.exports = {
 				cmd.followUp(result);
 				break;
 			case 'minesweeper':
-				let mapWidth = cmd.options.getInteger("width") ?? 10;
-				let mapHeight = cmd.options.getInteger("height") ?? 10;
-				let mines = cmd.options.getInteger("mines") ?? 10;
-				let onComputer = cmd.options.getBoolean("device") ?? true;
-				if (mines >= mapWidth * mapHeight - 1) {
-					mines = mapWidth * mapHeight - 1;
-				}
-				let mapArr = [];
-				let minesweeperFollowUp = ``;
-				let coveredUp = [];
-				let Checklist = [];
-				let Virus = [];
-				var emojis = [];
-				if (onComputer) {
-					emojis = ["0️⃣", "1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "💣"];
-				} else {
-					emojis = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "B"];
-				}
-				let placeholder;
-				let NumBombs = 0;
-				let clicked = false;
-				let VirusFunc = function (e) {
-					Checklist = [];
-					if (e === 0) {
-						Checklist = [e + mapWidth, e + 1, e + mapWidth + 1];
-					} else if (e === mapWidth - 1) {
-						Checklist = [e + mapWidth, e - 1, e + mapWidth - 1];
-					} else if (e === (mapWidth * mapHeight) - mapWidth) {
-						Checklist = [e - mapWidth, e + 1, e - mapWidth + 1];
-					} else if (e === (mapWidth * mapHeight) - 1) {
-						Checklist = [e - mapWidth, e - 1, e - mapWidth - 1];
-					} else if (e % mapWidth === 0) {
-						Checklist = [e - mapWidth, e + mapWidth, e + 1, e - mapWidth + 1, e + mapWidth + 1];
-					} else if (e % mapWidth === mapWidth - 1) {
-						Checklist = [e - mapWidth, e + mapWidth, e - 1, e - mapWidth - 1, e + mapWidth - 1];
-					} else if (e < mapWidth) {
-						Checklist = [e + mapWidth, e - 1, e + 1, e + mapWidth - 1, e + mapWidth + 1];
-					} else if (e > (mapWidth * mapHeight) - mapWidth - 1) {
-						Checklist = [e - mapWidth, e - 1, e + 1, e - mapWidth - 1, e - mapWidth + 1];
-					} else {
-						Checklist = [e - mapWidth, e + mapWidth, e - 1, e + 1, e - mapWidth - 1, e - mapWidth + 1, e + mapWidth - 1, e + mapWidth + 1];
-					}
-					for (var i = 0; i < Checklist.length; i++) {
-						coveredUp[e][0] = false;
-						coveredUp[Checklist[i]][0] = false;
-						if (mapArr[Checklist[i]] === 0 && !coveredUp[Checklist[i]][1]) {
-							Virus.push(Checklist[i]);
-						}
-					}
-					coveredUp[e][1] = true;
-				};
-				let BeginVirus = function (e) {
-					Virus = [];
-					Virus.push(e);
-					for (var i = 0; i < Infinity; i++) {
-						if (Virus.length === 0) {
-							break;
-						}
-						for (var y = 0; y < Virus.length; y++) {
-							VirusFunc(Virus[y]);
-						}
-						Virus = [];
-					}
-				};
-				let Generate = function () {
-					mapArr = [];
-					coveredUp = [];
-					Virus = [];
-					for (let i = 0; i < mapWidth * mapHeight; i++) {
-						mapArr.push(0);
-						coveredUp.push([true, false]);
-					}
-					for (let i = 0; i < mines; i++) {
-						let placeholder = Math.floor(Math.random() * mapWidth * mapHeight);
-						if (mapArr[placeholder] === 9) {
-							i--;
-						} else {
-							mapArr[placeholder] = 9;
-						}
-					}
-					for (let e = 0; e < mapWidth * mapHeight; e++) {
-						NumBombs = 0;
-						Checklist = [];
-						if (mapArr[e] < 9) {
-							if (e === 0) {
-								Checklist = [mapArr[e + mapWidth], mapArr[e + 1], mapArr[e + mapWidth + 1]];
-							} else if (e === mapWidth - 1) {
-								Checklist = [mapArr[e + mapWidth], mapArr[e - 1], mapArr[e + mapWidth - 1]];
-							} else if (e === (mapWidth * mapHeight) - mapWidth) {
-								Checklist = [mapArr[e - mapWidth], mapArr[e + 1], mapArr[e - mapWidth + 1]];
-							} else if (e === (mapWidth * mapHeight) - 1) {
-								Checklist = [mapArr[e - mapWidth], mapArr[e - 1], mapArr[e - mapWidth - 1]];
-							} else if (e % mapWidth === 0) {
-								Checklist = [mapArr[e - mapWidth], mapArr[e + mapWidth], mapArr[e + 1], mapArr[e - mapWidth + 1], mapArr[e + mapWidth + 1]];
-							} else if (e % mapWidth === mapWidth - 1) {
-								Checklist = [mapArr[e - mapWidth], mapArr[e + mapWidth], mapArr[e - 1], mapArr[e - mapWidth - 1], mapArr[e + mapWidth - 1]];
-							} else if (e < mapWidth) {
-								Checklist = [mapArr[e + mapWidth], mapArr[e - 1], mapArr[e + 1], mapArr[e + mapWidth - 1], mapArr[e + mapWidth + 1]];
-							} else if (e > (mapWidth * mapHeight) - mapWidth - 1) {
-								Checklist = [mapArr[e - mapWidth], mapArr[e - 1], mapArr[e + 1], mapArr[e - mapWidth - 1], mapArr[e - mapWidth + 1]];
-							} else {
-								Checklist = [mapArr[e - mapWidth], mapArr[e + mapWidth], mapArr[e - 1], mapArr[e + 1], mapArr[e - mapWidth - 1], mapArr[e - mapWidth + 1], mapArr[e + mapWidth - 1], mapArr[e + mapWidth + 1]];
-							}
-							for (let i = 0; i < Checklist.length; i++) {
-								if (Checklist[i] === 9) {
-									NumBombs++;
-								}
-							}
-							mapArr[e] = NumBombs;
-						}
-					}
-					let randomNum = Math.round(Math.random() * mapWidth * mapHeight);
-					let ran = 0;
-					while (mapArr[randomNum] !== 0) {
-						randomNum++;
-						ran++;
-						if (randomNum >= mapWidth * mapHeight) {
-							randomNum = 0;
-						}
-						if (ran > mapWidth * mapHeight) {
-							break;
-						}
-					}
-					if (ran <= mapWidth * mapHeight) {
-						BeginVirus(randomNum);
-					}
-					minesweeperFollowUp += `New Markdown Minesweeper Game!\nThere are ${mines} mines.\nMap size is ${mapWidth}x${mapHeight}.\n----------------------------------\n`;
-					for (let i = 0; i < mapHeight; i++) {
-						let placeholder = "";
-						for (let j = 0; j < mapWidth; j++) {
-							if (coveredUp[(i * mapWidth) + j][0]) {
-								if (onComputer) {
-									placeholder += "||" + emojis[mapArr[(i * mapWidth) + j]] + "||";
-								} else {
-									placeholder += "||\`" + emojis[mapArr[(i * mapWidth) + j]] + "\`|| ";
-								}
-							} else {
-								if (onComputer) {
-									placeholder += "" + emojis[mapArr[(i * mapWidth) + j]];
-								} else {
-									placeholder += "\`" + emojis[mapArr[(i * mapWidth) + j]] + "\` ";
-								}
-							}
-						}
-						minesweeperFollowUp += `${placeholder}\n`;
-					}
-				};
-				Generate();
-				cmd.followUp(minesweeperFollowUp);
-				break;
+                // Parse command options with defaults
+                const boardWidth = cmd.options.getInteger("width") ?? 10;
+                const boardHeight = cmd.options.getInteger("height") ?? 10;
+                const mineCount = cmd.options.getInteger("mines") ?? 10;
+                const useAscii = cmd.options.getBoolean("use_ascii") ?? false;
+                const autoReveal = cmd.options.getBoolean("start_me") ?? false;
+                
+                // Choose emoji set based on ASCII preference
+                const emojis = useAscii 
+                    ? ["`0`", "`1`", "`2`", "`3`", "`4`", "`5`", "`6`", "`7`", "`8`", "`*`"]
+                    : ["0️⃣", "1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "💣"];
+                
+                // Generate the game
+                const { board, revealed } = generateMinesweeper(boardWidth, boardHeight, mineCount, autoReveal);
+                
+                // Format output message
+                const boardText = formatMinesweeperBoard(board, revealed, emojis, boardWidth, boardHeight);
+                const headerText = `New Markdown Minesweeper Game!\n` +
+                                `There are ${mineCount} mines.\n` +
+                                `Map size is ${boardWidth}x${boardHeight}.\n` +
+                                `----------------------------------\n`;
+                
+                // Send response
+                cmd.followUp(headerText + boardText);
+            break;
 		}
 	},
 
@@ -580,6 +642,7 @@ module.exports = {
 
 			// Modal
 			case "moveModal":
+				// @ts-ignore
 				let cont = cmd.fields.getTextInputValue("moveMade").toUpperCase();
 				readRACBoard(cmd.message.content);
 				let foundOne = -1;
