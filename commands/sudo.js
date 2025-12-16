@@ -40,6 +40,8 @@ module.exports = {
             if (msg.content.startsWith("~betaSudo ")) msg.content = msg.content.replaceAll("betaSudo", "sudo");
 
             const devadminChannel = await client.channels.fetch(config.commandChannel);
+            if (!("guild" in devadminChannel)) return;
+
             await devadminChannel.guild.members.fetch(msg.author.id);
 
             if (
@@ -81,8 +83,9 @@ module.exports = {
                         msg.reply(`The next number to enter is **${guild.counting.nextNum}**.`);
                         break;
                     case "runDaily":
-                        await msg.reply(`Running the daily function...`);
-                        daily(true);
+                        await msg.reply(`Running the daily listeners...`);
+                        // @ts-ignore
+                        Object.entries(commands).find(([name, module]) => module.daily)[1].daily(pseudoGlobals);
                         break;
                     case "runWelcome":
                         guild.sentWelcome = false;
@@ -102,6 +105,7 @@ module.exports = {
                         msg.reply(config.wotd);
                         break;
                     case "checkRSS":
+                        // @ts-ignore
                         Object.entries(commands).find(([name, module]) => name === 'rss')[1].daily(pseudoGlobals);
                         // checkRSS();
                         break;
@@ -109,8 +113,11 @@ module.exports = {
                         updateBlocklists();
                         break;
                     case "crash":
+                        // @ts-expect-error
                         setTimeout(die => { undefined.instructed_to_crash = instructed_to_crash })
+                        // @ts-expect-error
                         setTimeout(async die => { undefined.instructed_to_crash = instructed_to_crash })
+                        // @ts-expect-error
                         undefined.instructed_to_crash = instructed_to_crash
                         break;
                     case "shell":

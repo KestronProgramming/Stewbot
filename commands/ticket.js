@@ -37,45 +37,49 @@ module.exports = {
     /** @param {import('discord.js').ChatInputCommandInteraction} cmd */
     async execute(cmd, context) {
 		applyContext(context);
+
+		const targetChannel = cmd.options.getChannel("channel");
+		if (!("isSendable" in targetChannel) || !targetChannel.isSendable()) {
+			await cmd.followUp({ content: "I cannot create ticket threads in that channel because I lack permission to send messages there.", ephemeral: true });
+			return;
+		}
 		
-		cmd.followUp({embeds:
-			[{
-				"type": "rich",
-				"title": `${cmd.guild.name} Moderator Tickets`,
-				"description": `Press the button below to open up a private ticket with ${cmd.guild.name} moderators.`,
-				"color": 0x006400,
-				"thumbnail": {
-					"url": cmd.guild.iconURL(),
-					"height": 0,
-					"width": 0
-				},
-				"footer": {
-					"text": `Tickets will take place over DMs, make sure to have DMs open to ${client.user.username}.`
-				}
-			}], 
-			components:	[
-				new ActionRowBuilder()
-				.addComponents(new ButtonBuilder().setCustomId(`ticket-${cmd.options.getChannel("channel").id}`)
-				.setLabel("Create private ticket with staff")
-				.setStyle(ButtonStyle.Success))
+		const embed = new EmbedBuilder()
+			.setTitle(`${cmd.guild.name} Moderator Tickets`)
+			.setDescription(`Press the button below to open up a private ticket with ${cmd.guild.name} moderators.`)
+			.setColor(0x006400)
+			.setThumbnail(cmd.guild.iconURL() ?? null)
+			.setFooter({ text: `Tickets will take place over DMs, make sure to have DMs open to ${client.user.username}.` });
+
+		await cmd.followUp({
+			embeds: [embed],
+			components: [
+				new ActionRowBuilder().addComponents(
+					new ButtonBuilder()
+						.setCustomId(`ticket-${targetChannel.id}`)
+						.setLabel("Create private ticket with staff")
+						.setStyle(ButtonStyle.Success)
+				).toJSON()
 			]
 		});
 	},
 
     /** 
      * @param {import('discord.js').Message} msg 
-     * @param {GuildDoc} guildStore 
-     * @param {GuildUserDoc} guildUserStore 
      * */
     async [Events.MessageCreate] (msg, context) {
 		applyContext(context);
 
 		// Ticket system
-		if(msg.channel.ownerId === client.user.id && msg.channel.name?.startsWith("Ticket with ")&&!msg.author.bot){
-			var resp={files:[],content:`Ticket response from **${msg.guild.name}**. To respond, make sure to reply to this message.\nTicket ID: ${msg.channel.name.split("Ticket with ")[1].split(" in ")[1]}/${msg.channel.id}`};
-			msg.attachments.forEach((attached,i) => {
-				let url=attached.url.toLowerCase();
-				if(i!==0||(!url.includes(".jpg")&&!url.includes(".png")&&!url.includes(".jpeg"))){
+		if("ownerId" in msg.channel && msg.channel.ownerId === client.user.id && msg.channel.name?.startsWith("Ticket with ")&&!msg.author.bot){
+			let resp={
+				files:[],
+				content:`Ticket response from **${msg.guild.name}**. To respond, make sure to reply to this message.\nTicket ID: ${msg.channel.name.split("Ticket with ")[1].split(" in ")[1]}/${msg.channel.id}`
+			};
+			msg.attachments.forEach((attached, key) => {
+				// TODO_LINT: test this
+				let url = attached.url.toLowerCase();
+				if (key !== "0" || (!url.includes(".jpg") && !url.includes(".png") && !url.includes(".jpeg"))) {
 					resp.files.push(attached.url);
 				}
 			});
@@ -93,22 +97,23 @@ module.exports = {
 				.setFooter({
 					text: "Make sure to reply to this message to respond",
 				})
-				.setImage(msg.attachments.first()?msg.attachments.first().url:null)
+				.setImage(msg.attachments.first()?.url ?? null)
 			];
 			try{client.users.cache.get(msg.channel.name.split("Ticket with ")[1].split(" in ")[0]).send(resp).catch(e=>{});}catch(e){}
 		}
+
 		if(msg.reference&&msg.channel instanceof DMChannel&&!msg.author.bot){
 			var rmsg=await msg.channel.messages.fetch(msg.reference.messageId);
 			if(rmsg.author.id===client.user.id&&rmsg.content.includes("Ticket ID: ")){
-				var resp={
+				let resp={
 					content:msg.content,
 					username:msg.member?.nickname||msg.author.globalName||msg.author.username,
 					avatar_url:msg.author.displayAvatarURL()
 				};
-				var c=client.channels.cache.get(rmsg.content.split("Ticket ID: ")[1].split("/")[0]);
-				if(c.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
-					var hook=await c.fetchWebhooks();
-					hook=hook.find(h=>h.token);
+				let channel = client.channels.cache.get(rmsg.content.split("Ticket ID: ")[1].split("/")[0]);
+				if(channel.isSendable() && "fetchWebhooks" in channel){
+					let webhooks = await channel.fetchWebhooks();
+					let hook=webhooks.find(h=>h.token);
 					if(hook){
 						fetch(`https://discord.com/api/webhooks/${hook.id}/${hook.token}?thread_id=${rmsg.content.split("Ticket ID:")[1].split("/")[1]}`, {
 							method: 'POST',
@@ -119,7 +124,7 @@ module.exports = {
 						}).then(d=>d.text());
 					}
 					else{
-						client.channels.cache.get(rmsg.content.split("Ticket ID: ")[1].split("/")[0]).createWebhook({
+						channel.createWebhook({
 							name: config.name,
 							avatar: config.pfp
 						}).then(d=>{
@@ -146,16 +151,27 @@ module.exports = {
 		applyContext(context);
 
 		if(cmd.customId?.startsWith("ticket-")){
-			client.channels.cache.get(cmd.customId.split("-")[1]).send(`Ticket opened by **${cmd.member.nickname||cmd.user.globalName||cmd.user.username}**.`).then(msg=>{
-				msg.startThread({
+			const target = client.channels.cache.get(cmd.customId.split("-")[1]);
+			if (!target.isSendable()) {
+				await cmd.reply({ 
+					content: "I cannot open a ticket because I do not have permission to send messages in the staff channel.", 
+					ephemeral: true 
+				});
+				return;
+			}
+			// @ts-ignore
+			target.send(`Ticket opened by **${cmd.member?.nickname||cmd.user.globalName||cmd.user.username}**.`).then(async msg=>{
+				const thread = await msg.startThread({
 					name:`Ticket with ${cmd.user.id} in ${cmd.customId.split("-")[1]}`,
 					autoArchiveDuration:60,
 					type:"GUILD_PUBLIC_THREAD",
 					reason:`Ticket opened by ${cmd.user.username}`
 				});
-				cmd.user.send(`Ticket opened in **${cmd.guild.name}**. You can reply to this message to converse in the ticket. Note that any messages not a reply will not be sent to the ticket.\n\nTicket ID: ${cmd.customId.split("-")[1]}/${msg.id}`);
+				try {
+					await cmd.user.send(`Ticket opened in **${cmd.guild?.name ?? "this server"}**. You can reply to this message to converse in the ticket. Note that any messages not a reply will not be sent to the ticket.\n\nTicket ID: ${cmd.customId.split("-")[1]}/${thread.id}`);
+				} catch {}
 			});
-			cmd.deferUpdate();
+			await cmd.deferUpdate();
 		}
 	}
 };

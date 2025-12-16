@@ -12,7 +12,9 @@ function applyContext(context={}) {
 // #endregion CommandBoilerplate
 
 const fs = require("node:fs")
-const wotdList = fs.readFileSync(`./data/wordlist.txt`,"utf-8").split("\n");
+const wotdList = fs.readFileSync(`./data/wordlist.txt`, "utf-8")
+    .split("\n")
+    .map(word => word.trim().toLowerCase());
 const { notify } = require("../utils");
 const config = require("../data/config.json");
 const { isDirty } = require("./filter");
@@ -42,7 +44,25 @@ module.exports = {
     async execute(cmd, context) {
 		applyContext(context);
 		
-		cmd.followUp({content:`# WOTD Game${"\n` ` ` ` ` ` ` ` ` `".repeat(6)}\nQ W E R T Y U I O P\nA S D F G H J K L\nZ X C V B N M`,components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setLabel(`Make a Guess`).setCustomId(`wotd-${cmd.user.id}`).setStyle(ButtonStyle.Primary),new ButtonBuilder().setLabel(`Based on Wordle`).setURL(`https://www.nytimes.com/games/wordle/index.html`).setStyle(ButtonStyle.Link))]});
+		await cmd.followUp({
+            content: `# WOTD Game${"\n` ` ` ` ` ` ` ` ` `".repeat(
+                6
+            )}\nQ W E R T Y U I O P\nA S D F G H J K L\nZ X C V B N M`,
+            components: [
+                new ActionRowBuilder().addComponents(
+                    new ButtonBuilder()
+                        .setLabel(`Make a Guess`)
+                        .setCustomId(`wotd-${cmd.user.id}`)
+                        .setStyle(ButtonStyle.Primary),
+                    new ButtonBuilder()
+                        .setLabel(`Based on Wordle`)
+                        .setURL(
+                            `https://www.nytimes.com/games/wordle/index.html`
+                        )
+                        .setStyle(ButtonStyle.Link)
+                ).toJSON(),
+            ]
+        });
 	},
 
 	async daily(context) {
@@ -57,7 +77,7 @@ module.exports = {
 	// Only button subscriptions matched will be sent to the handler 
 	subscribedButtons: ["wotdModal", /wotd-./],
 	
-    /** @param {import('discord.js').ButtonInteraction} cmd */
+    /** @param {import('discord.js').ButtonInteraction | import('discord.js').AnySelectMenuInteraction | import('discord.js').ModalSubmitInteraction } cmd */
     async onbutton(cmd, context) {
 		applyContext(context);
 
@@ -67,9 +87,10 @@ module.exports = {
 
 		const wotd = configDoc.wotd;
 
-		if (cmd.customId == "wotdModal") {
+		if (cmd.customId == "wotdModal" && cmd.isModalSubmit()) {
 			var guess=cmd.fields.getTextInputValue("wotdInput").toLowerCase();
-			if(!/^[a-z]{5}$/.test(guess)){
+			
+			if(!/^[a-z]{5}$/.test(guess)) {
 				cmd.reply({content:`Please enter a valid word.`,ephemeral:true});
 				return;
 			}
@@ -137,16 +158,75 @@ module.exports = {
 				}
 			});
 			priorGuesses[nextInp]=guessAccuracy.join(" ");//guess.split("").map(a=>`${guessAccuracies[a]}${a.toUpperCase()}${guessAccuracies[a]}${guessAccuracies[a]==="`"?``:` `}`).join(" ");
-			if(nextInp===5||won){
-				cmd.update({content:`# WOTD Game\n${priorGuesses.join("\n")}\n\n${`QWERTYUIOP`.split("").map(lett=>`${accuracies[lett]}${lett}${accuracies[lett]}`).join(" ")}\n${`ASDFGHJKL`.split("").map(lett=>`${accuracies[lett]}${lett}${accuracies[lett]}`).join(" ")}\n${`ZXCVBNM`.split("").map(lett=>`${accuracies[lett]}${lett}${accuracies[lett]}`).join(" ")}\n## Word: ||${wotd.toUpperCase()}||`,components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setLabel(`Make a Guess`).setCustomId(`wotd-${cmd.user.id}`).setStyle(ButtonStyle.Primary).setDisabled(true),new ButtonBuilder().setLabel(`Based on Wordle`).setURL(`https://www.nytimes.com/games/wordle/index.html`).setStyle(ButtonStyle.Link))]});
+			if (nextInp === 5 || won) {
+				// @ts-ignore
+				cmd.update({
+                    content: `# WOTD Game\n${priorGuesses.join(
+                        "\n"
+                    )}\n\n${`QWERTYUIOP`
+                        .split("")
+                        .map(
+                            (lett) =>
+                                `${accuracies[lett]}${lett}${accuracies[lett]}`
+                        )
+                        .join(" ")}\n${`ASDFGHJKL`
+                        .split("")
+                        .map(
+                            (lett) =>
+                                `${accuracies[lett]}${lett}${accuracies[lett]}`
+                        )
+                        .join(" ")}\n${`ZXCVBNM`
+                        .split("")
+                        .map(
+                            (lett) =>
+                                `${accuracies[lett]}${lett}${accuracies[lett]}`
+                        )
+                        .join(" ")}\n## Word: ||${wotd.toUpperCase()}||`,
+                    components: [
+                        new ActionRowBuilder().addComponents(
+                            new ButtonBuilder()
+                                .setLabel(`Make a Guess`)
+                                .setCustomId(`wotd-${cmd.user.id}`)
+                                .setStyle(ButtonStyle.Primary)
+                                .setDisabled(true),
+                            new ButtonBuilder()
+                                .setLabel(`Based on Wordle`)
+                                .setURL(
+                                    `https://www.nytimes.com/games/wordle/index.html`
+                                )
+                                .setStyle(ButtonStyle.Link)
+                        ),
+                    ],
+                });
 			}
-			else{
-				cmd.update(`# WOTD Game\n${priorGuesses.join("\n")}\n\n${`QWERTYUIOP`.split("").map(lett=>`${accuracies[lett]}${lett}${accuracies[lett]}`).join(" ")}\n${`ASDFGHJKL`.split("").map(lett=>`${accuracies[lett]}${lett}${accuracies[lett]}`).join(" ")}\n${`ZXCVBNM`.split("").map(lett=>`${accuracies[lett]}${lett}${accuracies[lett]}`).join(" ")}`);
+			else {
+				// @ts-ignore
+				cmd.update(
+                    `# WOTD Game\n${priorGuesses.join("\n")}\n\n${`QWERTYUIOP`
+                        .split("")
+                        .map(
+                            (lett) =>
+                                `${accuracies[lett]}${lett}${accuracies[lett]}`
+                        )
+                        .join(" ")}\n${`ASDFGHJKL`
+                        .split("")
+                        .map(
+                            (lett) =>
+                                `${accuracies[lett]}${lett}${accuracies[lett]}`
+                        )
+                        .join(" ")}\n${`ZXCVBNM`
+                        .split("")
+                        .map(
+                            (lett) =>
+                                `${accuracies[lett]}${lett}${accuracies[lett]}`
+                        )
+                        .join(" ")}`
+                );
 			}
 
 		}
 
-		if (cmd.customId?.startsWith("wotd-")) {
+		if (cmd.customId?.startsWith("wotd-") && cmd.isButton()) {
 			if(cmd.user.id!==cmd.customId.split("-")[1]){
 				cmd.reply({content:`This is not your game.`,ephemeral:true});
 			}
@@ -156,6 +236,7 @@ module.exports = {
                         .setCustomId("wotdModal")
                         .setTitle("WOTD - Make a Guess")
                         .addComponents(
+							// @ts-ignore
                             new ActionRowBuilder().addComponents(
                                 new TextInputBuilder()
                                     .setCustomId("wotdInput")
@@ -169,6 +250,5 @@ module.exports = {
                 );
 			}
 		}
-	
 	}
 };

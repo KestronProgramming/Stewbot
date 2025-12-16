@@ -2,9 +2,9 @@
 const Categories = require("./modules/Categories");
 const client = require("../client.js");
 const { Guilds, Users, guildByID, userByID, guildByObj, userByObj, guildUserByObj } = require("./modules/database.js")
-const { SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType, AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType } = require("discord.js");
+const { SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType, AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType, GuildMemberRoleManager } = require("discord.js");
 function applyContext(context = {}) {
-    for (key in context) {
+    for (const key in context) {
         this[key] = context[key];
     }
 }
@@ -37,6 +37,7 @@ module.exports = {
         	helpCategories: [Categories.General, Categories.Administration, Categories.Server_Only],
 			shortDesc: "Warn a user for bad behaviour",//Should be the same as the command setDescription field
 			detailedDesc: //Detailed on exactly what the command does and how to use it
+				// @ts-ignore
 				`Moderators can use this command to send a user a warning for doing something wrong anonymously in the server's name, with a severity scale from 1 to 10. You can then use ${cmds.warnings.mention} to check a list of all warnings dealt.`
         },
     },
@@ -48,9 +49,44 @@ module.exports = {
         const who = cmd.options.getUser("who");
         const what = await censor(cmd.options.getString("what"));
         const severity = cmd.options.getInteger("severity");
+        const member = await cmd.guild.members.fetch(who.id).catch(() => null);
+
+        if (!member) {
+            await cmd.followUp({ 
+                content: "I can't find that user in this server.", 
+                ephemeral: true
+            });
+            return;
+        }
 
         if (who.bot) {
-            cmd.followUp(`Bots cannot be warned. Consider reconfiguring or removing a bot if it's giving you issues.`);
+            await cmd.followUp({ 
+                content: "Bots cannot be warned. Consider reconfiguring or removing a bot if it's giving you issues.", 
+                ephemeral: true
+            });
+            return;
+        }
+
+        if (member.id === cmd.client.user.id) {
+            await cmd.followUp({ 
+                content: "I can't warn myself.", 
+                ephemeral: true
+            });
+            return;
+        }
+
+        if (
+            cmd.user.id !== member.id && (
+                cmd.member && 
+                cmd.member.roles instanceof GuildMemberRoleManager &&
+                member.roles.highest.comparePositionTo(cmd.member.roles.highest) >= 0 && 
+                cmd.user.id !== cmd.guild.ownerId
+            )
+        ) {
+            await cmd.followUp({
+                content: "You cannot warn someone with an equal or higher role.",
+                ephemeral: true
+            });
             return;
         }
 
@@ -65,23 +101,23 @@ module.exports = {
         await guildUser.save();
 
         try {
-            who.send({
-                embeds: [{
-                    type: "rich",
-                    title: cmd.guild.name.slice(0, 80),
-                    description: `You were given a warning.\nReason: \`${what === null ? `None given` : what}\`\nSeverity level: \`${severity === null ? "None given" : severity}\``,
-                    color: 0xff0000,
-                    thumbnail: {
-                        url: cmd.guild.iconURL(),
-                        height: 0,
-                        width: 0,
-                    },
-                    footer: {
-                        text: `This message was sent by a moderator of ${cmd.guild.name}`
-                    }
-                }]
-            }).catch(e => { });
+            await who.send({
+                embeds: [new EmbedBuilder()
+                    .setTitle(cmd.guild.name.slice(0, 80))
+                    .setDescription(`You were given a warning.\nReason: \`${what === null ? `None given` : what}\`\nSeverity level: \`${severity === null ? "None given" : severity}\``)
+                    .setColor(0xff0000)
+                    .setThumbnail(cmd.guild.iconURL())
+                    .setFooter({ text: `This message was sent by a moderator of ${cmd.guild.name}` })
+                ]
+            }).catch(() => { });
         } catch (e) { }
-        cmd.followUp({ content: `Alright, I have warned <@${who.id}>${what === null ? `` : ` with the reason \`${what}\``}${severity === null ? `` : ` at a level \`${severity}\``}. This is warning #\`${guildUser.warnings.length}\` for them.`, allowedMentions: { parse: [] } });
+		await cmd.followUp({
+            content: `Alright, I have warned <@${who.id}>${
+                what === null ? `` : ` with the reason \`${what}\``
+            }${
+                severity === null ? `` : ` at a level \`${severity}\``
+            }. This is warning #\`${guildUser.warnings.length}\` for them.`,
+            allowedMentions: { parse: [] },
+        });
     }
 };

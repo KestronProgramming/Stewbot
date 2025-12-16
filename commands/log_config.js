@@ -2,7 +2,7 @@
 const Categories = require("./modules/Categories");
 const client = require("../client.js");
 const { Guilds, Users, guildByID, userByID, guildByObj, userByObj } = require("./modules/database.js")
-const { Events, ContextMenuCommandBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
+const { Events, ContextMenuCommandBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType, User}=require("discord.js");
 function applyContext(context={}) {
 	for (let key in context) {
 		this[key] = context[key];
@@ -16,6 +16,9 @@ const ms = require("ms");
 const { limitLength } = require("../utils.js")
 
 // Temporarily caches old user profiles. See comment under [Events.UserUpdate]
+
+
+/** @type {import('lru-cache').LRUCache<string, import('discord.js').User | import('discord.js').PartialUser>} */
 const oldProfileCache = new LRUCache({ ttl: ms("30s"), max: 10000 })
 
 async function logGuildMemberUpdate(packet) {
@@ -117,26 +120,26 @@ async function logGuildMemberUpdate(packet) {
 
     // Channel + permission check
     const channel = await client.channels.fetch(logChannelId).catch(() => null);
-    if (!channel || !channel.permissionsFor(client.user).has(PermissionFlagsBits.SendMessages)) {
+    if (!channel?.isSendable()) {
         await Guilds.updateOne({ id: guildId }, { "logs.user_change_events": false });
         return;
     }
 
     const thumb = avatarURL(packetUser.id, newData.avatar) || client.user.displayAvatarURL();
 
-    await channel.send({
-        content: `**User <@${packetUser.id}> updated their global profile**`,
-        embeds: [{
-            type: "rich",
-            title: "Global Profile Update",
-            description: `**${newData.username}** (${newData.global_name !== "[Unknown]" ? newData.global_name : "no global name"})`,
-            color: cachedUser?.accentColor ?? 0x006400,
-            fields: diffs,
-            thumbnail: { url: thumb },
-            url: `https://discord.com/users/${packetUser.id}`
-        }],
-        allowedMentions: { parse: [] }
-    });
+	const embed = new EmbedBuilder()
+		.setTitle("Global Profile Update")
+		.setDescription(`**${newData.username}** (${newData.global_name !== "[Unknown]" ? newData.global_name : "no global name"})`)
+		.setColor(cachedUser?.accentColor ?? 0x006400)
+		.setThumbnail(thumb)
+		.setURL(`https://discord.com/users/${packetUser.id}`)
+		.setFields(diffs);
+
+	await channel.send({
+		content: `**User <@${packetUser.id}> updated their global profile**`,
+		embeds: [embed],
+		allowedMentions: { parse: [] }
+	});
 
 }
 
@@ -197,7 +200,8 @@ module.exports = {
 		if(cmd.options.getBoolean("mod_actions")!==null) guild.logs.mod_actions=cmd.options.getBoolean("mod_actions");
 		var disclaimers=[];
 
-		if(!client.channels.cache.get(guild.logs.channel).permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
+		const logChannel = client.channels.cache.get(guild.logs.channel);
+		if(!logChannel.isSendable()){
 			guild.logs.active=false;
 			disclaimers.push(`I can't post in the specified channel, so logging is turned off.`);
 		}
@@ -207,7 +211,9 @@ module.exports = {
 		cmd.followUp(`Configured log events.${disclaimers.map(d=>`\n\n${d}`).join("")}`);
 	},
 
-	async [Events.UserUpdate] (oldUser, newUser) {
+
+	/** @param {import("discord.js").User | import("discord.js").PartialUser} oldUser - The user object before the update. */
+	async [Events.UserUpdate] (oldUser) {
 		// To log global changes, we need the original member, which is only provided in the user update event.
 		// We then broadcast this data to individual servers that trigger the `GUILD_MEMBER_UPDATE` event. 
 		// See the comment under the `logGuildMemberUpdate` function
@@ -223,12 +229,13 @@ module.exports = {
 
 	async [Events.GuildMemberAdd](member, guildStore) {
 		if (guildStore.logs.active && guildStore.logs.joining_and_leaving) {
-			client.channels.cache.get(guildStore.logs.channel)
-				.send({ 
+			const logChan = client.channels.cache.get(guildStore.logs.channel);
+			if (logChan.isSendable()) {
+				logChan.send({ 
 					content: `**<@${member.id}> (${member.user.username}) has joined the server.**`, 
 					allowedMentions: { parse: [] }
-				})
-				.catch(e => null);
+				}).catch(() => null);
+			}
 		}
 	},
 
@@ -237,7 +244,7 @@ module.exports = {
 		if (guildStore.logs.active && guildStore.logs.joining_and_leaving) {
 			var bans = await member.guild.bans.fetch();
 			var c = client.channels.cache.get(guildStore.logs.channel);
-			if (c.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)) {
+			if (c.isSendable()) {
 				c.send({ content: `**<@${member.id}> (${member.user.username}) has ${bans.find(b => b.user.id === member.id) ? "been banned from" : "left"} the server.**${bans.find(b => b.user.id === member.id)?.reason !== undefined ? `\n${bans.find(b => b.user.id === member.id)?.reason}` : ""}`, allowedMentions: { parse: [] } });
 			}
 			else {
@@ -265,7 +272,7 @@ module.exports = {
 					firstEntry.timestamp = BigInt("0b" + BigInt(firstEntry.id).toString(2).slice(0, 39)) + BigInt(1420070400000);
 					if (firstEntry.target.id === msg?.author?.id && BigInt(Date.now()) - firstEntry.timestamp < BigInt(60000)) {
 						var c = msg.guild.channels.cache.get(guildStore.logs.channel);
-						if (c?.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)) {
+						if (c?.isSendable()) {
 							c.send({ content: limitLength(`**Message from <@${firstEntry.target.id}> Deleted by <@${firstEntry.executor.id}> in <#${msg.channel.id}>**\n\n${msg.content.length > 0 ? `\`\`\`\n${msg.content}\`\`\`` : ""}${msg.attachments?.size > 0 ? `There were **${msg.attachments.size}** attachments on this message.` : ""}`), allowedMentions: { parse: [] } });
 						}
 						else {
@@ -291,7 +298,7 @@ module.exports = {
 		const guildStore = await guildByObj(channel.guild);
 		if (guildStore.logs.active && guildStore.logs.channel_events) {
 			var c = channel.guild.channels.cache.get(guildStore.logs.channel);
-			if (c.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)) {
+			if (c?.isSendable()) {
 				c.send(`**Channel \`${channel.name}\` Deleted**`);
 			}
 			else {
@@ -313,63 +320,54 @@ module.exports = {
 			});
 			if (diffs.length > 0) {
 				var c = channel.guild.channels.cache.get(guildStore.logs.channel);
-				if (c.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)) {
-					var rls = {
-						"0": "None",
-						"5": "5s",
-						"10": "10s",
-						"15": "15s",
-						"30": "30s",
-						"60": "1m",
-						"120": "2m",
-						"300": "5m",
-						"600": "10m",
-						"900": "15m",
-						"1800": "30m",
-						"3600": "1h",
-						"7200": "2h",
-						"21600": "6h"
-					};
-					c.send({
-						content: `**Channel Edited**${diffs.map(d => `\n- ${d}`).join("")}`, embeds: [
+				if (c?.isSendable()) {
+					const readableSlowmode = (sec) => sec == "0" ? "None" : ms(+sec * 1000);
+
+					const embed = new EmbedBuilder()
+						.setTitle(`${diffs.includes("name") ? `#${channelO.name} -> ` : ""}#${channel.name}`)
+						.setColor(0x006400)
+						.setFields(
 							{
-								"type": "rich",
-								"title": `${diffs.includes("name") ? `#${channelO.name} -> ` : ""}#${channel.name}`,
-								"description": "",
-								"color": 0x006400,
-								"fields": [
-									{
-										"name": `Description`,
-										"value": `${diffs.includes("topic") ? `${channelO.topic} -> ` : ""}${channel.topic}`,
-										"inline": true
-									},
-									{
-										"name": `Category Name`,
-										"value": `${diffs.includes("parentId") ? `${channelO.parentId === null ? "None" : client.channels.cache.get(channelO.parentId)?.name} -> ` : ""}${channel.parentId === null ? "None" : client.channels.cache.get(channel.parentId)?.name}`,
-										"inline": true
-									},
-									{
-										"name": `Slowmode`,
-										"value": `${diffs.includes("rateLimitPerUser") ? `${rls[`${channelO.rateLimitPerUser}`]} -> ` : ""}${rls[`${channel.rateLimitPerUser}`]}`,
-										"inline": true
-									},
-									{
-										"name": `Age Restricted`,
-										"value": `${diffs.includes("nsfw") ? `${channelO.nsfw} -> ` : ""}${channel.nsfw}`,
-										"inline": true
-									}
-								],
-								"thumbnail": {
-									"url": channel.guild.iconURL(),
-									"width": 0,
-									"height": 0
-								},
-								"footer": {
-									"text": `Channel Edited`
-								},
-								"url": `https://discord.com/channels/${channel.guild.id}/${channel.id}`
+								name: `Description`,
+								value: `${diffs.includes("topic") ? `${channelO.topic} -> ` : ""}${channel.topic}`,
+								inline: true
+							},
+							{
+								name: `Category Name`,
+								value: `${
+									diffs.includes("parentId") 
+										? `${
+											channelO.parentId === null 
+												? "None" 
+												// @ts-ignore
+												: client.channels.cache.get(channelO.parentId)?.name || "None"
+											} -> ` 
+										: ""}${
+											channel.parentId === null 
+												? "None" 
+												// @ts-ignore
+												: client.channels.cache.get(channel.parentId)?.name || "None"
+											}`,
+								inline: true
+							},
+							{
+								name: `Slowmode`,
+								value: `${diffs.includes("rateLimitPerUser") ? `${readableSlowmode(channelO.rateLimitPerUser)} -> ` : ""}${readableSlowmode(channel.rateLimitPerUser)}`,
+								inline: true
+							},
+							{
+								name: `Age Restricted`,
+								value: `${diffs.includes("nsfw") ? `${channelO.nsfw} -> ` : ""}${channel.nsfw}`,
+								inline: true
 							}
-						]
+						)
+						.setThumbnail(channel.guild.iconURL())
+						.setFooter({ text: `Channel Edited` })
+						.setURL(`https://discord.com/channels/${channel.guild.id}/${channel.id}`);
+
+					c.send({
+						content: `**Channel Edited**${diffs.map(d => `\n- ${d}`).join("")}`,
+						embeds: [embed]
 					});
 				}
 				else {
@@ -384,7 +382,7 @@ module.exports = {
 		const guildStore = await guildByObj(emoji.guild);
 		if (guildStore.logs.active && guildStore.logs.emoji_events) {
 			var c = emoji.guild.channels.cache.get(guildStore.logs.channel);
-			if (c.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)) {
+			if (c?.isSendable()) {
 				c.send(`**Emoji :\`${emoji.name}\`: created:** <:${emoji.name}:${emoji.id}>`);
 			}
 			else {
@@ -398,7 +396,7 @@ module.exports = {
 		const guildStore = await guildByObj(emoji.guild);
 		if (guildStore.logs.active && guildStore.logs.emoji_events) {
 			var c = emoji.guild.channels.cache.get(guildStore.logs.channel);
-			if (c.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)) {
+			if (c?.isSendable()) {
 				c.send(`**Emoji :\`${emoji.name}\`: deleted.**`);
 			}
 			else {
@@ -412,7 +410,7 @@ module.exports = {
 		const guildStore = await guildByObj(emoji.guild);
 		if (guildStore.logs.active && guildStore.logs.emoji_events) {
 			var c = emoji.guild.channels.cache.get(guildStore.logs.channel);
-			if (c.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)) {
+			if (c?.isSendable()) {
 				c.send(`**Emoji :\`${emojiO.name}\`: is now :\`${emoji.name}\`:** <:${emoji.name}:${emoji.id}>`);
 			}
 			else {
@@ -426,7 +424,7 @@ module.exports = {
 		const guildStore = await guildByObj(sticker.guild);
 		if (guildStore.logs.active && guildStore.logs.emoji_events) {
 			var c = sticker.guild.channels.cache.get(guildStore.logs.channel);
-			if (c.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)) {
+			if (c?.isSendable()) {
 				c.send({ content: `**Sticker \`${sticker.name}\` created**\n- **Name**: ${sticker.name}\n- **Related Emoji**: ${/^\d{19}$/.test(sticker.tags) ? `<:${client.emojis.cache.get(sticker.tags).name}:${sticker.tags}>` : sticker.tags}\n- **Description**: ${sticker.description}`, stickers: [sticker] });
 			}
 			else {
@@ -440,7 +438,7 @@ module.exports = {
 		const guildStore = await guildByObj(sticker.guild);
 		if (guildStore.logs.active && guildStore.logs.emoji_events) {
 			var c = sticker.guild.channels.cache.get(guildStore.logs.channel);
-			if (c.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)) {
+			if (c?.isSendable()) {
 				c.send(`**Sticker \`${sticker.name}\` Deleted**`);
 			}
 			else {
@@ -461,7 +459,7 @@ module.exports = {
 			});
 			if (diffs.length > 0) {
 				var c = sticker.guild.channels.cache.get(guildStore.logs.channel);
-				if (c.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)) {
+				if (c?.isSendable()) {
 					c.send({
 						content:
 							`**Sticker Edited**\n` +
@@ -491,7 +489,7 @@ module.exports = {
 		const guildStore = await guildByObj(invite.guild);
 		if (guildStore.logs.active && guildStore.logs.invite_events) {
 			var c = invite.guild.channels.cache.get(guildStore.logs.channel);
-			if (c.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)) {
+			if (c?.isSendable()) {
 				c.send({ content: `**Invite \`${invite.code}\` Created**\n- Code: ${invite.code}\n- Created by <@${invite.inviterId}>\n- Channel: <#${invite.channelId}>${invite._expiresTimestamp ? `\n- Expires <t:${Math.round(invite._expiresTimestamp / 1000)}:R>` : ``}\n- Max uses: ${invite.maxUses > 0 ? invite.maxUses : "Infinite"}`, allowedMentions: { parse: [] } });
 			}
 			else {
@@ -505,7 +503,7 @@ module.exports = {
 		const guildStore = await guildByObj(invite.guild);
 		if (guildStore.logs.active && guildStore.logs.invite_events) {
 			var c = invite.guild.channels.cache.get(guildStore.logs.channel);
-			if (c.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)) {
+			if (c?.isSendable()) {
 				c.send({ content: `**Invite \`${invite.code}\` Deleted**`, allowedMentions: { parse: [] } });
 			}
 			else {
@@ -519,7 +517,7 @@ module.exports = {
 		const guildStore = await guildByObj(role.guild);
 		if (guildStore.logs.active && guildStore.logs.role_events) {
 			var c = role.guild.channels.cache.get(guildStore.logs.channel);
-			if (c.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)) {
+			if (c?.isSendable()) {
 				c.send({ content: `**Role <@&${role.id}> created**`, allowedMentions: { parse: [] } });
 			}
 			else {
@@ -533,7 +531,7 @@ module.exports = {
 		const guildStore = await guildByObj(role.guild);
 		if (guildStore.logs.active && guildStore.logs.role_events) {
 			var c = role.guild.channels.cache.get(guildStore.logs.channel);
-			if (c.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)) {
+			if (c?.isSendable()) {
 				c.send(`**Role \`${role.name}\` Deleted**`);
 			}
 			else {
@@ -555,8 +553,8 @@ module.exports = {
 			});
 			if (diffs.length > 0) {
 				var c = role.guild.channels.cache.get(guildStore.logs.channel);
-				if (c.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)) {
-					var flds = [
+				if (c?.isSendable()) {
+					const flds = [
 						{
 							"name": `Hoisted`,
 							"value": `${diffs.includes("hoist") ? `${roleO.hoist} -> ` : ""}${role.hoist}`,
@@ -575,19 +573,14 @@ module.exports = {
 							"inline": false
 						});
 					}
+					const embed = new EmbedBuilder()
+						.setTitle(`${diffs.includes("name") ? `${roleO.name} -> ` : ""}${role.name}`)
+						.setColor(role.color)
+						.setFields(flds)
+						.setThumbnail(role.guild.iconURL());
+
 					c.send({
-						content: `**Role <@&${role.id}> Edited**`, embeds: [{
-							"type": "rich",
-							"title": `${diffs.includes("name") ? `${roleO.name} -> ` : ""}${role.name}`,
-							"description": "",
-							"color": role.color,
-							"fields": flds,
-							"thumbnail": {
-								"url": role.guild.iconURL(),
-								"height": 0,
-								"width": 0
-							}
-						}], allowedMentions: { parse: [] }
+						content: `**Role <@&${role.id}> Edited**`, embeds: [embed], allowedMentions: { parse: [] }
 					});
 				}
 				else {
@@ -610,7 +603,7 @@ module.exports = {
 			});
 			if (diffs.length > 0) {
 				var c = client.channels.cache.get(guildStore.logs.channel);
-				if (c?.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)) {
+				if (c.isSendable()) {
 					var flds = [];
 					if (diffs.includes("avatar")) {
 						flds.push({
@@ -619,20 +612,16 @@ module.exports = {
 							"inline": true
 						});
 					}
+					const embed = new EmbedBuilder()
+						.setTitle(`${diffs.includes("nickname") ? `${memberO.nickname} -> ` : ""}${member.nickname}`)
+						.setDescription(`${member.user.username}`)
+						.setColor(member.user.accentColor === undefined ? 0x006400 : member.user.accentColor)
+						.setFields(flds)
+						.setThumbnail(member.displayAvatarURL() ? member.displayAvatarURL() : member.user.displayAvatarURL())
+						.setURL(`https://discord.com/users/${member.id}`);
+
 					c.send({
-						content: `**User <@${member.id}> Edited for this Server**`, embeds: [{
-							"type": "rich",
-							"title": `${diffs.includes("nickname") ? `${memberO.nickname} -> ` : ""}${member.nickname}`,
-							"description": `${member.user.username}`,
-							"color": member.user.accentColor === undefined ? 0x006400 : member.user.accentColor,
-							"fields": flds,
-							"thumbnail": {
-								"url": member.displayAvatarURL() ? member.displayAvatarURL() : member.user.displayAvatarURL(),
-								"height": 0,
-								"width": 0
-							},
-							"url": `https://discord.com/users/${member.id}`
-						}], allowedMentions: { parse: [] }
+						content: `**User <@${member.id}> Edited for this Server**`, embeds: [embed], allowedMentions: { parse: [] }
 					});
 				}
 				else {

@@ -27,11 +27,11 @@ module.exports = {
 					{name:"1 week",value:60000*60*24*7}
 				)
 			).addIntegerOption(option=>
-				option.setName("hours").setDescription("Hours to timeout for").setMinValue(1,23)
+				option.setName("hours").setDescription("Hours to timeout for").setMinValue(1).setMaxValue(23)
 			).addIntegerOption(option=>
-				option.setName("minutes").setDescription("Minutes to timeout for").setMinValue(1,59)
+				option.setName("minutes").setDescription("Minutes to timeout for").setMinValue(1).setMaxValue(59)
 			).addIntegerOption(option=>
-				option.setName("days").setDescription("Days to timeout for").setMinValue(1,30)
+				option.setName("days").setDescription("Days to timeout for").setMinValue(1).setMaxValue(30)
 			).addStringOption(option=>
 				option.setName("reason").setDescription("What is the reason for this timeout?")
 			).addBooleanOption(option=>
@@ -56,26 +56,33 @@ module.exports = {
     async execute(cmd, context) {
 		applyContext(context);
 
-		const targetMember = cmd.guild.members.cache.get(cmd.options.getUser("target").id);
+		const targetUser = cmd.options.getUser("target");
+		if (!targetUser) {
+			await cmd.followUp("I couldn't find that user.");
+			return;
+		}
+
+		const targetMember = cmd.guild.members.cache.get(targetUser.id);
 		const issuerMember = cmd.guild.members.cache.get(cmd.user.id);
 
 		if (targetMember.id === cmd.guild.ownerId) {
 			return cmd.followUp("I cannot timeout the owner of this server.");
 		}
 		if(!cmd.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.ModerateMembers)){
-			cmd.followUp(`I cannot timeout right now as I'm missing the ModerateMembers permission.`);
+			await cmd.followUp(`I cannot timeout right now as I'm missing the ModerateMembers permission.`);
 			return;
 		}
-		if(targetMember.bot){
-			cmd.followUp(`I cannot timeout bots. ${targetMember.id===client.user.id?`I apologize for any inconveniences I may have caused. You can use ${cmds.report_problem.mention} if there's something that needs improvement. You can try reconfiguring me as well.`:`Try reconfiguring the bot, or removing it if necessary.`}`);
-			return;
-		}
+		// if(targetMember.user.bot){
+		// 	await cmd.followUp(`I cannot timeout bots. ${targetMember.id===client.user.id?`I apologize for any inconveniences I may have caused. You can use ${cmds.report_problem.mention} if there's something that needs improvement. You can try reconfiguring me as well.`:`Try reconfiguring the bot, or removing it if necessary.`}`);
+		// 	return;
+		// }
 		if(cmd.user.id===targetMember.id){
-			cmd.followUp(`I cannot timeout you as the one invoking the command. If you feel the need to timeout yourself, consider changing your actions and mindset instead.`);
+			await cmd.followUp(`I cannot timeout you as the one invoking the command. If you feel the need to timeout yourself, consider changing your actions and mindset instead.`);
 			return;
 		}
 		if (issuerMember.roles.highest.comparePositionTo(targetMember.roles.highest) <= 0) {
-			return cmd.followUp("You cannot timeout this user because they have a role equal to or higher than yours.");
+			await cmd.followUp("You cannot timeout this user because they have a role equal to or higher than yours.");
+			return;
 		}
 		var timer=0;
 		if(cmd.options.getInteger("preset_length")!==null) timer=cmd.options.getInteger("preset_length");
@@ -83,7 +90,13 @@ module.exports = {
 		if(cmd.options.getInteger("hours")!==null) timer+=cmd.options.getInteger("hours")*60000*60;
 		if(cmd.options.getInteger("minutes")!==null) timer+=cmd.options.getInteger("minutes")*60000;
 		if(timer<1) timer=60000*15;
-		cmd.guild.members.cache.get(targetMember.id).timeout(timer,`Instructed to timeout by ${cmd.user.username}: ${cmd.options.getString("reason")}`);
-		cmd.followUp({content:`I have attempted to timeout <@${targetMember.id}>.`,allowedMentions:{parse:[]}});
+		await cmd.guild.members.cache.get(targetMember.id).timeout(timer,`Instructed to timeout by ${cmd.user.username}: ${cmd.options.getString("reason") ?? "No reason provided"}`).catch(async () => {
+			await cmd.followUp({ content: "I couldn't timeout that user. I might be missing permissions or their role is higher than mine." });
+			return;
+		});
+		await cmd.followUp({
+			content:`I have attempted to timeout <@${targetMember.id}>.`,
+			allowedMentions:{parse:[]}
+		});
 	}
 };

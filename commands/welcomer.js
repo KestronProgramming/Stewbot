@@ -17,7 +17,8 @@ const { notify } = require("../utils")
 async function sendWelcome(guild) {
     guild = await client.guilds.fetch(guild.id); // fetch the full guild
     for (const [channelId, chan] of guild.channels.cache) {
-        if (chan?.permissionsFor(client.user.id).has(PermissionFlagsBits.ViewChannel)) {
+        const perms = chan?.permissionsFor?.(client.user.id);
+        if (chan?.isTextBased?.() && perms?.has(PermissionFlagsBits.ViewChannel) && chan.isSendable()) {
             const messages = await chan?.messages?.fetch({ limit: 3 });
             if (messages) for (const [msgId, msg] of messages) {
                 const guildStore = await guildByObj(guild);
@@ -57,36 +58,43 @@ async function sendWelcome(guild) {
                         "color": 0x006400,
                         "fields": [
                             {
+                                // @ts-ignore
                                 "name": `${cmds.filter.config.mention} ${cmds.filter.add.mention}`,
                                 "value": "Configure the filter to keep your server clean",
                                 "inline": true
                             },
                             {
+                                // @ts-ignore
                                 "name": `${cmds.emojiboard.add.mention}`,
                                 "value": "Setup an emojiboard for use in your server",
                                 "inline": true
                             },
                             {
+                                // @ts-ignore
                                 "name": `${cmds["auto-join-message"].mention} ${cmds["auto-leave-message"].mention}`,
                                 "value": "Setup a customized message when a member joins or leaves the server",
                                 "inline": true
                             },
                             {
+                                // @ts-ignore
                                 "name": `${cmds.counting.config.mention}`,
                                 "value": "Setup the counting game",
                                 "inline": true
                             },
                             {
+                                // @ts-ignore
                                 "name": `${cmds.embed_message.mention}`,
                                 "value": "Need to display a message from another channel or server? I've got you covered.",
                                 "inline": true
                             },
                             {
+                                // @ts-ignore
                                 "name": `${cmds.general_config.mention} ${cmds.personal_config.mention}`,
                                 "value": "Don't like some things that the bot does? Change the bot's automatic behaviours using these commands.",
                                 "inline": true
                             },
                             {
+                                // @ts-ignore
                                 "name": `${cmds["sticky-roles"].mention} ${cmds["auto-join-roles"].mention}`,
                                 "value": "Setup roles that stay even when the user leaves and automatically apply roles when any user joins.",
                                 "inline": true

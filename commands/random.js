@@ -124,12 +124,13 @@ module.exports = {
 				cmd.followUp(`I have selected a random number between **${low}** and **${high}**: **${choice}**`);
 			break;
 			case '8-ball':
-				const guild = await guildByObj(cmd.guild);
-				var ques = await censor(cmd.options.getString("question"));
-				if (guild && guild.filter.active) ques = await censor(ques, guild, true);
-				cmd.followUp(
+				const guild = cmd.guild ? await guildByObj(cmd.guild) : null;
+				let ques = await censor(cmd.options.getString("question"));
+				if (guild?.filter?.active) ques = await censor(ques, guild, true);
+				await cmd.followUp(
 					`I have generated a random response to the question \`${escapeBackticks(ques)}\`.\n` +
-					`:8ball: The answer is **${m8ballResponses[Math.floor(Math.random()*m8ballResponses.length)]}**.`);
+					`:8ball: The answer is **${m8ballResponses[Math.floor(Math.random() * m8ballResponses.length)]}**.`,
+				);
 			break;
 			case 'coin-flip':
 				let coinsToFlip=cmd.options.getInteger("number")||1;

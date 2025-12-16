@@ -4,9 +4,9 @@ const client = require("../client.js");
 const { Guilds, Users, ConfigDB, guildByID, userByID, guildByObj, userByObj } = require("./modules/database.js")
 const { ContextMenuCommandBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
 function applyContext(context={}) {
-	for (let key in context) {
-		this[key] = context[key];
-	}
+    for (const key in context) {
+        this[key] = context[key];
+    }
 }
 
 // #endregion CommandBoilerplate
@@ -45,7 +45,7 @@ async function holidayPfpCheck() {
     if(today.getMonth()===4&&today.getDay()===1&&today.getDate()+7>31){
         newPfp="patriot.jpg";
     }
-    if(today.getMonth()+1===Easter(today.getFullYear()).split("/")[0]&&today.getDate()===Easter(today.getFullYear()).split("/")[1]){
+    if(today.getMonth()+1===parseInt(Easter(today.getFullYear()).split("/")[0])&&today.getDate()===parseInt(Easter(today.getFullYear()).split("/")[1])){
         newPfp="easter.jpg";
     }
 

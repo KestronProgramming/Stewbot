@@ -47,19 +47,28 @@ module.exports = {
     /** @param {import('discord.js').ChatInputCommandInteraction} cmd */
     async execute(cmd, context) {
 		applyContext(context);
+		const input = cmd.options.getString("what") ?? "";
 		
-		const t = await translate(cmd.options.getString("what"), 
+		const t = await translate(input, 
 			Object.assign({
 				to: cmd.options.getString("language_to") || cmd.locale.slice(0, 2)
 			},
-			cmd.options.getString("language_from") ? cmd.options.getString("languageFrom") : {})
+			cmd.options.getString("language_from") ? { from: cmd.options.getString("language_from") } : {})
 		);
 		
-		if (await isDirty(t.text, cmd.guild) || await isDirty(cmd.options.getString("what"), cmd.guild)) {
-			cmd.followUp({ content: `I have been asked not to translate that by this server`, ephemeral: true });
+		if (await isDirty(t.text, cmd.guild) || await isDirty(input, cmd.guild)) {
+			await cmd.followUp({ content: `I have been asked not to translate that by this server`, ephemeral: true });
 			return;
 		}
+
 		t.text = await censor(t.text);
-		cmd.followUp(`Attempted to translate${t.text !== cmd.options.getString("what") ? `:\n\`\`\`\n${escapeBackticks(t.text)}\n\`\`\`\n-# If this is incorrect, try using ${cmds.translate.mention} again and specify more.` : `, but I was unable to. Try using ${cmds.translate.mention} again and specify more.`}`);
+		await cmd.followUp(
+			`Attempted to translate${t.text !== input 
+				// @ts-ignore
+				? `:\n\`\`\`\n${escapeBackticks(t.text)}\n\`\`\`\n-# If this is incorrect, try using ${cmds.translate.mention} again and specify more.` 
+				// @ts-ignore
+				: `, but I was unable to. Try using ${cmds.translate.mention} again and specify more.`
+			}`
+		);
 	}
 };

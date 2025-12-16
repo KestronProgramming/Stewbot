@@ -49,8 +49,10 @@ module.exports = {
     /** @param {import('discord.js').ChatInputCommandInteraction} cmd */
     async execute(cmd, context) {
 		applyContext(context);
+		const type = cmd.options.getString("type") || "other";
+		const details = cmd.options.getString("details") || "(no details provided)";
 		
-		notify(`**${cmd.options.getString("type")[0].toUpperCase()}${cmd.options.getString("type").slice(1)} Reported by ${cmd.user.username}** (${cmd.user.id})\n\n\`\`\`\n${escapeBackticks(cmd.options.getString("details"))}\`\`\``);
-        cmd.followUp({content:"I have reported the issue. Thank you.",ephemeral:true});
+		notify(`**${type[0].toUpperCase()}${type.slice(1)} Reported by ${cmd.user.username}** (${cmd.user.id})\n\n\`\`\`\n${escapeBackticks(details)}\`\`\``);
+		await cmd.followUp({content:"I have reported the issue. Thank you.",ephemeral:true});
 	}
 };

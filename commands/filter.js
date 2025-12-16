@@ -503,9 +503,12 @@ module.exports = {
                     guild.filter.log = false;
                     disclaimers.push(`No channel was set to log summaries of deleted messages to, so logging these is turned off.`);
                 }
-                else if (guild.filter.log && !client.channels.cache.get(guild.filter.channel).isSendable()) {
-                    guild.filter.log = false;
-                    disclaimers.push(`I cannot send messages to the specified log channel for this server, so logging deleted messages has been turned off.`);
+                else if (guild.filter.log) {
+                    const logChannel = client.channels.cache.get(guild.filter.channel);
+                    if (!logChannel || !logChannel.isSendable()) {
+                        guild.filter.log = false;
+                        disclaimers.push(`I cannot send messages to the specified log channel for this server, so logging deleted messages has been turned off.`);
+                    }
                 }
                 cmd.followUp(`Filter configured.${disclaimers.map(d => `\n\n${d}`).join("")}`);
 
@@ -615,8 +618,8 @@ module.exports = {
                     } catch (e) { }
                 }
                 if (guildStore.filter.log && guildStore.filter.channel) {
-                    var c = client.channels.cache.get(guildStore.filter.channel);
-                    if (c.isSendable()) {
+                    const c = client.channels.cache.get(guildStore.filter.channel);
+                    if (c?.isSendable()) {
                         c.send(limitLength(
                             `I have ${guildStore.filter.censor ? "censored" : "deleted"} a message from **${msg.author.username}** in <#${msg.channel.id}> for the following blocked word${foundWords.length > 1 ? "s" : ""}: ` +
                             `||${foundWords.join("||, ||")}||\`\`\`\n` +

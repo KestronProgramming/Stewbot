@@ -4,6 +4,8 @@
     "strictNullChecks": false, // If this is true, it prevents suggesting methods that don't exist on all children. With it false, it suggests it but also warns.
     "resolveJsonModule": true,
     "moduleResolution": "node",
+    "ignoreDeprecations": "6.0",
+    "module": "commonjs",
     "allowJs": true,
     "checkJs": true,
     "noEmit": true,

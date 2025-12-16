@@ -2,7 +2,7 @@
 const Categories = require("./modules/Categories");
 const client = require("../client.js");
 const { Guilds, Users, guildByID, userByID, guildByObj, userByObj, guildUserByObj, GuildUsers } = require("./modules/database.js")
-const { ContextMenuCommandBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
+const { ContextMenuCommandBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType, PermissionsBitField}=require("discord.js");
 function applyContext(context={}) {
 	for (let key in context) {
 		this[key] = context[key];
@@ -54,15 +54,15 @@ module.exports = {
 
             const guildUser = await guildUserByObj(cmd.guild, who.id);
 
-            cmd.followUp({
+            await cmd.followUp({
                 content: limitLength(
                     `${
                         guildUser.warnings.length > 0
                             ? `There are ${
                                 guildUser.warnings.length
-                              } warnings for <@${
-                                  who.id
-                              }>.${
+                            } warnings for <@${
+                                who.id
+                            }>.${
                                 guildUser.warnings
                                     .map(
                                         (a, i) =>
@@ -73,7 +73,7 @@ module.exports = {
                     }`
                 ),
                 allowedMentions: { parse: [] },
-                components: [
+                components: guildUser.warnings.length > 0 ? [
                     new ActionRowBuilder().addComponents(
                         new ButtonBuilder()
                             .setLabel("Remove a Warning")
@@ -87,13 +87,16 @@ module.exports = {
                             .setCustomId(
                                 `clearWarn-${who.id}`
                             )
-                    ),
-                ],
+                    ).toJSON(),
+                ] : [],
             });
         }
         else {
             // Decide how to sort
-            let sortStage = { };
+            let sortStage = {
+                warningsCount: -1,
+                sumSeverity: -1,
+            };
             switch (sortMethod) {
                 case "warnings":
                     sortStage = {
@@ -143,6 +146,7 @@ module.exports = {
                     }
                 },
                 // Finally sort as requested
+                // @ts-ignore
                 { $sort: sortStage }
             ]);
 
@@ -151,11 +155,12 @@ module.exports = {
                 return `\n- <@${data.userId}>: \`${data.warningsCount}\` warnings dealt. Sum of Severities: \`${data.sumSeverity}\``
             })
 
-            cmd.followUp({
+            await cmd.followUp({
                 content: limitLength(
                     `**Warnings in ${cmd.guild.name}**${
                         warningsMessage.length > 0 
                             ? warningsMessage.join("") 
+                            // @ts-ignore
                             : `\n-# No Warnings have been issued. Use ${cmds.warn.mention} to issue a warning.`}`
                 ),
                 allowedMentions: { parse: [] },
@@ -166,29 +171,79 @@ module.exports = {
 	// Only button subscriptions matched will be sent to the handler 
 	subscribedButtons: [/.*Warn.*/],
 	
-    /** @param {import('discord.js').ButtonInteraction} cmd */
+    /** @param {import('discord.js').ButtonInteraction | import('discord.js').AnySelectMenuInteraction | import('discord.js').ModalSubmitInteraction } cmd */
     async onbutton(cmd, context) {
 		applyContext(context);
 
 		if(cmd.customId?.startsWith("remWarn-")){
-            if(cmd.member.permissions.has(PermissionFlagsBits.ManageNicknames)){
-                cmd.showModal(new ModalBuilder().setTitle("Remove a Warning").setCustomId(`remWarning-${cmd.customId.split("remWarn-")[1]}`).addComponents(new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId("warning").setLabel("Warning to remove").setPlaceholder("1").setStyle(TextInputStyle.Short).setMaxLength(2))));
+            if(cmd.member.permissions instanceof PermissionsBitField && cmd.member.permissions.has(PermissionFlagsBits.ManageNicknames)){
+                if (!cmd.isButton()) return;
+                await cmd.showModal(
+                    new ModalBuilder()
+                        .setTitle("Remove a Warning")
+                        .setCustomId(
+                            `remWarning-${cmd.customId.split("remWarn-")[1]}`
+                        )
+                        .addComponents(
+                            // @ts-ignore
+                            new ActionRowBuilder().addComponents(
+                                new TextInputBuilder()
+                                    .setCustomId("warning")
+                                    .setLabel("Warning to remove")
+                                    .setPlaceholder("1")
+                                    .setStyle(TextInputStyle.Short)
+                                    .setMaxLength(2)
+                            )
+                        )
+                );
             }
             else{
-                cmd.deferUpdate();
+                await cmd.deferUpdate();
             }
         }
         
         if(cmd.customId?.startsWith("clearWarn-")){
-            if(cmd.member.permissions.has(PermissionFlagsBits.KickMembers)){
-                cmd.showModal(new ModalBuilder().setTitle("Clear All Warnings - Are you sure?").setCustomId(`clearWarning-${cmd.customId.split("clearWarn-")[1]}`).addComponents(new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId("confirm").setLabel("Are you sure?").setPlaceholder("\"Yes\"").setStyle(TextInputStyle.Short).setMaxLength(3).setMinLength(3))));
+            if(cmd.member.permissions instanceof PermissionsBitField && cmd.member.permissions.has(PermissionFlagsBits.KickMembers)){
+                if (!cmd.isButton()) return;
+                await cmd.showModal(
+                    new ModalBuilder()
+                        .setTitle("Clear All Warnings - Are you sure?")
+                        .setCustomId(
+                            `clearWarning-${
+                                cmd.customId.split("clearWarn-")[1]
+                            }`
+                        )
+                        .addComponents(
+                            // @ts-ignore
+                            new ActionRowBuilder().addComponents(
+                                new TextInputBuilder()
+                                    .setCustomId("confirm")
+                                    .setLabel("Are you sure?")
+                                    .setPlaceholder('"Yes"')
+                                    .setStyle(TextInputStyle.Short)
+                                    .setMaxLength(3)
+                                    .setMinLength(3)
+                            )
+                        )
+                );
             }
             else{
-                cmd.deferUpdate();
+                await cmd.deferUpdate();
             }
         }
 
         if(cmd.customId?.startsWith("remWarning-")){
+            if (!cmd.isModalSubmit()) return;
+
+            if (
+                !cmd.member.permissions ||
+                !(cmd.member.permissions instanceof PermissionsBitField) || 
+                !cmd.member.permissions.has(PermissionFlagsBits.ManageNicknames)
+            ) {
+                await cmd.reply({ content: "You do not have permission to do that.", ephemeral: true });
+                return;
+            }
+
             const guildUser = await guildUserByObj(cmd.guild, cmd.customId.split("remWarning-")[1]);
 
             if(!/\d\d?/ig.test(cmd.fields.getTextInputValue("warning"))){
@@ -198,20 +253,25 @@ module.exports = {
                 cmd.deferUpdate();
             }
             else{
-                guildUser.warnings.splice(cmd.fields.getTextInputValue("warning")-1, 1);
-                cmd.reply({content:`Alright, I have removed warning \`${cmd.fields.getTextInputValue("warning")}\` from <@${cmd.customId.split("-")[1]}>.`,allowedMentioned:{parse:[]}});
+                guildUser.warnings.splice(Number(cmd.fields.getTextInputValue("warning")) - 1, 1);
+                cmd.reply({
+                    content:`Alright, I have removed warning \`${cmd.fields.getTextInputValue("warning")}\` from <@${cmd.customId.split("-")[1]}>.`,
+                    allowedMentions:{parse:[]}
+                });
             }
             guildUser.save();
         }
         
         if(cmd.customId?.startsWith("clearWarning-")){
+            if (!cmd.isModalSubmit()) return;
+
             const guildUser = await guildUserByObj(cmd.guild, cmd.customId.split("-")[1]);
 
             if(cmd.fields.getTextInputValue("confirm").toLowerCase()!=="yes"){
                 cmd.deferUpdate();
             }
             else{
-                guildUser.warnings=[];
+                guildUser.set("warnings", []);
                 guildUser.save();
                 cmd.reply({content:`Alright, I have cleared all warnings for <@${cmd.customId.split("-")[1]}>`,allowedMentions:{parse:[]}});
             }

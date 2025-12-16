@@ -48,14 +48,14 @@ module.exports = {
 		
 		if(!cmd.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageRoles)){
 			updates.stickyRoles=false;
-			cmd.followUp(`I do not have the MANAGE_ROLES permission for this server, so I cannot run sticky roles.`);
+			await cmd.followUp(`I do not have the MANAGE_ROLES permission for this server, so I cannot run sticky roles.`);
 			return;
 		}
 
 		// Push updates
 		await guildByObj(cmd.guild, updates)
 
-		cmd.followUp("Sticky roles configured. Please be aware I can only manage roles lower than my highest role in the server roles list.");
+		await cmd.followUp("Sticky roles configured. Please be aware I can only manage roles lower than my highest role in the server roles list.");
 	},
 
 	/** @param {import("discord.js").GuildMember} member */
@@ -90,7 +90,8 @@ module.exports = {
 			}
 		}
 
-		// Signal to auto-join-roles
+		// Signal to other modules like auto-join-roles
+		// @ts-ignore
 		if (addedStickyRoles > 0) member.addedStickyRoles = true;
 	},
 

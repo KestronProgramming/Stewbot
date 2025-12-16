@@ -37,22 +37,29 @@ module.exports = {
 		},
 	},
 
-    /** @param {import('discord.js').ChatInputCommandInteraction} cmd */
+    /** @param {import('discord.js').MessageContextMenuCommandInteraction} cmd */
     async execute(cmd, context) {
 		applyContext(context);
 
-		const guild = await guildByObj(cmd.guild);
-		
-		const t = await translate(cmd.targetMessage.content,{to:cmd.locale.slice(0,2)});
+		const guild = cmd.guild ? await guildByObj(cmd.guild) : null;
+		const content = cmd.targetMessage.content ?? "";
+		if (!content.trim()) {
+			await cmd.followUp({ content: "There is no message content to translate.", ephemeral: true });
+			return;
+		}
+
+		const t = await translate(content,{to:cmd.locale.slice(0,2)});
 		t.text = await censor(t.text);
 		if (cmd.guildId && guild?.filter?.active) t.text = await censor(t.text, guild, true);
-		cmd.followUp(
-			`Attempted to translate${t.text !== cmd.targetMessage.content 
+		await cmd.followUp(
+			`Attempted to translate${t.text !== content 
 				? `:\n`+
 					`\`\`\`\n`+
 					`${escapeBackticks(t.text)}\n`+
 					`\`\`\`\n`+
+					// @ts-ignore
 					`-# If this is incorrect, try using ${cmds.translate.mention}.` 
+				// @ts-ignore
 				: `, but I was unable to. Try using ${cmds.translate.mention}.`}`);
 	}
 };

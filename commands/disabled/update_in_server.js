@@ -1,7 +1,7 @@
 // #region CommandBoilerplate
-const Categories = require("./modules/Categories");
-const client = require("../client.js");
-const { Guilds, Users, ConfigDB, guildByID, userByID, guildByObj, userByObj, GuildUsers } = require("./modules/database.js")
+const Categories = require("../modules/Categories");
+const client = require("../../client.js");
+const { Guilds, Users, ConfigDB, guildByID, userByID, guildByObj, userByObj, GuildUsers } = require("../modules/database.js")
 const { SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType, AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType } = require("discord.js");
 function applyContext(context = {}) {
     for (let key in context) {
@@ -11,7 +11,7 @@ function applyContext(context = {}) {
 
 // #endregion CommandBoilerplate
 
-module.exports = {    
+module.exports = {
     data: {
         command: new SlashCommandBuilder()
             .setName('update_in_server')

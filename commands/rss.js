@@ -168,7 +168,7 @@ async function checkRSS() {
 							if (link) { // Attempt to get baseURL for turndown parsing
 								try {
 									baseUrl = new URL(link).origin;
-								} catch (e) {
+								} catch {
 									baseUrl = ''; // fallback if URL is invalid
 								}
 							}
@@ -188,6 +188,7 @@ async function checkRSS() {
 							
 							// Optional fields
 							const creator = item.creator || item["dc:creator"] || parsed.title || "Unknown Creator"; // 
+							// @ts-ignore
 							const imageUrl = item?.image?.url || parsed?.image?.url;
 							if (creator) embed.setAuthor({ name: creator })
 							if (imageUrl) embed.setThumbnail(imageUrl);
@@ -198,35 +199,34 @@ async function checkRSS() {
 							if (contentImage) embed.setImage(contentImage);
 
 							// Send this feed to everyone following it
-							for (let chan of feed.channels) {
-								let c=client.channels.cache.get(chan);
-								if(c===undefined||c===null||!c?.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
-									feed.channels.splice(feed.channels.indexOf(chan),1);
+							for (let channelId of feed.channels) {
+								let channel = client.channels.cache.get(channelId);
+								if (channel === undefined || channel === null || !channel.isSendable()) {
+									feed.channels.splice(feed.channels.indexOf(channelId), 1);
 								}
-								else{
+								else {
 									try {
-										c.send({ 
+										channel.send({
 											content: `-# New notification from [a followed RSS feed](${item.link})`,
-											embeds: [ embed ]
-										})
+											embeds: [embed]
+										});
 									} catch (e) {
 										notify("RSS channel error: " + e.message + "\n" + e.stack);
 									}
 								}
 							}
-
 						} catch (e) {
 							notify("RSS feed error: " + e.message + "\n" + e.stack);
 						}
 					}
 				};
 				// Update feed most recent now after sending all new ones since last time
-				feed.lastSent = mostRecentArticle.toISOString();
+				feed.lastSent = mostRecentArticle;
 			}
 		}
 	};
 
-	config.save();
+	await config.save();
 }
 
 module.exports = {
@@ -276,6 +276,7 @@ module.exports = {
 				helpCategories: [Categories.Configuration, Categories.Administration, Categories.Server_Only],
 				shortDesc: "Unfollow an RSS feed",//Should be the same as the command setDescription field
 				detailedDesc: //Detailed on exactly what the command does and how to use it
+					// @ts-ignore
 					`Specify the channel the feed is followed in, and the URL of the feed to unfollow, and Stewbot will no longer post RSS updates for that feed there. You can use ${cmds.rss.check.mention} to get the URL needed for this command.`
 			},
 			check:{
@@ -317,17 +318,19 @@ module.exports = {
 					} }
 				]);
 				
-				cmd.followUp(
+				await cmd.followUp(
 					followedURLs.length > 0 
 						? `The RSS feeds being followed for <#${channelInput.id}> include the following:\n${
-							followedURLs.map(f => `- ${f.url}`).join("\n")
-						}` 
-						: `There are no feeds followed in <#${channelInput.id}>`);
+								followedURLs.map(f => `- ${f.url}`).join("\n")
+							}` 
+						: `There are no feeds followed in <#${channelInput.id}>`
+					);
 			break;
 			
 			case 'follow':
-				if(!channelInput.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)){
-					cmd.followUp(`I'm not allowed to send messages in <#${channelInput.id}> so this action cannot be completed.`);
+				// TODO_LINT: this seems to limit it to just thread channels??
+				if(!("isSendable" in channelInput) || !channelInput.isSendable()){
+					await cmd.followUp(`I'm not allowed to send messages in <#${channelInput.id}> so this action cannot be completed.`);
 					break;
 				}
 
@@ -337,7 +340,7 @@ module.exports = {
 				// Validate URL form
 				const [urlAllowed, errorText] = await isUrlAllowed(url);
 				if (!urlAllowed) {
-					cmd.followUp(`This URL is not allowed: ${errorText}`);
+					await cmd.followUp(`This URL is not allowed: ${errorText}`);
 					break;
 				}
 
@@ -346,7 +349,7 @@ module.exports = {
 				try {
 					response = await fetchWithRedirectCheck(url);
 				} catch (error) {
-					cmd.followUp(`URL validation failed: ${error.message}`);
+					await cmd.followUp(`URL validation failed: ${error.message}`);
 					break
 				}
 
@@ -354,7 +357,7 @@ module.exports = {
 				try {
 					await rssParser.parseURL(url)
 				} catch (error) {
-					cmd.followUp(`Error parsing RSS from link.`);
+					await cmd.followUp(`Error parsing RSS from link.`);
 					break
 				}
 				// At this point, the URL is valid and all
@@ -369,18 +372,19 @@ module.exports = {
 						"hash": hash,
 						"url": url,
 						"channels": [],
-						"lastSent": new Date()
+						"lastSent": new Date(),
+						"fails": 0
 					});
 				}
 
 				if (config.rss.get(hash).channels.includes(channelInput.id)) {
-					cmd.followUp("You already follow that feed in that channel");	
+					await cmd.followUp("You already follow that feed in that channel");	
 					return;
 				}
 
 				config.rss.get(hash).channels.push(channelInput.id);
 				await config.save();
-				cmd.followUp("I have followed the feed for that channel");	
+				await cmd.followUp("I have followed the feed for that channel");	
 			break;
 
 			case 'unfollow':
@@ -389,10 +393,10 @@ module.exports = {
 					var hash = crypto.createHash('md5').update(cmd.options.getString("feed").trim()).digest('hex');
 					if(config.rss.get(hash)?.channels.includes(channelInput.id)) {
 						config.rss.get(hash).channels.splice(config.rss.get(hash).channels.indexOf(channelInput.id), 1);
-						cmd.followUp("I have unfollowed the feed for that channel");
+						await cmd.followUp("I have unfollowed the feed for that channel");
 					}
 					else{
-						cmd.followUp(`You don't seem to follow that feed in that channel`);
+						await cmd.followUp(`You don't seem to follow that feed in that channel`);
 					}
 					await config.save();
 				}
@@ -404,7 +408,7 @@ module.exports = {
 					}
 					await config.updateOne({ $pull: updates }); // Remove these channels
 
-					cmd.followUp(`I have unfollowed all feeds for that channel`);
+					await cmd.followUp(`I have unfollowed all feeds for that channel`);
 				}
 			break;
 		}

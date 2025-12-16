@@ -744,6 +744,13 @@ module.exports = {
 	/** @param {import('discord.js').Interaction} cmd */
 	async [Events.InteractionCreate] (cmd) {
 		if (!cmd.isStringSelectMenu() && !cmd.isButton() && !cmd.isModalSubmit()) return;
+		if (!cmd.customId.startsWith("silence_trackable_expiry_notifs") &&
+			!cmd.customId.startsWith("t-place") &&
+			!cmd.customId.startsWith("trackable") &&
+			!cmd.customId.startsWith("edit_trackable") &&
+			!cmd.customId.startsWith("trackable_ban")) {
+			return;
+		}
 
 		const isUserSudo = await isSudo(cmd.user.id);
 		const isInSudoChannel = cmd.channelId == process.env.trackablesNotices;

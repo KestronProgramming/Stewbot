@@ -30,6 +30,9 @@ function textToEmojiSentiment(text) {
     // The better model takes longer, so we'll swap to the fast one to prevent ddos if necessary
 
     // Most words lie between 4 to -4, a very few of them go up to 5.
+    
+    /** @type {[string, number]} */
+    // @ts-ignore
     var [emoji, chance] = ((score) => {
         const neutral = [ '👋', 0.2 ]
         // Positive
@@ -67,22 +70,22 @@ module.exports = {
 
     /** 
      * @param {import('discord.js').Message} msg 
-     * @param {GuildDoc} guildStore 
-     * @param {GuildUserDoc} guildUserStore 
      * */
-    async [Events.MessageCreate] (msg, context) {
+    async [Events.MessageCreate] (msg) {
         // Sentiment Analysis reactions
         let containsStewbot = /\bstewbot\'?s?\b/i.test(msg.content);
         let containsStewbeta = process.env.beta && /\bstewbeta\'?s?\b/i.test(msg.content);
 
         if (
+            // @ts-ignore
             !msg.filtered && 
             !msg.author?.bot && 
             (containsStewbot||containsStewbeta)
         ) {
             var [emoji, toReact] = textToEmojiSentiment(msg.content);
             if (toReact) {
-                msg.react(emoji);
+                // @ts-ignore
+                msg.react(emoji).catch((e) => {});
             }
         }
 	}

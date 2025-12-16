@@ -49,7 +49,8 @@ module.exports = {
     /** @param {import('discord.js').ChatInputCommandInteraction} cmd */
     async execute(cmd, context) {
 		applyContext(context);
-		if(!cmd.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.ModerateMembers)){
+		const channelPerms = cmd.channel?.permissionsFor?.(client.user.id);
+		if(!cmd.channel?.isSendable?.() || !channelPerms?.has(PermissionFlagsBits.ModerateMembers)){
 			cmd.followUp(`I can't help with groupmutes because I don't have the ModerateMembers permission.`);
 			return;
 		}
@@ -82,10 +83,11 @@ module.exports = {
 		if(!guild.emojiboards.has(emoji)){
 			guild.emojiboards.set(emoji, {
 				active: false,
-				emoji:emoji,
 				threshold: 5,
 				length:60000*5,
-				isMute:true
+				isMute:true,
+				posters: new Map(),
+				posted: new Map()
 			});
 		}
 

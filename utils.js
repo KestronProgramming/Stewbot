@@ -246,8 +246,13 @@ module.exports = {
 
     // Are you an owner of stewbot?
     async isSudo(userId) {
-        const guild = await client.guilds.fetch(config.homeServer);
-        const member = await guild.members.fetch(userId).catch(() => null);
-        return member?.permissionsIn(config.commandChannel).has(PermissionFlagsBits.ViewChannel) || false;
+        try{
+            const guild = await client.guilds.fetch(config.homeServer);
+            const member = await guild.members.fetch(userId).catch(() => null);
+            return member?.permissionsIn(config.commandChannel).has(PermissionFlagsBits.ViewChannel) || false;
+        }
+        catch {
+            return false;
+        }
     }
 }

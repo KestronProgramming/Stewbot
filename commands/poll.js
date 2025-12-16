@@ -2,7 +2,7 @@
 const Categories = require("./modules/Categories");
 const client = require("../client.js");
 const { Guilds, Users, guildByID, userByID, guildByObj, userByObj, keyEncode, keyDecode } = require("./modules/database.js")
-const { ContextMenuCommandBuilder, AttachmentBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
+const { ContextMenuCommandBuilder, AttachmentBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType, GuildMember}=require("discord.js");
 function applyContext(context={}) {
 	for (let key in context) {
 		this[key] = context[key];
@@ -11,6 +11,8 @@ function applyContext(context={}) {
 
 // #endregion CommandBoilerplate
 
+/** @type {Array<[string, string]>} */
+// @ts-ignore
 const pieCols = require("../data/pieCols.json");
 const ChartDataLabels = require('chartjs-plugin-datalabels');
 const config = require("../data/config.json");
@@ -144,6 +146,7 @@ async function generatePollChart(results, orderedChoices, colorPalette,
     };
 
     try {
+        // @ts-ignore
         const buffer = await chartJSNodeCanvas.renderToBuffer(configuration);
         return new AttachmentBuilder(buffer, { name: 'poll_results.png' });
     } catch (error) {
@@ -215,7 +218,7 @@ function formatVoterList(pollOptionsMap) {
  * - `starter` {string}: The ID of the user who started the poll (only if `published` is true).
  * Returns `undefined` if an error occurs during parsing.
  */
-function parsePoll(c, published){
+function parsePoll(c, published=false){
     try{
         var ret={};
         ret.title=c.split("**")[1];
@@ -311,9 +314,11 @@ module.exports = {
 
 	subscribedButtons: [/poll-.+/, /voted.*/],
 	
-    /** @param {import('discord.js').ButtonInteraction} cmd */
+    /** @param {import('discord.js').ButtonInteraction | import('discord.js').AnySelectMenuInteraction | import('discord.js').ModalSubmitInteraction } cmd */
     async onbutton(cmd, context) {
 		applyContext(context);
+
+		if (!cmd.customId) return;
 
 		const guild = await guildByObj(cmd.guild);
 		const pollDB = guild.polls.get(cmd.message.id);
@@ -345,30 +350,57 @@ module.exports = {
             }
         };
 
+		// todo: test type exits
 		switch (cmd.customId) {
 			case 'poll-addOption':
+				if (!cmd.isButton()) break;
+
 				await cmd.showModal(
                     new ModalBuilder()
                         .setCustomId("poll-added")
                         .setTitle("Add a poll option")
                         .addComponents(
-                            new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId("poll-addedInp").setLabel("What should the option be?").setStyle(TextInputStyle.Short).setMinLength(1).setMaxLength(70).setRequired(true),)
+							// @ts-ignore
+							new ActionRowBuilder().addComponents(
+								new TextInputBuilder()
+									.setCustomId("poll-addedInp")
+									.setLabel("What should the option be?")
+									.setStyle(TextInputStyle.Short)
+									.setMinLength(1)
+									.setMaxLength(70)
+									.setRequired(true)
+							)
                         )
                 );
 			break;
 
 			case 'poll-delOption':
+				if (!cmd.isButton()) break;
+
 				cmd.showModal(
                     new ModalBuilder()
                         .setCustomId("poll-removed")
                         .setTitle("Remove a poll option")
                         .addComponents(
-                            new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId("poll-removedInp").setLabel("Which # option should I remove?").setStyle(TextInputStyle.Short).setMinLength(1).setMaxLength(2).setRequired(true))
+							// @ts-ignore
+                            new ActionRowBuilder().addComponents(
+                                new TextInputBuilder()
+                                    .setCustomId("poll-removedInp")
+                                    .setLabel("Which # option should I remove?")
+                                    .setStyle(TextInputStyle.Short)
+                                    .setMinLength(1)
+                                    .setMaxLength(2)
+                                    .setRequired(true)
+                            )
                         )
                 );
 			break;
 
 			case 'poll-voters':
+				if (!pollDB) {
+					await cmd.reply({ content: "Poll data could not be found.", ephemeral: true });
+					break;
+				}
 				const voterListString = formatVoterList(pollDB.options);
 				await cmd.reply({
 					content: limitLength(`**Voters**${voterListString || "\nNo votes yet."}`), // Handle no voters
@@ -378,6 +410,10 @@ module.exports = {
 				break;
 
 			case 'poll-removeVote':
+				if (!pollDB) {
+					await cmd.reply({ content: "Poll data could not be found.", ephemeral: true });
+					break;
+				}
 				let voteRemoved = false;
 				for (const voters of pollDB.options.values()) {
 					const userIndex = voters.indexOf(cmd.user.id);
@@ -389,7 +425,7 @@ module.exports = {
 
 				if (voteRemoved) {
 					const parsedPoll = parsePoll(cmd.message.content, true); // Parse active poll message
-					updateActivePoll(cmd, pollDB, parsedPoll);
+					await updateActivePoll(cmd, pollDB, parsedPoll);
 					await cmd.deferUpdate();
 					// await guild.save(); // Save after modification
 				} else {
@@ -398,6 +434,8 @@ module.exports = {
 				break;
 
 			case 'poll-publish':
+				if (!cmd.isButton()) break;
+				
 				if (!cmd.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)) {
 					cmd.reply({ content: `I can't send messages in this channel.`, ephemeral: true });
 					break;
@@ -424,13 +462,18 @@ module.exports = {
 					content: `<@${cmd.user.id}> asks: **${poll.title}**${
 						poll.options.map((a, i) => `\n${i}. ${keyDecode(a)} **0**`).join("")}`,
 					components: [
+						// @ts-ignore
 						...comp,
+						// @ts-ignore
 						new ActionRowBuilder().addComponents(
 							new ButtonBuilder()
 								.setCustomId("poll-removeVote")
 								.setLabel("Remove vote")
 								.setStyle(ButtonStyle.Danger),
-							new ButtonBuilder().setCustomId("poll-voters").setLabel("View voters").setStyle(ButtonStyle.Primary),
+							new ButtonBuilder()
+								.setCustomId("poll-voters")
+								.setLabel("View voters")
+								.setStyle(ButtonStyle.Primary),
 							new ButtonBuilder()
 								.setCustomId(
 									"poll-closeOption" + cmd.user.id
@@ -458,7 +501,13 @@ module.exports = {
 
 			// Modals
 			case 'poll-added':
-				var poll=parsePoll(cmd.message.content);
+				if (!cmd.isModalSubmit()) break;
+
+				var poll = parsePoll(cmd.message.content);
+				if (!poll) {
+					await cmd.reply({ content: "Unable to parse that poll.", ephemeral: true });
+					break;
+				}
 				if(poll.options.length>=20){
 					cmd.reply({content:"It looks like you've already generated the maximum amount of options!",ephemeral:true});
 					break;
@@ -468,33 +517,46 @@ module.exports = {
 					break;
 				}
 				poll.options.push(cmd.fields.getTextInputValue("poll-addedInp"));
+				// @ts-ignore
 				cmd.update(
 					await censor(`**${poll.title}**${poll.options.map((a,i)=>`\n${i}. ${a}`).join("")}`)
 				)
 			break;
 			
 			case 'poll-removed':
-				var i=cmd.fields.getTextInputValue("poll-removedInp");
-				if(!/^\d+$/.test(i)){
+				if (!cmd.isModalSubmit()) break;
+
+				var ii = cmd.fields.getTextInputValue("poll-removedInp");
+
+				if (!/^\d+$/.test(ii)) {
 					cmd.deferUpdate();
 					return;
 				}
-				var poll=parsePoll(cmd.message.content);
-				if(+i>poll.options.length||+i<1){
+				var poll = parsePoll(cmd.message.content);
+				if (!poll) {
+					await cmd.reply({ content: "Unable to parse that poll.", ephemeral: true });
+					break;
+				}
+				if (+ii > poll.options.length || +ii < 1) {
 					cmd.deferUpdate();
 					return;
 				}
-				poll.options.splice(+i-1,1);
-				cmd.update(`**${poll.title}**${poll.options.map((a,i)=>`\n${i}. ${a}`).join("")}`);
-			break;
+				poll.options.splice(+ii - 1, 1);
+				// @ts-ignore
+				cmd.update(`**${poll.title}**${poll.options.map((a, ii) => `\n${ii}. ${a}`).join("")}`);
+				break;
 			
 			default:
 				// All other (dynamic) buttons
 
 				// Close poll
 				if(cmd.customId?.startsWith("poll-closeOption")){
+					if (!pollDB) {
+						await cmd.reply({ content: "Poll data could not be found.", ephemeral: true });
+						break;
+					}
 					const starterId = cmd.customId.substring("poll-closeOption".length);
-					const canClose = cmd.user.id === starterId || cmd.member?.permissions.has(PermissionFlagsBits.ManageMessages);
+					const canClose = cmd.user.id === starterId || (cmd.member instanceof GuildMember && cmd.member?.permissions.has(PermissionFlagsBits.ManageMessages));
 		
 					if (!canClose) {
 						await cmd.reply({ content: "You didn't start this poll and you don't have sufficient permissions to override this", ephemeral: true });
@@ -517,6 +579,7 @@ module.exports = {
 
 					const files = chartAttachment ? [chartAttachment] : [];
 
+					// @ts-ignore
 					await cmd.update({
 						content: limitLength(finalContent, 4000), // Limit final message length
 						components: [], // Remove buttons
@@ -530,11 +593,19 @@ module.exports = {
 
 				// Vote
 				if (cmd.customId?.startsWith("voted")) {
+					if (!pollDB) {
+						await cmd.reply({ content: "Poll data could not be found.", ephemeral: true });
+						break;
+					}
 
 					const voteIndexStr = cmd.customId.substring("voted".length);
 					const voteIndex = parseInt(voteIndexStr, 10);
 
 					const parsedPoll = parsePoll(cmd.message.content, true);
+					if (!parsedPoll) {
+						await cmd.reply({ content: "Unable to parse that poll.", ephemeral: true });
+						break;
+					}
 					if (voteIndex < 0 || voteIndex >= parsedPoll.choices.length) {
 						console.warn(`Vote index out of bounds: ${voteIndex} for poll ${cmd.message.id}`);
 						await cmd.reply({ content: "Invalid vote option selected.", ephemeral: true });
@@ -560,7 +631,12 @@ module.exports = {
 						// User clicked the same option they already voted for - treat as removing vote
 						await cmd.reply({ content: "Your vote for this option has been removed.", ephemeral: true });
 					} else {
-						pollDB.options.get(chosenOption).push(cmd.user.id);
+						const optionVoters = pollDB.options.get(chosenOption);
+						if (!optionVoters) {
+							await cmd.reply({ content: "This option is no longer available.", ephemeral: true });
+							break;
+						}
+						optionVoters.push(cmd.user.id);
 						// pollDB.options[chosenOption].push(cmd.user.id);
 						await cmd.deferUpdate();
 					}

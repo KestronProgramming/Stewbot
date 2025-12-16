@@ -14,6 +14,8 @@ function applyContext(context={}) {
 
 // TODO: allow each user to have more than one giveaways?
 
+// TODO_LINT: double check pulls lasting more than 24 hours and less
+
 async function finHatPull(userId, force){
     const user = await userByID(userId);
 
@@ -39,8 +41,8 @@ async function finHatPull(userId, force){
         // TODO: use secure random here, just because we can
         winners.push(user.hat_pull.entered[Math.floor(Math.random()*user.hat_pull.entered.length)]);
     }
-    var chan = await client.channels.fetch(user.hat_pull.location.split("/")[1]).catch(e => null);
-    if(chan===null||chan===undefined){
+    const chan = await client.channels.fetch(user.hat_pull.location.split("/")[1]).catch(e => null);
+    if(!chan || !chan.isTextBased?.()){
         (await client.users.fetch(userId)).send(
             `I could not end the hat pull.\n`+
             `https://discord.com/channels/${user.hat_pull.location}${winners.map(a=>`\n- <@${a}>`).join("")}`).catch(e=>{});
@@ -51,13 +53,17 @@ async function finHatPull(userId, force){
         ? `Nobody entered though.` 
         : winners.length > 1 ? `Here are our winners!${winners.map(a => `\n- <@${a}>`).join("")}` : `Here is our winner: <@${winners[0]}>!`}`;
     
-    var msg = await chan.messages.fetch(user.hat_pull.location.split("/")[2]);
+    const msg = await chan.messages.fetch(user.hat_pull.location.split("/")[2]).catch(() => null);
 
-    if (msg === null || msg === undefined) {
-        chan.send(cont);
+    if (!msg) {
+        if (chan.isSendable?.()) {
+            chan.send(cont);
+        }
     }
     else {
-        msg.edit({ components: [] });
+        if (msg.editable) {
+            msg.edit({ components: [] });
+        }
         msg.reply(cont);
     }
     await user.updateOne({ $unset: { "hat_pull": 1 } })
@@ -185,12 +191,12 @@ module.exports = {
                         .setStyle(ButtonStyle.Danger)
                         .setCustomId("cancelHatPull")
                         .setLabel("Cancel")
-                ),
+                ).toJSON(),
             ],
             allowedMentions: { parse: [] },
         });
 
-        const scheduleNow = timer <= ms("md");
+        const scheduleNow = timer <= ms("1d");
         
         user.hat_pull = {
             "limit":cmd.options.getInteger("limit")!==null?cmd.options.getInteger("limit"):0,
@@ -202,8 +208,8 @@ module.exports = {
             "scheduled": scheduleNow,
         };
         
-        if (timer <= scheduleNow) {
-            setTimeout(()=>{finHatPull(cmd.user.id)});
+        if (scheduleNow) {
+            setTimeout(()=>{finHatPull(cmd.user.id)}, timer);
         }
 
         user.save();
@@ -221,6 +227,7 @@ module.exports = {
     /** @param {import('discord.js').ButtonInteraction} cmd */
     async onbutton(cmd, context) {
 		applyContext(context);
+        if (!("customId" in cmd)) return;
 
         let hatPullHost; // Switches are a pain with defining stuff
 
@@ -232,6 +239,11 @@ module.exports = {
                 hatPullHost = await Users.findOne({
                     "hat_pull.location": `${cmd.guild.id}/${cmd.channel.id}/${cmd.message.id}`
                 });
+
+                if (!hatPullHost?.hat_pull) {
+                    await cmd.followUp({ content: `This hat pull is no longer active.`, ephemeral: true });
+                    return;
+                }
 
                 if (!hatPullHost.hat_pull.entered.includes(cmd.user.id)) {
                     hatPullHost.hat_pull.entered.push(cmd.user.id);
@@ -252,6 +264,11 @@ module.exports = {
                     "hat_pull.location": `${cmd.guild.id}/${cmd.channel.id}/${cmd.message.id}`
                 });
 
+                if (!hatPullHost?.hat_pull) {
+                    await cmd.followUp({ content: `This hat pull is no longer active.`, ephemeral: true });
+                    return;
+                }
+
                 if (hatPullHost.hat_pull.entered.includes(cmd.user.id)) {
                     hatPullHost.hat_pull.entered.splice(hatPullHost.hat_pull.entered.indexOf(cmd.user.id), 1);
                 } else {
@@ -271,6 +288,11 @@ module.exports = {
                     "hat_pull.location": `${cmd.guild.id}/${cmd.channel.id}/${cmd.message.id}`
                 });
 
+                if (!hatPullHost?.hat_pull) {
+                    await cmd.followUp({ content: `This hat pull is no longer active.`, ephemeral: true });
+                    return;
+                }
+
                 if (
                     hatPullHost.id === cmd.user.id || // This can be closed by the creator,
                     cmd.memberPermissions?.has(PermissionFlagsBits.ManageMessages) // Or it can be closed by moderators
@@ -289,6 +311,11 @@ module.exports = {
                 hatPullHost = await Users.findOne({
                     "hat_pull.location": `${cmd.guild.id}/${cmd.channel.id}/${cmd.message.id}`
                 });
+
+                if (!hatPullHost?.hat_pull) {
+                    await cmd.followUp({ content: `This hat pull is no longer active.`, ephemeral: true });
+                    return;
+                }
 
                 if (
                     hatPullHost.id === cmd.user.id || // This can be closed by the creator,

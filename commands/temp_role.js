@@ -2,7 +2,7 @@
 const Categories = require("./modules/Categories");
 const client = require("../client.js");
 const { Guilds, Users, guildByID, userByID, guildByObj, userByObj, guildUserByObj, guildUserByID, GuildUsers } = require("./modules/database.js")
-const { ContextMenuCommandBuilder, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType, Events}=require("discord.js");
+const { ContextMenuCommandBuilder, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType, Events, GuildMember}=require("discord.js");
 function applyContext(context={}) {
 	for (let key in context) {
 		this[key] = context[key];
@@ -13,7 +13,7 @@ function applyContext(context={}) {
 
 const ms = require("ms")
 
-async function finTempRole(guildId, userId, roleId) {
+async function removeTempRole(guildId, userId, roleId) {
     const guild = await client.guilds.fetch(guildId);
     if (guild === null || guild === undefined) return;
 
@@ -48,14 +48,13 @@ async function scheduleTodaysTemproles() {
 
         Object.entries(tempRoles).forEach(([roleId, roleEnd]) => {
             setTimeout(() => {
-                finTempRole(guildId, userId, roleId);
+                removeTempRole(guildId, userId, roleId);
             }, roleEnd - Date.now());
         });
     })
 }
 
 module.exports = {
-    finTempRole,
     scheduleTodaysTemproles,
     
 	data: {
@@ -90,12 +89,19 @@ module.exports = {
 
         const role = cmd.options.getRole("role");
         const selectUser = cmd.options.getUser("who");
-        const targetMember = await cmd.guild.members.fetch(selectUser.id);
+        const targetMember = selectUser ? await cmd.guild.members.fetch(selectUser.id).catch(() => null) : null;
 		const issuerMember = await cmd.guild.members.fetch(cmd.user.id);
 
-        if(targetMember===null||targetMember===undefined){
-            cmd.followUp({content:`I couldn't find <@${selectUser.id}>, so I can't help unfortunately.`,allowedMentions:{parse:[]}});
+        if(!targetMember){
+			await cmd.followUp({
+                content:`I couldn't find ${selectUser?.id ? `<@${selectUser.id}>` : "that user"}, so I can't help unfortunately.`,
+                allowedMentions:{parse:[]}, 
+            });
             return;
+        }
+
+        if (!("comparePositionTo" in role)) {
+            return await cmd.followUp(`That role does not seem to be valid.`);
         }
 
         // Maybe we should check to see if this user has power over the target, and that they have power over the role?
@@ -103,27 +109,37 @@ module.exports = {
             return cmd.followUp(`You cannot add this role because it is equal to or higher than your highest role.`);
         }
 
-        if(!cmd.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.ManageRoles)){
-            cmd.followUp(`I do not have the ManageRoles permission, so I cannot run temporary roles.`);
+        const botPerms = cmd.channel.permissionsFor(client.user.id);
+        if(!botPerms?.has(PermissionFlagsBits.ManageRoles)){
+			await cmd.followUp(`I do not have the ManageRoles permission, so I cannot run temporary roles.`);
             return;
         }
         var timer=0;
         if(cmd.options.getInteger("hours")!==null) timer+=cmd.options.getInteger("hours")*60000*60;
         if(cmd.options.getInteger("minutes")!==null) timer+=cmd.options.getInteger("minutes")*60000;
         if(timer<1){
-            cmd.followUp(`Please set a valid time to undo the role action.`);
+            await cmd.followUp(`Please set a valid time to undo the role action.`);
             return;
         }
         if(cmd.guild.members.cache.get(client.user.id).roles.highest.position<=role.rawPosition){
-            cmd.followUp(`I cannot help with that role. If you would like me to, grant me a role that is ordered to be higher in the roles list than ${role.name}. You can reorder roles from Server Settings -> Roles.`);
+            await cmd.followUp(`I cannot help with that role. If you would like me to, grant me a role that is ordered to be higher in the roles list than ${role.name}. You can reorder roles from Server Settings -> Roles.`);
             return;
         }
 
         const guildUser = await guildUserByObj(cmd.guild, selectUser.id);
         if(guildUser.tempRoles.has(role.id)){
-            cmd.followUp({
-                content:`This is already a temporarily assigned role for this user. You can cancel it, or wait it out.`,
-                components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setLabel("Finish Early").setCustomId(`finishTempRole-${selectUser.id}-${role.id}`).setStyle(ButtonStyle.Secondary))]
+            await cmd.followUp({
+                content: `This is already a temporarily assigned role for this user. You can cancel it, or wait it out.`,
+                components: [
+                    new ActionRowBuilder().addComponents(
+                        new ButtonBuilder()
+                            .setLabel("Finish Early")
+                            .setCustomId(
+                                `finishTempRole-${selectUser.id}-${role.id}`
+                            )
+                            .setStyle(ButtonStyle.Secondary)
+                    ).toJSON(),
+                ],
             });
             return;
         }
@@ -139,14 +155,29 @@ module.exports = {
         }
 
         guildUser.tempRoles.set(role.id, Date.now()+timer);
-        cmd.followUp({
-            content:`Alright, I have ${added?`added`:`removed`} <@&${role.id}> ${added?`to`:`from`} <@${targetMember.id}> until <t:${Math.round((Date.now()+timer)/1000)}:f> <t:${Math.round((Date.now()+timer)/1000)}:R>`,
-            components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setLabel("Finish Early").setCustomId(`finishTempRole-${selectUser.id}-${role.id}`).setStyle(ButtonStyle.Secondary))]
+        await cmd.followUp({
+            content: `Alright, I have ${added ? `added` : `removed`} <@&${
+                role.id
+            }> ${added ? `to` : `from`} <@${
+                targetMember.id
+            }> until <t:${Math.round(
+                (Date.now() + timer) / 1000
+            )}:f> <t:${Math.round((Date.now() + timer) / 1000)}:R>`,
+            components: [
+                new ActionRowBuilder().addComponents(
+                    new ButtonBuilder()
+                        .setLabel("Finish Early")
+                        .setCustomId(
+                            `finishTempRole-${selectUser.id}-${role.id}`
+                        )
+                        .setStyle(ButtonStyle.Secondary)
+                ).toJSON(),
+            ],
         });
         
-        setTimeout(()=>{finTempRole(cmd.guild.id,cmd.user.id,role.id)},timer);
+        setTimeout(()=>{removeTempRole(cmd.guild.id,selectUser.id,role.id)},timer);
 
-        guildUser.save();
+        await guildUser.save();
     },
 
 	subscribedButtons: [/finishTempRole-.*/],
@@ -155,14 +186,18 @@ module.exports = {
     async onbutton(cmd, context) {
 		applyContext(context);
 
-		if(cmd.customId?.startsWith("finishTempRole-")){
-            if(cmd.member.permissions.has(PermissionFlagsBits.ManageRoles)){
-                cmd.deferUpdate();
-                finTempRole(cmd.guild.id,cmd.customId.split("-")[1],cmd.customId.split("-")[2],true);
-                cmd.message.edit({components:[]});
+        if(cmd.customId?.startsWith("finishTempRole-")){
+            if (!cmd.customId.split("-")[1] || !cmd.customId.split("-")[2]) {
+                await cmd.reply({ content: "Unable to process this request.", ephemeral: true });
+                return;
+            }
+            if(cmd.member instanceof GuildMember && cmd.member.permissions.has(PermissionFlagsBits.ManageRoles)){
+				await cmd.deferUpdate();
+				removeTempRole(cmd.guild.id, cmd.customId.split("-")[1], cmd.customId.split("-")[2] );
+				await cmd.message.edit({components:[]});
             }
             else{
-                cmd.reply({content:`You do not have sufficient permissions.`,ephemeral:true});
+				await cmd.reply({content:`You do not have sufficient permissions.`,ephemeral:true});
             }
         }
 	},

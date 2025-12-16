@@ -2,7 +2,7 @@
 const Categories = require("./modules/Categories");
 const client = require("../client.js");
 const { Guilds, Users, GuildUsers, guildByID, userByID, guildByObj, userByObj, guildUserByObj } = require("./modules/database.js")
-const { ContextMenuCommandBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType, AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType, Component } = require("discord.js");
+const { ContextMenuCommandBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType, AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType, Component, GuildMember } = require("discord.js");
 function applyContext(context = {}) {
     for (let key in context) {
         this[key] = context[key];
@@ -70,6 +70,7 @@ module.exports = {
         switch (cmd.options.getString("which")) {
             case "levels":
                 if (!guild.levels.active) {
+                    // @ts-ignore
                     cmd.followUp(`This server doesn't use level ups at the moment. It can be configured using ${cmds.levels_config.mention}.`);
                     return;
                 }
@@ -93,47 +94,29 @@ module.exports = {
                         return;
                     }
                     
-                    // Single user rank
+                    const levelEmbed = new EmbedBuilder()
+                        .setTitle(`Rank for ${cmd.guild.name}`)
+                        .setColor(0x006400)
+                        .setThumbnail(cmd.guild.iconURL())
+                        .setAuthor({
+                            name: client.users.cache.get(usr)
+                                ? client.users.cache.get(usr).username
+                                : "Unknown",
+                            iconURL: client.users.cache.get(usr)?.displayAvatarURL()
+                        })
+                        .addFields(
+                            { name: "Level", value: `${requestedUser.lvl}`, inline: true },
+                            { name: "EXP", value: `${requestedUser.exp}`.replace(/\B(?=(\d{3})+(?!\d))/g, ","), inline: true },
+                            { name: "Server Rank", value: `#${requestedUserRank}`, inline: true }
+                        )
+                        .setFooter({
+                            text: `Next rank up at ${(getLvl(requestedUser.lvl) + "").replace(/\B(?=(\d{3})+(?!\d))/g, ",")}`
+                        });
+
                     cmd.followUp({
-                        content: `Server rank card for <@${usr}>`, embeds: [{
-                            "type": "rich",
-                            "title": `Rank for ${cmd.guild.name}`,
-                            "description": "",
-                            "color": 0x006400,
-                            "fields": [
-                                {
-                                    "name": `Level`,
-                                    "value": requestedUser.lvl + "",
-                                    "inline": true
-                                },
-                                {
-                                    "name": `EXP`,
-                                    "value": `${requestedUser.exp}`.replace(/\B(?=(\d{3})+(?!\d))/g, ","),
-                                    "inline": true
-                                },
-                                {
-                                    "name": `Server Rank`,
-                                    "value": `#${requestedUserRank}`,
-                                    "inline": true
-                                }
-                            ],
-                            "thumbnail": {
-                                "url": cmd.guild.iconURL(),
-                                "height": 0,
-                                "width": 0
-                            },
-                            "author": {
-                                "name": client.users.cache.get(usr) 
-                                    ? client.users.cache.get(usr).username 
-                                    : "Unknown",
-                                "icon_url": client.users.cache.get(usr)?.displayAvatarURL()
-                            },
-                            "footer": {
-                                "text": `Next rank up at ${
-                                    (getLvl(requestedUser.lvl) + "")
-                                        .replace(/\B(?=(\d{3})+(?!\d))/g, ",")}`
-                            }
-                        }], allowedMentions: { parse: [] }
+                        content: `Server rank card for <@${usr}>`,
+                        embeds: [levelEmbed],
+                        allowedMentions: { parse: [] }
                     });
                     break;
                 }
@@ -148,27 +131,25 @@ module.exports = {
                     .lean();
 
 
+                const levelsEmbed = new EmbedBuilder()
+                    .setTitle(`${cmd.guild.name} Leaderboard`)
+                    .setDescription(
+                        mostLevelsUsers.map((user, rank) =>
+                            `\n${["🥇", "🥈", "🥉", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"][rank]}. <@${user.userId}>, level ${user.lvl}`
+                        ).join("")
+                    )
+                    .setColor(0x006400)
+                    .setThumbnail(cmd.guild.iconURL())
+                    .setFooter({ text: `${cmd.guild.name} Levels Leaderboard` });
+
                 cmd.followUp({
-                    content: `**Levels Leaderboard**`, embeds: [{
-                        "type": "rich",
-                        "title": `${cmd.guild.name} Leaderboard`,
-                        "description": mostLevelsUsers.map((user, rank) => 
-                                `\n${["🥇", "🥈", "🥉", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"][rank]}. <@${user.userId}>, level ${user.lvl}`
-                            ).join(""),
-                        "color": 0x006400,
-                        "thumbnail": {
-                            "url": cmd.guild.iconURL(),
-                            "height": 0,
-                            "width": 0
-                        },
-                        "footer": {
-                            "text": `${cmd.guild.name} Levels Leaderboard`
-                        }
-                    }]
+                    content: `**Levels Leaderboard**`,
+                    embeds: [levelsEmbed]
                 });
                 break;
             case "emojiboard":
                 if (guild?.emojiboards.size < 1) {
+                    // @ts-ignore
                     cmd.followUp(`This server doesn't use any emojiboards at the moment. It can be configured using ${cmds.emojiboard.add.mention}.`);
                     break;
                 }
@@ -182,70 +163,42 @@ module.exports = {
                     break;
                 }
 
+                // @ts-ignore
                 const topPosters = await Guilds.aggregate([
-                    {
-                        $match: {
-                            id: cmd.guild.id
+                    { $match: { id: cmd.guild.id } },
+                    { $project: {
+                        id: 1,
+                        emojiboards: { $objectToArray: "$emojiboards" }
+                    } },
+                    { $unwind: {
+                        path: "$emojiboards"
+                    } },
+                    { $project: {
+                        id: 1,
+                        emoji: "$emojiboards.k",
+                        posters: {
+                            $objectToArray: "$emojiboards.v.posters"
                         }
-                    },
-                    {
-                        $project: {
-                            id: 1,
-                            emojiboards: {
-                                $objectToArray: "$emojiboards"
-                            }
-                        }
-                    },
-                    {
-                        $unwind: {
-                            path: "$emojiboards"
-                        }
-                    },
-                    {
-                        $project: {
-                            id: 1,
-                            emoji: "$emojiboards.k",
-                            posters: {
-                                $objectToArray: "$emojiboards.v.posters"
-                            }
-                        }
-                    },
+                    } },
                     // Only match the requested emoji, and only if it exists
-                    (emote ? { $match: { emoji: emote } } : undefined),
-                    {
-                        $unwind:
-                        // Finally we can split out the user per emoji with how many they have
-                        {
-                            path: "$posters"
-                        }
-                    },
-                    {
-                        $group:
-                        // Group across emojiboards together by the user
-                        {
-                            _id: "$posters.k",
-                            total: {
-                                $sum: "$posters.v"
-                            }
-                        }
-                    },
-                    {
-                        $sort: {
-                            total: -1
-                        }
-                    },
-                    {
-                        $limit: 10
-                    },
-                    {
-                        $match:
-                        // Only ones with posts
-                        {
-                            total: {
-                                $gt: 0
-                            }
-                        }
-                    }
+                    (
+                        emote ?
+                            { $match: { emoji: emote } }
+                            : undefined
+                    ),
+                    // Finally we can split out the user per emoji with how many they have
+                    { $unwind: { path: "$posters" } },
+                    // Group across emojiboards together by the user
+                    { $group: {
+                        _id: "$posters.k",
+                        total: { $sum: "$posters.v" }
+                    } },
+                    { $sort: { total: -1 } },
+                    { $limit: 10 },
+                    // Only ones with posts
+                    { $match: {
+                        total: { $gt: 0 }
+                    } }
                 ].filter(s=>s!=undefined))
 
                 leaderboard = topPosters
@@ -253,21 +206,17 @@ module.exports = {
                     .join("");
                 
                 
+                const emojiName = emote && emote.includes(":") ? emote.split(":")[1] : (emoji ?? "Emoji");
+                const emoteEmbed = new EmbedBuilder()
+                    .setTitle(`${cmd.guild.name} ${emote ? emote : emoji ?? "Emoji"}board Leaderboard`)
+                    .setDescription(leaderboard)
+                    .setColor(0xffff00)
+                    .setThumbnail(cmd.guild.iconURL())
+                    .setFooter({ text: `${emojiName}board Leaderboards` });
+
                 cmd.followUp({
-                    content: `**Emojiboard Leaderboard**`, embeds: [{
-                        "type": "rich",
-                        "title": `${cmd.guild.name} ${emote.includes(":") ? emote : emoji !== null ? emoji : "Emoji"}board Leaderboard`,
-                        "description": leaderboard,
-                        "color": 0xffff00,
-                        "thumbnail": {
-                            "url": cmd.guild.iconURL(),
-                            "height": 0,
-                            "width": 0
-                        },
-                        "footer": {
-                            "text": `${emote.includes(":") ? emote.split(":")[1] : emoji !== null ? emoji : "Emoji"}board Leaderboards`
-                        }
-                    }]
+                    content: `**Emojiboard Leaderboard**`,
+                    embeds: [emoteEmbed]
                 });
                 break;
             case "counting":
@@ -308,37 +257,31 @@ module.exports = {
                     footerRank = 
                         `${cmd.guild.name} is in ${place+1}${placeEnd} place with a high score of ${guild.counting.highestNum}.`
                 }
-
                 
+                const countingEmbed = new EmbedBuilder()
+                    .setTitle(`Counting Leaderboard`)
+                    .setDescription(
+                        leaders.map((guild, rank) =>
+                            `\n${["🥇", "🥈", "🥉", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"][rank]}. ${guild[0]}: \`${guild[1]}\``
+                        ).join("")
+                    )
+                    .setColor(0x006400)
+                    .setThumbnail("https://stewbot.kestron.software/roboabacus.jpg")
+                    .setFooter({ text: footerRank });
+
                 cmd.followUp({
-                    "content": `**Counting Leaderboard**`, embeds: [{
-                        "type": "rich",
-                        "title": `Counting Leaderboard`,
-                        "description": `${
-                            leaders.map((guild, rank) => 
-                                `\n${
-                                    ["🥇", "🥈", "🥉", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"][rank]
-                                }. ${guild[0]}: \`${guild[1]}\``
-                            ).join("")
-                        }`,
-                        "color": 0x006400,
-                        "thumbnail": {
-                            "url": "https://stewbot.kestron.software/roboabacus.jpg",
-                            "height": 0,
-                            "width": 0
-                        },
-                        "footer": {
-                            "text": footerRank
-                        }
-                    }]
+                    content: `**Counting Leaderboard**`,
+                    embeds: [countingEmbed]
                 });
                 break;
             case "profanity":
                 if (!guild.filter.active) {
+                    // @ts-ignore
                     cmd.followUp(`This server doesn't use the filter at the moment. It can be configured using ${cmds.filter.config.mention}.`);
                     return;
                 }
-                if(!cmd.member?.permissions.has(PermissionFlagsBits.ManageMessages)){
+
+                if(!(cmd.member instanceof GuildMember) || !cmd.member?.permissions.has(PermissionFlagsBits.ManageMessages)){
                     cmd.followUp(`I'm sorry, to prevent being filtered being used as a game this leaderboard is only available to moderators.`);
                     return;
                 }
@@ -356,37 +299,24 @@ module.exports = {
 
                     const discordUser = await client.users.fetch(usr).catch(e=>null);
 
+                    const profanityEmbed = new EmbedBuilder()
+                        .setTitle(`Profanity rank for ${cmd.guild.name}`)
+                        .setColor(0x006400)
+                        .setThumbnail(cmd.guild.iconURL())
+                        .setAuthor({
+                            name: discordUser ? discordUser.username : "Unknown",
+                            iconURL: discordUser?.displayAvatarURL()
+                        })
+                        .addFields(
+                            { name: `Times Filtered`, value: `${requestedUserInfractions || 0}`, inline: true },
+                            { name: `Profanity Rank`, value: `#${requestedUserRank}`, inline: true },
+                        )
+                        .setFooter({ text: `Profanity Leaderboard` });
+
                     cmd.followUp({
-                        content: `Server profanity card for <@${usr}>`, embeds: [{
-                            "type": "rich",
-                            "title": `Profanity rank for ${cmd.guild.name}`,
-                            "description": "",
-                            "color": 0x006400,
-                            "fields": [
-                                {
-                                    "name": `Times Filtered`,
-                                    "value": requestedUserInfractions || 0,
-                                    "inline": true
-                                },
-                                {
-                                    "name": `Profanity Rank`,
-                                    "value": `#${requestedUserRank}`,
-                                    "inline": true
-                                }
-                            ],
-                            "thumbnail": {
-                                "url": cmd.guild.iconURL(),
-                                "height": 0,
-                                "width": 0
-                            },
-                            "author": {
-                                "name": discordUser ? discordUser.username : "Unknown",
-                                "icon_url": discordUser?.displayAvatarURL()
-                            },
-                            "footer": {
-                                "text": `Profanity Leaderboard`
-                            }
-                        }], allowedMentions: { parse: [] }
+                        content: `Server profanity card for <@${usr}>`,
+                        embeds: [profanityEmbed],
+                        allowedMentions: { parse: [] }
                     });
                     break;
                 }
@@ -401,29 +331,25 @@ module.exports = {
                     .limit(10)
                     .lean();
 
+                const profanityBoard = new EmbedBuilder()
+                    .setTitle(`${cmd.guild.name} Profanity Leaderboard`)
+                    .setDescription(
+                        mostProfaneUsers.map((userObj, i) =>
+                            `\n${["🥇", "🥈", "🥉", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"][i]}. <@${userObj.userId}>, ${userObj.infractions || 0} times filtered`
+                        ).join("")
+                    )
+                    .setColor(0x006400)
+                    .setThumbnail(cmd.guild.iconURL())
+                    .setFooter({ text: `${cmd.guild.name} Profanity Leaderboard` });
+
                 cmd.followUp({
-                    content: `**Profanity Leaderboard**`, embeds: [{
-                        "type": "rich",
-                        "title": `${cmd.guild.name} Profanity Leaderboard`,
-                        "description": 
-                            mostProfaneUsers.map((userObj, i) => 
-                                `\n${["🥇", "🥈", "🥉", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"][i]}. <@${userObj.userId}>, ${userObj.infractions || 0} times filtered`
-                            )
-                            .join(""),
-                        "color": 0x006400,
-                        "thumbnail": {
-                            "url": cmd.guild.iconURL(),
-                            "height": 0,
-                            "width": 0
-                        },
-                        "footer": {
-                            "text": `${cmd.guild.name} Profanity Leaderboard`
-                        }
-                    }]
+                    content: `**Profanity Leaderboard**`,
+                    embeds: [profanityBoard]
                 });
             break;
             case "cleanliness":
                 if (!guild.filter.active) {
+                    // @ts-ignore
                     cmd.followUp(`This server doesn't use the filter at the moment. It can be configured using ${cmds.filter.config.mention}.`);
                     return;
                 }
@@ -463,37 +389,24 @@ module.exports = {
 
                     const discordUser = await client.users.fetch(usr).catch(e=>null);
 
+                    const cleanEmbed = new EmbedBuilder()
+                        .setTitle(`Cleanliness rank for ${cmd.guild.name}`)
+                        .setColor(0x006400)
+                        .setThumbnail(cmd.guild.iconURL())
+                        .setAuthor({
+                            name: discordUser ? discordUser.username : "Unknown",
+                            iconURL: discordUser?.displayAvatarURL()
+                        })
+                        .addFields(
+                            { name: `Times Filtered`, value: `${requestedUser.infractions || 0}`, inline: true },
+                            { name: `Cleanliness Rank`, value: `#${requestedUserRank}`, inline: true }
+                        )
+                        .setFooter({ text: `Cleanliness Leaderboard` });
+
                     cmd.followUp({
-                        content: `Server cleanliness card for <@${usr}>`, embeds: [{
-                            "type": "rich",
-                            "title": `Cleanliness rank for ${cmd.guild.name}`,
-                            "description": "",
-                            "color": 0x006400,
-                            "fields": [
-                                {
-                                    "name": `Times Filtered`,
-                                    "value": requestedUser.infractions || 0,
-                                    "inline": true
-                                },
-                                {
-                                    "name": `Cleanliness Rank`,
-                                    "value": `#${requestedUserRank}`,
-                                    "inline": true
-                                }
-                            ],
-                            "thumbnail": {
-                                "url": cmd.guild.iconURL(),
-                                "height": 0,
-                                "width": 0
-                            },
-                            "author": {
-                                "name": discordUser ? discordUser.username : "Unknown",
-                                "icon_url": discordUser?.displayAvatarURL()
-                            },
-                            "footer": {
-                                "text": `Cleanliness Leaderboard`
-                            }
-                        }], allowedMentions: { parse: [] }
+                        content: `Server cleanliness card for <@${usr}>`,
+                        embeds: [cleanEmbed],
+                        allowedMentions: { parse: [] }
                     });
                     break;
                 }
@@ -508,23 +421,20 @@ module.exports = {
                     .lean();
                 
 
+                const cleanBoard = new EmbedBuilder()
+                    .setTitle(`${cmd.guild.name} Cleanliness Leaderboard`)
+                    .setDescription(
+                        mostCleanUsers.map((user, i) =>
+                            `\n${["🥇", "🥈", "🥉", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"][i]}. <@${user.userId}>, ${user.infractions || 0} times filtered`
+                        ).join("")
+                    )
+                    .setColor(0x006400)
+                    .setThumbnail(cmd.guild.iconURL())
+                    .setFooter({ text: `${cmd.guild.name} Cleanliness Leaderboard` });
+
                 cmd.followUp({
-                    content: `**Cleanliness Leaderboard**`, embeds: [{
-                        "type": "rich",
-                        "title": `${cmd.guild.name} Cleanliness Leaderboard`,
-                        "description": mostCleanUsers.map((user, i) => 
-                                `\n${["🥇", "🥈", "🥉", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"][i]}. <@${user.userId}>, ${user.infractions || 0} times filtered`
-                            ).join(""),
-                        "color": 0x006400,
-                        "thumbnail": {
-                            "url": cmd.guild.iconURL(),
-                            "height": 0,
-                            "width": 0
-                        },
-                        "footer": {
-                            "text": `${cmd.guild.name} Cleanliness Leaderboard`
-                        }
-                    }]
+                    content: `**Cleanliness Leaderboard**`,
+                    embeds: [cleanBoard]
                 });
             break;
         }

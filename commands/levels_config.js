@@ -67,7 +67,8 @@ module.exports = {
 			guild.levels.location="DM";
 			disclaimers.push(`No channel was set to post level-ups to, so I have changed the level-up notification location to DMs.`);
 		}
-		if(guild.levels.location!=="DM"&&!cmd.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageWebhooks)){
+		const botMember = cmd.guild?.members.cache.get(client.user.id);
+		if(guild.levels.location!=="DM"&&!botMember?.permissions.has(PermissionFlagsBits.ManageWebhooks)){
 			guild.levels.location="DM";
 			disclaimers.push(`I do not have the MANAGE_WEBHOOKS permission for this server, so I cannot post level-up messages. I have set the location for level-up notifications to DMs instead.`);
 		}
@@ -78,8 +79,8 @@ module.exports = {
 
     /** 
      * @param {import('discord.js').Message} msg 
-     * @param {GuildDoc} guildStore 
-     * @param {GuildUserDoc} guildUserStore 
+     * @param {import("./modules/database.js").GuildDoc} guildStore 
+     * @param {import("./modules/database.js").GuildUserDoc} guildUserStore 
      * */
     async [Events.MessageCreate] (msg, context, guildStore, guildUserStore) {
 		applyContext(context);
@@ -94,6 +95,7 @@ module.exports = {
 			!msg.author.bot && 
 			guild.levels.active && 
 			!expTimeout.has(msg.author.id) && 
+			// @ts-ignore
 			!msg.filtered // Messages with bad words don't get XP
 		) {
 			expTimeout.set(msg.author.id, true);
@@ -109,68 +111,65 @@ module.exports = {
 				const user = await userByObj(msg.author);
 
 				if (user.config.levelUpMsgs) {
+					const levelMsg = guild.levels.msg
+						.replaceAll("${USERNAME}", `**${msg.author.username}**`)
+						.replaceAll("${USER}", `<@${msg.author.id}>`)
+						.replaceAll("${LVL}", `${guildUser.lvl}`);
+
 					if(guild.levels.location==="DM"){
-						try{
-							msg.author.send({embeds:[{
-								"type": "rich",
-								"title": `Level Up`,
-								"description": guild.levels.msg.replaceAll("${USERNAME}",`**${msg.author.username}**`).replaceAll("${USER}",`<@${msg.author.id}>`).replaceAll("${LVL}",guildUser.lvl),
-								"color": 0x006400,
-								"thumbnail": {
-									"url": msg.guild.iconURL(),
-									"height": 0,
-									"width": 0
-								},
-								"footer": {
-									"text": `Sent from ${msg.guild.name}. To disable these messages, use /personal_config.`
-								}
-							}]}).catch(e=>{});
-						}catch(e){}
+						const dmEmbed = new EmbedBuilder()
+							.setTitle("Level Up")
+							.setDescription(levelMsg)
+							.setColor(0x006400)
+							.setThumbnail(msg.guild.iconURL())
+							.setFooter({ text: `Sent from ${msg.guild.name}. To disable these messages, use /personal_config.` });
+
+						msg.author.send({ embeds: [dmEmbed] }).catch(() => {});
 					}
 					else {
-						var resp={
-							"content":guild.levels.msg.replaceAll("${USERNAME}",`**${msg.author.username}**`).replaceAll("${USER}",`<@${msg.author.id}>`).replaceAll("${LVL}",guildUser.lvl),
-							"avatarURL":msg.guild.iconURL(),
-							"username":msg.guild.name
-						};
-						var c=client.channels.cache.get(guild.levels.location==="channel"?guild.levels.channel:msg.channel.id);
-						if (c.permissionsFor(client.user.id).has(PermissionFlagsBits.ManageWebhooks)){
-							var hook=await c.fetchWebhooks();
-							hook=hook.find(h=>h.token);
+						const targetChannel = client.channels.cache.get(guild.levels.location==="channel"?guild.levels.channel:msg.channel.id);
+						if (
+							targetChannel?.isTextBased?.() && 
+							"permissionsFor" in targetChannel &&
+							"fetchWebhooks" in targetChannel &&
+							targetChannel.permissionsFor(client.user.id)?.has(PermissionFlagsBits.ManageWebhooks))
+						{
+							let webhooks = await targetChannel.fetchWebhooks();
+							let hook = webhooks.find(h=>h.token);
 							if(hook){
-								hook.send(resp);
+								hook.send({
+									content: levelMsg,
+									avatarURL: msg.guild.iconURL(),
+									username: msg.guild.name
+								}).catch(() => {});
 							}
 							else{
-								client.channels.cache.get(guild.levels.location==="channel"?guild.levels.channel:msg.channel.id).createWebhook({
+								targetChannel.createWebhook({
 									name:config.name,
 									avatar: config.pfp
 								}).then(d=>{
-									d.send(resp);
-								});
+									d.send({
+										content: levelMsg,
+										avatarURL: msg.guild.iconURL(),
+										username: msg.guild.name
+									}).catch(() => {});
+								}).catch(() => {});
 							}
 						}
 						else {
 							// Change to DB if we don't have perms over webhooks
 							await guildByObj(msg.guild, {
-								"guild.levels.location": "DM"
+								"levels.location": "DM"
 							})
 							
-							try{
-								msg.author.send({embeds:[{
-									"type": "rich",
-									"title": `Level Up`,
-									"description": guild.levels.msg.replaceAll("${USERNAME}",`**${msg.author.username}**`).replaceAll("${USER}",`<@${msg.author.id}>`).replaceAll("${LVL}",guildUser.lvl),
-									"color": 0x006400,
-									"thumbnail": {
-										"url": msg.guild.iconURL(),
-										"height": 0,
-										"width": 0
-									},
-									"footer": {
-										"text": `Sent from ${msg.guild.name}. To disable these messages, use /personal_config.`
-									}
-								}]}).catch(e=>{});
-							}catch(e){}
+							const dmEmbed = new EmbedBuilder()
+								.setTitle("Level Up")
+								.setDescription(levelMsg)
+								.setColor(0x006400)
+								.setThumbnail(msg.guild.iconURL())
+								.setFooter({ text: `Sent from ${msg.guild.name}. To disable these messages, use /personal_config.` });
+
+							msg.author.send({ embeds: [dmEmbed] }).catch(() => {});
 						}
 					}
 				}

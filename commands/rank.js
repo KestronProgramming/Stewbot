@@ -52,6 +52,7 @@ module.exports = {
         const guild = await guildByObj(cmd.guild);
 		
         if(!guild.levels.active){
+            // @ts-ignore
             cmd.followUp(`This server doesn't use level ups at the moment. It can be configured using ${cmds.levels_config.mention}.`);
             return;
         }
@@ -60,52 +61,31 @@ module.exports = {
         const targetUser = await guildUserByObj(cmd.guild, usrId)
 
         // TODO: optimize these three queries into a single one?
+        const targetExp = targetUser.exp ?? 0;
         const requestedUserRank = await GuildUsers.countDocuments({
             guildId: cmd.guild.id,
             $or: [
-                { exp: { $gt: targetUser.exp } },
+                { exp: { $gt: targetExp } },
             ]
         }) + 1;
 
         const discordUser = await client.users.fetch(usrId)
-        
-        cmd.followUp({
-            content: `Server rank card for <@${usrId}>`, embeds: [{
-                "type": "rich",
-                "title": `Rank for ${cmd.guild.name}`,
-                "description": "",
-                "color": 0x006400,
-                "fields": [
-                    {
-                        "name": `Level`,
-                        "value": targetUser.lvl || 0,
-                        "inline": true
-                    },
-                    {
-                        "name": `EXP`,
-                        "value": `${targetUser.exp}`.replace(/\B(?=(\d{3})+(?!\d))/g, ","),
-                        "inline": true
-                    },
-                    {
-                        "name": `Server Rank`,
-                        "value": `#${requestedUserRank}`,
-                        "inline": true
-                    }
-                ],
-                "thumbnail": {
-                    "url": cmd.guild.iconURL(),
-                    "height": 0,
-                    "width": 0
-                },
-                "author": {
-                    "name": discordUser ? discordUser.username : "Unknown",
-                    "icon_url": discordUser.displayAvatarURL()
-                },
-                "footer": {
-                    "text": `Next rank up at ${(getLvl(targetUser.lvl) + "").replace(/\B(?=(\d{3})+(?!\d))/g, ",")}`
-                }
-            }], 
-            allowedMentions: { parse: [] }
+        const embed = new EmbedBuilder()
+            .setTitle(`Rank for ${cmd.guild.name}`)
+            .setColor(0x006400)
+            .addFields(
+                { name: "Level", value: `${targetUser.lvl || 0}`, inline: true },
+                { name: "EXP", value: `${targetExp}`.replace(/\B(?=(\d{3})+(?!\d))/g, ","), inline: true },
+                { name: "Server Rank", value: `#${requestedUserRank}`, inline: true }
+            )
+            .setThumbnail(cmd.guild.iconURL() || null)
+            .setAuthor({ name: discordUser?.username ?? "Unknown", iconURL: discordUser?.displayAvatarURL() ?? undefined })
+            .setFooter({ text: `Next rank up at ${(getLvl(targetUser.lvl) + "").replace(/\B(?=(\d{3})+(?!\d))/g, ",")}` });
+		
+        await cmd.followUp({
+            content: `Server rank card for <@${usrId}>`,
+            embeds: [embed],
+            allowedMentions: { parse: [] },
         });
 	}
 };

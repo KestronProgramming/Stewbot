@@ -42,7 +42,7 @@ module.exports = {
 		applyContext(context);
 		
 		// Code
-        if(cmd.guild?.id===config.homeServer &&cmd.channel.id===config.commandChannel){
+        if(cmd.guild?.id===config.homeServer && cmd.channel?.id===config.commandChannel){
 			// Update commands
 			const result = await launchCommands();
             await cmd.followUp(`Launching commands...\n${result}`);

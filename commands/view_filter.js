@@ -2,7 +2,7 @@
 const Categories = require("./modules/Categories");
 const client = require("../client.js");
 const { Guilds, Users, guildByID, userByID, guildByObj, userByObj } = require("./modules/database.js")
-const { ContextMenuCommandBuilder, AttachmentBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType}=require("discord.js");
+const { ContextMenuCommandBuilder, AttachmentBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType, GuildMember}=require("discord.js");
 function applyContext(context={}) {
 	for (let key in context) {
 		this[key] = context[key];
@@ -10,8 +10,6 @@ function applyContext(context={}) {
 }
 
 // #endregion CommandBoilerplate
-
-const fs = require("node:fs")
 
 module.exports = {
 	data: {
@@ -37,12 +35,33 @@ module.exports = {
 		applyContext(context);
 
 		const guild = await guildByObj(cmd.guild);
+		const channel = cmd.channel;
+		const canSend = channel?.isTextBased?.() && channel.permissionsFor?.(cmd.client.user)?.has(PermissionFlagsBits.SendMessages);
 		
+		if(!canSend){
+			await cmd.followUp({ 
+				content: "I can't speak in this channel.", 
+				ephemeral: true
+			});
+			return;
+		}
+
 		if(guild.filter.blacklist.length>0&&guild.filter.active){
-			cmd.followUp({"content":`## ⚠️ Warning\nWhat follows _may_ be considered dirty, or offensive, as these are words that **${cmd.guild.name}** has decided to not allow.\n-# If you would like to continue, press the button below.`,"components":[new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('view_filter').setLabel('DM me the blacklist').setStyle(ButtonStyle.Danger))]});
+			await cmd.followUp({
+                content: `## ⚠️ Warning\nWhat follows _may_ be considered dirty, or offensive, as these are words that **${cmd.guild.name}** has decided to not allow.\n-# If you would like to continue, press the button below.`,
+                components: [
+                    new ActionRowBuilder().addComponents(
+                        new ButtonBuilder()
+                            .setCustomId("view_filter")
+                            .setLabel("DM me the blacklist")
+                            .setStyle(ButtonStyle.Danger)
+                    ).toJSON(),
+                ]
+            });
 		}
 		else{
-			cmd.followUp(`This server doesn't have any words blacklisted at the moment. To add some, you can use ${cmds.filter.add.mention}.`);
+			// @ts-ignore
+			await cmd.followUp(`This server doesn't have any words blacklisted at the moment. To add some, you can use ${cmds.filter.add.mention}.`);
 		}
     },
 
@@ -56,34 +75,48 @@ module.exports = {
 			case "view_filter":
 				const guild = await guildByObj(cmd.guild);
 				
-				cmd.user.send({
-					content: `The following is the blacklist for **${ cmd.guild.name}** as requested.\n\n||${guild.filter.blacklist.join("||, ||")}||`,
-					components: [new ActionRowBuilder().addComponents(
-						new ButtonBuilder().setCustomId("delete-all").setLabel("Delete message").setStyle(ButtonStyle.Danger), 
-						new ButtonBuilder().setCustomId("export").setLabel("Export to CSV").setStyle(ButtonStyle.Primary),
-					)],
-				});
-				cmd.deferUpdate();
+				try {
+					await cmd.user.send({
+						content: guild.filter.blacklist.length > 0
+							? `The following is the blacklist for **${ cmd.guild.name}** as requested.\n\n||${guild.filter.blacklist.join("||, ||")}||`
+							: `This server does not have any blacklisted words configured.`,
+						components: [new ActionRowBuilder().addComponents(
+							new ButtonBuilder().setCustomId("delete-all").setLabel("Delete message").setStyle(ButtonStyle.Danger), 
+							new ButtonBuilder().setCustomId("export").setLabel("Export to CSV").setStyle(ButtonStyle.Primary),
+						).toJSON()],
+					});
+					await cmd.deferUpdate();
+				} catch (err) {
+					await cmd.reply({ content: "I couldn't send you a DM. Check your privacy settings and try again.", ephemeral: true });
+				}
 			break;
 			case "export":
-				var bad=cmd.message.content.match(/\|\|\w+\|\|/gi).map(a=>a.split("||")[1]);
+				// TODO: this should load the words from the database
+				var bad = cmd.message.content.match(/\|\|\w+\|\|/gi).map(a => a.split("||")[1]);
 				const filterCSV = new AttachmentBuilder(Buffer.from(bad.join(",")), { name: "badExport.csv" });
-				
-				cmd.reply({
+
+				await cmd.reply({
 					ephemeral: true,
-					files: [ filterCSV ]
-				})
-			break;
-        
+					files: [filterCSV]
+				});
+				break;
 		}
 
 		// NOTE: this command is just handled here, it's a useful button that can be put anywhere on stewbot's responses
 		if(cmd.customId?.startsWith("delete-")){
-			if(cmd.user.id===cmd.customId.split("-")[1]||cmd.customId==="delete-all"||cmd.member?.permissions.has(PermissionFlagsBits.ManageMessages)){
-				cmd.message.delete();
+			if(
+				cmd.user.id===cmd.customId.split("-")[1]||
+				cmd.customId==="delete-all"||
+				(cmd.member instanceof GuildMember && cmd.member?.permissions.has(PermissionFlagsBits.ManageMessages))
+			){
+				if (cmd.message?.deletable) {
+					await cmd.message.delete();
+				} else {
+					await cmd.reply({ content: "I can't delete that message.", ephemeral: true });
+				}
 			}
 			else{
-				cmd.reply({content:`I can't do that for you just now.`,ephemeral:true});
+				await cmd.reply({content:`I can't do that for you just now.`,ephemeral:true});
 			}
 		}
 	}

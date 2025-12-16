@@ -596,13 +596,17 @@ module.exports = {
 	},
 
 	subscribedButtons: ["racMove", "racJoin", "moveModal"],
-
-	/** @param {import('discord.js').ButtonInteraction} cmd */
-	async onbutton(cmd, context) {
+	
+	// TODO: All onbuttons need to be updated to this jsdoc
+    /** @param {import('discord.js').ButtonInteraction | import('discord.js').AnySelectMenuInteraction | import('discord.js').ModalSubmitInteraction } cmd */
+    async onbutton(cmd, context) {
 		applyContext(context);
+		if (!("customId" in cmd)) return;
 
-		switch (cmd.customId) {
+		switch(cmd.customId) {
 			case "racMove":
+				if (!("showModal" in cmd)) return;
+
 				let moveModal = new ModalBuilder().setCustomId("moveModal").setTitle("Rows & Columns Move");
 				let moveModalInput = new TextInputBuilder().setCustomId("moveMade").setLabel("Where would you like to move? (Example: AC)").setStyle(TextInputStyle.Short).setMaxLength(2).setRequired(true);
 				let row = new ActionRowBuilder().addComponents(moveModalInput);
@@ -637,13 +641,13 @@ module.exports = {
 					cmd.message.edit({ content: getRACBoard(), components: [row] });
 					return;
 				}
-				cmd.update(getRACBoard());
-				break;
+				if ("update" in cmd) cmd.update(getRACBoard());
+			break;
 
 			// Modal
 			case "moveModal":
-				// @ts-ignore
-				let cont = cmd.fields.getTextInputValue("moveMade").toUpperCase();
+				if (!("fields" in cmd)) return; 
+				let cont=cmd.fields.getTextInputValue("moveMade").toUpperCase();
 				readRACBoard(cmd.message.content);
 				let foundOne = -1;
 				for (var i = 0; i < rac.players.length; i++) {
@@ -667,9 +671,11 @@ module.exports = {
 					cmd.reply({ content: "That location is occupied.", ephemeral: true });
 					break;
 				}
-				rac.lastPlayer = cmd.user.id;
-				rac.timePlayed = Date.now();
-				rac.board[rac.rowsActive.indexOf(cont[0])][rac.rowsActive.indexOf(cont[1])] = rac.icons[foundOne];
+				rac.lastPlayer=cmd.user.id;
+				rac.timePlayed=Date.now();
+				rac.board[rac.rowsActive.indexOf(cont[0])][rac.rowsActive.indexOf(cont[1])]=rac.icons[foundOne];
+				
+				// @ts-ignore
 				await cmd.update(getRACBoard());
 
 				let foundZero = false;
@@ -680,8 +686,19 @@ module.exports = {
 						}
 					}
 				}
-				if (!foundZero) {
-					let row = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId("racJoin").setLabel("Join Game").setStyle(ButtonStyle.Danger).setDisabled(true), new ButtonBuilder().setCustomId("racMove").setLabel("Make a Move").setStyle(ButtonStyle.Success).setDisabled(true));
+				if(!foundZero){
+					let row = new ActionRowBuilder().addComponents(
+                        new ButtonBuilder()
+                            .setCustomId("racJoin")
+                            .setLabel("Join Game")
+                            .setStyle(ButtonStyle.Danger)
+                            .setDisabled(true),
+                        new ButtonBuilder()
+                            .setCustomId("racMove")
+                            .setLabel("Make a Move")
+                            .setStyle(ButtonStyle.Success)
+                            .setDisabled(true)
+                    );
 					// @ts-ignore
 					cmd.message.edit({ content: tallyRac(), components: [row] });
 				}

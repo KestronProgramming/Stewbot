@@ -132,7 +132,8 @@ async function doEmojiboardReaction(react) {
         resp.content = react.message.content;
         resp.username = react.message.author.globalName || react.message.author.username;
         resp.avatarURL = react.message.author.displayAvatarURL();
-        var c = client.channels.cache.get(emojiboard.channel);
+        const c = client.channels.cache.get(emojiboard.channel);
+        if (!c || !("guild" in c) || !c.isTextBased?.()) return; // TODO: if this is set poorly, disable
         if (!c.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageWebhooks)) {
             emojiboard.messType = "2";
             guild.save();
@@ -149,10 +150,11 @@ async function doEmojiboardReaction(react) {
             emojiboard.posted.set(react.message.id, `webhook${response.id}`);
         }
         else {
-            let c = await client.channels.cache.get(emojiboard.channel);
-            if (!("createWebhook" in c)) return;
+            const fallbackChannel = client.channels.cache.get(emojiboard.channel);
+            if (!fallbackChannel || !fallbackChannel.isTextBased?.()) return;
+            if (!("createWebhook" in fallbackChannel)) return;
 
-            const hook = await c.createWebhook({
+            const hook = await fallbackChannel.createWebhook({
                 name: config.name,
                 avatar: config.pfp,
             });
@@ -196,7 +198,8 @@ async function doEmojiboardReaction(react) {
         if (emojiboard.messType === "1") {
             resp.content = getStarMsg(react.message);
         }
-        var c = client.channels.cache.get(emojiboard.channel)
+        const c = client.channels.cache.get(emojiboard.channel)
+        if (!c || !("permissionsFor" in c) || !c.isTextBased?.()) return;
         if (!c.permissionsFor(client.user.id).has(PermissionFlagsBits.ManageWebhooks)) {
             emojiboard.active = false;
             guild.save();
@@ -309,7 +312,7 @@ module.exports = {
         },
     },
 
-    /** @param {import('discord.js').CommandInteraction} cmd */
+    /** @param {import('discord.js').ChatInputCommandInteraction} cmd */
     async execute(cmd, context) {
         applyContext(context);
 
@@ -479,6 +482,7 @@ module.exports = {
             if (emoji) {
                 try {
                     const channel = await client.channels.fetch(board.channel);
+                    if (!channel?.isTextBased?.()) return;
                     const messageId = board.posted[msg.id].replace("webhook", ""); // Webhook posts are formatted like `webhook${id}`
                     const messageToDelete = await channel.messages.fetch(messageId);
 

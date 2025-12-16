@@ -41,15 +41,35 @@ module.exports = {
     async execute(cmd, context) {
 		applyContext(context);
 
-		const targetMember = cmd.guild.members.cache.get(cmd.options.getUser("target").id);
+		if (!cmd.guild) {
+			cmd.followUp("This command must be used in a server.");
+			return;
+		}
+		if (!cmd.guild.members.me?.permissions.has(PermissionFlagsBits.KickMembers)) {
+			cmd.followUp("I need the `Kick Members` permission to do that.");
+			return;
+		}
+
+		const targetUser = cmd.options.getUser("target");
+		const targetMember = targetUser ? cmd.guild.members.cache.get(targetUser.id) : null;
 		const issuerMember = cmd.guild.members.cache.get(cmd.user.id);
 		const reason = cmd.options.getString("reason");	
+
+		if (!targetMember) {
+			cmd.followUp("I couldn't find that member.");
+			return;
+		}
+		if (!issuerMember) {
+			cmd.followUp("I couldn't verify your server membership.");
+			return;
+		}
 
 		if (targetMember.id === cmd.guild.ownerId) {
 			return cmd.followUp("I cannot kick the owner of this server.");
 		}
 
 		if(targetMember.id===client.user.id){
+			// @ts-ignore
 			return cmd.followUp(`I cannot kick myself. I apologize for any inconveniences I may have caused. You can use ${cmds.report_problem.mention} if there's something that needs improvement.`);
 		}
 
@@ -61,7 +81,12 @@ module.exports = {
 			return cmd.followUp("You cannot kick this user because they have a role equal to or higher than yours.");
 		}
 		
-		targetMember.kick(`Instructed to kick by ${cmd.user.username}${reason ? ": "+reason : "."}`);
+		if (!targetMember.kickable) {
+			cmd.followUp("I cannot kick that user due to role hierarchy or permissions.");
+			return;
+		}
+
+		targetMember.kick(`Instructed to kick by ${cmd.user.username}${reason ? ": "+reason : "."}`).catch(() => null);
 		cmd.followUp({content:`I have attempted to kick <@${targetMember.id}>`,allowedMentions:{parse:[]}});
 	}
 };

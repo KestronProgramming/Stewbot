@@ -49,52 +49,51 @@ module.exports = {
     async execute(cmd, context) {
 		applyContext(context);
 
-		var who = cmd.guild.members.cache.get(cmd.options.getUser("who") ? cmd.options.getUser("who").id : cmd.user.id);
-		if (!who) {
+		let member = await cmd.guild.members.fetch(cmd.options.getUser("who") ? cmd.options.getUser("who").id : cmd.user.id);
+		if (!member) {
 			cmd.followUp(`I can't seem to locate them.`);
 			return;
 		}
 
-		cmd.followUp({
-			content: `User card for <@${who.id}>`, embeds: [{
-				"type": "rich",
-				"title": `${who.nickname ? who.nickname : who.user.globalName}`,
-				"description": who.roles.cache.map(r => r.name !== "@everyone" ? `<@&${r.id}>` : "").join(", "),
-				"color": 0x006400,
-				"fields": [
-					{
-						"name": `Joined Server`,
-						"value": `<t:${Math.floor(who.joinedTimestamp / 1000)}:f>, <t:${Math.floor(who.joinedTimestamp / 1000)}:R>`,
-						"inline": true
-					},
-					{
-					"name": `Joined Discord`,
-					"value": `<t:${getDiscordJoinTimestamp(who.id)}:f>, <t:${getDiscordJoinTimestamp(who.id)}:R>`,
-					"inline": true
-					}
-				],
-				"timestamp": new Date(),
-				"image": {
-					"url": cmd.options.getBoolean("large-pfp") ? `${who.displayAvatarURL()}?size=1024` : null,
-					"height": 0,
-					"width": 0
-				},
-				"thumbnail": {
-					"url": who.displayAvatarURL(),
-					"height": 0,
-					"width": 0
-				},
-				"author": {
-					"name": who.user.globalName,
-					"url": `https://discord.com/users/${who.id}`,
-					"icon_url": who.user.displayAvatarURL()
-				},
-				"footer": {
-					"text": who.user.username,
-					"icon_url": who.user.displayAvatarURL()
-				},
-				"url": `https://discord.com/users/${who.id}`
-			}], 
+		const joinedServer = member.joinedTimestamp ? Math.floor(member.joinedTimestamp / 1000) : null;
+		const joinFields = joinedServer
+			? `<t:${joinedServer}:f>, <t:${joinedServer}:R>`
+			: "Unknown";
+
+		const displayName = member.nickname || member.user.globalName || member.user.username;
+		const roleList = member.roles.cache
+			.filter(r => r.name !== "@everyone")
+			.map(r => `<@&${r.id}>`)
+			.join(", ");
+
+		const embed = new EmbedBuilder()
+			.setTitle(displayName)
+			.setDescription(roleList || "No roles")
+			.setColor(0x006400)
+			.setTimestamp()
+			.setThumbnail(member.displayAvatarURL())
+			.setAuthor({
+				name: member.user.globalName || member.user.username,
+				url: `https://discord.com/users/${member.id}`,
+				iconURL: member.user.displayAvatarURL()
+			})
+			.setFooter({
+				text: member.user.username,
+				iconURL: member.user.displayAvatarURL()
+			})
+			.addFields(
+				{ name: "Joined Server", value: joinFields, inline: true },
+				{ name: "Joined Discord", value: `<t:${getDiscordJoinTimestamp(member.id)}:f>, <t:${getDiscordJoinTimestamp(member.id)}:R>`, inline: true }
+			);
+
+		const large = cmd.options.getBoolean("large-pfp") ?? false;
+		if (large) {
+			embed.setImage(`${member.displayAvatarURL()}?size=1024`);
+		}
+
+		await cmd.followUp({
+			content: `User card for <@${member.id}>`,
+			embeds: [embed],
 			allowedMentions: { parse: [] }
 		});
 

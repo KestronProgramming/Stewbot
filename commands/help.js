@@ -2,7 +2,7 @@
 const Categories = require("./modules/Categories");
 const client = require("../client.js");
 const { Guilds, Users, guildByID, userByID, guildByObj, userByObj } = require("./modules/database.js")
-const { EmbedType, ContextMenuCommandBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType, Events}=require("discord.js");
+const { ContextMenuCommandBuilder, InteractionContextType: IT, ApplicationIntegrationType: AT, ApplicationCommandType, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType,AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType, Events}=require("discord.js");
 function applyContext(context={}) {
 	for (let key in context) {
 		this[key] = context[key];
@@ -14,6 +14,7 @@ function applyContext(context={}) {
 const { limitLength } = require("../utils.js");
 const config = require("../data/config.json");
 const fs = require("fs");
+// @ts-ignore
 const Fuse = require('fuse.js');
 const fuseOptions = {
 	includeScore: true,
@@ -24,6 +25,13 @@ const fuseOptions = {
 // Help pages will be stored here
 let helpCommands = [];
 
+/**
+ * Splits an array into smaller chunks of a specified size.
+ *
+ * @param {Array} array - The array to be divided into chunks.
+ * @param {number} size - The size of each chunk.
+ * @returns {Array<Array>} A new array containing the chunks as subarrays.
+ */
 function chunkArray(array, size) {
     const result = [];
     for (let i = 0; i < array.length; i += size) {
@@ -32,8 +40,26 @@ function chunkArray(array, size) {
     return result;
 }
 
+/**
+ * Generates a help menu with pagination, filtering, and category selection.
+ *
+ * @param {number} page - The current page number (0-based index).
+ * @param {string[]|string} categories - The categories to filter commands by. Can be a single category or an array of categories.
+ * @param {'And'|'Or'|'Not'} filterMode - The filtering mode to apply:
+ *   - 'And': Commands must belong to all specified categories.
+ *   - 'Or': Commands must belong to at least one of the specified categories.
+ *   - 'Not': Commands must not belong to any of the specified categories.
+ * @param {string} forWho - A unique identifier for the user or context requesting the help menu.
+ * @returns {Object} An object containing the help menu content, embeds, and interactive components:
+ *   - `content` {string}: The textual content of the help menu.
+ *   - `embeds` {EmbedBuilder[]}: An array of embed objects for rich content.
+ *   - `components` {ActionRowBuilder[]} An array of action rows containing interactive buttons.
+ */
 function makeHelp(page, categories, filterMode, forWho) {
     const helpCategories = Object.keys(Categories);
+
+    if (!Array.isArray(categories)) categories = [categories];
+    if (categories.length === 0) categories = ["None"];
 
     page = +page;
     if (categories.includes("All")) {
@@ -43,37 +69,20 @@ function makeHelp(page, categories, filterMode, forWho) {
         categories = [];
     }
     const buttonRows = [];
-    var totalPages = [...chunkArray(helpCommands.filter(command => {
+    const filteredCommands = helpCommands.filter(command => {
         switch (filterMode) {
             case 'And':
-                var ret = true;
-                categories.forEach(category => {
-                    if (!command.helpCategories.includes(category)) {
-                        ret = false;
-                    }
-                });
-                return ret;
-                break;
+                return categories.every(category => command.helpCategories.includes(category));
             case 'Or':
-                var ret = false;
-                categories.forEach(category => {
-                    if (command.helpCategories.includes(category)) {
-                        ret = true;
-                    }
-                });
-                return ret;
-                break;
+                return categories.some(category => command.helpCategories.includes(category));
             case 'Not':
-                var ret = true;
-                categories.forEach(category => {
-                    if (command.helpCategories.includes(category)) {
-                        ret = false;
-                    }
-                });
-                return ret;
-                break;
+                return categories.every(category => !command.helpCategories.includes(category));
+            default:
+                return true;
         }
-    }), 9)].length;
+    });
+
+    const totalPages = Math.max(chunkArray(filteredCommands, 9).length, 1);
     var pagesArray=[
         new ButtonBuilder().setCustomId(`help-page-0-${forWho}-salt1`).setLabel(`First`).setStyle(ButtonStyle.Primary).setDisabled(page===0),
         new ButtonBuilder().setCustomId(`help-page-${page-1}-${forWho}-salt2`).setLabel(`Previous`).setStyle(ButtonStyle.Primary).setDisabled(page-1<0),
@@ -84,73 +93,42 @@ function makeHelp(page, categories, filterMode, forWho) {
     buttonRows.push(new ActionRowBuilder().addComponents(...pagesArray));
     buttonRows.push(...chunkArray(helpCategories, 5).map(chunk => 
         new ActionRowBuilder().addComponents(
-            chunk.map(a => 
+            chunk.map(category => 
                 new ButtonBuilder()
-                    .setCustomId(`help-category-${a}-${forWho}`)
-                    .setLabel(a)
-                    .setStyle(categories.includes(a)?ButtonStyle.Success:ButtonStyle.Secondary)
+                    .setCustomId(`help-category-${category}-${forWho}`)
+                    .setLabel(category)
+                    .setStyle(categories.includes(category)?ButtonStyle.Success:ButtonStyle.Secondary)
             )
         )
     ));	
     buttonRows.push(new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId(`help-mode-And-${forWho}`).setLabel("AND Mode").setStyle(ButtonStyle.Danger).setDisabled(filterMode==="And"),new ButtonBuilder().setCustomId(`help-mode-Or-${forWho}`).setLabel("OR Mode").setStyle(ButtonStyle.Danger).setDisabled(filterMode==="Or"),new ButtonBuilder().setCustomId(`help-mode-Not-${forWho}`).setLabel("NOT Mode").setStyle(ButtonStyle.Danger).setDisabled(filterMode==="Not")));	
     
+    const fields = filteredCommands
+        .slice(page * 9, (page + 1) * 9)
+        .map(a => ({
+            name: limitLength(a.mention, 256),
+            value: limitLength(a.shortDesc, 1024),
+            inline: true
+        }));
+
+    const helpEmbed = new EmbedBuilder()
+        .setTitle(`Help Menu`)
+        .setColor(0x006400)
+        .setThumbnail(config.pfp)
+        .setFooter({
+            text: `Help Menu for Stewbot. To view a detailed description of a command, run /help and tell it which command you are looking for.`
+        })
+        .setFields(fields);
+
     return {
-        content: `## Help Menu\nPage: ${page+1}/${totalPages} | Mode: ${filterMode} | Categories: ${categories.length===0?`None`:categories.length===helpCategories.length?`All`:categories.join(", ")}`, embeds: [{
-            "type": EmbedType.Rich,
-            "title": `Help Menu`,
-            "description": ``,
-            "color": 0x006400,
-            "fields": helpCommands.filter(command=>{
-                switch(filterMode){
-                    case 'And':
-                        var ret=true;
-                        categories.forEach(category=>{
-                            if(!command.helpCategories.includes(category)){
-                                ret=false;
-                            }
-                        });
-                        return ret;
-                    break;
-                    case 'Or':
-                        var ret=false;
-                        categories.forEach(category=>{
-                            if(command.helpCategories.includes(category)){
-                                ret=true;
-                            }
-                        });
-                        return ret;
-                    break;
-                    case 'Not':
-                        var ret=true;
-                        categories.forEach(category=>{
-                            if(command.helpCategories.includes(category)){
-                                ret=false;
-                            }
-                        });
-                        return ret;
-                    break;
-                }
-            }).slice(page*9,(page+1)*9).map(a => {
-                return {
-                    "name": limitLength(a.mention, 256),
-                    "value": limitLength(a.shortDesc, 1024),
-                    "inline": true
-                };
-            }),
-            "thumbnail": {
-                "url": config.pfp,
-                "height": 0,
-                "width": 0
-            },
-            "footer": {
-                "text": `Help Menu for Stewbot. To view a detailed description of a command, run /help and tell it which command you are looking for.`
-            }
-        }],
-        components: buttonRows
+        content: `## Help Menu\nPage: ${page+1}/${totalPages} | Mode: ${filterMode} | Categories: ${categories.length===0?`None`:categories.length===helpCategories.length?`All`:categories.join(", ")}`,
+        embeds: [helpEmbed.toJSON()],
+        components: buttonRows.map(row => row.toJSON())
     };
 }
 
 function sortByMatch(items, text) {
+	// @ts-ignore
 	const fuse = new Fuse(items.map(item => ({ item })), fuseOptions);            
 	const scoredResults = fuse.search(text)
 		.filter(result => result.score <= 2) // Roughly similar-ish
@@ -185,7 +163,7 @@ module.exports = {
     async execute(cmd, context) {
 		applyContext(context);
 		if(cmd.options.getString("module")===null){
-			cmd.followUp(makeHelp(0,"All","Or",cmd.user.id));
+            cmd.followUp(makeHelp(0,["All"],"Or",cmd.user.id));
 		}
 		else{
 			var inp=cmd.options.getString("module").toLowerCase();
@@ -197,7 +175,7 @@ module.exports = {
 
 			// Only add fields with content
 			let description = expandedHelp[0].detailedDesc;
-			let fields = []
+            let fields = []
 			if (expandedHelp[0].shortDesc) {
 				fields.push({
 					"name": "Short Description",
@@ -229,19 +207,16 @@ module.exports = {
 				description = "No additional information is available for this command."
 			}
 
+            const helpEmbed = new EmbedBuilder()
+                .setTitle(`${expandedHelp[0].mention}`)
+                .setDescription(description)
+                .setColor(0x006400)
+                .setThumbnail(config.pfp)
+                .setFields(fields);
+
             cmd.followUp({
-                content: `## Help Menu for ${expandedHelp[0].mention}`, embeds: [{
-                    "type": EmbedType.Rich,
-                    "title": `${expandedHelp[0].mention}`,
-                    description,
-                    "color": 0x006400,
-                    fields,
-                    "thumbnail": {
-                        "url": config.pfp,
-                        "height": 0,
-                        "width": 0
-                    },
-                }]
+                content: `## Help Menu for ${expandedHelp[0].mention}`,
+                embeds: [helpEmbed]
             });
 		}
 	},
@@ -277,33 +252,82 @@ module.exports = {
     async onbutton(cmd, context) {
 		applyContext(context);
 
+        if (!("customId" in cmd)) return;
+
 		if(cmd.customId?.startsWith("help-")){
-			var opts=cmd.customId.split("-");
-			if(opts[3]!==cmd.user.id){
-				cmd.reply({content:`This isn't your help command! Use ${cmds.help.mention} to start your own help command.`,ephemeral:true});
-			}
-			else{
-				switch(opts[1]){
+            const opts = cmd.customId.split("-");
+            const buttonType = opts[1];
+            const forWho = opts[3];
+
+            if (forWho !== cmd.user.id) {
+                // @ts-ignore
+                cmd.reply({
+                    // @ts-ignore
+                    content: `This isn't your help command! Use ${cmds.help.mention} to start your own help command.`,
+                    ephemeral: true,
+                });
+            }
+            else {
+                switch (buttonType) {
+
 					case 'page':
-						cmd.update(makeHelp(+opts[2],cmd.message.content.split("Categories: ")[1].split(", "),cmd.message.content.split("Mode: ")[1].split(" |")[0],cmd.user.id));
+                        if (!cmd.message?.content) return;
+                        const pageToGoTo = Number(opts[2]);
+                        cmd.update(
+                            makeHelp(
+                                pageToGoTo,
+                                cmd.message.content
+                                    .split("Categories: ")[1]
+                                    .split(", "),
+                                // @ts-ignore
+                                cmd.message.content
+                                    .split("Mode: ")[1]
+                                    .split(" |")[0],
+                                cmd.user.id
+                            )
+                        )
 					break;
 					case 'category':
-						var cats=cmd.message.content.split("Categories: ")[1]?.split(", ");
-						if(cats.length===0) cats=["None"];
-						if(cats.includes("All")){
-							cats=[opts[2]];
-						}
-						else if(cats.includes(opts[2])){
-							cats.splice(cats.indexOf(opts[2]),1);
-						}
-						else{
-							if(cats.includes("None")) cats=[];
-							cats.push(opts[2]);
-						}
-						cmd.update(makeHelp(0,cats,cmd.message.content.split("Mode: ")[1].split(" |")[0],cmd.user.id));
+                        const category = opts[2];
+                        if (!cmd.message?.content) return;
+                        var cats = cmd.message.content.split("Categories: ")[1]?.split(", ");
+                        if (cats.length === 0) cats = ["None"];
+                        if (cats.includes("All")) {
+                            cats = [category];
+                        }
+                        else if (cats.includes(category)) {
+                            cats.splice(cats.indexOf(category), 1);
+                        }
+                        else {
+                            if (cats.includes("None")) cats = [];
+                            cats.push(category);
+                        }
+                        cmd.update(
+                            makeHelp(
+                                0,
+                                cats,
+                                // @ts-ignore
+                                cmd.message.content
+                                    .split("Mode: ")[1]
+                                    .split(" |")[0],
+                                cmd.user.id
+                            )
+                        );
 					break;
 					case 'mode':
-						cmd.update(makeHelp(0,cmd.message.content.split("Categories: ")[1].split(", "),opts[2],cmd.user.id));
+                        if (!cmd.message?.content) return;
+                        const newMode = opts[2];
+                        cmd.update(
+                            makeHelp(
+                                0,
+                                cmd.message.content
+                                    .split("Categories: ")[1]
+                                    .split(", "),
+                                // @ts-ignore
+                                newMode,
+                                cmd.user.id
+                            )
+                        );
 					break;
 				}
 			}
@@ -313,9 +337,12 @@ module.exports = {
     // Build dynamic help pages when the bot is ready
     async [Events.ClientReady]() {
         // Once commands are loaded
+        // @ts-ignore cmds is populated globally
         Object.keys(commands).forEach(commandName => {
+            // @ts-ignore
             var cmd = commands[commandName];
             if (cmd.data?.help?.shortDesc !== undefined && cmd.data?.help?.shortDesc !== `Stewbot's Admins Only` && cmd.data?.help?.helpCategories.length > 0) {
+                // @ts-ignore cmds is populated globally
                 const commandMention = cmds[cmd.data?.command?.name]?.mention || `\`${commandName}\` Module`; // non-command modules don't have a mention
                 helpCommands.push(Object.assign({
                     name: cmd.data?.command?.name || commandName,
@@ -325,6 +352,7 @@ module.exports = {
             else if (cmd.data?.help?.shortDesc !== `Stewbot's Admins Only`) {
                 Object.keys(cmd.data?.help || []).forEach(subcommand => {
                     var subcommandHelp = cmd.data?.help[subcommand];
+                    // @ts-ignore cmds is populated globally
                     const subcommandMention = cmds[cmd.data?.command?.name]?.[subcommand]?.mention || `\`${commandName}\` Module` // No case for this rn but might have one in the future
                     if (subcommandHelp.helpCategories?.length > 0) {
                         helpCommands.push(Object.assign({

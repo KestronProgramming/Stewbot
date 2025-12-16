@@ -100,16 +100,21 @@ module.exports = {
                 if (updateCode) {
                     await new Promise((resolve, reject) => {
                         exec('sh ./update.sh', (error, stdout, stderr) => {
-                            if (error || stderr) {
-                                var actuallyHasError = Boolean((errNotif + error + "").trim());
-                                if (actuallyHasError) {
-                                    var errNotif = `Error: ${error?.message || ""}`
-                                    errNotif += `\nStderr: ${stderr}`
-                                    notify(errNotif);
-                                    reject(0);
-                                }
+                            let errNotif = "";
+                            if (error) {
+                                errNotif += `Error: ${error?.message || ""}`;
                             }
-                            stdout && notify(stdout);
+                            if (stderr) {
+                                errNotif += `\nStderr: ${stderr}`;
+                            }
+
+                            if (errNotif.trim()) {
+                                notify(errNotif.trim());
+                                reject(new Error(errNotif.trim()));
+                                return;
+                            }
+
+                            if (stdout) notify(stdout);
                             resolve(0);
                         });
                     });
@@ -132,6 +137,8 @@ module.exports = {
             await config.save();
             
             setTimeout(() => { process.exit(0) }, 500);
+        } else {
+            await cmd.followUp("This command can only be used by bot administrators.");
         }
     },
 
