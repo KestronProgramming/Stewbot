@@ -374,7 +374,7 @@ module.exports = {
 				)
 			).addSubcommand(command =>
 				command.setName("minesweeper").setDescription("Play Minesweeper!").addBooleanOption(option =>
-					option.setName("device").setDescription("Use Ascii instead of Emojis? (Default: false)").setRequired(false)
+					option.setName("use_ascii").setDescription("Use Ascii instead of Emojis? (Default: false)").setRequired(false)
 				).addBooleanOption(option =>
 					option.setName("start_me").setDescription("Reveal a section of the board to start? (Default: false)").setRequired(false)
 				).addIntegerOption(option =>
