@@ -765,8 +765,12 @@
     },
     {
         "name": "tag_role",
+<<<<<<< Updated upstream
         "mention": "</tag_role:1448914142592372770>",
         "mention": "</tag_role:1448914142592372770>",
+=======
+        "mention": "</tag_role:1450389861122048061>",
+>>>>>>> Stashed changes
         "helpCategories": [
             "Server_Only",
             "Administration"
