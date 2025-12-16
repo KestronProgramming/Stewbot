@@ -10,10 +10,17 @@
     "checkJs": true,
     "noEmit": true,
     "strict": false,
-    "target": "es2024"
+    "target": "es2024",
+
+    "allowUmdGlobalAccess" : true,
+
+    "skipLibCheck": true,
+    "incremental": true,
+    "assumeChangesOnlyAffectDirectDependencies": true
   },
   "include": [
     "**/*.js",
+    "./globals.d.ts"
   ],
   "exclude": [
     "node_modules"

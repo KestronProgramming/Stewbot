@@ -1,0 +1,21 @@
+// Ctrl+Shift+P  >  Preferences: Open Keyboard Shortcuts (JSON)  >  Paste
+[
+    {
+        "key": "ctrl+k ctrl+i",
+        "command": "editor.action.sourceAction",
+        "args": {
+            "kind": "source.addMissingImports",
+            "apply": "first"
+        },
+        "when": "editorTextFocus"
+    },
+    {
+        "key": "ctrl+k ctrl+u",
+        "command": "editor.action.sourceAction",
+        "args": {
+            "kind": "source.removeUnused",
+            "apply": "first"
+        },
+        "when": "editorTextFocus"
+    }
+]
