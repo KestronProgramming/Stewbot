@@ -321,7 +321,7 @@ module.exports = {
 			if (diffs.length > 0) {
 				var c = channel.guild.channels.cache.get(guildStore.logs.channel);
 				if (c?.isSendable()) {
-					const readableSlowmode = (sec) => sec == "0" ? "None" : ms(+sec * 1000);
+					const readableSlowmode = (sec) => `${sec}` == "0" ? "None" : ms((+sec||0) * 1000);
 
 					const embed = new EmbedBuilder()
 						.setTitle(`${diffs.includes("name") ? `#${channelO.name} -> ` : ""}#${channel.name}`)
