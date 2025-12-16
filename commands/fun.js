@@ -499,7 +499,7 @@ module.exports = {
 					meme = memes.filter(m => m.split(".")[0] === cmd.options.getInteger("number").toString())[0];
 					if (!meme) meme = memes[Math.floor(Math.random() * memes.length)];
 				}
-				catch (e) { // Give a random meme if it fails becaues there is no number. OPTIMIZE: check if there were options passed rather than try-catching
+				catch (e) { // Give a random meme if it fails because there is no number. OPTIMIZE: check if there were options passed rather than try-catching
 					meme = memes[Math.floor(Math.random() * memes.length)];
 				}
 				cmd.followUp({ content: `Meme #${meme.split(".")[0]}`, files: [`./memes/${meme}`] });
@@ -594,7 +594,7 @@ module.exports = {
 
 	subscribedButtons: ["racMove", "racJoin", "moveModal"],
 	
-	// TODO: All onbuttons need to be updated to this jsdoc
+	// TODO: All onbutton's need to be updated to this jsdoc
     /** @param {import('discord.js').ButtonInteraction | import('discord.js').AnySelectMenuInteraction | import('discord.js').ModalSubmitInteraction } cmd */
     async onbutton(cmd, context) {
 		applyContext(context);

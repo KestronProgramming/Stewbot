@@ -206,8 +206,8 @@ async function postprocessUserMessage(message, guild) {
 
     // Convert role mentions to their raw format
     message = message.replace(/<@&(\d+)>/g, (match, roleId) => {
-        const rolename = guild?.roles.cache.get(roleId)?.name;
-        return rolename ? `<${rolename} (discord role mention)>` : match;
+        const roleName = guild?.roles.cache.get(roleId)?.name;
+        return roleName ? `<${roleName} (discord role mention)>` : match;
     });
 
     // Convert channel mentions to their raw format
@@ -226,7 +226,7 @@ async function postprocessAIMessage(message, guild) {
         return user ? `<@${user.id}>` : match;
     });
 
-    // qwen2.5 overuses the blush and star emojis (and trim the other one to prevent starboard abuse)
+    // AI overuses the blush and star emojis (and trim the other one to prevent starboard abuse)
     message = message.replaceAll(/🌟/g, "");
     message = message.replaceAll(/⭐/g, "");
     message = message.replaceAll(/😊/g, "");

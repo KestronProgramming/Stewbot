@@ -554,7 +554,7 @@ module.exports = {
 			if (diffs.length > 0) {
 				var c = role.guild.channels.cache.get(guildStore.logs.channel);
 				if (c?.isSendable()) {
-					const flds = [
+					const fields = [
 						{
 							"name": `Hoisted`,
 							"value": `${diffs.includes("hoist") ? `${roleO.hoist} -> ` : ""}${role.hoist}`,
@@ -567,7 +567,7 @@ module.exports = {
 						}
 					];
 					if (diffs.includes("color")) {
-						flds.push({
+						fields.push({
 							"name": `Old Color`,
 							"value": `#${roleO.color}`,
 							"inline": false
@@ -576,7 +576,7 @@ module.exports = {
 					const embed = new EmbedBuilder()
 						.setTitle(`${diffs.includes("name") ? `${roleO.name} -> ` : ""}${role.name}`)
 						.setColor(role.color)
-						.setFields(flds)
+						.setFields(fields)
 						.setThumbnail(role.guild.iconURL());
 
 					c.send({
@@ -604,9 +604,9 @@ module.exports = {
 			if (diffs.length > 0) {
 				var c = client.channels.cache.get(guildStore.logs.channel);
 				if (c.isSendable()) {
-					var flds = [];
+					var fields = [];
 					if (diffs.includes("avatar")) {
-						flds.push({
+						fields.push({
 							"name": `Avatar`,
 							"value": `Changed`,
 							"inline": true
@@ -616,7 +616,7 @@ module.exports = {
 						.setTitle(`${diffs.includes("nickname") ? `${memberO.nickname} -> ` : ""}${member.nickname}`)
 						.setDescription(`${member.user.username}`)
 						.setColor(member.user.accentColor === undefined ? 0x006400 : member.user.accentColor)
-						.setFields(flds)
+						.setFields(fields)
 						.setThumbnail(member.displayAvatarURL() ? member.displayAvatarURL() : member.user.displayAvatarURL())
 						.setURL(`https://discord.com/users/${member.id}`);
 

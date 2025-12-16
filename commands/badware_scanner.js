@@ -255,7 +255,7 @@ function hasFormatExploit(text="") {
     return true;
 }
 
-function detectMalembedLink(text) {
+function detectMalEmbedLink(text) {
     // See https://medium.com/@lenoctambule/discords-preview-bot-redirection-vulnerability-c8b08fe3721b
 
     // We use a library to collect URLs to avoid workarounds.
@@ -352,7 +352,7 @@ module.exports = {
 
             // Hidden content via format exploits
             if (msg.guild && !(guildStore.config.format_exploit_check === false)) {
-                if (hasFormatExploit(msg.content) || detectMalembedLink(msg.content)) {
+                if (hasFormatExploit(msg.content) || detectMalEmbedLink(msg.content)) {
                     if (sendable) {
                         return await msg.reply(
                             `## :warning: WARNING :warning:\n` +

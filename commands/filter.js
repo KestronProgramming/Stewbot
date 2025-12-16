@@ -330,7 +330,7 @@ module.exports = {
             )
         ).addSubcommand(command =>
             command.setName("import").setDescription("Import a CSV wordlist").addAttachmentOption(option =>
-                option.setName("file").setDescription("A .csv with comma seperated words you'd like to block").setRequired(true)
+                option.setName("file").setDescription("A .csv with comma separated words you'd like to block").setRequired(true)
             ).addBooleanOption(option =>
                 option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
             )
@@ -367,7 +367,7 @@ module.exports = {
                 shortDesc: "Import a CSV wordlist",
                 detailedDesc:
                     // @ts-ignore
-                    `Import a .csv file containing a list of words seperated by commas to block. You can generate one from another server's filter using the ${cmds.view_filter.mention} command.`
+                    `Import a .csv file containing a list of words separated by commas to block. You can generate one from another server's filter using the ${cmds.view_filter.mention} command.`
             }
         },
     },

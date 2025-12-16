@@ -33,7 +33,7 @@ async function sendWelcome(guild) {
                         "EmbedLinks": "Without this permission, any function where I would be uploading an image will not work",
                         "AttachFiles": "Without this permission, any function where I upload a file (primarily images) does not work",
                         "ManageRoles": "Without this permission, I cannot help you automatically manage roles for sticky roles or auto roles",
-                        "ManageWebhooks": "Without this permission, I cannot run level-ups, the censor function of the filter, one of the emojiboard modes, anonynous admin messaging, auto join and leave messages, tickets, or a couple other things.",
+                        "ManageWebhooks": "Without this permission, I cannot run level-ups, the censor function of the filter, one of the emojiboard modes, anonymous admin messaging, auto join and leave messages, tickets, or a couple other things.",
                     };
                     Object.keys(PermissionFlagsBits).forEach(perm => {
                         if (!guild.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits[perm]) && neededPerms.hasOwnProperty(perm)) {
@@ -85,7 +85,7 @@ async function sendWelcome(guild) {
                             {
                                 // @ts-ignore
                                 "name": `${cmds.general_config.mention} ${cmds.personal_config.mention}`,
-                                "value": "Don't like some things that the bot does? Change the bot's automatic behaviours using these commands.",
+                                "value": "Don't like some things that the bot does? Change the bot's automatic behaviors using these commands.",
                                 "inline": true
                             },
                             {

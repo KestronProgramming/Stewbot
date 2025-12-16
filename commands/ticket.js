@@ -102,19 +102,19 @@ module.exports = {
 		}
 
 		if(msg.reference&&msg.channel instanceof DMChannel&&!msg.author.bot){
-			var rmsg=await msg.channel.messages.fetch(msg.reference.messageId);
-			if(rmsg.author.id===client.user.id&&rmsg.content.includes("Ticket ID: ")){
+			var rMsg=await msg.channel.messages.fetch(msg.reference.messageId);
+			if(rMsg.author.id===client.user.id&&rMsg.content.includes("Ticket ID: ")){
 				let resp={
 					content:msg.content,
 					username:msg.member?.nickname||msg.author.globalName||msg.author.username,
 					avatar_url:msg.author.displayAvatarURL()
 				};
-				let channel = client.channels.cache.get(rmsg.content.split("Ticket ID: ")[1].split("/")[0]);
+				let channel = client.channels.cache.get(rMsg.content.split("Ticket ID: ")[1].split("/")[0]);
 				if(channel.isSendable() && "fetchWebhooks" in channel){
 					let webhooks = await channel.fetchWebhooks();
 					let hook=webhooks.find(h=>h.token);
 					if(hook){
-						fetch(`https://discord.com/api/webhooks/${hook.id}/${hook.token}?thread_id=${rmsg.content.split("Ticket ID:")[1].split("/")[1]}`, {
+						fetch(`https://discord.com/api/webhooks/${hook.id}/${hook.token}?thread_id=${rMsg.content.split("Ticket ID:")[1].split("/")[1]}`, {
 							method: 'POST',
 							headers: {
 								'Content-Type': 'application/json',
@@ -127,7 +127,7 @@ module.exports = {
 							name: config.name,
 							avatar: config.pfp
 						}).then(d=>{
-							fetch(`https://discord.com/api/webhooks/${d.id}/${d.token}?thread_id=${rmsg.content.split("Ticket ID:")[1].split("/")[1]}`, {
+							fetch(`https://discord.com/api/webhooks/${d.id}/${d.token}?thread_id=${rMsg.content.split("Ticket ID:")[1].split("/")[1]}`, {
 								method: 'POST',
 								headers: {
 									'Content-Type': 'application/json',

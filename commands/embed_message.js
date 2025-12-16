@@ -263,7 +263,7 @@ module.exports = {
                 }
             }
             catch(e){
-                notify(`Error embeding message:\n${e.stack}`)
+                notify(`Error embedding message:\n${e.stack}`)
             }
         }
 
@@ -281,7 +281,7 @@ module.exports = {
         for(var i=0;i<progs.length;i++){
             let prog=progs[i];
             var progId = prog.split("/")[prog.split("/").length-1].split("?")[0];
-            var embds=[];
+            var embeds=[];
             await fetch(`https://kap-archive.bhavjit.com/s/${progId}`, { method: "POST" })
             .then(d => d.json().catch(e => {console.error("Error in KAP /s/ endpoint",e); return false})).then(async d=>{
                 let clr = 0x00ff00, progDeleted;
@@ -301,7 +301,7 @@ module.exports = {
                         }
                     }
                 }
-                embds.push({
+                embeds.push({
                     type: "rich",
                     title: d.title,
                     description: `\u200b`,
@@ -360,11 +360,11 @@ module.exports = {
                 });
             }).catch(e => console.error(e));
         }
-        if(embds?.length>0){
+        if(embeds?.length>0){
             msg.suppressEmbeds(true);
-            let cont = `Backed program${embds.length>1?"s":""} up to`;
-            if (progsDeleted) cont = `${embds.length>1?"Backed programs up to and/or retrieved programs from":"Program retrieved from"}`;
-            msg.reply({content: `${cont} the KAP Archive, which you can visit [here](https://kap-archive.bhavjit.com/).`,embeds:embds,allowedMentions:{parse:[]}});
+            let cont = `Backed program${embeds.length>1?"s":""} up to`;
+            if (progsDeleted) cont = `${embeds.length>1?"Backed programs up to and/or retrieved programs from":"Program retrieved from"}`;
+            msg.reply({content: `${cont} the KAP Archive, which you can visit [here](https://kap-archive.bhavjit.com/).`,embeds:embeds,allowedMentions:{parse:[]}});
         }
         // #endregion KA Embeds
 

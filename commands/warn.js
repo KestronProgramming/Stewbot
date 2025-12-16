@@ -15,7 +15,7 @@ const { censor } = require("./filter");
 module.exports = {
     data: {
         // Slash command data
-        command: new SlashCommandBuilder().setName("warn").setDescription("Warn a user for bad behaviour")
+        command: new SlashCommandBuilder().setName("warn").setDescription("Warn a user for bad behavior")
             .addUserOption(option =>
                 option.setName("who").setDescription("Who are you warning?").setRequired(true)
             ).addStringOption(option =>
@@ -34,7 +34,7 @@ module.exports = {
 
         help: {
         	helpCategories: [Categories.General, Categories.Administration, Categories.Server_Only],
-			shortDesc: "Warn a user for bad behaviour",//Should be the same as the command setDescription field
+			shortDesc: "Warn a user for bad behavior",//Should be the same as the command setDescription field
 			detailedDesc: //Detailed on exactly what the command does and how to use it
 				// @ts-ignore
 				`Moderators can use this command to send a user a warning for doing something wrong anonymously in the server's name, with a severity scale from 1 to 10. You can then use ${cmds.warnings.mention} to check a list of all warnings dealt.`

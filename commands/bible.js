@@ -78,11 +78,11 @@ module.exports = {
 
         const verse = cmd.options.getString("verse");
         const chapter = cmd.options.getInteger("chapter");
-        const providedBookname = cmd.options.getString("book");
-        const book = sortByMatch(bookNames, providedBookname.toLowerCase())?.[0];
+        const providedBookName = cmd.options.getString("book");
+        const book = sortByMatch(bookNames, providedBookName.toLowerCase())?.[0];
 
         if (!book) {
-            return cmd.followUp(`I'm sorry, I couldn't find \`${providedBookname}\`. Are you sure it exists?`);
+            return cmd.followUp(`I'm sorry, I couldn't find \`${providedBookName}\`. Are you sure it exists?`);
         }
 
         if(verse.includes("-")&&+verse.split("-")[1]>+verse[0]){
@@ -147,8 +147,8 @@ module.exports = {
 
         // Format for discord
         let autocompletes = []
-        for (let bookname of allBooks) {
-            const suggest = capitalize(bookname)
+        for (let bookName of allBooks) {
+            const suggest = capitalize(bookName)
             autocompletes.push({
                 name: suggest,
                 value: suggest

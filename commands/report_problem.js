@@ -41,7 +41,7 @@ module.exports = {
 			helpCategories: [Categories.Bot],
 			shortDesc: "Report an error with the bot to be reviewed",//Should be the same as the command setDescription field
 			detailedDesc: //Detailed on exactly what the command does and how to use it
-				`If some kind of issue appears with the bot of any kind and in any form, plesase run this command to report it to developers.`
+				`If some kind of issue appears with the bot of any kind and in any form, please run this command to report it to developers.`
 		},
 	},
 

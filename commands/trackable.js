@@ -520,7 +520,7 @@ module.exports = {
 	},
 
     /** @param {import('discord.js').ChatInputCommandInteraction} cmd */
-    async execute(cmd, _context, deferedResponse) {
+    async execute(cmd, _context, deferredResponse) {
 		switch(cmd.options.getSubcommand()){
 			case "about":
 				return await cmd.followUp(aboutTrackables);
@@ -713,7 +713,7 @@ module.exports = {
 				}
 
 				// Check if the post was forced-ephemeral by the server settings.
-				if (deferedResponse.interaction.responseMessageEphemeral) {
+				if (deferredResponse.interaction.responseMessageEphemeral) {
 					return cmd.followUp(
 						"This server has prevented your ability to run my commands publicly.\n" +
 						"Try posting your trackable in another channel or server."
@@ -811,12 +811,12 @@ module.exports = {
 				}
 
 				// Defer this button so we can see if it was force-ephemeraled by the server rules.
-				const deferedMessage = await cmd.deferReply({
+				const deferredMessage = await cmd.deferReply({
 					"ephemeral": false,
 					"withResponse": true
 				})
 
-				if (deferedMessage.interaction.responseMessageEphemeral) {
+				if (deferredMessage.interaction.responseMessageEphemeral) {
 					return cmd.followUp(
 						"This server has prevented your ability to run my commands publicly.\n" +
 						"Try posting your trackable in another channel or server." 

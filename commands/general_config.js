@@ -13,7 +13,7 @@ function applyContext(context = {}) {
 module.exports = {
 	data: {
 		// Slash command data
-		command: new SlashCommandBuilder().setName("general_config").setDescription("Configure general behaviours")
+		command: new SlashCommandBuilder().setName("general_config").setDescription("Configure general behaviors")
 			.addBooleanOption(option=>
 				option.setName("keywords").setDescription("Allow the bot to respond to certain keywords with an attempt at a humorous response?")
 			).addBooleanOption(option =>
@@ -31,7 +31,7 @@ module.exports = {
 		requiredGlobals: [],
 
 		help: {
-			helpCategories: [Categories.General, Categories.Bot, Categories.Administration, Categories.Configuration, Categories.Server_Only], shortDesc: "Configure general behaviours for the bot",//Should be the same as the command setDescription field
+			helpCategories: [Categories.General, Categories.Bot, Categories.Administration, Categories.Configuration, Categories.Server_Only], shortDesc: "Configure general behaviors for the bot",//Should be the same as the command setDescription field
 			detailedDesc: //Detailed on exactly what the command does and how to use it
 				`Configure automatic actions the bot will take server wide, including whether Stewbot will automatically post embeds when it sees a message link, or if you want to disable Stewbot's automatic hacked/spam account protection.`
 		},
