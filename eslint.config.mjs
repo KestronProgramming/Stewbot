@@ -1,5 +1,6 @@
 import js from "@eslint/js";
 import unusedImports from "eslint-plugin-unused-imports";
+import stylistic from "@stylistic/eslint-plugin";
 import { defineConfig } from "eslint/config";
 import globals from "globals";
 import tseslint from "typescript-eslint";
@@ -8,40 +9,107 @@ export default defineConfig([
     // Base configuration for all files
     {
         files: ["**/*.{js,mjs,cjs,ts,mts,cts}"],
-        plugins: { 
+        plugins: {
             js,
-            "unused-imports": unusedImports
+            "unused-imports": unusedImports,
+            "@stylistic": stylistic
         },
         extends: ["js/recommended"],
         languageOptions: {
             globals: {
                 ...globals.browser,
-                ...globals.node, // Add Node.js globals for module.exports support
+                ...globals.node // Add Node.js globals for module.exports support
             }
         },
         rules: {
             // Convert all errors to warnings
             ...Object.fromEntries(
-                Object.entries(js.configs.recommended.rules || {}).map(([rule, config]) => [
-                    rule,
-                    Array.isArray(config) ? ["warn", ...config.slice(1)] : config === "error" ? "warn" : config
-                ])
+                Object.entries(js.configs.recommended.rules || {}).map(([rule, config]) => [rule, Array.isArray(config) ? ["warn", ...config.slice(1)] : config === "error" ? "warn" : config])
             ),
-        },
+
+            // Formatting rules
+            "@stylistic/indent": ["warn", 4], // or 2, depending on your preference
+            "@stylistic/brace-style": [
+                "warn", "stroustrup", {  // else on new line
+                    "allowSingleLine": true
+                }
+            ],
+
+            "@stylistic/array-element-newline": [
+                "warn", {
+                    "ArrayExpression": "consistent"
+                }
+            ],
+            // "@stylistic/array-bracket-newline": [
+            //     "warn", {
+            //         "multiline": true
+            //     }
+            // ],
+
+            "@stylistic/function-call-argument-newline": ["warn", "consistent"],
+            "@stylistic/quotes": [
+                "warn", "double", {
+                    "allowTemplateLiterals": "always",
+                    "avoidEscape": true
+                }
+            ], // Double quotes
+            "@stylistic/semi": ["warn", "always"], // Always use semicolons
+            "@stylistic/comma-dangle": ["warn", "never"], // No trailing commas
+            "@stylistic/object-curly-spacing": ["warn", "always"], // { foo: bar }
+            "@stylistic/array-bracket-spacing": ["warn", "never"], // [1, 2, 3]
+            "@stylistic/space-before-function-paren": [
+                "warn", {
+                    "anonymous": "never",
+                    "named": "never",
+                    "asyncArrow": "always"
+                }
+            ],
+            "@stylistic/keyword-spacing": [
+                "warn", {
+                    "before": true,
+                    "after": true
+                }
+            ], // if (condition)
+            "@stylistic/space-unary-ops": [
+                "warn", {
+                    "words": true,
+                    "nonwords": false,
+                    "overrides": {
+                        "typeof": false // tyepof(x)
+                    }
+                }
+            ],
+            "@stylistic/space-infix-ops": "warn", // a = b + c
+            "@stylistic/no-trailing-spaces": "warn",
+            "@stylistic/eol-last": ["warn", "always"],
+            "@stylistic/no-multiple-empty-lines": ["warn", { "max": 2, "maxEOF": 0 }],
+            "@stylistic/space-before-blocks": "warn", // if (x) {
+            "@stylistic/arrow-spacing": ["warn", { "before": true, "after": true }], // () => {}
+            "@stylistic/comma-spacing": ["warn", { "before": false, "after": true }],
+            "@stylistic/key-spacing": ["warn", { "beforeColon": false, "afterColon": true }],
+            "@stylistic/function-call-spacing": ["warn", "never"],
+
+            // Member expression formatting (for chained calls)
+            "@stylistic/dot-location": ["warn", "property"], // .setName() starts on new line
+            "@stylistic/newline-per-chained-call": ["warn", { "ignoreChainWithDepth": 2 }], // Break chains after 2 calls
+
+            // Fix catch lines
+            "@stylistic/padding-line-between-statements": ["warn", { "blankLine": "never", "prev": "block", "next": "block-like" }]
+        }
     },
 
     // JavaScript-specific configuration with TypeScript parser for better checking
     {
         files: ["**/*.js"],
         plugins: {
-            "@typescript-eslint": tseslint.plugin,
+            "@typescript-eslint": tseslint.plugin
         },
         languageOptions: {
             sourceType: "commonjs",
             parser: tseslint.parser,
             parserOptions: {
                 project: true, // Enable type-aware linting for JS files too
-                allowAutomaticSingleRunInference: true,
+                allowAutomaticSingleRunInference: true
             },
             globals: {
                 ...globals.node, // Ensure Node.js globals for .js files
@@ -50,7 +118,7 @@ export default defineConfig([
                 "client": "readonly",
                 "bootedAt": "readonly",
                 "config": "readonly",
-                "daily": "readonly",
+                "daily": "readonly"
             }
         },
         rules: {
@@ -58,10 +126,12 @@ export default defineConfig([
             "@typescript-eslint/no-require-imports": "off",
 
             // Warn about checking truthiness of promises in JS files
-            "@typescript-eslint/no-misused-promises": ["warn", {
-                "checksConditionals": true,
-                "checksVoidReturn": false
-            }],
+            "@typescript-eslint/no-misused-promises": [
+                "warn", {
+                    "checksConditionals": true,
+                    "checksVoidReturn": false
+                }
+            ],
 
             // Disable strict TypeScript rules that don't make sense for JS
             "@typescript-eslint/no-var-requires": "off",
@@ -71,8 +141,7 @@ export default defineConfig([
             // Unused imports rules
             "unused-imports/no-unused-imports": "error",
             "unused-imports/no-unused-vars": [
-                "warn",
-                {
+                "warn", {
                     "vars": "all",
                     "varsIgnorePattern": "^_",
                     "args": "after-used",
@@ -81,7 +150,7 @@ export default defineConfig([
             ],
 
             "no-redeclare": ["warn", { "builtinGlobals": false }],
-            "no-case-declarations": "off",
+            "no-case-declarations": "off"
         }
     }
 ]);

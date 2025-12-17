@@ -1,7 +1,7 @@
 // Ctrl+Shift+P  >  Preferences: Open Keyboard Shortcuts (JSON)  >  Paste
 [
     {
-        "key": "ctrl+k ctrl+i",
+        "key": "shift+alt+s",
         "command": "editor.action.sourceAction",
         "args": {
             "kind": "source.addMissingImports",
@@ -16,6 +16,12 @@
             "kind": "source.removeUnused",
             "apply": "first"
         },
+        "when": "editorTextFocus"
+    },
+    {
+        // Chosen because it is easy to hit format-document right after (shift+alt+f)
+        "key": "shift+alt+c",
+        "command": "eslint.executeAutofix",
         "when": "editorTextFocus"
     }
 ]

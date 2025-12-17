@@ -106,6 +106,7 @@
     ],
     "typescript.tsdk": "node_modules/typescript/lib",
     "eslint.useFlatConfig": true,
+    "editor.defaultFormatter": "dbaeumer.vscode-eslint", // force eslint formatting
 
     // Preferences
     "javascript.suggest.autoImports": true,
@@ -124,4 +125,9 @@
         "source.removeUnusedImports": "never",
         "source.sortImports": "never",
     },
-}
+
+    // Force 4 spaces
+    "editor.insertSpaces": true,
+    "editor.tabSize": 4,
+    "editor.detectIndentation": false
+  }
