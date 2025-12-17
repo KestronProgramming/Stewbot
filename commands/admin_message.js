@@ -84,7 +84,7 @@ module.exports = {
                     ]
                 });
             }
-            catch (e) {
+            catch {
                 worked = false;
             }
             await cmd.followUp(

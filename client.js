@@ -1,6 +1,6 @@
 // This file creates the Discord.js client object, and exports it for all files to access.
 
-const { Client, Events, GatewayIntentBits, Partials } = require("discord.js");
+const { Client, GatewayIntentBits, Partials } = require("discord.js");
 
 /**
  * @type {import('discord.js').Client<true>}

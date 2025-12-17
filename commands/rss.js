@@ -81,7 +81,7 @@ async function isUrlAllowed(inputUrl) {
         return [true, "valid"];
 
     }
-    catch (error) {
+    catch {
         return [false, "URL validation failed - general failure"];
     }
 }
@@ -140,7 +140,7 @@ async function checkRSS() {
                 parsed = await rssParser.parseString(data);
                 feed.fails = 0;
             }
-            catch (error) {
+            catch {
                 cont = false;
 
                 // Track fails
@@ -323,7 +323,7 @@ module.exports = {
         let config;
 
         switch (cmd.options.getSubcommand()) {
-            case "check":
+            case "check": {
                 const followedURLs = await ConfigDB.aggregate([
                     // Create a document with an array of all rss items
                     { $project: {
@@ -352,9 +352,9 @@ module.exports = {
                         : `There are no feeds followed in <#${channelInput.id}>`
                 );
                 break;
+            }
 
-            case "follow":
-                // TODO_LINT: this seems to limit it to just thread channels??
+            case "follow": {
                 if (!("isSendable" in channelInput) || !channelInput.isSendable()) {
                     await cmd.followUp(`I'm not allowed to send messages in <#${channelInput.id}> so this action cannot be completed.`);
                     break;
@@ -371,9 +371,8 @@ module.exports = {
                 }
 
                 // Make sure it is a valid link
-                let response;
                 try {
-                    response = await fetchWithRedirectCheck(url);
+                    await fetchWithRedirectCheck(url);
                 }
                 catch (error) {
                     await cmd.followUp(`URL validation failed: ${error.message}`);
@@ -384,7 +383,7 @@ module.exports = {
                 try {
                     await rssParser.parseURL(url);
                 }
-                catch (error) {
+                catch {
                     await cmd.followUp(`Error parsing RSS from link.`);
                     break;
                 }
@@ -415,11 +414,12 @@ module.exports = {
                 await config.save();
                 await cmd.followUp("I have followed the feed for that channel");
                 break;
+            }
 
-            case "unfollow":
+            case "unfollow": {
                 config = await ConfigDB.findOne({});
                 if (cmd.options.getString("feed").toLowerCase() !== "all") {
-                    var hash = crypto.createHash("md5").update(cmd.options.getString("feed").trim())
+                    let hash = crypto.createHash("md5").update(cmd.options.getString("feed").trim())
                         .digest("hex");
                     if (config.rss.get(hash)?.channels.includes(channelInput.id)) {
                         config.rss.get(hash).channels.splice(config.rss.get(hash).channels.indexOf(channelInput.id), 1);
@@ -441,6 +441,7 @@ module.exports = {
                     await cmd.followUp(`I have unfollowed all feeds for that channel`);
                 }
                 break;
+            }
         }
     },
 

@@ -26,7 +26,7 @@ function injectCmdsProxy() {
     global.oldCmds = global.oldCmds || global.cmds;
 
     // @ts-ignore TS is mad that this is a proxy.
-    const cmds = global.cmds = new Proxy({}, {
+    global.cmds = new Proxy({}, {
         get: function(target, prop) {
             if (prop === "mention") {
                 return "";
@@ -128,41 +128,33 @@ function getCommandAndExtraData() {
     injectCmdsProxy();
 
     // Build commands for API in a promise
-    const commandsPromise = new Promise(async (resolve, reject) => {
-        try {
-            // Build command info from slash commands
-            const extraInfo = {};
-            const migratedCommands = await getCommands(false);   // commands
-            let commands = [];                                   // list we're gonna build into data needed for discord API
-            for (let commandName in migratedCommands) {
-                const module = migratedCommands[commandName];
-                // Get base discord.js command
-                if (module?.data?.command) {
-                    let commandData = module.data.command;
+    const commandsPromise = getCommands(false).then(async (migratedCommands) => {
+        // Build command info from slash commands
+        const extraInfo = {};
+        let commands = [];
 
-                    // Inject sudo felid
-                    if (module.data.sudo) commandData.sudo = true;
-
-                    // Push to commands list
-                    commands.push(commandData);
-
-                }
-                // Inject extras
-                if (module?.data?.extra) {
-                    extraInfo[commandName] = module.data.extra;
-                }
+        for (let commandName in migratedCommands) {
+            const module = migratedCommands[commandName];
+            // Get base discord.js command
+            if (module?.data?.command) {
+                let commandData = module.data.command;
+                // Inject sudo field
+                if (module.data.sudo) commandData.sudo = true;
+                // Push to commands list
+                commands.push(commandData);
             }
-
-            // Inject any extra data that discord.js doesn't support natively
-            commands = commands.map(command =>
-                Object.assign(command.toJSON(), extraInfo[command.toJSON().name])
-            );
-
-            resolve(commands);
+            // Inject extras
+            if (module?.data?.extra) {
+                extraInfo[commandName] = module.data.extra;
+            }
         }
-        catch (e) {
-            reject(e);
-        }
+
+        // Inject any extra data that discord.js doesn't support natively
+        commands = commands.map(command =>
+            Object.assign(command.toJSON(), extraInfo[command.toJSON().name])
+        );
+
+        return commands;
     });
 
     restoreCmds();
@@ -195,7 +187,7 @@ async function launchCommands(hash) {
             type: commandData.type,
             default_member_permissions: commandData.default_member_permissions
         };
-        if (commandData.hasOwnProperty("options")) {
+        if ("options" in commandData) {
             commandData.options.forEach(option => {
                 if (option.type === 1) {
                     comms[commandData.name][option.name] = {

@@ -83,7 +83,7 @@ module.exports = {
                     case "runDaily":
                         await msg.reply(`Running the daily listeners...`);
                         // @ts-ignore
-                        Object.entries(commands).find(([, module]) => module.daily)[1].daily(pseudoGlobals);
+                        Object.entries(commands).find(([, module]) => module.daily)[1].daily();
                         break;
                     case "runWelcome":
                         guild.sentWelcome = false;

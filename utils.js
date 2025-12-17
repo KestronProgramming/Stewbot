@@ -9,6 +9,9 @@ const cron = require("node-cron");
 
 // Temp value for now to avoid circular references
 let messageDataCache, Guilds, GuildUsers;
+
+// @ts-ignore
+// eslint-disable-next-line unused-imports/no-unused-vars, no-unused-vars
 let censor = (...args) => "";
 
 // This is so jank... but we use some functions that also use us, so short of splitting out each dep into it's own function...
@@ -56,13 +59,13 @@ async function notify(what, useWebhook = false) {
                 if (!channel || !("send" in channel)) throw new Error("Log channel not found");
                 channel.send(limitLength(what));
             }
-            catch (e) {
+            catch {
                 console.log("Couldn't send notify, retrying with webhook");
                 notify(what, true);
             }
         }
     }
-    catch (e) {
+    catch {
         // Nothing should happen here, do not pass up this error to higher handlers, etc.
     }
 }

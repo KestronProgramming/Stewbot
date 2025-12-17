@@ -125,8 +125,8 @@ module.exports = {
 
         try {
             switch (action) {
-                case "prime_emoji":
-                    var { url, emojiName } = getEmojiData(emoji);
+                case "prime_emoji": {
+                    let { url, emojiName } = getEmojiData(emoji);
                     let success = true;
 
                     if (!emoji) {
@@ -146,33 +146,36 @@ module.exports = {
                     // @ts-ignore
                     if (success) cmd.followUp({ content: `Emoji primed. Use it in a server with ${cmds.clone_emoji.mention}` });
                     break;
+                }
 
-                case "clone_primed":
+                case "clone_primed": {
                     const user = await userByObj(cmd.user);
                     const primedURL = user.primedEmojiURL;
                     const primedName = user.primedName; // TODO_DB: look at this... doesn't seem to be set anywhere?
                     if (!primedURL) {
                         return cmd.followUp("You have not primed an emoji yet. Run this command with the `Prime emoji` option in another server to clone the emoji, and run this here again to upload the emoji.");
                     }
-                    var [worked, result] = await uploadEmoji(primedURL, primedName, cmd.guild);
+                    let [_worked, result] = await uploadEmoji(primedURL, primedName, cmd.guild);
                     return cmd.followUp(result);
+                }
 
-                case "clone_embed":
+                case "clone_embed": {
                     const user2 = await userByObj(cmd.user);
                     const primedContent = user2.primedEmbed.content;
                     if (!primedContent) {
                         return cmd.followUp(`You haven't primed any messages. To do this, install [Stewbot](${config.install}) ("Add to My Apps"), right-click a message > Apps > \`prime_embed\`.`);
                     }
 
-                    var { url, emojiName } = getEmojiData(primedContent);
+                    let { url, emojiName } = getEmojiData(primedContent);
                     if (!url) {
                         return cmd.followUp("The primed message does not appear to have a valid server emoji.");
                     }
 
-                    var [worked, result] = await uploadEmoji(url, emojiName, cmd.guild);
+                    let [_worked, result] = await uploadEmoji(url, emojiName, cmd.guild);
                     return cmd.followUp(result);
+                }
 
-                case "clone_id":
+                case "clone_id": {
                     // This one's a bit more complicated
                     // We have to find out if the emoji is animated first
                     // First, we'll check our cache.
@@ -203,17 +206,19 @@ module.exports = {
                     const animated = await isEmojiAnimated(emoji);
                     const adaptiveUrl = `https://cdn.discordapp.com/emojis/${emoji}.${animated ? "gif" : "png"}`;
 
-                    var [worked, result] = await uploadEmoji(adaptiveUrl, emojiName, cmd.guild);
+                    let [_worked, result] = await uploadEmoji(adaptiveUrl, "cloned-emoji", cmd.guild);
                     return cmd.followUp(result);
+                }
 
-                case "direct_clone":
-                    var { url, emojiName } = getEmojiData(emoji);
+                case "direct_clone": {
+                    let { url, emojiName } = getEmojiData(emoji);
                     if (!url) {
                         return cmd.followUp("The nitro message does not appear to have a valid server emoji.");
                     }
 
-                    var [worked, result] = await uploadEmoji(url, emojiName, cmd.guild);
+                    let [_worked, result] = await uploadEmoji(url, emojiName, cmd.guild);
                     return cmd.followUp(result);
+                }
 
             }
         }

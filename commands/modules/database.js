@@ -566,8 +566,8 @@ async function guildUserByObj(guild, userID, updateData = {}) {
 // Cache invalidators
 guildSchema.post("save", doc => { messageDataCache.delete(doc.id || ""); });
 guildSchema.post("findOneAndUpdate", doc => { messageDataCache.delete(doc.id || ""); });
-guildUserSchema.post("save", doc => { messageDataCache.delete(`${doc.guildId}>${doc.userId}` || ""); });
-guildUserSchema.post("findOneAndUpdate", doc => { messageDataCache.delete(`${doc.guildId}>${doc.userId}` || ""); });
+guildUserSchema.post("save", doc => { messageDataCache.delete(`${doc.guildId}>${doc.userId}`); });
+guildUserSchema.post("findOneAndUpdate", doc => { messageDataCache.delete(`${doc.guildId}>${doc.userId}`); });
 
 
 // Set plugins and define docs

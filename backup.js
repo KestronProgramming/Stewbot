@@ -13,7 +13,8 @@ const { notify } = require("./utils");
 const uploadName = envs.beta ? "stewbeta-backup.zip" : "stewbot-backup.zip";
 
 
-const startBackupThreadPromise = new Promise(async (resolve, reject) => {
+// eslint-disable-next-line no-async-promise-executor
+const startBackupThreadPromise = new Promise(async (resolve) => {
     // Declare module variables - will be loaded lazily
     let google, OAuth2;
     let googleAuthClient = null;
@@ -45,7 +46,7 @@ const startBackupThreadPromise = new Promise(async (resolve, reject) => {
         }
 
         try {
-            const { google } = await loadGoogleApis();
+            await loadGoogleApis();
             const client = google.auth.fromJSON({
                 type: "authorized_user",
                 client_id: webCreds.client_id,
@@ -96,7 +97,7 @@ const startBackupThreadPromise = new Promise(async (resolve, reject) => {
         // 1. Test existing client (triggers auto-refresh if needed)
         if (client) {
             try {
-                const { google } = await loadGoogleApis();
+                loadGoogleApis();
                 const drive = google.drive({ version: "v3", auth: client });
                 await drive.about.get({ fields: "user" }); // Test call
                 // If the call worked, maybe save credentials in case access token was refreshed
@@ -105,7 +106,7 @@ const startBackupThreadPromise = new Promise(async (resolve, reject) => {
                 }
                 return client; // Existing/refreshed client is valid
             }
-            catch (err) {
+            catch {
                 // Failed validation, proceed to explicit refresh or re-auth
                 client = null; // Nullify client to proceed
             }
@@ -177,7 +178,7 @@ const startBackupThreadPromise = new Promise(async (resolve, reject) => {
                 return false;
             }
             googleAuthClient = client;
-            const { google } = await loadGoogleApis(); // Ensure google is loaded
+            await loadGoogleApis(); // Ensure google is loaded
             googleDrive = google.drive({ version: "v3", auth: googleAuthClient });
             return true;
         }
@@ -191,29 +192,24 @@ const startBackupThreadPromise = new Promise(async (resolve, reject) => {
 
     // Google Drive File Operations
 
-    async function uploadTextFile(drive, filePath) { // Ensure envs is loaded
+    // async function uploadTextFile(drive, filePath) { // Ensure envs is loaded
 
-        const fileMetadata = {
-            name: (envs.beta ? "beta-" : "") + path.basename(filePath),
-            parents: [envs.google.folderID]
-        };
-        const media = {
-            mimeType: "text/plain",
-            body: fs.createReadStream(filePath)
-        };
+    //     const fileMetadata = {
+    //         name: (envs.beta ? "beta-" : "") + path.basename(filePath),
+    //         parents: [envs.google.folderID]
+    //     };
+    //     const media = {
+    //         mimeType: "text/plain",
+    //         body: fs.createReadStream(filePath)
+    //     };
 
-        try {
-            const { google } = await loadGoogleApis(); // Ensure google is loaded
-            const response = await drive.files.create({
-                resource: fileMetadata, media: media, fields: "id"
-            });
-            return response.data.id;
-        }
-        catch (error) {
-            // Don't log here, let backupToDrive handle logging based on context
-            throw error; // Re-throw to be caught by backupToDrive
-        }
-    }
+    //     // This can throw an error, it will be caught higher up
+    //     await loadGoogleApis(); // Ensure google is loaded
+    //     const response = await drive.files.create({
+    //         resource: fileMetadata, media: media, fields: "id"
+    //     });
+    //     return response.data.id;
+    // }
 
     async function uploadZipFile(drive, filePath, filename) {
         const fileMetadata = {
@@ -225,26 +221,21 @@ const startBackupThreadPromise = new Promise(async (resolve, reject) => {
             body: fs.createReadStream(filePath)
         };
 
-        try {
-            const { google } = await loadGoogleApis(); // Ensure google is loaded
-            const response = await drive.files.create({
-                resource: fileMetadata, media: media, fields: "id"
-            });
-            return response.data.id;
-        }
-        catch (error) {
-            // Don't log here, let backupToDrive handle logging based on context
-            throw error; // Re-throw to be caught by backupToDrive
-        }
+        // This can throw an error, it will be caught higher up
+        await loadGoogleApis(); // Ensure google is loaded
+        const response = await drive.files.create({
+            resource: fileMetadata, media: media, fields: "id"
+        });
+        return response.data.id;
     }
 
     async function removeFileFromFolder(drive, folderId, fileId) {
         // This is less critical, simple error handling is fine
         try {
-            const { google } = await loadGoogleApis();
+            await loadGoogleApis();
             await drive.files.update({ fileId: fileId, removeParents: folderId });
         }
-        catch (err) {
+        catch {
             // errorCallback(`Failed to remove file ${fileId} from folder ${folderId}: ${err.message}`);
         }
     }
@@ -253,7 +244,7 @@ const startBackupThreadPromise = new Promise(async (resolve, reject) => {
         const driveFileName = path.basename(filePath);
 
         try {
-            const { google } = await loadGoogleApis();
+            loadGoogleApis();
             const res = await drive.files.list({
                 q: `'${folderId}' in parents and name='${driveFileName}' and trashed=false`,
                 fields: "files(id, name)",
@@ -269,13 +260,13 @@ const startBackupThreadPromise = new Promise(async (resolve, reject) => {
                 try {
                     await drive.files.delete({ fileId: fileToDelete.id });
                 }
-                catch (deleteErr) {
+                catch {
                     // If delete fails (e.g. permission), try removing from folder
                     await removeFileFromFolder(drive, folderId, fileToDelete.id);
                 }
             }
         }
-        catch (err) {
+        catch {
             // errorCallback(`Error listing/deleting old backups for ${driveFileName}: ${err.message}`);
             // Don't stop the backup upload process for list/delete errors generally
         }
@@ -283,54 +274,53 @@ const startBackupThreadPromise = new Promise(async (resolve, reject) => {
 
     // Backup Process
 
-    async function backupToDrive(filename, attempt = 0) {
-        if (!googleDrive) {
-            const authenticated = await reauthenticate();
-            if (!authenticated) {
-                // Error already logged by reauthenticate
-                return false;
-            }
-        }
+    // async function backupToDrive(filename, attempt = 0) {
+    //     if (!googleDrive) {
+    //         const authenticated = await reauthenticate();
+    //         if (!authenticated) {
+    //             // Error already logged by reauthenticate
+    //             return false;
+    //         }
+    //     }
 
-        const folderId = envs?.google?.folderID;
-        if (!folderId) {
-            errorCallback("Cannot backup: Google Drive Folder ID missing in env.json.");
-            return false;
-        }
+    //     const folderId = envs?.google?.folderID;
+    //     if (!folderId) {
+    //         errorCallback("Cannot backup: Google Drive Folder ID missing in env.json.");
+    //         return false;
+    //     }
 
-        try {
-            await deleteFileIfExists(googleDrive, folderId, filename);
-            await uploadTextFile(googleDrive, filename);
-            // console.log(`Backup of "${filename}" successful.`); // Optional success log
-            return true;
-        }
-        catch (err) {
-            const isAuthError = err.message?.includes("invalid_grant") ||
-                                err.message?.includes("Invalid Credentials") ||
-                                err.response?.status === 401 ||
-                                err.response?.status === 403;
+    //     try {
+    //         await deleteFileIfExists(googleDrive, folderId, filename);
+    //         await uploadTextFile(googleDrive, filename);
+    //         // console.log(`Backup of "${filename}" successful.`); // Optional success log
+    //         return true;
+    //     }
+    //     catch (err) {
+    //         const isAuthError = err.message?.includes("invalid_grant") ||
+    //                             err.message?.includes("Invalid Credentials") ||
+    //                             err.response?.status === 401 ||
+    //                             err.response?.status === 403;
 
-            if (isAuthError && attempt < 1) {
-                // errorCallback(`Auth error during backup of "${filename}". Re-authenticating...`);
-                const reauthenticated = await reauthenticate();
-                if (reauthenticated) {
-                    return await backupToDrive(filename, attempt + 1); // Retry
-                }
-                else {
-                    // Error already logged
-                    return false;
-                }
-            }
-            else {
-                errorCallback(`Backup error for "${filename}" (Attempt ${attempt + 1}): ${err.message}`);
-                if (attempt >= 1 && isAuthError) {
-                    errorCallback(`Persistent auth error for "${filename}". Giving up this round.`);
-                }
-                return false;
-            }
-        }
-    }
-
+    //         if (isAuthError && attempt < 1) {
+    //             // errorCallback(`Auth error during backup of "${filename}". Re-authenticating...`);
+    //             const reauthenticated = await reauthenticate();
+    //             if (reauthenticated) {
+    //                 return await backupToDrive(filename, attempt + 1); // Retry
+    //             }
+    //             else {
+    //                 // Error already logged
+    //                 return false;
+    //             }
+    //         }
+    //         else {
+    //             errorCallback(`Backup error for "${filename}" (Attempt ${attempt + 1}): ${err.message}`);
+    //             if (attempt >= 1 && isAuthError) {
+    //                 errorCallback(`Persistent auth error for "${filename}". Giving up this round.`);
+    //             }
+    //             return false;
+    //         }
+    //     }
+    // }
     async function backupMongo(database, attempt = 0) {
         if (!googleDrive) {
             const authenticated = await reauthenticate();

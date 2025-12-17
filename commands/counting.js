@@ -47,7 +47,7 @@ function processForNumber(text) {
     text = text.replace(/__HYD__/g, "-");
 
     // Extract equation as far up as is possible
-    text = text.match(/^([0-9+\-*/^()\s\.]|sqrt)+/, "")?.[0]?.trim() || "";
+    text = text.match(/^([0-9+\-*/^()\s.]|sqrt)+/, "")?.[0]?.trim() || "";
 
     try {
         let result = +mathjs.evaluate(text);
@@ -55,7 +55,7 @@ function processForNumber(text) {
             return +result.toFixed(1);
         }
     }
-    catch (error) {
+    catch {
         return null;
     }
     return null;
@@ -187,7 +187,7 @@ module.exports = {
                 // Verification checks and permissions
                 var disclaimers = [];
                 if (guild.counting.failRoleActive) {
-                    var fr = cmd.guild.roles.cache.get(guild.counting.failRole);
+                    let fr = cmd.guild.roles.cache.get(guild.counting.failRole);
                     if (!fr) {
                         disclaimers.push("I was unable to identify the configured fail role, so fail roles have been turned off.");
                         guild.counting.failRoleActive = false;
@@ -202,7 +202,7 @@ module.exports = {
                     }
                 }
                 if (guild.counting.warnRoleActive) {
-                    var wr = cmd.guild.roles.cache.get(guild.counting.warnRole);
+                    let wr = cmd.guild.roles.cache.get(guild.counting.warnRole);
                     if (!wr) {
                         disclaimers.push("I was unable to identify the configured warn role, so warn roles have been turned off.");
                         guild.counting.warnRoleActive = false;
@@ -352,7 +352,7 @@ module.exports = {
                                 );
 
                                 if (guildCounting.failRoleActive && msg.guild.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageRoles)) {
-                                    var fr = msg.guild.roles.cache.get(guildCounting.failRole);
+                                    let fr = msg.guild.roles.cache.get(guildCounting.failRole);
                                     if (fr === null || fr === undefined) {
                                         guildCounting.failRoleActive = false;
                                     }
@@ -373,7 +373,7 @@ module.exports = {
                             msg.reply(`⚠️ **Warning**\nNope, that's incorrect. You have been warned! Next time this will reset the count. The next number is **${guildCounting.nextNum}**.\`\`\`\nNumbers entered must be the last number plus one, (so if the last entered number is 148, the next number is 149).${guildCounting.takeTurns > 0 ? ` You also need to make sure at least ${guildCounting.takeTurns} other ${guildCounting.takeTurns === 1 ? "person" : "people"} take${guildCounting.takeTurns === 1 ? "s" : ""} a turn before you take another turn.\`\`\`` : "```"}`);
                             guildUser.beenCountWarned = true;
                             if (guildCounting.warnRoleActive && msg.guild.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageRoles)) {
-                                var wr = msg.guild.roles.cache.get(guildCounting.warnRole);
+                                let wr = msg.guild.roles.cache.get(guildCounting.warnRole);
                                 if (wr === null || wr === undefined) {
                                     guildCounting.warnRoleActive = false;
                                 }
@@ -406,7 +406,7 @@ module.exports = {
                         );
 
                         if (guildCounting.failRoleActive && msg.guild.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageRoles)) {
-                            var fr = msg.guild.roles.cache.get(guildCounting.failRole);
+                            let fr = msg.guild.roles.cache.get(guildCounting.failRole);
                             if (!fr) {
                                 guildCounting.failRoleActive = false;
                             }
@@ -441,7 +441,7 @@ module.exports = {
                         guildUser.beenCountWarned = true;
 
                         if (guildCounting.warnRoleActive && msg.guild.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageRoles)) {
-                            var wr = msg.guild.roles.cache.get(guildCounting.warnRole);
+                            let wr = msg.guild.roles.cache.get(guildCounting.warnRole);
                             if (wr === null || wr === undefined) {
                                 guildCounting.warnRoleActive = false;
                             }

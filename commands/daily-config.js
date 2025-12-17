@@ -130,15 +130,15 @@ module.exports = {
         applyContext(context);
 
         // Daily devo
-        var dailyDevo = [];
+        let dailyDevo = [];
         try {
             const req = await fetch("https://www.biblegateway.com/devotionals/niv-365-devotional/today");
             const d = await req.text();
 
-            var temp = turndown.turndown(d.split(`<div class="col-xs-12">`)[1].split("</div>")[0].trim()).split("\\n");
-            var cc = 0;
-            var cOn = 0;
-            var now = new Date();
+            let temp = turndown.turndown(d.split(`<div class="col-xs-12">`)[1].split("</div>")[0].trim()).split("\\n");
+            let cc = 0;
+            let cOn = 0;
+            let now = new Date();
             temp.forEach(t => {
                 if (cc + t.length > 4000) {
                     dailyDevo[cOn] = {
@@ -180,7 +180,7 @@ module.exports = {
         try {
             const req = await fetch("https://www.bible.com/verse-of-the-day");
             const d = await req.text();
-            var now = new Date();
+            let now = new Date();
             const nextData = JSON.parse(d.match(/<script id="__NEXT_DATA__" type="application\/json">(.+?)<\/script>/)[1]);
             const verse = nextData.props.pageProps.verses[0];
             const versionData = nextData.props.pageProps.versionData;

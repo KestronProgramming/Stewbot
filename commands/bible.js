@@ -114,7 +114,7 @@ module.exports = {
                     }] });
                 }
             }
-            catch (e) {
+            catch {
                 cmd.followUp(`I'm sorry, I don't think that passage exists - at least, I couldn't find it. Perhaps something is typoed?`);
             }
         }
@@ -135,7 +135,7 @@ module.exports = {
                     cmd.followUp(`I'm sorry, I couldn't find \`${book} ${chapter}:${verse}\`. Are you sure it exists? Perhaps something is typoed.`);
                 }
             }
-            catch (e) {
+            catch {
                 cmd.followUp(`I'm sorry, I couldn't find \`${book} ${chapter}:${verse}\`. Are you sure it exists? Perhaps something is typoed.`);
             }
         }

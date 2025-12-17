@@ -96,8 +96,11 @@ module.exports = {
                     });
                     await cmd.deferUpdate();
                 }
-                catch (err) {
-                    await cmd.reply({ content: "I couldn't send you a DM. Check your privacy settings and try again.", ephemeral: true });
+                catch {
+                    await cmd.reply({
+                        content: "I couldn't send you a DM. Check your privacy settings and try again.",
+                        ephemeral: true
+                    });
                 }
                 break;
             case "export":

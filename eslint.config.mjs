@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 import js from "@eslint/js";
 import unusedImports from "eslint-plugin-unused-imports";
 import stylistic from "@stylistic/eslint-plugin";
@@ -6,9 +8,12 @@ import globals from "globals";
 import tseslint from "typescript-eslint";
 
 export default defineConfig([
+    {
+        ignores: ["commands/disabled/**", "node_modules/**", "eslint.config.mjs" ]
+    },
     // Base configuration for all files
     {
-        files: ["**/*.{js,mjs,cjs,ts,mts,cts}"],
+        files: ["**/*.{js,mjs,cjs}"],
         plugins: {
             js,
             "unused-imports": unusedImports,
@@ -45,7 +50,6 @@ export default defineConfig([
             //         "multiline": true
             //     }
             // ],
-
             "@stylistic/function-call-argument-newline": ["warn", "consistent"],
             "@stylistic/quotes": [
                 "warn", "double", {
@@ -148,6 +152,19 @@ export default defineConfig([
                     "argsIgnorePattern": "^_"
                 }
             ],
+
+            // Allow unused vars that start with _
+            "no-unused-vars": [
+                "warn", {
+                    "vars": "all",
+                    "varsIgnorePattern": "^_",
+                    "args": "after-used",
+                    "argsIgnorePattern": "^_"
+                }
+            ],
+
+            // Allow empty catch blocks
+            "no-empty": ["warn", { "allowEmptyCatch": true }],
 
             "no-redeclare": ["warn", { "builtinGlobals": false }],
             "no-case-declarations": "off"

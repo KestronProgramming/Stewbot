@@ -1,5 +1,5 @@
-const { InfluxDB, Point, DEFAULT_WriteOptions } = require("@influxdata/influxdb-client");
-const { influx } = require("../../data/config");
+const { InfluxDB, Point } = require("@influxdata/influxdb-client");
+const { influx } = require("../../data/config.json");
 const { influxToken } = require("../../env.json");
 
 let influxClient, writeApi, connected = false;
@@ -54,7 +54,7 @@ async function initInflux() {
 
         console.log("[InfluxDB] Connected");
     }
-    catch (e) {
+    catch {
         writeApi = influxClient = undefined;
         connected = false;
         console.log("[InfluxDB] Connection failed, skipping metrics.");

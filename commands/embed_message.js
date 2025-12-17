@@ -16,7 +16,7 @@ const { notify } = require("../utils");
 const { isDirty, censor } = require("./filter");
 
 const kaProgramRegex = /\b(?!<)https?:\/\/(?:www\.)?khanacademy\.org\/(cs|computer-programming|hour-of-code|python-program)\/[a-z,\d,-]+\/\d+(?!>)\b/gi;
-const discordMessageRegex = /\b(?!<)https?:\/\/(ptb\.|canary\.)?discord(app)?.com\/channels\/(\@me|\d+)\/\d+\/\d+(?!>)\b/gi;
+const discordMessageRegex = /\b(?!<)https?:\/\/(ptb\.|canary\.)?discord(app)?.com\/channels\/(@me|\d+)\/\d+\/\d+(?!>)\b/gi;
 
 module.exports = {
     data: {
@@ -139,12 +139,11 @@ module.exports = {
                         embeds: embs
                     });
                 }
-                catch (e) {
-                    console.log(e);
+                catch {
                     cmd.followUp(`I'm sorry, I can't access that message.`);
                 }
             }
-            catch (e) {
+            catch {
                 cmd.followUp(`I didn't get that. Are you sure this is a valid message link? You can get one by accessing the context menu on a message, and pressing \`Copy Message Link\`.`);
             }
         }
@@ -202,7 +201,7 @@ module.exports = {
 
         var embs = [];
         var fils = [];
-        for (var i = 0;i < links.length;i++) {
+        for (let i = 0;i < links.length;i++) {
             let linkIDs = links[i].split("channels/")[1].split("/");
             try {
                 var channelLinked = await client.channels.fetch(linkIDs[linkIDs.length - 2]);
@@ -281,7 +280,7 @@ module.exports = {
         }
 
         // #region KA Embeds
-        for (var i = 0;i < progs.length;i++) {
+        for (let i = 0;i < progs.length;i++) {
             let prog = progs[i];
             var progId = prog.split("/")[prog.split("/").length - 1].split("?")[0];
             var embeds = [];

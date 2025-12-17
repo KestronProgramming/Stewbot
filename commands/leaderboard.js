@@ -83,7 +83,7 @@ module.exports = {
                     return;
                 }
                 if (cmd.options.getUser("who")?.id) {
-                    var usr = cmd.options.getUser("who")?.id || cmd.user.id;
+                    let usr = cmd.options.getUser("who")?.id || cmd.user.id;
 
 
                     // TODO: optimize into a single aggregation query
@@ -295,7 +295,7 @@ module.exports = {
 
                 // Rank card for a specific user
                 if (cmd.options.getUser("who")?.id) {
-                    var usr = cmd.options.getUser("who")?.id || cmd.user.id;
+                    let usr = cmd.options.getUser("who")?.id || cmd.user.id;
 
                     requestedUser = await guildUserByObj(cmd.guild, usr);
                     const requestedUserInfractions = requestedUser.infractions || 0;
@@ -363,7 +363,7 @@ module.exports = {
 
                 // User-specific cleanliness leaderboard
                 if (cmd.options.getUser("who")?.id) {
-                    var usr = cmd.options.getUser("who")?.id || cmd.user.id;
+                    let usr = cmd.options.getUser("who")?.id || cmd.user.id;
 
                     requestedUser = await guildUserByObj(cmd.guild, usr);
                     const requestedUserInfractions = requestedUser.infractions || 0;

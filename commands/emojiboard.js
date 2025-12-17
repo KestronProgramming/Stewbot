@@ -40,7 +40,7 @@ function parseEmoji(emoji) {
         // split into groups of 6 characters and convert to unicode
         return String.fromCodePoint(...emoji.match(/.{6}/g).map(hex => parseInt(hex, 16)));
     }
-    catch (error) {
+    catch {
         return emoji;
     }
 }
@@ -109,7 +109,7 @@ async function doEmojiboardReaction(react) {
         try {
             member.timeout(emojiboard.length, `I was configured with /groupmute_config to do so.`).catch(() => { });
         }
-        catch (e) { }
+        catch { }
         return;//If it's a groupmute, don't bother with emojiboard stuff.
     }
 
@@ -117,9 +117,9 @@ async function doEmojiboardReaction(react) {
     if (messageData.type === 19) {
         try {
             var refMessage = await messageData.fetchReference();
-            replyBlip = `_[Reply to **${refMessage.author.username}**: ${refMessage.content.slice(0, 22).replace(/(https?\:\/\/|\n)/ig, "")}${refMessage.content.length > 22 ? "..." : ""}](<https://discord.com/channels/${refMessage.guild.id}/${refMessage.channel.id}/${refMessage.id}>)_`;
+            replyBlip = `_[Reply to **${refMessage.author.username}**: ${refMessage.content.slice(0, 22).replace(/(https?:\/\/|\n)/ig, "")}${refMessage.content.length > 22 ? "..." : ""}](<https://discord.com/channels/${refMessage.guild.id}/${refMessage.channel.id}/${refMessage.id}>)_`;
         }
-        catch (e) { }
+        catch { }
     }
 
     const resp = { files: [] };
@@ -525,7 +525,7 @@ module.exports = {
                         return;
                     }
                 }
-                catch (e) {
+                catch {
                     // Cache issues, nothing we can do
                 }
             }

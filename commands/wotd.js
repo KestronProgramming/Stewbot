@@ -123,7 +123,7 @@ module.exports = {
                         }
                     }
                     if (priorGuesses[i].includes("_")) {
-                        t = priorGuesses[i].match(/(?<=\_)[A-Z]/ig);
+                        t = priorGuesses[i].match(/(?<=_)[A-Z]/ig);
                         if (t) {
                             t.forEach(match => {
                                 if (accuracies[match] !== "**") accuracies[match] = `__`;
@@ -131,7 +131,7 @@ module.exports = {
                         }
                     }
                     if (priorGuesses[i].includes("`")) {
-                        t = priorGuesses[i].match(/(?<=\`)[A-Z]/ig);
+                        t = priorGuesses[i].match(/(?<=`)[A-Z]/ig);
                         if (t) {
                             t.forEach(match => {
                                 accuracies[match] = `~~`;

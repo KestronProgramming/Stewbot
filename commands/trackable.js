@@ -533,7 +533,6 @@ module.exports = {
         switch (cmd.options.getSubcommand()) {
             case "about":
                 return await cmd.followUp(aboutTrackables);
-                break;
 
             case "create":
                 const isUserSudo = await isSudo(cmd.user.id);
@@ -631,8 +630,8 @@ module.exports = {
 
                 break;
 
-            case "inventory":
-                var tracker = await Trackables.findOne({
+            case "inventory": {
+                let tracker = await Trackables.findOne({
                     current: `u${cmd.user.id}`,
                     status: "published"
                 });
@@ -648,10 +647,11 @@ module.exports = {
                     ...await getTrackableEmbed(tracker, { "userIdForPlace": cmd.user.id })
                 });
                 break;
+            }
 
-            case "stats":
+            case "stats": {
                 let trackableId = cmd.options.getString("id")?.trim()
-                    ?.replace(/^\#/, "")
+                    ?.replace(/^#/, "")
                     ?.trim();
 
                 let filter = {
@@ -661,7 +661,7 @@ module.exports = {
                 if (trackableId) filter.id = trackableId;
                 else filter.owner = cmd.user.id;
 
-                var tracker = await Trackables.findOne(filter);
+                let tracker = await Trackables.findOne(filter);
                 if (!tracker) {
                     // @ts-ignore
                     return cmd.followUp(
@@ -687,6 +687,7 @@ module.exports = {
                     })
                 });
                 break;
+            }
 
             case "place":
                 var trackable = await Trackables.findOne({
@@ -783,7 +784,7 @@ module.exports = {
 
             // Placing button
             if (cmd.customId.startsWith("t-place") && cmd.isButton()) {
-                const [, , trackableId, userId] = cmd.customId.split("-");
+                const [, , trackableId, _userId] = cmd.customId.split("-");
 
                 const trackable = await Trackables.findOne({
                     id: trackableId,
@@ -1104,6 +1105,7 @@ module.exports = {
                     if (cmd.customId === "edit_trackable_name") {
                         trackableData.name = cmd.fields.getTextInputValue("name_input");
                         trackableData.name = trackableData.name.replaceAll(":", "");           // Don't allow emojis, because of stars
+                        // eslint-disable-next-line no-control-regex
                         trackableData.name = trackableData.name.replace(/[^\x00-\x7F]/g, "");
                     }
                     else if (cmd.customId === "edit_trackable_tag") {

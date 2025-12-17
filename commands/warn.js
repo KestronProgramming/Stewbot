@@ -119,7 +119,7 @@ module.exports = {
                 ]
             }).catch(() => { });
         }
-        catch (e) { }
+        catch { }
         await cmd.followUp({
             content: `Alright, I have warned <@${who.id}>${
                 what === null ? `` : ` with the reason \`${what}\``

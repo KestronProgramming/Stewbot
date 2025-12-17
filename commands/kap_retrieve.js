@@ -31,7 +31,7 @@ module.exports = {
 
             const buffer = Buffer.from(d.code, "utf-8");
 
-            const safeTitle = d.title.replace(/[^a-z0-9_\-]/gi, "_").slice(0, 64);
+            const safeTitle = d.title.replace(/[^a-z0-9_-]/gi, "_").slice(0, 64);
             const filename = `${safeTitle || "file"}.js`;
 
             const attachment = new AttachmentBuilder(buffer, { name: filename });
@@ -68,6 +68,6 @@ module.exports = {
                 files: [attachment]
             });
         }
-        catch (e) { /* Silence!! MORTALS!!! */ }
+        catch { /* Silence!! MORTALS!!! */ }
     }
 };

@@ -326,7 +326,7 @@ module.exports = {
 
         if (cmd.customId?.startsWith("ban-")) {
             if (cmd.member?.permissions.has(PermissionFlagsBits.BanMembers)) {
-                var target = cmd.guild.members.cache.get(cmd.customId.split("-")[1]);
+                let target = cmd.guild.members.cache.get(cmd.customId.split("-")[1]);
                 if (target) {
                     target.ban({ reason: `Detected high spam activity with high profile pings and/or a URL, was instructed to ban by ${cmd.user.username}.` });
                     cmd.message.delete().catch(() => { });
@@ -335,7 +335,7 @@ module.exports = {
                     cmd.reply({ content: `I was unable to find the target in question.`, ephemeral: true });
                 }
                 if (cmd.member.permissions.has(PermissionFlagsBits.ManageMessages)) {
-                    for (var i = 0; i < cache[cmd.guild.id].users[cmd.customId.split("-")[1]].lastMessages.length; i++) {
+                    for (let i = 0; i < cache[cmd.guild.id].users[cmd.customId.split("-")[1]].lastMessages.length; i++) {
                         try {
                             let channel = await client.channels.cache.get(
                                 cache[cmd.guild.id].users[
@@ -385,7 +385,7 @@ module.exports = {
 
         if (cmd.customId?.startsWith("kick-")) {
             if (cmd.member.permissions.has(PermissionFlagsBits.KickMembers)) {
-                var target = cmd.guild.members.cache.get(cmd.customId.split("-")[1]);
+                let target = cmd.guild.members.cache.get(cmd.customId.split("-")[1]);
                 if (target) {
                     target.kick(`Detected high spam activity with high profile pings and/or a URL, was instructed to kick by ${cmd.user.username}.`);
                     // await cmd.reply({content:`Done. Do you wish to delete the messages in question as well?`,components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId("del-"+target.id).setLabel("Yes").setStyle(ButtonStyle.Success))],ephemeral:true});
@@ -396,7 +396,7 @@ module.exports = {
                     cmd.reply({ content: `I was unable to find the target in question.`, ephemeral: true });
                 }
                 if (cmd.member.permissions.has(PermissionFlagsBits.ManageMessages)) {
-                    for (var i = 0; i < cache[cmd.guild.id].users[cmd.customId.split("-")[1]].lastMessages.length; i++) {
+                    for (let i = 0; i < cache[cmd.guild.id].users[cmd.customId.split("-")[1]].lastMessages.length; i++) {
                         try {
                             var channel = await client.channels.cache.get(
                                 cache[cmd.guild.id].users[
@@ -428,7 +428,7 @@ module.exports = {
 
         if (cmd.customId?.startsWith("del-")) {
             if (cmd.member.permissions.has(PermissionFlagsBits.ManageMessages)) {
-                for (var i = 0; i < cache[cmd.guild.id].users[cmd.customId.split("-")[1]].lastMessages.length; i++) {
+                for (let i = 0; i < cache[cmd.guild.id].users[cmd.customId.split("-")[1]].lastMessages.length; i++) {
                     try {
                         let channel = await client.channels.cache.get(
                             cache[cmd.guild.id].users[

@@ -2,7 +2,7 @@
 const Categories = require("./modules/Categories");
 const client = require("../client.js");
 const { Guilds, Users, GuildUsers, guildByObj, userByObj } = require("./modules/database.js");
-const { Events, SlashCommandBuilder, PermissionFlagsBits, ChannelType, MessageType, AutoModerationRuleEventType, AutoModerationRuleTriggerType, AutoModerationActionType, Guild, Message } = require("discord.js");
+const { Events, SlashCommandBuilder, PermissionFlagsBits, ChannelType, MessageType, AutoModerationRuleEventType, AutoModerationRuleTriggerType, AutoModerationActionType, Guild } = require("discord.js");
 function applyContext(context = {}) {
     for (let key in context) {
         this[key] = context[key];
@@ -55,7 +55,7 @@ let guildFilterCache = new LRUCache({ ttl: ms("5s"), max: 50 });
 // }
 
 function escapeRegex(input) {
-    return input.replace(/[-\/\\^$*+?.()|[\]{}]/g, "\\$&");
+    return input.replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&");
 }
 
 function defangURL(message) {
@@ -127,7 +127,7 @@ const checkDirty = async function(guildID, what, filter = false, applyGlobalFilt
             // More flexible matching
             if (word.length > 3) {
                 for (let key in leetMap) { // Leet processing
-                    if (leetMap.hasOwnProperty(key)) {
+                    if (Object.prototype.hasOwnProperty.call(leetMap, key)) {
                         const replacement = leetMap[key];
                         word = word.replaceAll(key, replacement);
                     }
@@ -268,7 +268,7 @@ async function censor(text, guild = undefined, global = false) {
     // If only text is provided, assume we're checking globally
     if (!guild) global = true;
 
-    const [wasFiltered, censoredText, foundWords] = await censorWithFound(text, guild, global);
+    const [, censoredText] = await censorWithFound(text, guild, global);
     return censoredText;
 }
 
@@ -613,8 +613,8 @@ module.exports = {
                         var rMsg = await msg.fetchReference();
                         replyBlip = `_[Reply to **${rMsg.author.username}**: ${rMsg.content
                             .slice(0, 22)
-                            .replace(/(https?\:\/\/|\n)/gi, "")
-                            .replace(/\@/gi, "[@]")}${rMsg.content.length > 22
+                            .replace(/(https?:\/\/|\n)/gi, "")
+                            .replace(/@/gi, "[@]")}${rMsg.content.length > 22
                             ? "..."
                             : ""
                         }](<https://discord.com/channels/${rMsg.guild.id}/${rMsg.channel.id}/${rMsg.id}>)_\n`;
@@ -649,7 +649,7 @@ module.exports = {
                             )
                         ).catch(() => { });
                     }
-                    catch (e) { }
+                    catch { }
                 }
                 if (guildStore.filter.log && guildStore.filter.channel) {
                     const c = client.channels.cache.get(guildStore.filter.channel);
@@ -659,7 +659,7 @@ module.exports = {
                             `||${foundWords.join("||, ||")}||\`\`\`\n` +
                             `${originalContent
                                 .replaceAll("`", "\\`") // Don't allow breaking out of code block
-                                .replaceAll(/(?<=https?:\/\/[^(\s|\/)]+)\./gi, "[.]") // defang URL (prevent bad URLs from embedding, phishing from being clicked, etc)
+                                .replaceAll(/(?<=https?:\/\/[^(\s|/)]+)\./gi, "[.]") // defang URL (prevent bad URLs from embedding, phishing from being clicked, etc)
                                 .replaceAll(/(?<=https?):\/\//gi, "[://]")
                             }\`\`\``)
                         );
@@ -680,7 +680,7 @@ module.exports = {
     },
 
     /**
-     * @param {Message} msg
+     * @param {import('discord.js').Message} msg
      * @param {import("./modules/database.js").RawGuildDoc} readGuild
      */
     async [Events.MessageUpdate](_, msg, readGuild) {
@@ -688,7 +688,7 @@ module.exports = {
         if (!readGuild?.filter?.active) return;
 
         // Filter edit handler
-        let [filtered, filteredContent, foundWords] = await censorWithFound(msg.content, readGuild, false);
+        let [filtered, _filteredContent, foundWords] = await censorWithFound(msg.content, readGuild, false);
 
         if (filtered) {
             if (msg.deletable) msg.delete().catch(() => null);

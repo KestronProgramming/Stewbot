@@ -223,7 +223,7 @@ async function postprocessUserMessage(message, guild) {
 
 async function postprocessAIMessage(message, guild) {
     // Replace @username with <@id-of-username>
-    message = message.replace(/@([\w_\.]+)/g, (match, username) => {
+    message = message.replace(/@([\w_.]+)/g, (match, username) => {
         const user = guild?.members.cache.find((member) => member.user.username === username);
         return user ? `<@${user.id}>` : match;
     });
@@ -431,7 +431,7 @@ module.exports = {
             delete convoCache[threadID];
         }
 
-        let [response, success] = await getAiResponse(threadID, message, thinking, {
+        let [response, _success] = await getAiResponse(threadID, message, thinking, {
             name: cmd.user.username,
             server: cmd.guild ? cmd.guild.name : "Direct Messages"
         }, notify);

@@ -108,7 +108,7 @@ module.exports = {
                 client.users.cache.get(msg.channel.name.split("Ticket with ")[1].split(" in ")[0]).send(resp)
                     .catch(() => {});
             }
-            catch (e) {}
+            catch {}
         }
 
         if (msg.reference && msg.channel instanceof DMChannel && !msg.author.bot) {

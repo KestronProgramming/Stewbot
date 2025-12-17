@@ -240,7 +240,7 @@ function parsePoll(c, published = false) {
 
         return ret;
     }
-    catch (e) {}
+    catch {}
 }
 
 const NodeCache = require("node-cache");
@@ -365,7 +365,7 @@ module.exports = {
 
         // todo: test type exits
         switch (cmd.customId) {
-            case "poll-addOption":
+            case "poll-addOption": {
                 if (!cmd.isButton()) break;
 
                 await cmd.showModal(
@@ -386,8 +386,9 @@ module.exports = {
                         )
                 );
                 break;
+            }
 
-            case "poll-delOption":
+            case "poll-delOption": {
                 if (!cmd.isButton()) break;
 
                 cmd.showModal(
@@ -408,8 +409,9 @@ module.exports = {
                         )
                 );
                 break;
+            }
 
-            case "poll-voters":
+            case "poll-voters": {
                 if (!pollDB) {
                     await cmd.reply({ content: "Poll data could not be found.", ephemeral: true });
                     break;
@@ -421,8 +423,9 @@ module.exports = {
                     allowedMentions: { parse: [] }
                 });
                 break;
+            }
 
-            case "poll-removeVote":
+            case "poll-removeVote": {
                 if (!pollDB) {
                     await cmd.reply({ content: "Poll data could not be found.", ephemeral: true });
                     break;
@@ -446,8 +449,9 @@ module.exports = {
                     await cmd.reply({ content: "You haven't voted in this poll.", ephemeral: true });
                 }
                 break;
+            }
 
-            case "poll-publish":
+            case "poll-publish": {
                 if (!cmd.isButton()) break;
 
                 if (!cmd.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)) {
@@ -455,15 +459,15 @@ module.exports = {
                     break;
                 }
 
-                var poll = parsePoll(cmd.message.content);
+                let poll = parsePoll(cmd.message.content);
 
                 // Poll options not stored in the config message
                 const otherPollOptions = pollSettingsCache.get(cmd.message.id);
                 Object.assign(poll, otherPollOptions);
 
-                var comp = [];
-                var comp2 = [];
-                for (var i = 0; i < poll.options.length; i++) {
+                let comp = [];
+                let comp2 = [];
+                for (let i = 0; i < poll.options.length; i++) {
                     comp2.push(new ButtonBuilder().setCustomId("voted" + i)
                         .setLabel(poll.options[i])
                         .setStyle(ButtonStyle.Primary));
@@ -502,7 +506,7 @@ module.exports = {
                 });
 
                 // Compile these options on top of the poll object or smth like that
-                var t = {};
+                let t = {};
                 poll.options.forEach((option) => {
                     t[keyEncode(option)] = [];
                 });
@@ -514,12 +518,13 @@ module.exports = {
                 // Clear original poll
                 cmd.update({ "content": "\u200b", components: [] });
                 break;
+            }
 
-                // Modals
-            case "poll-added":
+            // Modals
+            case "poll-added": {
                 if (!cmd.isModalSubmit()) break;
 
-                var poll = parsePoll(cmd.message.content);
+                let poll = parsePoll(cmd.message.content);
                 if (!poll) {
                     await cmd.reply({ content: "Unable to parse that poll.", ephemeral: true });
                     break;
@@ -538,17 +543,18 @@ module.exports = {
                     await censor(`**${poll.title}**${poll.options.map((a, i) => `\n${i}. ${a}`).join("")}`)
                 );
                 break;
+            }
 
-            case "poll-removed":
+            case "poll-removed": {
                 if (!cmd.isModalSubmit()) break;
 
-                var ii = cmd.fields.getTextInputValue("poll-removedInp");
+                let ii = cmd.fields.getTextInputValue("poll-removedInp");
 
                 if (!/^\d+$/.test(ii)) {
                     cmd.deferUpdate();
                     return;
                 }
-                var poll = parsePoll(cmd.message.content);
+                let poll = parsePoll(cmd.message.content);
                 if (!poll) {
                     await cmd.reply({ content: "Unable to parse that poll.", ephemeral: true });
                     break;
@@ -561,8 +567,9 @@ module.exports = {
                 // @ts-ignore
                 cmd.update(`**${poll.title}**${poll.options.map((a, ii) => `\n${ii}. ${a}`).join("")}`);
                 break;
+            }
 
-            default:
+            default: {
                 // All other (dynamic) buttons
 
                 // Close poll
@@ -662,6 +669,7 @@ module.exports = {
                 }
 
                 break;
+            }
         }
 
         // Save if changed

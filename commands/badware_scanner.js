@@ -70,7 +70,7 @@ function getHostname(url) {
         // Normalize
         return parsedUrl.hostname.replace("www.", "");
     }
-    catch (e) {
+    catch {
         return "";
     }
 }
@@ -201,7 +201,7 @@ function updateBlocklists() {
 function detectMismatchedDomains(markdown) {
     // Extract markdown embedded links
     // const markdownRegex = /\[([^\s]+)\]\(([^\)]+)\)/;
-    const markdownRegex = /\[<?([^\s\[\]]+)>?\]\(<?([^()\s]+)>?\)/;
+    const markdownRegex = /\[<?([^\s[\]]+)>?\]\(<?([^()\s]+)>?\)/;
 
 
     const match = markdown.match(markdownRegex);
@@ -252,6 +252,7 @@ function hasFormatExploit(text = "") {
 
     if (numFormattingChars < 300) return false;
 
+    // eslint-disable-next-line no-control-regex
     const numAsciiText = text.replace(/[^\x00-\x7F]/g, "").length;
     if (100 / numAsciiText * numFormattingChars < 20) return false;
 

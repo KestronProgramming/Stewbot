@@ -123,7 +123,7 @@ module.exports = {
                 const rMsg = await msg.fetchReference();
                 replyBlip = `_[Reply to **${rMsg.author.username}**: ${rMsg.content.slice(0, 22).replace(/(https?:\/\/|\n)/ig, "")}${rMsg.content.length > 22 ? "..." : ""}](<https://discord.com/channels/${rMsg.guild.id}/${rMsg.channel.id}/${rMsg.id}>)_\n`;
             }
-            catch (err) {
+            catch {
                 replyBlip = "";
             }
         }

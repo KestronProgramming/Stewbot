@@ -233,7 +233,7 @@ module.exports = {
                     try {
                         msg.author.send(keyword[i].dm).catch(() => { });
                     }
-                    catch (e) { }
+                    catch { }
                 }
                 // console.log("Told " + msg.author.tag + " " + keyword[i].response + " after they said " + msg.content);
             }
@@ -250,7 +250,7 @@ module.exports = {
                         try {
                             msg.author.send(keyword[i].dm).catch(() => { });
                         }
-                        catch (e) { }
+                        catch { }
                     }
                     // console.log("Told " + msg.author.tag + " " + keyword[i].response + " after they said " + msg.content);
                     keyword[i].timeout = 12;

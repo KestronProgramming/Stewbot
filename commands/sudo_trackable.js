@@ -101,9 +101,9 @@ module.exports = {
         if (isSudoUser) {
             switch (cmd.options.getSubcommand()) {
 
-                case "set_id":
-                    var id_from = cmd.options.getString("id_from");
-                    var id_to = cmd.options.getString("id_to");
+                case "set_id": {
+                    let id_from = cmd.options.getString("id_from");
+                    let id_to = cmd.options.getString("id_to");
 
                     await Trackables.updateOne(
                         { id: id_from },
@@ -112,15 +112,16 @@ module.exports = {
 
                     await cmd.followUp("Done.");
                     break;
+                }
 
-                case "make_special":
-                    var id = cmd.options.getString("id");
-                    var new_id = cmd.options.getString("new_id");
-                    var new_tag = cmd.options.getString("new_tag");
-                    var new_desc = cmd.options.getString("new_desc");
-                    var emoji = cmd.options.getString("emoji") || "🌟";
+                case "make_special": {
+                    let id = cmd.options.getString("id");
+                    let new_id = cmd.options.getString("new_id");
+                    let new_tag = cmd.options.getString("new_tag");
+                    let new_desc = cmd.options.getString("new_desc");
+                    let emoji = cmd.options.getString("emoji") || "🌟";
 
-                    var trackable = await Trackables.findOne({ id });
+                    let trackable = await Trackables.findOne({ id });
                     if (!trackable) return cmd.followUp("I couldn't find this trackable");
                     trackable.color = 0xf5d400;
                     trackable.name =  `${emoji} ${trackable.name}`;
@@ -132,22 +133,24 @@ module.exports = {
                     await trackable.save();
                     await cmd.followUp("Done.");
                     break;
+                }
 
-                case "show_editor":
-                    var id = cmd.options.getString("id");
-                    var trackable = await Trackables.findOne({ id });
+                case "show_editor": {
+                    let id = cmd.options.getString("id");
+                    let trackable = await Trackables.findOne({ id });
 
                     if (!trackable) return cmd.followUp("I couldn't find this trackable");
 
                     // @ts-ignores
                     cmd.followUp(getTrackableEditor(trackable, true));
                     break;
+                }
 
-                case "set_status":
-                    var id = cmd.options.getString("id");
-                    var status = cmd.options.getString("status");
+                case "set_status": {
+                    let id = cmd.options.getString("id");
+                    let status = cmd.options.getString("status");
 
-                    var trackable = await Trackables.findOne({ id });
+                    let trackable = await Trackables.findOne({ id });
 
                     if (!trackable) return cmd.followUp("I couldn't find this trackable");
 
@@ -157,12 +160,13 @@ module.exports = {
 
                     cmd.followUp("Done");
                     break;
+                }
 
-                case "transfer":
-                    var id = cmd.options.getString("id");
-                    var who = cmd.options.getUser("who");
+                case "transfer": {
+                    let id = cmd.options.getString("id");
+                    let who = cmd.options.getUser("who");
 
-                    var trackable = await Trackables.findOne({ current: `u${who.id}` });
+                    let trackable = await Trackables.findOne({ current: `u${who.id}` });
                     if (trackable) return cmd.followUp("That user already has a trackable in their inventory.");
 
                     await Trackables.updateOne(
@@ -180,6 +184,7 @@ module.exports = {
                     await cmd.followUp("Done");
 
                     break;
+                }
             }
         }
         else {

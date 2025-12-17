@@ -32,7 +32,7 @@ function getRACBoard(localRac) {
     mess.unshift(temp);
     const lastMoveStr = rac.lastPlayer === "Nobody" ? "None" : `<@${rac.lastPlayer}>`;
     let textMess = `Last Moved: ${lastMoveStr} ${(rac.timePlayed !== 0 ? `<t:${Math.round(rac.timePlayed / 1000)}:R>` : "")}\`\`\`\n${mess.join("\n")}\`\`\`\nPlayers: `;
-    for (var i = 0; i < rac.players.length; i++) {
+    for (let i = 0; i < rac.players.length; i++) {
         textMess += `\n<@${rac.players[i]}>: \`${rac.icons[i]}\``;
     }
     return `**Rows & Columns**\n${textMess}`;
@@ -42,7 +42,7 @@ function readRACBoard(toRead) {
     try {
         rac.timePlayed = Math.round(+toRead.split("<t:")[1].split(":R>")[0] * 1000);
     }
-    catch (e) {
+    catch {
         rac.timePlayed = 0;
     }
     let board = toRead.split("```\n")[1].split("```")[0];
@@ -58,7 +58,7 @@ function readRACBoard(toRead) {
     rac.board = rows;
     let tmpPlayers = toRead.split("Players: \n")[1].split("<@");
     rac.players = [];
-    for (var i = 1; i < tmpPlayers.length; i++) {
+    for (let i = 1; i < tmpPlayers.length; i++) {
         rac.players.push(tmpPlayers[i].split(">")[0]);
     }
 }
@@ -108,7 +108,7 @@ function tallyRac() {
     let resultsMessage = [];
     let temp = "  ";
     let racChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    for (var i = 0; i < rac.board.length; i++) {
+    for (let i = 0; i < rac.board.length; i++) {
         resultsMessage.push(`${racChars[i]} |${rac.board[i].join("|")}|`);
         temp += ` ${racChars[i]}`;
     }
@@ -553,7 +553,7 @@ module.exports = {
                     meme = memes.filter(m => m.split(".")[0] === cmd.options.getInteger("number").toString())[0];
                     if (!meme) meme = memes[Math.floor(Math.random() * memes.length)];
                 }
-                catch (e) { // Give a random meme if it fails because there is no number. OPTIMIZE: check if there were options passed rather than try-catching
+                catch { // Give a random meme if it fails because there is no number. OPTIMIZE: check if there were options passed rather than try-catching
                     meme = memes[Math.floor(Math.random() * memes.length)];
                 }
                 cmd.followUp({ content: `Meme #${meme.split(".")[0]}`, files: [`./memes/${meme}`] });
@@ -671,7 +671,7 @@ module.exports = {
                 await cmd.showModal(moveModal);
                 break;
 
-            case "racJoin":
+            case "racJoin": {
                 readRACBoard(cmd.message.content);
                 var bad = false;
                 for (var i = 0; i < rac.players.length; i++) {
@@ -704,14 +704,15 @@ module.exports = {
                 }
                 if ("update" in cmd) cmd.update(getRACBoard());
                 break;
+            }
 
-                // Modal
-            case "moveModal":
+            // Modal
+            case "moveModal": {
                 if (!("fields" in cmd)) return;
                 let cont = cmd.fields.getTextInputValue("moveMade").toUpperCase();
                 readRACBoard(cmd.message.content);
                 let foundOne = -1;
-                for (var i = 0; i < rac.players.length; i++) {
+                for (let i = 0; i < rac.players.length; i++) {
                     if (rac.players[i] === cmd.user.id) {
                         foundOne = i;
                     }
@@ -740,7 +741,7 @@ module.exports = {
                 await cmd.update(getRACBoard());
 
                 let foundZero = false;
-                for (var i = 0; i < rac.board.length; i++) {
+                for (let i = 0; i < rac.board.length; i++) {
                     for (var j = 0; j < rac.board[i].length; j++) {
                         if (rac.board[i][j] === "-") {
                             foundZero = true;
@@ -764,6 +765,7 @@ module.exports = {
                     cmd.message.edit({ content: tallyRac(), components: [row] });
                 }
                 break;
+            }
 
         }
     }

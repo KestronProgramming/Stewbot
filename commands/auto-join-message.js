@@ -118,7 +118,7 @@ module.exports = {
                         }]
                     }).catch(() => { });
                 }
-                catch (e) { }
+                catch { }
             }
 
             else {

@@ -304,7 +304,7 @@
             "Server_Only"
         ],
         "shortDesc": "Import a CSV wordlist",
-        "detailedDesc": "Import a .csv file containing a list of words seperated by commas to block. You can generate one from another server's filter using the </view_filter:1448914142793826344> command."
+        "detailedDesc": "Import a .csv file containing a list of words separated by commas to block. You can generate one from another server's filter using the </view_filter:1448914142793826344> command."
     },
     {
         "name": "fun dne",
@@ -370,7 +370,7 @@
             "Configuration",
             "Server_Only"
         ],
-        "shortDesc": "Configure general behaviours for the bot",
+        "shortDesc": "Configure general behaviors for the bot",
         "detailedDesc": "Configure automatic actions the bot will take server wide, including whether Stewbot will automatically post embeds when it sees a message link, or if you want to disable Stewbot's automatic hacked/spam account protection."
     },
     {
@@ -603,7 +603,7 @@
             "Bot"
         ],
         "shortDesc": "Report an error with the bot to be reviewed",
-        "detailedDesc": "If some kind of issue appears with the bot of any kind and in any form, plesase run this command to report it to developers."
+        "detailedDesc": "If some kind of issue appears with the bot of any kind and in any form, please run this command to report it to developers."
     },
     {
         "name": "rss follow",
@@ -856,7 +856,7 @@
             "Administration",
             "Server_Only"
         ],
-        "shortDesc": "Warn a user for bad behaviour",
+        "shortDesc": "Warn a user for bad behavior",
         "detailedDesc": "Moderators can use this command to send a user a warning for doing something wrong anonymously in the server's name, with a severity scale from 1 to 10. You can then use </warnings:1448914142793826346> to check a list of all warnings dealt."
     },
     {

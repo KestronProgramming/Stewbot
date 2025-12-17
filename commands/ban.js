@@ -37,7 +37,7 @@ async function finTempBan(guildId, who, force) {
             client.users.fetch(bannedUser.invoker).then(user => user.send(`I was unable to unban <@${who}>.`))
                 .catch(() => { });
         }
-        catch (e) { }
+        catch { }
 
         guildDB.tempBans.delete(who);
         guildDB.markModified("tempBans");
@@ -51,7 +51,7 @@ async function finTempBan(guildId, who, force) {
                 .then(user => user.send(`I no longer have permission to unban <@${who}>.`))
                 .catch(() => { });
         }
-        catch (e) { }
+        catch { }
 
 
         guildDB.tempBans.delete(who);
@@ -64,14 +64,14 @@ async function finTempBan(guildId, who, force) {
     try {
         guild.members.unban(who).catch(() => { });
     }
-    catch (e) { }
+    catch { }
 
     if (!bannedUser.private) {
         try {
             client.users.cache.get(who).send(`You have been unbanned in ${guild.name}.`)
                 .catch(() => { });
         }
-        catch (e) { }
+        catch { }
     }
 
     guildDB.tempBans.delete(who);
@@ -244,7 +244,7 @@ module.exports = {
                 }] })
                     .catch(_ => {});
             }
-            catch (e) {}
+            catch {}
         }
 
         if (temp) {

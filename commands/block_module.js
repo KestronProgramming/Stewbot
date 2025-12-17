@@ -149,7 +149,7 @@ module.exports = {
     // block_module uses these to block disabled events.
     eventInterceptors: {
         [Events.MessageCreate]: (handler, ...args) => {
-            const [msg, context, guildStore, guildUserStore, globalGuildStore] = args;
+            const [_msg, _context, guildStore, _guildUserStore, globalGuildStore] = args;
             const [blocked, _] = isModuleBlocked(
                 [handler.name, handler],
                 guildStore,
@@ -160,7 +160,7 @@ module.exports = {
         },
 
         [Events.MessageUpdate]: (handler, ...args) => {
-            const [msgO, msg, guildStore, guildUserStore, globalGuildStore] = args;
+            const [_msgO, _msg, guildStore, _guildUserStore, globalGuildStore] = args;
             const [blocked, _] = isModuleBlocked(
                 [handler.name, handler],
                 guildStore,

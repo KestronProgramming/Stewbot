@@ -381,9 +381,9 @@ module.exports = {
                 break;
 
                 // Modals
-            case "tsYearModal":
+            case "tsYearModal": {
                 if (!cmd.isModalSubmit()) return;
-                var inp = cmd.fields.getTextInputValue("tsYearInp").padStart(4, "20");
+                let inp = cmd.fields.getTextInputValue("tsYearInp").padStart(4, "20");
                 if (!/^\d+$/.test(inp)) {
                     cmd.deferUpdate();
                     break;
@@ -391,9 +391,10 @@ module.exports = {
                 // @ts-ignore
                 cmd.update(`<t:${Math.round(new Date(+cmd.message.content.split(":")[1] * 1000).setUTCFullYear(+inp) / 1000)}:${cmd.message.content.split(":")[2].split(">")[0]}>`);
                 break;
-            case "tsMinutesModal":
+            }
+            case "tsMinutesModal": {
                 if (!cmd.isModalSubmit()) return;
-                var inp = cmd.fields.getTextInputValue("tsMinutesInp");
+                let inp = cmd.fields.getTextInputValue("tsMinutesInp");
                 if (!/^\d+$/.test(inp)) {
                     cmd.deferUpdate();
                     break;
@@ -401,9 +402,10 @@ module.exports = {
                 // @ts-ignore
                 cmd.update(`<t:${Math.round(new Date(+cmd.message.content.split(":")[1] * 1000).setUTCMinutes(+inp) / 1000)}:${cmd.message.content.split(":")[2].split(">")[0]}>`);
                 break;
-            case "tsSecondsModal":
+            }
+            case "tsSecondsModal": {
                 if (!cmd.isModalSubmit()) return;
-                var inp = cmd.fields.getTextInputValue("tsSecondsInp");
+                let inp = cmd.fields.getTextInputValue("tsSecondsInp");
                 if (!/^\d+$/.test(inp)) {
                     cmd.deferUpdate();
                     break;
@@ -411,9 +413,10 @@ module.exports = {
                 // @ts-ignore
                 cmd.update(`<t:${Math.round(new Date(+cmd.message.content.split(":")[1] * 1000).setUTCSeconds(+inp) / 1000)}:${cmd.message.content.split(":")[2].split(">")[0]}>`);
                 break;
-            case "tsHourModal":
+            }
+            case "tsHourModal": {
                 if (!cmd.isModalSubmit()) return;
-                var inp = cmd.fields.getTextInputValue("tsHourInp");
+                let inp = cmd.fields.getTextInputValue("tsHourInp");
                 if (!/^\d+$/.test(inp)) {
                     cmd.deferUpdate();
                     break;
@@ -431,16 +434,16 @@ module.exports = {
                 // @ts-ignore
                 cmd.update(`<t:${Math.round(new Date(+cmd.message.content.split(":")[1] * 1000).setUTCHours(numberInput) / 1000)}:${cmd.message.content.split(":")[2].split(">")[0]}>`);
                 break;
-
-            case "tsDayModal":
+            }
+            case "tsDayModal": {
                 if (!cmd.isModalSubmit()) return;
-                var inpStr = cmd.fields.getTextInputValue("tsDayInp");
+                let inpStr = cmd.fields.getTextInputValue("tsDayInp");
                 if (!/^\d+$/.test(inpStr)) {
                     cmd.deferUpdate();
                     break;
                 }
-                var inpNum = +inpStr;
-                var t = new Date(+cmd.message.content.split(":")[1] * 1000);
+                let inpNum = +inpStr;
+                let t = new Date(+cmd.message.content.split(":")[1] * 1000);
                 if (24 - t.getUTCHours() < user.config.timeOffset) {
                     inpNum++;
                 }
@@ -450,16 +453,18 @@ module.exports = {
                 // @ts-ignore
                 cmd.update(`<t:${Math.round(t.setUTCDate(inpNum) / 1000)}:${cmd.message.content.split(":")[2].split(">")[0]}>`);
                 break;
-
-                // Menus
-            case "tsMonth":
+            }
+            // Menus
+            case "tsMonth": {
                 // @ts-ignore
                 cmd.update(`<t:${Math.round(new Date(+cmd.message.content.split(":")[1] * 1000).setUTCMonth(cmd.values[0]) / 1000)}:${cmd.message.content.split(":")[2].split(">")[0]}>`);
                 break;
-            case "tsType":
+            }
+            case "tsType": {
                 // @ts-ignore
                 cmd.update(`<t:${Math.round(new Date(Number(cmd.message.content.split(":")[1]) * 1000).getTime() / 1000)}:${cmd.values[0]}>`);
                 break;
+            }
         }
     }
 };

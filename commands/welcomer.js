@@ -36,7 +36,8 @@ async function sendWelcome(guild) {
                         "ManageWebhooks": "Without this permission, I cannot run level-ups, the censor function of the filter, one of the emojiboard modes, anonymous admin messaging, auto join and leave messages, tickets, or a couple other things."
                     };
                     Object.keys(PermissionFlagsBits).forEach(perm => {
-                        if (!guild.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits[perm]) && neededPerms.hasOwnProperty(perm)) {
+                        if (
+                            !guild.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits[perm]) && perm in neededPerms) {
                             errorFields.push({
                                 "name": `${perm}`,
                                 "value": neededPerms[perm],

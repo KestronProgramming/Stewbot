@@ -60,7 +60,7 @@ async function finTimer(userId, force) {
                     (await client.users.fetch(userId)).send(`Your timer is done!${user.timer.reminder.length > 0 ? `\n\`${escapeBackticks(user.timer.reminder)}\`` : ``}`).catch(e => {console.log(e);});
                 }
             }
-            catch (e) {
+            catch {
                 (await client.users.fetch(userId)).send(`Your timer is done!${user.timer.reminder.length > 0 ? `\n\`${user.timer.reminder}\`` : ``}`).catch(e => {console.log(e);});
             }
         }

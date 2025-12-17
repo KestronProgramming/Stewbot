@@ -66,8 +66,8 @@ module.exports = {
      * */
     async [Events.MessageCreate](msg) {
         // Sentiment Analysis reactions
-        let containsStewbot = /\bstewbot\'?s?\b/i.test(msg.content);
-        let containsStewbeta = process.env.beta && /\bstewbeta\'?s?\b/i.test(msg.content);
+        let containsStewbot = /\bstewbot'?s?\b/i.test(msg.content);
+        let containsStewbeta = process.env.beta && /\bstewbeta'?s?\b/i.test(msg.content);
 
         if (
             // @ts-ignore

@@ -16,7 +16,7 @@ Object.keys(envs).forEach(key => process.env[key] = envs[key]);
 if (process.env.beta == "false") delete process.env.beta; // ENVs are all strings, so make it falsy if it's "false"
 
 // === Import everything
-const cmds = global.cmds = require("./data/commands.json");
+global.cmds = require("./data/commands.json");
 const config = global.config = require("./data/config.json");
 console.log("Importing discord");
 const client = require("./client.js");
@@ -37,7 +37,7 @@ initInflux();
 
 
 // === Register listeners
-let commands = global.commands = {};
+global.commands = {};
 let dailyListenerModules = {};
 let buttonListenerModules = {};
 const pseudoGlobals = { config }; // data that should be passed to each module
@@ -47,13 +47,13 @@ let commandListenerRegister = commandsLoadedPromise.then(commandsLoaded => {
     // The functions `onbutton` and `autocomplete` are both still available for convenience.
 
     // Save commands
-    commands = global.commands = Object.freeze(commandsLoaded);
+    global.commands = Object.freeze(commandsLoaded);
 
     // Utility for registering listeners
     function getSubscribedCommands(commands, subscription) {
         return Object.fromEntries(
             (Object.entries(commands)
-                .filter(([name, command]) => command[subscription]) // Get all subscribed modules
+                .filter(([, command]) => command[subscription]) // Get all subscribed modules
             ).sort((a, b) => (a[1].data?.priority ?? 100) - (b[1].data?.priority ?? 100))
         );
     }
@@ -77,20 +77,20 @@ let commandListenerRegister = commandsLoadedPromise.then(commandsLoaded => {
         },
 
         [Events.MessageDelete]: async (...args) => {
-            const [readGuildUser, readGuild, readHomeGuild] = await getReadOnlyDBs(args[0]);
+            const [readGuildUser, readGuild, _test] = await getReadOnlyDBs(args[0]);
             return [...args, readGuild, readGuildUser];
         },
 
         [Events.MessageReactionAdd]: async (...args) => {
-            let [react, user] = args;
+            let [react, _] = args;
 
             // Resolve partials so we always have full data
             await Promise.all([
                 react.partial ? react.fetch() : null,
-                react.message?.partial ? react.message.fetch().catch(e => null) : null
+                react.message?.partial ? react.message.fetch().catch(() => null) : null
             ]);
 
-            const [readGuildUser, readGuild, readHomeGuild] = await getReadOnlyDBs({
+            const [readGuildUser, readGuild, _readHomeGuild] = await getReadOnlyDBs({
                 guildId: args[0].message.guild?.id,
                 userId: args[1].id
             });
@@ -98,8 +98,8 @@ let commandListenerRegister = commandsLoadedPromise.then(commandsLoaded => {
         },
 
         [Events.GuildMemberAdd]: async (...args) => {
-            let [member] = args;
-            const [readGuildUser, readGuild, readHomeGuild] = await getReadOnlyDBs({
+            let [_member] = args;
+            const [_readGuildUser, readGuild, _readHomeGuild] = await getReadOnlyDBs({
                 guildId: args[0].guild?.id,
                 userId: args[0].id
             });
@@ -107,8 +107,8 @@ let commandListenerRegister = commandsLoadedPromise.then(commandsLoaded => {
         },
 
         [Events.GuildMemberRemove]: async (...args) => {
-            let [member] = args;
-            const [readGuildUser, readGuild, readHomeGuild] = await getReadOnlyDBs({
+            let [_member] = args;
+            const [_readGuildUser, readGuild, _readHomeGuild] = await getReadOnlyDBs({
                 guildId: args[0].guild?.id,
                 userId: args[0].id
             });
@@ -253,7 +253,7 @@ client.on(Events.InteractionCreate, async cmd => {
     //// Slash commands
     if (
         (cmd.isChatInputCommand() || cmd.isMessageContextMenuCommand()) &&
-        commands.hasOwnProperty(cmd.commandName)
+        cmd.commandName in commands
     ) {
         // Here we artificially provide the full path since slash commands can have subcommands
         // @ts-ignore
@@ -274,7 +274,7 @@ client.on(Events.InteractionCreate, async cmd => {
         // Checks passed, gather requested data
         const providedGlobals = { ...pseudoGlobals };
         const requestedGlobals = commandScript.data?.requiredGlobals || commandScript.requestGlobals?.() || [];
-        for (var name of requestedGlobals) {
+        for (let name of requestedGlobals) {
             providedGlobals[name] = eval(name.match(/[\w-]+/)[0]);
         }
 
