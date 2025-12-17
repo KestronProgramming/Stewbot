@@ -20,6 +20,6 @@ echo "DNS is up"
 export PATH=/usr/bin:/bin:/usr/sbin:/sbin:$PATH
 
 while true; do
-  node index.js 2>&1 | ./stderrLog.js
+  node index.js --ignore-missing-envs 2>&1 | ./stderrLog.js
   sleep 10
 done

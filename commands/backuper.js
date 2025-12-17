@@ -14,9 +14,9 @@ module.exports = {
 
         help: {
             helpCategories: [Categories.Module],
-            shortDesc: "Periodically backup the bot's database.",
+            shortDesc: "Periodically backs up the bot's database.",
             detailedDesc:
-				`To avoid data loss on server issues, stewbot periodically backs up his database to a private cloud folder.`
+				`To avoid data loss on server issues, Stewbot periodically backs up his database to a private cloud folder.`
         }
     },
 

@@ -11,9 +11,7 @@
 global.bootedAt = Date.now();
 
 // === Load envs
-const envs = require("./env.json");
-Object.keys(envs).forEach(key => process.env[key] = envs[key]);
-if (process.env.beta == "false") delete process.env.beta; // ENVs are all strings, so make it falsy if it's "false"
+require("./setEnvs.js");
 
 // === Import everything
 global.cmds = require("./data/commands.json");
@@ -348,6 +346,6 @@ async function start() {
 
     // Login
     console.log("Logging in");
-    await client.login(process.env.beta ? process.env.betaToken : process.env.token);
+    await client.login(process.env.token);
 }
 start();

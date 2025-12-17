@@ -16,6 +16,17 @@ declare global {
     var cmds: typeof import("./data/commands.json");
     var oldCmds: typeof import("./data/commands.json") | undefined;
     var config: typeof import('./data/config.js');
+
+    // Tell it my env.json fields are valid
+    namespace NodeJS {
+        interface ProcessEnv extends Partial<typeof import("./env.json")> {
+            beta: string | boolean | undefined;
+
+            // Any other string is valid
+            [key: string]: string | undefined;
+        }
+      }
+    
 }
 
 export {}

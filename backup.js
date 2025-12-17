@@ -4,10 +4,10 @@ const { exec } = require("child_process");
 const fs = require("fs");
 const path = require("path");
 const process = require("process");
-const envs = require("./env.json");
 const archiver = require("archiver");
 const unzip = require("unzipper");
 const { notify } = require("./utils");
+const { envs } = require("./setEnvs.js");
 
 // Other related config we're using rn - this could be cleaned up a good bit
 const uploadName = envs.beta ? "stewbeta-backup.zip" : "stewbot-backup.zip";
@@ -15,6 +15,14 @@ const uploadName = envs.beta ? "stewbeta-backup.zip" : "stewbot-backup.zip";
 
 // eslint-disable-next-line no-async-promise-executor
 const startBackupThreadPromise = new Promise(async (resolve) => {
+
+    // If envs are not set for backups, skip
+
+    if (require("./setEnvs").disabledModules.has("backuper.js")) {
+        resolve(() => {});
+        return;
+    }
+
     // Declare module variables - will be loaded lazily
     let google, OAuth2;
     let googleAuthClient = null;

@@ -1,5 +1,4 @@
-// @ts-ignore process.env is a valid thing so I can't override it.
-if (!process.env.token || !process.env.betaToken) process.env = require("./env.json");
+if (!process.env.token) require("./setEnvs.js");
 
 const { REST, Routes } = require("discord.js");
 const fs = require("fs");
@@ -52,10 +51,15 @@ async function getCommands(autoRelaunch = true) { // launching runs getCommands,
     const returnCommands = {};
     try {
         const files = await fsPromises.readdir("./commands");
+        const { disabledModules } = require("./setEnvs");
 
         // Process files concurrently
         await Promise.all(
             files.map(async (filename) => {
+                if (disabledModules.has(filename)) {
+                    notify(`Skipping loading ${filename} due to missing environment variables.`, true);
+                };
+
                 if (path.extname(filename) === ".js") {
                     let commandName = "<unloaded>";
                     try {
