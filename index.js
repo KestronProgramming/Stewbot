@@ -334,14 +334,16 @@ process.on("unhandledRejection", e => notify(e.stack));
 process.on("uncaughtException", e => notify(e.stack));
 
 async function start() {
-    // Register all handlers to the client
-    await commandListenerRegister;
+    await Promise.all([
+        // Register all handlers to the client
+        commandListenerRegister,
 
-    // Check if we're restoring from a backup checkpoint
-    await checkForMongoRestore();
+        // See if mongo needs to import
+        checkForMongoRestore()
+    ]);
 
-    // Connect to the db
-    console.log("Connecting to database");
+    // Connect to the db after importing
+    console.log("Connecting to MongoDB");
     await mongoose.connect(`${process.env.databaseURI}/${process.env.beta ? "stewbeta" : "stewbot"}`);
 
     // Login
