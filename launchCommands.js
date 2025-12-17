@@ -1,26 +1,28 @@
 // @ts-ignore process.env is a valid thing so I can't override it.
 if (!process.env.token || !process.env.betaToken) process.env = require("./env.json");
 
-injectCmdsProxy();
 const { REST, Routes } = require("discord.js");
 const fs = require("fs");
 const fsPromises = require("fs/promises");
 const path = require("path");
 const config = require("./data/config.json");
 const crypto = require("crypto");
+
+// Safely load utils, even if it relies on commands not yet launched.
+injectCmdsProxy();
 const { notify } = require("./utils");
 restoreCmds();
 
 const md5 = (str) => crypto.createHash("md5").update(str)
     .digest("hex");
 
+/**
+ * Importing command files relies on `global.cmds` being defined.
+ * Because an unlaunched command is not already defined in commands.json,
+ *   to safely load commands we need to have a dummy proxy that still lets it call the .mention fields on import without crashing.
+ */
 function injectCmdsProxy() {
     if (global.cmds) return; // Don't inject unless needed
-
-    // Importing command files relies on `global.cmds` being defined.
-    // Because an unlaunched command is not already defined in cmds per it's nature,
-    //   (for example of we just added cmds.new_command and modified cmds.old_command to reference cmds.new_command),
-    //   to safely load these we need to have a dummy proxy that still lets it call the .mention fields without crashing.
 
     // Save original commands, without accidentally overriding them with the proxy.
     global.oldCmds = global.oldCmds || global.cmds;
@@ -42,13 +44,14 @@ function restoreCmds() {
     delete global.oldCmds;
 }
 
-// Function to build command files, handle beta/production
+/**
+ * Build command object of all command modules
+ * handle beta/production
+ */
 async function getCommands(autoRelaunch = true) { // launching runs getCommands, so we need to pass false to avoid infinite recursion
     const returnCommands = {};
     try {
         const files = await fsPromises.readdir("./commands");
-
-        injectCmdsProxy();
 
         // Process files concurrently
         await Promise.all(
@@ -59,7 +62,7 @@ async function getCommands(autoRelaunch = true) { // launching runs getCommands,
                         commandName = path.parse(filename).name;
                         let command;
 
-                        // Beta command handling logic
+                        // Only load beta commands on beta
                         if (commandName.includes(".beta")) {
                             if (process.env.beta) {
                                 // Load command before we strip the .beta out of the filename
@@ -98,7 +101,7 @@ async function getCommands(autoRelaunch = true) { // launching runs getCommands,
             })
         );
 
-        restoreCmds();
+        // restoreCmds();
 
         // If beta, relaunch commands if they changed
         if (autoRelaunch && process.env.beta) {
@@ -124,7 +127,7 @@ async function getCommands(autoRelaunch = true) { // launching runs getCommands,
 }
 
 // Fetch command data for API
-function getCommandAndExtraData() {
+function getCommandAPIData() {
     injectCmdsProxy();
 
     // Build commands for API in a promise
@@ -163,7 +166,7 @@ function getCommandAndExtraData() {
 }
 
 async function launchCommands(hash) {
-    const commands = await getCommandAndExtraData();
+    const commands = await getCommandAPIData();
     let globalCommands = commands.filter(cmd => !cmd.sudo);
 
     // Register

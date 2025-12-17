@@ -36,8 +36,7 @@ mongoose.plugin(mongooseLeanVirtuals);
 mongoose.set("setDefaultsOnInsert", false);
 
 // Message guild cache allows us to have less calls to the DB, and invalidate cache when we save DB changes
-// const messageDataCache = new NodeCache({ stdTTL: 5, checkperiod: 5 });
-const messageDataCache = new LRUCache({ ttl: ms("5s"), max: 100 });
+const messageDataCache = new LRUCache({ ttl: ms("5s"), max: 150 });
 
 const config = require("../../data/config.json");
 
@@ -383,15 +382,6 @@ const configSchema = new mongoose.Schema({
 
 const ConfigDB = mongoose.model("settings", configSchema);
 
-// Make sure ConfigDB is initialized
-ConfigDB.findOne().then(async (config) => {
-    if (!config) {
-        // If no config exists, create one
-        const newConfig = new ConfigDB({});
-        await newConfig.save();
-    }
-});
-
 //#endregion
 
 //#region Functions
@@ -599,6 +589,15 @@ function onConnect() {
             ? "all"
             : "slow_only"
     );
+
+    // Make sure ConfigDB is initialized
+    ConfigDB.findOne().then(async (config) => {
+        if (!config) {
+            // If no config exists, create one
+            const newConfig = new ConfigDB({});
+            await newConfig.save();
+        }
+    });
 }
 mongoose.connection.on("connected", onConnect);
 

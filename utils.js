@@ -7,19 +7,11 @@ const ms = require("ms");
 const client = require("./client.js");
 const cron = require("node-cron");
 
-// Temp value for now to avoid circular references
-let messageDataCache, Guilds, GuildUsers;
-
-// @ts-ignore See comment below
-// eslint-disable-next-line unused-imports/no-unused-vars, no-unused-vars
-let censor = (...args) => "";
-
-// This is so jank... but we use some functions that also use us, so short of splitting out each dep into it's own function...
-setTimeout(() => {
-    // @ts-ignore
+// Lazy load functions that rely on us to avoid circular dependencies
+let censor = (...args) => {
     censor = require("./commands/filter").censor;
-    ({ messageDataCache, Guilds, GuildUsers } = require("./commands/modules/database"));
-}, 1);
+    return censor(...args);
+};
 
 // Easily cut output to a maximum length.
 function limitLength(s, size = 1999) {
@@ -183,7 +175,7 @@ module.exports = {
      * @param int Either an object with 'guildId' and 'userId' props, or a message object.
      * */
     async getReadOnlyDBs(int, createGuildUser = true) {
-        // returns [ readGuildUser, readGuild, readHomeGuild ]
+        const { messageDataCache, Guilds, GuildUsers } = require("./commands/modules/database");
 
         let readGuildUser;
         let readGuild;
@@ -238,7 +230,7 @@ module.exports = {
                     { new: true, setDefaultsOnInsert: false, upsert: true }
                 ).lean({ virtuals: true, defaults: true })
                     .then(data => {
-                        messageDataCache.set(homeGuildKey, Object(data), ms("5 min") / 1000);
+                        messageDataCache.set(homeGuildKey, Object(data), { ttl: ms("1m") });
                         return data;
                     })
             ]);
