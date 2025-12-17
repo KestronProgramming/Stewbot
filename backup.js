@@ -1,12 +1,12 @@
 // Handles backing up our database to Google Drive
 
-const { exec } = require('child_process');
-const fs = require('fs');
-const path = require('path');
-const process = require('process');
+const { exec } = require("child_process");
+const fs = require("fs");
+const path = require("path");
+const process = require("process");
 const envs = require("./env.json");
-const archiver = require('archiver');
-const unzip = require('unzipper');
+const archiver = require("archiver");
+const unzip = require("unzipper");
 const { notify } = require("./utils");
 
 // Other related config we're using rn - this could be cleaned up a good bit
@@ -21,12 +21,12 @@ const startBackupThreadPromise = new Promise(async (resolve, reject) => {
     let errorCallback = console.error; // Default to console.error
 
     const numberBackups = 5;
-    const googleDriveScope = ['https://www.googleapis.com/auth/drive'];
+    const googleDriveScope = ["https://www.googleapis.com/auth/drive"];
 
     // Lazily load Google APIs for speed
     const loadGoogleApis = async () => {
         if (!google) {
-            const g = await import('googleapis');
+            const g = await import("googleapis");
             google = g.google;
             OAuth2 = google.auth.OAuth2;
         }
@@ -47,18 +47,19 @@ const startBackupThreadPromise = new Promise(async (resolve, reject) => {
         try {
             const { google } = await loadGoogleApis();
             const client = google.auth.fromJSON({
-                type: 'authorized_user',
+                type: "authorized_user",
                 client_id: webCreds.client_id,
                 client_secret: webCreds.client_secret,
-                refresh_token: credentials.refresh_token,
+                refresh_token: credentials.refresh_token
             });
             // Set access token if available, lib handles expiry
             if (credentials.access_token) {
                 client.setCredentials({ access_token: credentials.access_token });
             }
             return client;
-        } catch (err) {
-            errorCallback('Error loading saved credentials:', err.message);
+        }
+        catch (err) {
+            errorCallback("Error loading saved credentials:", err.message);
             return null;
         }
     }
@@ -73,17 +74,18 @@ const startBackupThreadPromise = new Promise(async (resolve, reject) => {
 
         try {
             const payload = {
-                type: 'authorized_user',
+                type: "authorized_user",
                 client_id: webCreds.client_id,
                 client_secret: webCreds.client_secret,
                 // Persist existing refresh token if the current client doesn't have one (important after some flows)
                 refresh_token: client.credentials.refresh_token || envs.google?.token?.refresh_token,
-                access_token: client.credentials.access_token,
+                access_token: client.credentials.access_token
             };
             envs.google["token"] = payload;
             // Use async write for slightly better performance, though sync is often acceptable here
             await fs.promises.writeFile("./env.json", JSON.stringify(envs, null, 4));
-        } catch (err) {
+        }
+        catch (err) {
             errorCallback("Error saving credentials:", err.message);
         }
     }
@@ -95,14 +97,15 @@ const startBackupThreadPromise = new Promise(async (resolve, reject) => {
         if (client) {
             try {
                 const { google } = await loadGoogleApis();
-                const drive = google.drive({ version: 'v3', auth: client });
-                await drive.about.get({ fields: 'user' }); // Test call
+                const drive = google.drive({ version: "v3", auth: client });
+                await drive.about.get({ fields: "user" }); // Test call
                 // If the call worked, maybe save credentials in case access token was refreshed
                 if (client.credentials.access_token) {
                     await saveCredentials(client);
                 }
                 return client; // Existing/refreshed client is valid
-            } catch (err) {
+            }
+            catch (err) {
                 // Failed validation, proceed to explicit refresh or re-auth
                 client = null; // Nullify client to proceed
             }
@@ -120,7 +123,8 @@ const startBackupThreadPromise = new Promise(async (resolve, reject) => {
                 oAuth2Client.setCredentials(credentials);
                 await saveCredentials(oAuth2Client);
                 return oAuth2Client; // Successfully refreshed
-            } catch (err) {
+            }
+            catch (err) {
                 // Refresh failed, fall through to full auth
                 errorCallback("Explicit token refresh failed:", err.message);
             }
@@ -140,13 +144,13 @@ const startBackupThreadPromise = new Promise(async (resolve, reject) => {
             const { OAuth2 } = await loadGoogleApis();
             const oAuth2Client = new OAuth2(webCreds.client_id, webCreds.client_secret, webCreds.redirect_uris[0]);
             const authUrl = oAuth2Client.generateAuthUrl({
-                access_type: 'offline', scope: googleDriveScope, prompt: 'consent'
+                access_type: "offline", scope: googleDriveScope, prompt: "consent"
             });
-            console.log('Authorize this app by visiting this url:', authUrl);
+            console.log("Authorize this app by visiting this url:", authUrl);
 
             const code = await new Promise((res) => {
-                console.log('Enter the code from that page here:');
-                process.stdin.once('data', (data) => res(data.toString().trim()));
+                console.log("Enter the code from that page here:");
+                process.stdin.once("data", (data) => res(data.toString().trim()));
             });
 
             const { tokens } = await oAuth2Client.getToken(code);
@@ -156,7 +160,8 @@ const startBackupThreadPromise = new Promise(async (resolve, reject) => {
             oAuth2Client.setCredentials(tokens);
             await saveCredentials(oAuth2Client);
             return oAuth2Client;
-        } catch (err) {
+        }
+        catch (err) {
             errorCallback("Error during interactive authorization:", err.message);
             return null;
         }
@@ -173,9 +178,10 @@ const startBackupThreadPromise = new Promise(async (resolve, reject) => {
             }
             googleAuthClient = client;
             const { google } = await loadGoogleApis(); // Ensure google is loaded
-            googleDrive = google.drive({ version: 'v3', auth: googleAuthClient });
+            googleDrive = google.drive({ version: "v3", auth: googleAuthClient });
             return true;
-        } catch (e) {
+        }
+        catch (e) {
             errorCallback("ERROR: Unexpected error during authentication process:", e);
             googleAuthClient = null;
             googleDrive = null;
@@ -193,16 +199,17 @@ const startBackupThreadPromise = new Promise(async (resolve, reject) => {
         };
         const media = {
             mimeType: "text/plain",
-            body: fs.createReadStream(filePath),
+            body: fs.createReadStream(filePath)
         };
 
         try {
             const { google } = await loadGoogleApis(); // Ensure google is loaded
             const response = await drive.files.create({
-                resource: fileMetadata, media: media, fields: 'id',
+                resource: fileMetadata, media: media, fields: "id"
             });
             return response.data.id;
-        } catch (error) {
+        }
+        catch (error) {
             // Don't log here, let backupToDrive handle logging based on context
             throw error; // Re-throw to be caught by backupToDrive
         }
@@ -215,16 +222,17 @@ const startBackupThreadPromise = new Promise(async (resolve, reject) => {
         };
         const media = {
             mimeType: "application/zip",
-            body: fs.createReadStream(filePath),
+            body: fs.createReadStream(filePath)
         };
 
         try {
             const { google } = await loadGoogleApis(); // Ensure google is loaded
             const response = await drive.files.create({
-                resource: fileMetadata, media: media, fields: 'id',
+                resource: fileMetadata, media: media, fields: "id"
             });
             return response.data.id;
-        } catch (error) {
+        }
+        catch (error) {
             // Don't log here, let backupToDrive handle logging based on context
             throw error; // Re-throw to be caught by backupToDrive
         }
@@ -235,7 +243,8 @@ const startBackupThreadPromise = new Promise(async (resolve, reject) => {
         try {
             const { google } = await loadGoogleApis();
             await drive.files.update({ fileId: fileId, removeParents: folderId });
-        } catch (err) {
+        }
+        catch (err) {
             // errorCallback(`Failed to remove file ${fileId} from folder ${folderId}: ${err.message}`);
         }
     }
@@ -247,24 +256,26 @@ const startBackupThreadPromise = new Promise(async (resolve, reject) => {
             const { google } = await loadGoogleApis();
             const res = await drive.files.list({
                 q: `'${folderId}' in parents and name='${driveFileName}' and trashed=false`,
-                fields: 'files(id, name)',
-                spaces: 'drive',
-                orderBy: 'createdTime asc', // Oldest first
+                fields: "files(id, name)",
+                spaces: "drive",
+                orderBy: "createdTime asc" // Oldest first
             });
 
             const files = res.data.files;
             // Use >= to delete *down to* the desired number - 1
             while (files.length >= numberBackups) {
                 const fileToDelete = files.shift(); // Oldest
-                if (envs.beta) console.log("Deleting drive file " + fileToDelete.id + " ")
+                if (envs.beta) console.log("Deleting drive file " + fileToDelete.id + " ");
                 try {
                     await drive.files.delete({ fileId: fileToDelete.id });
-                } catch (deleteErr) {
-                     // If delete fails (e.g. permission), try removing from folder
-                     await removeFileFromFolder(drive, folderId, fileToDelete.id);
+                }
+                catch (deleteErr) {
+                    // If delete fails (e.g. permission), try removing from folder
+                    await removeFileFromFolder(drive, folderId, fileToDelete.id);
                 }
             }
-        } catch (err) {
+        }
+        catch (err) {
             // errorCallback(`Error listing/deleting old backups for ${driveFileName}: ${err.message}`);
             // Don't stop the backup upload process for list/delete errors generally
         }
@@ -292,9 +303,10 @@ const startBackupThreadPromise = new Promise(async (resolve, reject) => {
             await uploadTextFile(googleDrive, filename);
             // console.log(`Backup of "${filename}" successful.`); // Optional success log
             return true;
-        } catch (err) {
-            const isAuthError = err.message?.includes('invalid_grant') ||
-                                err.message?.includes('Invalid Credentials') ||
+        }
+        catch (err) {
+            const isAuthError = err.message?.includes("invalid_grant") ||
+                                err.message?.includes("Invalid Credentials") ||
                                 err.response?.status === 401 ||
                                 err.response?.status === 403;
 
@@ -303,11 +315,13 @@ const startBackupThreadPromise = new Promise(async (resolve, reject) => {
                 const reauthenticated = await reauthenticate();
                 if (reauthenticated) {
                     return await backupToDrive(filename, attempt + 1); // Retry
-                } else {
-                     // Error already logged
+                }
+                else {
+                    // Error already logged
                     return false;
                 }
-            } else {
+            }
+            else {
                 errorCallback(`Backup error for "${filename}" (Attempt ${attempt + 1}): ${err.message}`);
                 if (attempt >= 1 && isAuthError) {
                     errorCallback(`Persistent auth error for "${filename}". Giving up this round.`);
@@ -333,7 +347,7 @@ const startBackupThreadPromise = new Promise(async (resolve, reject) => {
         }
 
         const outputName = "backup.zip";
-        const dumpDir = path.join(__dirname, 'dump');
+        const dumpDir = path.join(__dirname, "dump");
         const zipPath = path.join(__dirname, outputName);
 
         // 1. Delete the current dump folder - this isn't strictly necessary depending on how I end up implementing the rest of the process
@@ -347,12 +361,13 @@ const startBackupThreadPromise = new Promise(async (resolve, reject) => {
                 if (error) {
                     console.error(`mongodump error: ${stderr}`);
                     notify(
-                        `Backing up database failed:\n`+
-                        `${stderr}\n`+
+                        `Backing up database failed:\n` +
+                        `${stderr}\n` +
                         `Make sure you have MongoDB Tools install, see https://www.mongodb.com/docs/database-tools/`
                     );
                     return reject(stderr);
-                } else {
+                }
+                else {
                     // envs.beta && console.log(`mongodump output: ${stdout}`);
                     resolve();
                 }
@@ -361,18 +376,18 @@ const startBackupThreadPromise = new Promise(async (resolve, reject) => {
 
         // 3. Zip the folder
         const output = fs.createWriteStream(zipPath);
-        const archive = archiver('zip', { zlib: { level: 9 } });
+        const archive = archiver("zip", { zlib: { level: 9 } });
         await new Promise((resolve, reject) => {
-            output.on('close', () => {
+            output.on("close", () => {
                 envs.beta && console.log(`Dump folder compressed: ${archive.pointer()} total bytes`);
                 resolve(zipPath);
             });
-    
-            archive.on('error', (err) => {
-                console.error('Error compressing dump folder:', err);
+
+            archive.on("error", (err) => {
+                console.error("Error compressing dump folder:", err);
                 reject(err);
             });
-    
+
             archive.pipe(output);
             archive.directory(dumpDir, false);
             archive.finalize();
@@ -383,9 +398,10 @@ const startBackupThreadPromise = new Promise(async (resolve, reject) => {
             await deleteFileIfExists(googleDrive, folderId, uploadName);
             await uploadZipFile(googleDrive, outputName, uploadName);
             // console.log(`Backup of "${filename}" successful.`); // Optional success log
-        } catch (err) {
-            const isAuthError = err.message?.includes('invalid_grant') ||
-                                err.message?.includes('Invalid Credentials') ||
+        }
+        catch (err) {
+            const isAuthError = err.message?.includes("invalid_grant") ||
+                                err.message?.includes("Invalid Credentials") ||
                                 err.response?.status === 401 ||
                                 err.response?.status === 403;
 
@@ -394,11 +410,13 @@ const startBackupThreadPromise = new Promise(async (resolve, reject) => {
                 const reauthenticated = await reauthenticate();
                 if (reauthenticated) {
                     return await backupMongo(database, attempt + 1); // Retry
-                } else {
-                     // Error already logged
+                }
+                else {
+                    // Error already logged
                     return false;
                 }
-            } else {
+            }
+            else {
                 errorCallback(`Backup error for "${database}" (Attempt ${attempt + 1}): ${err.message}`);
                 if (attempt >= 1 && isAuthError) {
                     errorCallback(`Persistent auth error for "${database}". Giving up this round.`);
@@ -426,15 +444,17 @@ const startBackupThreadPromise = new Promise(async (resolve, reject) => {
         // Initial authentication attempt (async, non-blocking)
         reauthenticate().then(success => {
             if (success && backupNow) {
-                setTimeout(() => { 
+                setTimeout(() => {
                     backupMongo(envs.beta ? "stewbeta" : "stewbot");
                 }, 2500); // Keep delay
-            } else if (!success) {
+            }
+            else if (!success) {
                 errorCallback("Initial authentication failed. Backups will still be attempted on schedule.");
             }
-        }).catch(err => {
-            errorCallback("Unexpected error during initial authentication:", err);
-        });
+        })
+            .catch(err => {
+                errorCallback("Unexpected error during initial authentication:", err);
+            });
 
         // Set interval
         setInterval(() => { backupMongo(envs.beta ? "stewbeta" : "stewbot"); }, msFrequency);
@@ -452,11 +472,12 @@ const startBackupThreadPromise = new Promise(async (resolve, reject) => {
 async function checkForMongoRestore() {
     const database = envs.beta ? "stewbeta" : "stewbot";
 
-    const dumpDir = path.join(__dirname, 'dump');
+    const dumpDir = path.join(__dirname, "dump");
     const zipPath = path.join(__dirname, uploadName);
 
     // 1. Check if the zip file exists
-    const fileExists = await fs.promises.access(zipPath).then(() => true).catch(() => false);
+    const fileExists = await fs.promises.access(zipPath).then(() => true)
+        .catch(() => false);
     if (!fileExists) {
         return false;
     }
@@ -470,11 +491,11 @@ async function checkForMongoRestore() {
     await new Promise((resolve, reject) => {
         fs.createReadStream(zipPath)
             .pipe(unzip.Extract({ path: dumpDir }))
-            .on('close', () => {
+            .on("close", () => {
                 envs.beta && console.log(`Archive extracted to ${dumpDir}`);
                 resolve();
             })
-            .on('error', (err) => {
+            .on("error", (err) => {
                 console.error(`Failed to extract zip: ${err.message}`);
                 reject(err);
             });
@@ -482,20 +503,21 @@ async function checkForMongoRestore() {
 
     // 4. Run mongorestore
     await new Promise((resolve, reject) => {
-        const restoreCommand = `mongorestore --drop --nsInclude=${database}.* "${dumpDir}"`
+        const restoreCommand = `mongorestore --drop --nsInclude=${database}.* "${dumpDir}"`;
         exec(restoreCommand, (error, stdout, stderr) => {
             if (error) {
                 console.error(`mongorestore error: ${stderr}`);
                 notify(`Restore failed:\n${stderr}`);
                 return reject(stderr);
-            } else {
+            }
+            else {
                 envs.beta && console.log(`mongorestore output: ${stdout}`);
                 // Notify with the last bit
                 const notifBody = (stderr + stdout).slice(-1900);
                 if (notifBody) notify(
-                    "```\n"+
+                    "```\n" +
                     "..." + notifBody +
-                    "```", true)
+                    "```", true);
                 resolve();
             }
         });
@@ -504,7 +526,7 @@ async function checkForMongoRestore() {
     // 5. Remove uploaded zip and dump dir
     await fs.promises.rm(zipPath, { force: true });
     await fs.promises.rm(dumpDir, { recursive: true, force: true });
-    
+
     return true;
 }
 

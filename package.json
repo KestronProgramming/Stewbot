@@ -2,7 +2,8 @@
   "type": "commonjs",
   "scripts": {
     "start": "node ./index.js",
-    "lint": "npx eslint . --max-warnings=0"
+    "lint": "npx eslint . --max-warnings=0",
+    "lint-fix": "npx eslint . --max-warnings=0"
   },
   "dependencies": {
     "@ai-sdk/groq": "^2.0.33",

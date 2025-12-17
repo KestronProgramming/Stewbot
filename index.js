@@ -218,16 +218,16 @@ client.on(Events.InteractionCreate, async cmd => {
         let forceEphemeral = false;
         let detailedExtra = {};
         if (commandScript?.data?.deferEphemeral) {
-            if (typeof (commandScript.data.deferEphemeral) == "object" && subcommand) {
+            if (typeof(commandScript.data.deferEphemeral) == "object" && subcommand) {
                 let subcommandData = commandScript.data.deferEphemeral[subcommand];
-                if (typeof (subcommandData) == "object") {
+                if (typeof(subcommandData) == "object") {
                     detailedExtra = subcommandData;
                 }
                 else {
                     forceEphemeral = subcommandData; // It's just a raw boolean
                 }
             }
-            else if (typeof (commandScript.data.deferEphemeral) == "boolean") {
+            else if (typeof(commandScript.data.deferEphemeral) == "boolean") {
                 forceEphemeral = commandScript.data.deferEphemeral;
             }
         }
@@ -260,7 +260,7 @@ client.on(Events.InteractionCreate, async cmd => {
         const listeningModule = [`${cmd.commandName} ${cmd.isChatInputCommand()
             ? cmd.options.getSubcommand(false)
             : ""
-            }`.trim(), commandScript];
+        }`.trim(), commandScript];
 
         // TODO_DB: this could be made more efficient by passing in the readonly guilds as objects
         const [blocked, errorMsg] = isModuleBlocked(listeningModule,

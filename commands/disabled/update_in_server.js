@@ -1,7 +1,7 @@
 // #region CommandBoilerplate
 const Categories = require("../modules/Categories");
 const client = require("../../client.js");
-const { Guilds, Users, ConfigDB, guildByID, userByID, guildByObj, userByObj, GuildUsers } = require("../modules/database.js")
+const { Guilds, Users, ConfigDB, guildByID, userByID, guildByObj, userByObj, GuildUsers } = require("../modules/database.js");
 const { SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType, AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType } = require("discord.js");
 function applyContext(context = {}) {
     for (let key in context) {
@@ -14,15 +14,15 @@ function applyContext(context = {}) {
 module.exports = {
     data: {
         command: new SlashCommandBuilder()
-            .setName('update_in_server')
-            .setDescription('API heavy - sync our storage database with up to date information by scanning every single guild')
+            .setName("update_in_server")
+            .setDescription("API heavy - sync our storage database with up to date information by scanning every single guild")
             .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
 
         requiredGlobals: [],
-        help:{
-            helpCategories: [""],//Do not show in any automated help pages
-            shortDesc: "Stewbot's Admins Only",//Should be the same as the command setDescription field
-			detailedDesc: //Detailed on exactly what the command does and how to use it
+        help: {
+            helpCategories: [""], //Do not show in any automated help pages
+            shortDesc: "Stewbot's Admins Only", //Should be the same as the command setDescription field
+            detailedDesc: //Detailed on exactly what the command does and how to use it
 				`Stewbot's Admins Only`
         }
     },
@@ -38,7 +38,7 @@ module.exports = {
             const guild = await client.guilds.fetch(guildId);
             const members = await guild.members.fetch();
             const memberIds = members.map(member => member.id);
-            
+
             // Mark everyone as not in this server
             await GuildUsers.updateMany(
                 { guildId: guildId },
@@ -75,17 +75,17 @@ module.exports = {
 
                 // Use insertMany for better performance with many users
                 await GuildUsers.insertMany(
-                    newUsersToInsert, 
-                    { 
+                    newUsersToInsert,
+                    {
                         ordered: false,
-                        setDefaultsOnInsert: false, 
+                        setDefaultsOnInsert: false,
                         runValidators: true,
-                        lean: true         
+                        lean: true
                     }
                 );
             }
         }
 
-        cmd.followUp("Done")
+        cmd.followUp("Done");
     }
 };

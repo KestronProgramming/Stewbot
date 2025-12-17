@@ -4,7 +4,7 @@ const { Client } = require("discord.js");
 
 // Make sure only one is running at a time
 const { killMaintenanceBot } = require("../commands/restart");
-killMaintenanceBot()
+killMaintenanceBot();
 
 const client = new Client({
     intents: [],
@@ -23,12 +23,12 @@ client.on("interactionCreate", cmd => {
     cmd.reply({ content: `I'm sorry, Stewbot is temporarily offline for planned maintenance, and will return shortly. Please try again in a few minutes.`, ephemeral: true });
 });
 
-client.login(require('../env.json').token || require('../env.json').betaToken);
+client.login(require("../env.json").token || require("../env.json").betaToken);
 
 // When we've started, write our PID down so this bot can be killed later...
 
-const path = require('path');
-const os = require('os');
-const fs = require("fs")
-const PID_FILE = path.join(os.tmpdir(), 'stewbot-maintenance.pid');
+const path = require("path");
+const os = require("os");
+const fs = require("fs");
+const PID_FILE = path.join(os.tmpdir(), "stewbot-maintenance.pid");
 fs.writeFileSync(PID_FILE, process.pid.toString());

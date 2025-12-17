@@ -1,11 +1,11 @@
 // Utility functions that should be / were previously "global" should be put here.
 // These can then be required from other files.
 
-const { PermissionFlagsBits, Message } = require("discord.js")
+const { PermissionFlagsBits, Message } = require("discord.js");
 const config = require("./data/config.json");
 const ms = require("ms");
 const client = require("./client.js");
-const cron = require('node-cron');
+const cron = require("node-cron");
 
 // Temp value for now to avoid circular references
 let messageDataCache, Guilds, GuildUsers;
@@ -36,15 +36,15 @@ async function notify(what, useWebhook = false) {
         console.log(what);
         if (useWebhook) {
             const webhook = process.env.beta ? process.env.betaLogWebhook : process.env.logWebhook;
-            if (!webhook) return
+            if (!webhook) return;
 
             await fetch(webhook, {
-                'method': 'POST',
-                'headers': {
+                "method": "POST",
+                "headers": {
                     "Content-Type": "application/json"
                 },
-                'body': JSON.stringify({
-                    'username': "Stewbot Notify Webhook",
+                "body": JSON.stringify({
+                    "username": "Stewbot Notify Webhook",
                     "content": limitLength(what)
                 })
             });
@@ -55,12 +55,14 @@ async function notify(what, useWebhook = false) {
                 const channel = await client.channels.fetch(channelId);
                 if (!channel || !("send" in channel)) throw new Error("Log channel not found");
                 channel.send(limitLength(what));
-            } catch (e) {
+            }
+            catch (e) {
                 console.log("Couldn't send notify, retrying with webhook");
                 notify(what, true);
             }
         }
-    } catch (e) {
+    }
+    catch (e) {
         // Nothing should happen here, do not pass up this error to higher handlers, etc.
     }
 }
@@ -70,7 +72,8 @@ const cronJob = (schedule, task, options = {}) => {
     return cron.schedule(schedule, async () => {
         try {
             await task()?.catch?.(notify);
-        } catch (error) {
+        }
+        catch (error) {
             notify(error);
         }
     }, options);
@@ -90,23 +93,23 @@ module.exports = {
             return [false, `You cannot add this role because it is equal to or higher than your highest role.`];
         }
         if (user && !channel.permissionsFor(user.id).has(PermissionFlagsBits.ManageRoles)) {
-            return [false, `You do not have permission to manage roles.`]
+            return [false, `You do not have permission to manage roles.`];
         }
         if (role.managed) {
-            return [false, `This role is managed by an integration an cannot be used.`]
+            return [false, `This role is managed by an integration an cannot be used.`];
         }
         if (!channel.permissionsFor(client.user.id).has(PermissionFlagsBits.ManageRoles)) {
-            return [false, `I do not have the ManageRoles permission needed to preform this action.`]
+            return [false, `I do not have the ManageRoles permission needed to preform this action.`];
         }
         if (channel.guild.members.cache.get(client.user.id)?.roles?.highest.position <= role.rawPosition) {
             return [false, `I cannot help with that role. If you would like me to, grant me a role that is ordered to be higher in the roles list than ${role.name}. You can reorder roles from Server Settings -> Roles.`];
         }
-        return [true, null]
+        return [true, null];
     },
 
-    async sendHook(what, msg, skipFilter=false) {
+    async sendHook(what, msg, skipFilter = false) {
         if (typeof what === "string") {
-            what = { "content": what }
+            what = { "content": what };
         }
         if (!skipFilter) what.content = await censor(what.content, msg.guild);
 
@@ -117,9 +120,10 @@ module.exports = {
         let mainChannel;
         if (msg.channel.isThread()) {
             mainChannel = msg.channel.parent;
-            // Add in thread ID so it sends it there instead of the parent channel 
+            // Add in thread ID so it sends it there instead of the parent channel
             what.threadId = msg.channel.id;
-        } else {
+        }
+        else {
             mainChannel = msg.channel;
         }
 
@@ -131,7 +135,7 @@ module.exports = {
         else {
             mainChannel.createWebhook({
                 name: config.name,
-                avatar: config.pfp,
+                avatar: config.pfp
             }).then(d => {
                 d.send(what);
             });
@@ -143,10 +147,10 @@ module.exports = {
     },
 
     requireServer(interaction, error) {
-        // This function takes in cmd.guild and an error message, 
+        // This function takes in cmd.guild and an error message,
         //  and will reply with the error message if the bot is not installed in the server.
         // Returns true if it had an error.
-        // 
+        //
         // Usage:
         // if (requireServer(cmd) return;
         // if (requireServer(cmd, "Custom error here")) return;
@@ -160,21 +164,21 @@ module.exports = {
 
             replyMethod({
                 content: error,
-                ephemeral: true,
+                ephemeral: true
             });
             return true;
         }
         return false;
     },
 
-    /** 
+    /**
      * Database lookup for high-traffic events (messageCreate, messageUpdate, etc) - TODO_DB: (look into) guild profile changes?
-     * 
+     *
      * @typedef {import("./commands/modules/database").RawGuildDoc} RawGuildDoc
      * @typedef {import("./commands/modules/database").RawGuildUserDoc} RawGuildUserDoc
-     * 
+     *
      * @returns {Promise<[RawGuildUserDoc|undefined, RawGuildDoc|undefined, RawGuildDoc|undefined]>} Array of read only DBs.
-     * @param int Either an object with 'guildId' and 'userId' props, or a message object.  
+     * @param int Either an object with 'guildId' and 'userId' props, or a message object.
      * */
     async getReadOnlyDBs(int, createGuildUser = true) {
         // returns [ readGuildUser, readGuild, readHomeGuild ]
@@ -189,7 +193,7 @@ module.exports = {
             guildId = int.guild?.id;
             userId = int.author?.id;
         }
-        else if (typeof (int) == "object") {
+        else if (typeof(int) == "object") {
             guildId = int.guildId;
             userId = int.userId || int.authorId;
         }
@@ -207,10 +211,11 @@ module.exports = {
                     { guildId: guildId, userId: userId },
                     (createGuildUser ? { inServer: true } : {}), // set inServer since we're fetching them
                     { new: true, setDefaultsOnInsert: false, upsert: true }
-                ).lean({ virtuals: true, defaults: true }).then(data => {
-                    messageDataCache.set(guildUserKey, Object(data));
-                    return data;
-                }),
+                ).lean({ virtuals: true, defaults: true })
+                    .then(data => {
+                        messageDataCache.set(guildUserKey, Object(data));
+                        return data;
+                    }),
 
                 // Get guild
                 messageDataCache.get(guildKey) || Guilds.findOneAndUpdate(
@@ -218,21 +223,22 @@ module.exports = {
                     {},
                     { new: true, upsert: true, setDefaultsOnInsert: true }
                 )
-                .lean({ virtuals: true, defaults: true })
-                .then(data => {
-                    messageDataCache.set(guildKey, Object(data));
-                    return data;
-                }),
+                    .lean({ virtuals: true, defaults: true })
+                    .then(data => {
+                        messageDataCache.set(guildKey, Object(data));
+                        return data;
+                    }),
 
                 // Get home guild (mainly for blocklist)
                 messageDataCache.get(homeGuildKey) || Guilds.findOneAndUpdate(
                     { id: config.homeServer },
                     {},
                     { new: true, setDefaultsOnInsert: false, upsert: true }
-                ).lean({ virtuals: true, defaults: true }).then(data => {
-                    messageDataCache.set(homeGuildKey, Object(data), ms("5 min") / 1000);
-                    return data;
-                })
+                ).lean({ virtuals: true, defaults: true })
+                    .then(data => {
+                        messageDataCache.set(homeGuildKey, Object(data), ms("5 min") / 1000);
+                        return data;
+                    })
             ]);
 
             readGuildUser = cachedGuildUser;
@@ -246,7 +252,7 @@ module.exports = {
 
     // Are you an owner of stewbot?
     async isSudo(userId) {
-        try{
+        try {
             const guild = await client.guilds.fetch(config.homeServer);
             const member = await guild.members.fetch(userId).catch(() => null);
             return member?.permissionsIn(config.commandChannel).has(PermissionFlagsBits.ViewChannel) || false;
@@ -255,4 +261,4 @@ module.exports = {
             return false;
         }
     }
-}
+};

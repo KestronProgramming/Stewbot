@@ -1,11 +1,11 @@
-const { InfluxDB, Point, DEFAULT_WriteOptions} = require('@influxdata/influxdb-client')
-const { influx } = require('../../data/config')
-const { influxToken } = require('../../env.json')
+const { InfluxDB, Point, DEFAULT_WriteOptions } = require("@influxdata/influxdb-client");
+const { influx } = require("../../data/config");
+const { influxToken } = require("../../env.json");
 
-let influxClient, writeApi, connected = false
-let pointQueue = []
+let influxClient, writeApi, connected = false;
+let pointQueue = [];
 
-const ms = require("ms")
+const ms = require("ms");
 
 async function initInflux() {
     try {
@@ -13,15 +13,15 @@ async function initInflux() {
 
         const testConnectOptions = {
             flushInterval: 0,
-            maxRetries: 0,
+            maxRetries: 0
             // https://influxdata.github.io/influxdb-client-js/influxdb-client.writeoptions.html and
             // https://influxdata.github.io/influxdb-client-js/influxdb-client.writeretryoptions.html
-        }
-        
-        influxClient = new InfluxDB({ url: influx.url, token: influxToken })
-        writeApi = influxClient.getWriteApi(influx.org, influx.bucket, 's')
+        };
+
+        influxClient = new InfluxDB({ url: influx.url, token: influxToken });
+        writeApi = influxClient.getWriteApi(influx.org, influx.bucket, "s");
         connected = true;
-          
+
 
         // Test connection to influx to reduce connection warnings
         const originalWarn = console.warn;
@@ -29,13 +29,13 @@ async function initInflux() {
         console.warn = () => {};
         console.error = () => {};
         let error = false;
-        const testConnectionAPI = influxClient.getWriteApi(influx.org, influx.bucket, 's', testConnectOptions)
+        const testConnectionAPI = influxClient.getWriteApi(influx.org, influx.bucket, "s", testConnectOptions);
         testConnectionAPI.writePoint(
-            new Point('booted')
-                .floatField('duration_ms', 0)
+            new Point("booted")
+                .floatField("duration_ms", 0)
                 .timestamp(new Date())
         );
-        await testConnectionAPI.flush(false).catch((e) => { error = e });
+        await testConnectionAPI.flush(false).catch((e) => { error = e; });
         console.warn = originalWarn;
         console.error = originalError;
         if (error) throw new Error("Error writing to InfluxDB");
@@ -45,29 +45,30 @@ async function initInflux() {
         setInterval(() => {
             if (connected && pointQueue.length) {
                 for (const point of pointQueue) {
-                    writeApi.writePoint(point)
+                    writeApi.writePoint(point);
                 }
-                pointQueue = []
-                writeApi.flush()
+                pointQueue = [];
+                writeApi.flush();
             }
-        }, process.env.beta ? ms("1s") : ms("20s"))
+        }, process.env.beta ? ms("1s") : ms("20s"));
 
-        console.log('[InfluxDB] Connected')
-    } catch (e) {
+        console.log("[InfluxDB] Connected");
+    }
+    catch (e) {
         writeApi = influxClient = undefined;
         connected = false;
-        console.log('[InfluxDB] Connection failed, skipping metrics.')
+        console.log("[InfluxDB] Connection failed, skipping metrics.");
     }
 }
 
 function queueCommandMetric(commandName, durationMs) {
-    if (!connected) return
-    const point = new Point('discord_command')
-        .tag('command', commandName)
-        .floatField('duration_ms', durationMs)
-        .timestamp(new Date())
+    if (!connected) return;
+    const point = new Point("discord_command")
+        .tag("command", commandName)
+        .floatField("duration_ms", durationMs)
+        .timestamp(new Date());
 
-    pointQueue.push(point)
+    pointQueue.push(point);
 }
 
-module.exports = { initInflux, queueCommandMetric }
+module.exports = { initInflux, queueCommandMetric };

@@ -3,9 +3,9 @@
 /// This file is heavily annotated for intellisense
 ////////
 /// Notes:
-/// 
+///
 /// - guildUserSchema:
-///   This is the per-guild per-user object for user specific storage in-guild. 
+///   This is the per-guild per-user object for user specific storage in-guild.
 ///   This is not stored under the guild directly because each document can only have 16MB
 ///   On top of that, it's just easier to store users on their own and index by the userID
 ///    because then it can auto-populate on fetch.
@@ -18,22 +18,22 @@
 ///   Maps in this case are the more efficient json.
 ///   The one issue with maps is that they can expand indefinitely.
 ///   Mongoose objects are only allowed to be 16MB in size currently.
-///   This means at some point we should setup the DB to alert us when 
-///    starts getting close to this limit, so we can take whatever their 
+///   This means at some point we should setup the DB to alert us when
+///    starts getting close to this limit, so we can take whatever their
 ///    largest sub-schema is and move it to it's own doc like GuildUsers.
 
 
-const { OAuth2Guild, Guild, User } = require('discord.js');
+const { OAuth2Guild, Guild, User } = require("discord.js");
 const { notify } = require("../../utils");
 // const NodeCache = require('node-cache');
-const { LRUCache } = require('lru-cache');
+const { LRUCache } = require("lru-cache");
 const ms = require("ms");
 const mongoose = require("mongoose");
-const { mongooseLeanVirtuals } = require('mongoose-lean-virtuals');
-const mongooseLeanDefaults = require('mongoose-lean-defaults').default;
-mongoose.plugin(mongooseLeanDefaults)
-mongoose.plugin(mongooseLeanVirtuals)
-mongoose.set('setDefaultsOnInsert', false);
+const { mongooseLeanVirtuals } = require("mongoose-lean-virtuals");
+const mongooseLeanDefaults = require("mongoose-lean-defaults").default;
+mongoose.plugin(mongooseLeanDefaults);
+mongoose.plugin(mongooseLeanVirtuals);
+mongoose.set("setDefaultsOnInsert", false);
 
 // Message guild cache allows us to have less calls to the DB, and invalidate cache when we save DB changes
 // const messageDataCache = new NodeCache({ stdTTL: 5, checkperiod: 5 });
@@ -47,10 +47,10 @@ let persistenceSchema = new mongoose.Schema({
     active: { type: Boolean, default: false },
     content: { type: String, default: "This is a Stewbot persistent message! Use /set_persistent_message to configure" },
     lastPost: { type: String, default: null }
-})
+});
 
 let pollSchema = new mongoose.Schema({
-    options: { type: Map, of: [ String ], default: {} }, // The key is the option, the string is the userID
+    options: { type: Map, of: [String], default: {} }, // The key is the option, the string is the userID
     // options: {
     //     type: Object,
     //     default: {}
@@ -58,23 +58,23 @@ let pollSchema = new mongoose.Schema({
     title: String,
     legend: Boolean,
     labels: Boolean,
-    chart: String,
-})
+    chart: String
+});
 
 let levelsSchema = new mongoose.Schema({
     active: { type: Boolean, default: false },
     channel: { type: String, default: "" },
     location: { type: String, default: "DM" },
-    msg: { type: String, default: "Congratulations ${USERNAME}, you have leveled up to level ${LVL}!" },
-}, { _id: false })
+    msg: { type: String, default: "Congratulations ${USERNAME}, you have leveled up to level ${LVL}!" }
+}, { _id: false });
 
 let filterSchema = new mongoose.Schema({
     active: { type: Boolean, default: false },
     censor: { type: Boolean, default: true },
     log: { type: Boolean, default: false },
     channel: { type: String, default: "" },
-    blacklist: [ String ], // TODO: rewrite this field into a filter item field, allowing regex and per-item stuff
-})
+    blacklist: [String] // TODO: rewrite this field into a filter item field, allowing regex and per-item stuff
+});
 
 let guildLogsSchema = new mongoose.Schema({
     active: { type: Boolean, default: false },
@@ -85,21 +85,21 @@ let guildLogsSchema = new mongoose.Schema({
     joining_and_leaving: { type: Boolean, default: false },
     invite_events: { type: Boolean, default: false },
     role_events: { type: Boolean, default: false },
-    mod_actions: { type: Boolean, default: false },
-})
+    mod_actions: { type: Boolean, default: false }
+});
 
 let dailyItemSchema = new mongoose.Schema({
     active: { type: Boolean, default: false },
-    channel: { type: String, default: "" },
-}, { _id: false })
+    channel: { type: String, default: "" }
+}, { _id: false });
 
 let dailySchema = new mongoose.Schema({
     memes: { type: dailyItemSchema, default: {} },
     devos: { type: dailyItemSchema, default: {} },
-    verses: { type: dailyItemSchema, default: {} },
+    verses: { type: dailyItemSchema, default: {} }
     // wyrs: { type: dailyItemSchema, default: {} },
     // jokes: { type: dailyItemSchema, default: {} },
-})
+});
 
 let countingSchema = new mongoose.Schema({
     // Config
@@ -115,54 +115,54 @@ let countingSchema = new mongoose.Schema({
     legit: { type: Boolean, default: true },
     reset: { type: Boolean, default: false },
     nextNum: { type: Number, default: 1 },
-    highestNum: { type: Number, default: 0 },
-})
+    highestNum: { type: Number, default: 0 }
+});
 
 let autoLeaveMessageSchema = new mongoose.Schema({
     active: { type: Boolean, default: false },
     channel: { type: String, default: "" },
-    message: { type: String, default: "Farewell ${@USER}. We'll miss you." },
-}, { _id: false })
+    message: { type: String, default: "Farewell ${@USER}. We'll miss you." }
+}, { _id: false });
 
 let tempBanSchema = new mongoose.Schema({
     invoker: String,
     ends: Number,
     reason: String,
     private: { type: Boolean, default: false }
-})
+});
 
 let tempSlowmodeSchema = new mongoose.Schema({
     invoker: String,
     ends: Number,
     origMode: Number,
     guild: String,
-    private: Boolean,
-})
+    private: Boolean
+});
 
 let autoJoinMessageSchema = new mongoose.Schema({
     active: { type: Boolean, default: false },
     channel: { type: String, default: "" },
     dm: { type: Boolean, default: true },
-    message: { type: String, default: "Greetings ${@USER}! Welcome to the server!" },
-})
+    message: { type: String, default: "Greetings ${@USER}! Welcome to the server!" }
+});
 
 let emojiboardSchema = new mongoose.Schema({
     messType: String,
     threshold: Number,
     active: Boolean,
     channel: String,
-    posted:  { type: Map, of: String, default: {} }, // A record of the original message ID for us to delete 
+    posted: { type: Map, of: String, default: {} }, // A record of the original message ID for us to delete
     posters: { type: Map, of: Number, default: {} }, // List of poster IDs mapped to how many posts they have
     isMute: { type: Boolean, default: false },
     length: { type: Number } // Length of timeout from groupmute "emojiboard"
-})
+});
 
 let warningSchema = new mongoose.Schema({
     moderator: String,
     reason: String,
     severity: Number,
-    when: Number,
-})
+    when: Number
+});
 
 let guildConfigSchema = new mongoose.Schema({
     antihack_log_channel: { type: String, default: "" },
@@ -202,12 +202,12 @@ let guildSchema = new mongoose.Schema({
     logs: { type: guildLogsSchema, default: {} },
     filter: { type: filterSchema, default: {} },
     sentWelcome: { type: Boolean, default: false },
-    autoJoinRoles: [ String ],
-    blockedCommands: [ String ],
+    autoJoinRoles: [String],
+    blockedCommands: [String],
     pinners: String,
     groupmute: String, // The emoji tied to an emojiboard with groupmute configs
     disableAntiHack: Boolean,
-    stickyRoles: Boolean,
+    stickyRoles: Boolean
 });
 guildSchema.index({ id: 1, "logs.active": 1, "logs.user_change_events": 1 });
 guildSchema.index({ tempBans: 1 });
@@ -237,8 +237,8 @@ let guildUserSchema = new mongoose.Schema({
     exp: { type: Number, default: 0 },
     warnings: [warningSchema],
     roles: [String], // Roles stored on server leave, for sticky roles
-    inServer: { type: Boolean, default: true }, // This is used for logs and such - we retain guild user objects for sticky roles but want to know they're not in the server anymore.
-})
+    inServer: { type: Boolean, default: true } // This is used for logs and such - we retain guild user objects for sticky roles but want to know they're not in the server anymore.
+});
 guildUserSchema.index({ userId: 1, guildId: 1 }, { unique: true }); // Compound unique index - only one user per guild
 guildUserSchema.index({ userId: 1, inServer: 1 }); // logs
 guildUserSchema.index({ tempRoles: 1 }); // logs
@@ -248,7 +248,7 @@ guildUserSchema.index({ tempRoles: 1 }); // logs
 //#region Users
 let timerSchema = new mongoose.Schema({
     "time": Number,
-    "respLocation": String, 
+    "respLocation": String,
     "reminder": String
 });
 
@@ -260,33 +260,33 @@ let hatPullSchema = new mongoose.Schema({
     location: String,
     registered: Boolean,
     user: String, // Opening user
-    scheduled: { type: Boolean, default: false }, // Set to false on boot, true when scheduled. Prevents double scheduling via boot and daily
+    scheduled: { type: Boolean, default: false } // Set to false on boot, true when scheduled. Prevents double scheduling via boot and daily
 });
 
 let primedEmbedSchema = new mongoose.Schema({
-	content: { type: String, default: "" },
-	timestamp: { type: Number, required: true },
+    content: { type: String, default: "" },
+    timestamp: { type: Number, required: true },
 
-	author: {
-		icon: { type: String, default: "" },
-		name: { type: String, required: true },
-		id: { type: String, required: true }
-	},
+    author: {
+        icon: { type: String, default: "" },
+        name: { type: String, required: true },
+        id: { type: String, required: true }
+    },
 
-	server: {
-		channelName: { type: String, default: "" },
-		name: { type: String, default: "" },
-		channelId: { type: String, default: null },
-		id: { type: String, default: "@me" },
-		icon: { type: String, default: "" }
-	},
+    server: {
+        channelName: { type: String, default: "" },
+        name: { type: String, default: "" },
+        channelId: { type: String, default: null },
+        id: { type: String, default: "@me" },
+        icon: { type: String, default: "" }
+    },
 
-	id: { type: String, required: true },
+    id: { type: String, required: true },
 
-	attachmentURLs: {
-		type: [String],
-		default: []
-	}
+    attachmentURLs: {
+        type: [String],
+        default: []
+    }
 });
 
 let userConfigSchema = new mongoose.Schema({
@@ -299,7 +299,7 @@ let userConfigSchema = new mongoose.Schema({
     levelUpMsgs: { type: Boolean, default: true },
     hasSetTZ: { type: Boolean, default: false },
     timeOffset: { type: Number, default: 0 },
-    attachmentProtection: { type: Boolean, default: true },
+    attachmentProtection: { type: Boolean, default: true }
 });
 
 let userSchema = new mongoose.Schema({
@@ -314,12 +314,12 @@ let userSchema = new mongoose.Schema({
     primedEmbed: { type: primedEmbedSchema },
     primedEmojiURL: { type: String, default: "" },
     primedName: { type: String, default: "" },
-    timedOutIn: [ String ],
+    timedOutIn: [String],
     config: { type: userConfigSchema, default: {} },
     dmOffenses: { type: Boolean, default: true },
     hat_pull: hatPullSchema, // This one does not need defaults, it is checked for existence
     timer: timerSchema,
-    captcha: Boolean,
+    captcha: Boolean
 });
 
 let trackableSchema = new mongoose.Schema({
@@ -329,13 +329,13 @@ let trackableSchema = new mongoose.Schema({
     current: { type: String, required: true }, // Current holder (user or channel). u/c prepends the ID.
     name: { type: String, required: true, default: "My New Trackable" },
     img: {
-        type: String, 
+        type: String,
         required: true
     },
     desc: {
-        type: String, 
-        required: true, 
-        default: `This is a trackable. [Install Stewbot](${config.install}), then run \`/trackable create\` to create your own! You can edit this message.` 
+        type: String,
+        required: true,
+        default: `This is a trackable. [Install Stewbot](${config.install}), then run \`/trackable create\` to create your own! You can edit this message.`
     },
     tag: { type: String, required: true, default: "Look at my new trackable!!" },
     currentName: { type: String, required: true },
@@ -349,11 +349,11 @@ let trackableSchema = new mongoose.Schema({
 
     // Current location for linking
     currentGuildId: String,
-    currentMessageId: String,
+    currentMessageId: String
 });
 
-userSchema.index({"hat_pull.location": 1});
-userSchema.index({"timer": 1, "timer.time": 1});
+userSchema.index({ "hat_pull.location": 1 });
+userSchema.index({ "timer": 1, "timer.time": 1 });
 //#endregion
 
 //#region Config
@@ -362,10 +362,10 @@ let rssFeedSchema = new mongoose.Schema({
     hash: String,
     url: String,
     // channels: { type: Map, of: String, default: [] },
-    channels: [ String ],
+    channels: [String],
     lastSent: { type: Date, default: () => new Date() },
     fails: { type: Number, default: 0 }
-})
+});
 
 const configSchema = new mongoose.Schema({
     useGlobalGemini: { type: Boolean, default: true },
@@ -378,10 +378,10 @@ const configSchema = new mongoose.Schema({
     MOTD: { type: { // Statues
         statuses: [],
         delay: { type: Number, default: 5000 }
-    }, default: {} } 
-})
+    }, default: {} }
+});
 
-const ConfigDB = mongoose.model("settings", configSchema)
+const ConfigDB = mongoose.model("settings", configSchema);
 
 // Make sure ConfigDB is initialized
 ConfigDB.findOne().then(async (config) => {
@@ -404,8 +404,8 @@ ConfigDB.findOne().then(async (config) => {
 function keyEncode(key) {
     // return key;
     return key
-        .replace(/\./g, '\\u002e')  // Escape dots
-        .replace(/\$/g, '\\u0024'); // Escape dollar signs
+        .replace(/\./g, "\\u002e")  // Escape dots
+        .replace(/\$/g, "\\u0024"); // Escape dollar signs
 }
 
 /**
@@ -416,17 +416,17 @@ function keyEncode(key) {
 function keyDecode(encodedKey) {
     // return encodedKey;
     return encodedKey
-        .replace(/\\u002e/g, '.')   // Restore dots
-        .replace(/\\u0024/g, '$');  // Restore dollar signs
+        .replace(/\\u002e/g, ".")   // Restore dots
+        .replace(/\\u0024/g, "$");  // Restore dollar signs
 }
 
 /**
  * Returns a document matching the query or creates a new one, filling in unset default values.
  * Updates can be provided with the provided as a json map of key to new value.
- * 
+ *
  * @param {Object} query - The query to find the document.
  * @param {Object} [updates={}] - The updates to apply to the document.
- * @returns {Promise<import("mongoose").HydratedDocument<import("mongoose").InferSchemaType<any>>>} 
+ * @returns {Promise<import("mongoose").HydratedDocument<import("mongoose").InferSchemaType<any>>>}
  * A mongoose document promise.
  */
 function findOrCreate(query, updates = {}) {
@@ -447,10 +447,10 @@ guildUserSchema.statics.findOrCreate = findOrCreate;
 userSchema.statics.findOrCreate = findOrCreate;
 
 
-async function guildByID(id, updates={}) {
+async function guildByID(id, updates = {}) {
     // Fetch a guild from the DB, and create it if it does not already exist
     const guild = await Guilds.findOneAndUpdate(
-        { id }, 
+        { id },
         { $set: updates },
         {
             new: true,
@@ -459,14 +459,14 @@ async function guildByID(id, updates={}) {
             runValidators: true
         }
     );
-    
+
     return guild;
 }
 
 /** @returns {Promise<GuildDoc>} */
-async function guildByObj(obj, updates={}) {
+async function guildByObj(obj, updates = {}) {
     if (!obj) return null;
-    
+
     // Beta prechecks for dev mistakes
     if (
         process.env.beta && (
@@ -484,7 +484,7 @@ async function guildByObj(obj, updates={}) {
     return guild;
 }
 
-async function userByID(id, updates={}, upsert=true) {
+async function userByID(id, updates = {}, upsert = true) {
     // Fetch a user from the DB, apply updates, and create it if it does not already exist
     const user = await Users.findOneAndUpdate({ id }, updates, {
         new: true,
@@ -492,12 +492,12 @@ async function userByID(id, updates={}, upsert=true) {
         setDefaultsOnInsert: false,
         runValidators: true
     });
-    
+
     return user;
 }
 
 /** @returns {Promise<UserDoc>} */
-async function userByObj(obj, updates={}, upsert=true) {
+async function userByObj(obj, updates = {}, upsert = true) {
     // Beta prechecks for dev mistakes
     if (
         process.env.beta && (
@@ -514,16 +514,16 @@ async function userByObj(obj, updates={}, upsert=true) {
     return user;
 }
 
-async function guildUserByID(guildID, userID, updateData={}, upsert) {
+async function guildUserByID(guildID, userID, updateData = {}, upsert) {
     // By default, this function, unlike the others, does not upsert new data.
 
     // Fetch and update in one query
     const user = await GuildUsers.findOneAndUpdate(
         { guildId: guildID, userId: userID },
         { $set: updateData },
-        { 
-            new: true, 
-            setDefaultsOnInsert: false, 
+        {
+            new: true,
+            setDefaultsOnInsert: false,
             upsert,
             runValidators: true
         }
@@ -533,12 +533,12 @@ async function guildUserByID(guildID, userID, updateData={}, upsert) {
 }
 
 /** @returns {Promise<GuildUserDoc>} */
-async function guildUserByObj(guild, userID, updateData={}) {
+async function guildUserByObj(guild, userID, updateData = {}) {
     // Beta prechecks for dev mistakes
     if (
         process.env.beta && (
-            !(guild instanceof Guild) || 
-            !(typeof(userID) == 'string')
+            !(guild instanceof Guild) ||
+            !(typeof(userID) == "string")
         )
     ) {
         const warning = "WARNING: obj input seems incorrect. See console for stack trace.";
@@ -564,17 +564,17 @@ async function guildUserByObj(guild, userID, updateData={}) {
 
 
 // Cache invalidators
-guildSchema.post('save', doc => { messageDataCache.delete(doc.id || "") });
-guildSchema.post('findOneAndUpdate', doc => { messageDataCache.delete(doc.id || "") });
-guildUserSchema.post('save', doc => { messageDataCache.delete(`${doc.guildId}>${doc.userId}` || "") });
-guildUserSchema.post('findOneAndUpdate', doc => { messageDataCache.delete(`${doc.guildId}>${doc.userId}` || "") });
+guildSchema.post("save", doc => { messageDataCache.delete(doc.id || ""); });
+guildSchema.post("findOneAndUpdate", doc => { messageDataCache.delete(doc.id || ""); });
+guildUserSchema.post("save", doc => { messageDataCache.delete(`${doc.guildId}>${doc.userId}` || ""); });
+guildUserSchema.post("findOneAndUpdate", doc => { messageDataCache.delete(`${doc.guildId}>${doc.userId}` || ""); });
 
 
 // Set plugins and define docs
 const Guilds = mongoose.model("guilds", guildSchema);
 const GuildUsers = mongoose.model("guildusers", guildUserSchema);
 const Users = mongoose.model("users", userSchema);
-const Trackables=mongoose.model("trackables",trackableSchema);
+const Trackables = mongoose.model("trackables", trackableSchema);
 
 // Drop indexes of docs where metadata was changed
 async function dropIndexes(Model) {
@@ -584,7 +584,8 @@ async function dropIndexes(Model) {
         await Model.collection.dropIndexes();
         const indexes2 = await Model.collection.indexes();
         console.log("Indexes after deletion:", indexes2.length);
-    } catch {}
+    }
+    catch {}
 }
 function onConnect() {
     if (process.env.beta) {
@@ -597,19 +598,19 @@ function onConnect() {
         process.env.beta
             ? "all"
             : "slow_only"
-    )
+    );
 }
-mongoose.connection.on('connected', onConnect);
-  
+mongoose.connection.on("connected", onConnect);
+
 
 // These types need to be exported for a few places.
 /**
  * @typedef {import("mongoose").InferSchemaType<typeof guildSchema>} RawGuildDoc
  * @typedef {import("mongoose").HydratedDocument<RawGuildDoc>} GuildDoc
- * 
+ *
  * @typedef {import("mongoose").InferSchemaType<typeof userSchema>} RawUserDoc
  * @typedef {import("mongoose").HydratedDocument<RawUserDoc>} UserDoc
- * 
+ *
  * @typedef {import("mongoose").InferSchemaType<typeof guildUserSchema>} RawGuildUserDoc
  * @typedef {import("mongoose").HydratedDocument<RawGuildUserDoc>} GuildUserDoc
  */
@@ -624,7 +625,7 @@ module.exports = {
     userByObj,
 
     GuildUsers,
-    guildUserByID, // This function is less preferred, as it does not check for guild member existence first 
+    guildUserByID, // This function is less preferred, as it does not check for guild member existence first
     guildUserByObj,
 
     ConfigDB,
@@ -634,5 +635,5 @@ module.exports = {
     // Utilities
     keyDecode,
     keyEncode,
-    messageDataCache,
-}
+    messageDataCache
+};
