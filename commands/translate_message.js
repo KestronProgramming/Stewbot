@@ -57,9 +57,7 @@ module.exports = {
 					`\`\`\`\n` +
 					`${escapeBackticks(t.text)}\n` +
 					`\`\`\`\n` +
-					// @ts-ignore
 					`-# If this is incorrect, try using ${cmds.translate.mention}.`
-            // @ts-ignore
                 : `, but I was unable to. Try using ${cmds.translate.mention}.`}`);
     }
 };

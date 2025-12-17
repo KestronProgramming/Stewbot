@@ -666,8 +666,8 @@ module.exports = {
                     .setMaxLength(2)
                     .setRequired(true);
                 let row = new ActionRowBuilder().addComponents(moveModalInput);
-                // @ts-ignore
-                moveModal.addComponents(row);
+                // @ts-ignore - ts does not understand modals
+                moveModal.addComponents([row]);
                 await cmd.showModal(moveModal);
                 break;
 
@@ -698,8 +698,10 @@ module.exports = {
                         .setDisabled(true), new ButtonBuilder().setCustomId("racMove")
                         .setLabel("Make a Move")
                         .setStyle(ButtonStyle.Success));
-                    // @ts-ignore
-                    cmd.message.edit({ content: getRACBoard(), components: [row] });
+                    cmd.message.edit({
+                        content: getRACBoard(),
+                        components: [row.toJSON()]
+                    });
                     return;
                 }
                 if ("update" in cmd) cmd.update(getRACBoard());
@@ -737,7 +739,7 @@ module.exports = {
                 rac.timePlayed = Date.now();
                 rac.board[rac.rowsActive.indexOf(cont[0])][rac.rowsActive.indexOf(cont[1])] = rac.icons[foundOne];
 
-                // @ts-ignore
+                // @ts-ignore - ts does not like .update
                 await cmd.update(getRACBoard());
 
                 let foundZero = false;
@@ -761,8 +763,10 @@ module.exports = {
                             .setStyle(ButtonStyle.Success)
                             .setDisabled(true)
                     );
-                    // @ts-ignore
-                    cmd.message.edit({ content: tallyRac(), components: [row] });
+                    cmd.message.edit({
+                        content: tallyRac(),
+                        components: [row.toJSON()]
+                    });
                 }
                 break;
             }

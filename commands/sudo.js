@@ -82,7 +82,6 @@ module.exports = {
                         break;
                     case "runDaily":
                         await msg.reply(`Running the daily listeners...`);
-                        // @ts-ignore
                         Object.entries(commands).find(([, module]) => module.daily)[1].daily();
                         break;
                     case "runWelcome":
@@ -103,9 +102,7 @@ module.exports = {
                         msg.reply(config.wotd);
                         break;
                     case "checkRSS":
-                        // @ts-ignore
                         Object.entries(commands).find(([name]) => name === "rss")[1].daily();
-                        // checkRSS();
                         break;
                     case "updateBlocklists":
                         updateBlocklists();

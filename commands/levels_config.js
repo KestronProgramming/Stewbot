@@ -104,7 +104,7 @@ module.exports = {
             !msg.author.bot &&
 			guild.levels.active &&
 			!expTimeout.has(msg.author.id) &&
-			// @ts-ignore
+			// @ts-ignore - custom prop
 			!msg.filtered // Messages with bad words don't get XP
         ) {
             expTimeout.set(msg.author.id, true);

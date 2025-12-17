@@ -199,7 +199,6 @@ module.exports = {
             return;
         }
         if (targetMember.id === client.user.id) {
-            // @ts-ignore
             cmd.followUp(`I cannot ban myself. I apologize for any inconveniences I may have caused. You can use ${cmds.report_problem.mention} if there's something that needs improvement.`);
             return;
         }

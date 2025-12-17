@@ -20,7 +20,7 @@ global.cmds = require("./data/commands.json");
 const config = global.config = require("./data/config.json");
 console.log("Importing discord");
 const client = require("./client.js");
-const { Events, PermissionFlagsBits } = require("discord.js");
+const { Events, PermissionFlagsBits, PermissionsBitField } = require("discord.js");
 console.log("Importing commands");
 const { getCommands } = require("./launchCommands.js"); // Note: current setup requires this to be before the commands.json import (the cmd.globals setting)
 const commandsLoadedPromise = getCommands();
@@ -131,7 +131,7 @@ let commandListenerRegister = commandsLoadedPromise.then(commandsLoaded => {
     // Tune global handling - most of this is for backwards code compatibility.
     interceptors.push({
         // Ignore bots on MessageCreate
-        [Events.MessageCreate]: (handler, ...args) => (args[0].author.bot || args[0].author.id === client.user?.id)
+        [Events.MessageCreate]: (_handler, ...args) => (args[0].author.bot || args[0].author.id === client.user?.id)
     });
 
     for (const listenerName of Object.values(Events)) { // For every type of discord event
@@ -184,10 +184,11 @@ client.once(Events.ClientReady, async () => {
 
 // === Dispatch command execute / autocomplete / buttons where they need to go.
 client.on(Events.InteractionCreate, async cmd => {
+    if (!("commandName" in cmd)) return; // Ignore non-command interactions
+
     const asyncTasks = []; // Any non-awaited functions go here to fully known when this command is done executing for metrics
     const intStartTime = Date.now();
 
-    // @ts-ignore
     const commandScript = commands[cmd.commandName];
     if (!commandScript && (cmd.isCommand() || cmd.isAutocomplete())) return; // Ignore any potential cache issues
 
@@ -256,18 +257,18 @@ client.on(Events.InteractionCreate, async cmd => {
         cmd.commandName in commands
     ) {
         // Here we artificially provide the full path since slash commands can have subcommands
-        // @ts-ignore
         const listeningModule = [`${cmd.commandName} ${cmd.isChatInputCommand()
             ? cmd.options.getSubcommand(false)
             : ""
         }`.trim(), commandScript];
 
+        let isAdmin = cmd.member?.permissions instanceof PermissionsBitField && cmd.member?.permissions?.has?.(PermissionFlagsBits.Administrator);
+
         // TODO_DB: this could be made more efficient by passing in the readonly guilds as objects
         const [blocked, errorMsg] = isModuleBlocked(listeningModule,
             (await guildByObj(cmd.guild)),
             (await guildByID(config.homeServer)),
-            // @ts-ignore
-            cmd.member?.permissions?.has?.(PermissionFlagsBits.Administrator)
+            isAdmin
         );
         if (blocked) return cmd.followUp(errorMsg);
 
@@ -309,7 +310,7 @@ client.on(Events.InteractionCreate, async cmd => {
             for (const sub of moduleSubscriptions) {
                 if (
                     (typeof sub === "string" && sub === cmd.customId) ||
-                    (sub instanceof RegExp && sub.test(cmd.customId))
+                    (sub instanceof RegExp && sub.test(String(cmd.customId)))
                 ) {
                     subbed = true;
                     continue;

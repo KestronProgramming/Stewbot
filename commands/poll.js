@@ -144,7 +144,7 @@ async function generatePollChart(results, orderedChoices, colorPalette,
     };
 
     try {
-        // @ts-ignore
+        // @ts-ignore - ts does not support JS canvas
         const buffer = await chartJSNodeCanvas.renderToBuffer(configuration);
         return new AttachmentBuilder(buffer, { name: "poll_results.png" });
     }
@@ -373,7 +373,7 @@ module.exports = {
                         .setCustomId("poll-added")
                         .setTitle("Add a poll option")
                         .addComponents(
-                            // @ts-ignore
+                            // @ts-ignore - ts does not support modals
                             new ActionRowBuilder().addComponents(
                                 new TextInputBuilder()
                                     .setCustomId("poll-addedInp")
@@ -396,7 +396,7 @@ module.exports = {
                         .setCustomId("poll-removed")
                         .setTitle("Remove a poll option")
                         .addComponents(
-                            // @ts-ignore
+                            // @ts-ignore - ts does not support modals
                             new ActionRowBuilder().addComponents(
                                 new TextInputBuilder()
                                     .setCustomId("poll-removedInp")
@@ -538,7 +538,7 @@ module.exports = {
                     break;
                 }
                 poll.options.push(cmd.fields.getTextInputValue("poll-addedInp"));
-                // @ts-ignore
+                // @ts-ignore - ts does not support .update
                 cmd.update(
                     await censor(`**${poll.title}**${poll.options.map((a, i) => `\n${i}. ${a}`).join("")}`)
                 );
@@ -564,7 +564,7 @@ module.exports = {
                     return;
                 }
                 poll.options.splice(+ii - 1, 1);
-                // @ts-ignore
+                // @ts-ignore - ts does not support .update
                 cmd.update(`**${poll.title}**${poll.options.map((a, ii) => `\n${ii}. ${a}`).join("")}`);
                 break;
             }
@@ -602,7 +602,7 @@ module.exports = {
 
                     const files = chartAttachment ? [chartAttachment] : [];
 
-                    // @ts-ignore
+                    // @ts-ignore - ts does not support .update
                     await cmd.update({
                         content: limitLength(finalContent, 4000), // Limit final message length
                         components: [], // Remove buttons

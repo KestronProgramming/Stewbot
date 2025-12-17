@@ -77,8 +77,7 @@ module.exports = {
         ) {
             var [emoji, toReact] = textToEmojiSentiment(msg.content);
             if (toReact) {
-                // @ts-ignore
-                msg.react(emoji).catch(() => {});
+                msg.react(String(emoji)).catch(() => {});
             }
         }
     }

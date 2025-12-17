@@ -192,7 +192,7 @@ async function checkRSS() {
 
                             // Optional fields
                             const creator = item.creator || item["dc:creator"] || parsed.title || "Unknown Creator"; //
-                            // @ts-ignore
+                            // @ts-ignore - optional chaining
                             const imageUrl = item?.image?.url || parsed?.image?.url;
                             if (creator) embed.setAuthor({ name: creator });
                             if (imageUrl) embed.setThumbnail(imageUrl);
@@ -302,7 +302,6 @@ module.exports = {
                 helpCategories: [Categories.Configuration, Categories.Administration, Categories.Server_Only],
                 shortDesc: "Unfollow an RSS feed", //Should be the same as the command setDescription field
                 detailedDesc: //Detailed on exactly what the command does and how to use it
-					// @ts-ignore
 					`Specify the channel the feed is followed in, and the URL of the feed to unfollow, and Stewbot will no longer post RSS updates for that feed there. You can use ${cmds.rss.check.mention} to get the URL needed for this command.`
             },
             check: {

@@ -90,7 +90,7 @@ const checkDirty = async function(guildID, what, filter = false, applyGlobalFilt
 
     if (typeof(guildID) == "string") {
         // TODO: consider way to rewrite this to cache blocked words. As this currently queries the DB on every single message
-        // @ts-ignore
+        // @ts-ignore - custom findOrCreate method is not typed
         const localGuild = await Guilds.findOrCreate({ id: guildID })
             .select("filter.blacklist")
             .lean();
@@ -98,7 +98,7 @@ const checkDirty = async function(guildID, what, filter = false, applyGlobalFilt
         // For stewbot-created content (like AI), filter from our server too
         blacklist = localGuild?.filter?.blacklist || [];
         if (applyGlobalFilter) {
-            // @ts-ignore
+            // @ts-ignore - custom findOrCreate method is not typed
             const homeGuild = await Guilds.findOrCreate({ id: config.homeServer })
                 .select("filter.blacklist")
                 .lean();
@@ -247,7 +247,7 @@ async function censorWithFound(text, guild, global = false) {
     // Add server filter
     if (guild) blacklist = blacklist.concat(await getCachedServerBlacklist(guild));
 
-    // @ts-ignore
+    // @ts-ignore - proxy to deprecated method with complicated return
     const [wasFiltered, censoredText, foundWords] = await checkDirty(blacklist, text, true);
 
     if (!wasFiltered) return [false, text, []];
@@ -280,7 +280,7 @@ async function censor(text, guild = undefined, global = false) {
  * @param {String|Guild|import("./modules/database.js").RawGuildDoc?} guild - The guild as a MongoDB object, guild ID, or discord.js object. A MongoDB object is preferable, as it requires less lookups.
  * @param {boolean?} [global=false] Whether to apply the home server filter. This should be applied to all output that looks like it is coming from stewbot, e.g. AI.
  *
- * @returns {Promise<Boolean>} A promise for the filtered text and found words.
+ * @returns {Promise<boolean>} A promise for the filtered text and found words.
  */
 async function isDirty(text, guild = undefined, global = false) {
     // If only text is provided, assume we're checking globally
@@ -292,9 +292,10 @@ async function isDirty(text, guild = undefined, global = false) {
     // Add server filter
     if (guild) blacklist = blacklist.concat(await getCachedServerBlacklist(guild));
 
+    /** @type {boolean} */
+    // @ts-ignore - proxy to deprecated method with complicated return
     const dirty = await checkDirty(blacklist, text, false);
 
-    // @ts-ignore
     return dirty;
 }
 
@@ -395,7 +396,6 @@ module.exports = {
                 helpCategories: [Categories.Administration, Categories.Configuration, Categories.Server_Only],
                 shortDesc: "Import a CSV wordlist",
                 detailedDesc:
-                    // @ts-ignore
                     `Import a .csv file containing a list of words separated by commas to block. You can generate one from another server's filter using the ${cmds.view_filter.mention} command.`
             }
         }
@@ -422,7 +422,6 @@ module.exports = {
                         "ephemeral": true,
                         "content": `The word ||${word}|| is already in the blacklist.${guild.filter.active
                             ? ""
-                            // @ts-ignore
                             : `To begin filtering in this server, use ${cmds.filter.config.mention}.`
                         }`
                     });
@@ -431,7 +430,6 @@ module.exports = {
                     guild.filter.blacklist.push(word);
                     cmd.followUp(`Added ||${word}|| to the filter for this server.${guild.filter.active
                         ? ""
-                        // @ts-ignore
                         : `\n\nThe filter for this server is currently disabled. To enable it, use ${cmds.filter.config.mention}.`
                     }`);
 
@@ -494,7 +492,6 @@ module.exports = {
                     cmd.followUp(`Alright, I have removed ||${word}|| from the filter.`);
                 }
                 else {
-                    // @ts-ignore
                     cmd.followUp(`I'm sorry, but I don't appear to have that word in my blacklist. Are you sure you're spelling it right? You can use ${cmds.view_filter.mention} to see all filtered words.`);
                 }
 
@@ -549,7 +546,6 @@ module.exports = {
 
             case "import":
                 // TODO: make sure this works - it needs a major rewrite anyways. Allow from server ID and other stuff
-                // @ts-ignore
                 const attachmentURL = cmd.options.getAttachment("file").url;
                 try {
                     const data = await fetch(attachmentURL);
@@ -587,7 +583,6 @@ module.exports = {
 
         // Filter
         if (guildStore?.filter?.active) {
-            // @ts-ignore
             let [filtered, filteredContent, foundWords] = await censorWithFound(msg.content, guildStore, false);
 
             if (filtered) {
@@ -675,7 +670,7 @@ module.exports = {
             }
         }
 
-        // @ts-ignore
+        // @ts-ignore - custom property
         msg.filtered = wasFiltered;
     },
 

@@ -17,7 +17,6 @@ Object.keys(bible).forEach(book => {
     Bible[book.toLowerCase()] = bible[book];//Make everything lowercase for compatibility with sanitizing user input
 });
 
-// @ts-ignore
 const Fuse = require("fuse.js");
 const bookNames = Object.keys(Bible);
 const fuseOptions = {
@@ -27,7 +26,7 @@ const fuseOptions = {
 
 
 function sortByMatch(items, text) {
-    // @ts-ignore
+    // @ts-ignore - Fuse ts checking is broken
     const fuse = new Fuse(items.map(item => ({ item })), fuseOptions);
     const scoredResults = fuse.search(text)
         .filter(result => result.score <= 2) // Roughly similar-ish

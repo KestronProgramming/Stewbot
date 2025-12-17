@@ -143,7 +143,6 @@ module.exports = {
                         primedName: success ? emojiName || "unnamed" : ""
                     });
 
-                    // @ts-ignore
                     if (success) cmd.followUp({ content: `Emoji primed. Use it in a server with ${cmds.clone_emoji.mention}` });
                     break;
                 }

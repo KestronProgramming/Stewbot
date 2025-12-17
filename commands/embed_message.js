@@ -57,7 +57,6 @@ module.exports = {
             }
             var primer = await getPrimedEmbed(cmd.user.id, cmd.guild?.id);
             cmd.followUp({
-                // @ts-ignore
                 content: `-# Embedded primed message. Use the context menu command \`/prime_embed\` and type \`PRIMED\` into ${cmds.embed_message.mention} to do the same.`,
                 embeds: [primer],
                 files: primer.data.title === "Blocked"
@@ -72,7 +71,6 @@ module.exports = {
                 let fils = [];
 
                 try {
-                    // @ts-ignore
                     const failedMessage = `Failed to embed message. Try opening the context menu (holding down on mobile, right clicking on desktop) and pressing Apps -> prime_embed, then use ${cmds.embed_message.mention} and type **PRIMED** into it. If I'm not in the server you want to embed a message from, you can use me anywhere by pressing my profile, then Add App, then Use it Everywhere.`;
 
                     var channelLinked = await client.channels.fetch(slashes[slashes.length - 2]).catch(() => null);
@@ -175,7 +173,7 @@ module.exports = {
                 }
 
                 // If this message has links, check if the user blocked embeds
-                // @ts-ignore
+                // @ts-ignore - custom findOrCreate method is not typed. TODO: I would rather not call this
                 const user = await Users.findOrCreate({ id: msg.author.id })
                     .select("config.embedPreviews")
                     .lean({ virtuals: true });

@@ -355,13 +355,13 @@ module.exports = {
                                         ? `${
                                             channelO.parentId === null
                                                 ? "None"
-                                            // @ts-ignore
+                                                // @ts-ignore - easier to ignore
                                                 : client.channels.cache.get(channelO.parentId)?.name || "None"
                                         } -> `
                                         : ""}${
                                     channel.parentId === null
                                         ? "None"
-                                    // @ts-ignore
+                                        // @ts-ignore - easier to ignore
                                         : client.channels.cache.get(channel.parentId)?.name || "None"
                                 }`,
                                 inline: true

@@ -1,7 +1,7 @@
 // Ctrl+Shift+P  >  Preferences: Open Keyboard Shortcuts (JSON)  >  Paste
 [
     {
-        "key": "shift+alt+s",
+        "key": "ctrl+k ctrl+i",
         "command": "editor.action.sourceAction",
         "args": {
             "kind": "source.addMissingImports",

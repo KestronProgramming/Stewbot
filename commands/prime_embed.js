@@ -81,7 +81,6 @@ module.exports = {
             helpCategories: [Categories.Information, Categories.General, Categories.Entertainment, Categories.Context_Menu],
             shortDesc: "Get a message ready to be embedded with /embed_message", //Should be the same as the command setDescription field
             detailedDesc: //Detailed on exactly what the command does and how to use it
-				// @ts-ignore
 				`After using this command on a message, you can type PRIMED into ${cmds.embed_message.mention} to have the bot embed it. This can be used for DMs, or servers the bot doesn't share with you if you install it to use anywhere. (Press the bot's PFP, then select "Add App", and then "Use it Everywhere"). This is a context menu command, which can be accessed by holding down on a message on mobile, or right clicking on desktop, and then selecting "Apps".`
         }
     },
@@ -100,7 +99,7 @@ module.exports = {
                 "id": cmd.targetMessage.author.id
             },
             "server": {
-                // @ts-ignore
+                // @ts-ignore - optional chaining
                 "channelName": cmd.targetMessage.channel?.name ? cmd.targetMessage.channel.name : (cmd.targetMessage.author.globalName || cmd.targetMessage.author.username),
                 "name": cmd.targetMessage.guild?.name ? cmd.targetMessage.guild.name : "",
                 "channelId": cmd.targetMessage.channel?.id,
@@ -123,7 +122,6 @@ module.exports = {
         );
 
         cmd.followUp({
-            // @ts-ignore
             content: `I have prepared the message to be embedded. Use ${cmds.embed_message.mention} and type **PRIMED** to embed this message.`,
             embeds: [
                 await getPrimedEmbed(cmd.user.id, cmd.guild)

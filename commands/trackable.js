@@ -23,7 +23,6 @@ const aboutTrackables = {
             "description":
 				`With trackables you can release your image to travel across any server. A trackable can be picked up and placed down from server to server. Each person and server is counted on the trackable.\n` +
 				`\n` +
-				// @ts-ignore
 				`[Add Stewbot to your profile](${config.install}) to make and track your own! /trackable create\n` +
 				`\n` +
 				`If a trackable is not moved for one week, it will be sent to a special channel in [#find-a-trackable](${config.invite}) where **you can pick it up** for a new adventure!`,
@@ -381,7 +380,7 @@ function getTrackableEditor(trackable, forMods = false) {
         content:
 			`-# Note: when a trackable is claimed, the image is shrunk into an icon, and the description field is remove. The tag field will stay, even after a trackable is claimed.`,
         embeds: [embed],
-        components: components
+        components: components.map(c => c.toJSON())
     };
 }
 
@@ -559,7 +558,6 @@ module.exports = {
 
                 if (!isUserSudo && usersTrackable) {
                     return cmd.followUp(textAsEmbed(
-                        // @ts-ignore
                         `You already have a trackable, use ${cmds.trackable.stats.mention} to see how far it went!\n` +
 						`\n` +
 						`Currently, each user only gets one, unchangeable trackable. This will change Soon™️, join [Kestron Central](<${config.install}>) for updates or other support.`
@@ -573,7 +571,6 @@ module.exports = {
                     current: `u${cmd.user.id}`
                 });
                 if (hasCurrentTrackable) {
-                    // @ts-ignore
                     return cmd.followUp(`You already have a trackable in your inventory. Place your current trackable somewhere using ${cmds.trackable.place.mention} before creating one.`);
                 }
 
@@ -621,7 +618,6 @@ module.exports = {
                 );
 
                 // Embed in editor
-                // @ts-ignore
                 await cmd.followUp({
                     ...getTrackableEditor(usersTrackable),
                     ephemeral: true
@@ -637,7 +633,6 @@ module.exports = {
                 });
                 if (!tracker) {
                     return cmd.followUp(textAsEmbed(
-                        // @ts-ignore
                         `You don't have any trackables in your inventory! You can make one with ${cmds.trackable.create.mention} or find others that have been posted.` +
 						`You might be able to find timed-out trackables in [#find-a-trackable](<${config.install}>)`
                     ));
@@ -663,14 +658,12 @@ module.exports = {
 
                 let tracker = await Trackables.findOne(filter);
                 if (!tracker) {
-                    // @ts-ignore
                     return cmd.followUp(
                         trackableId
                             ? `I didn't find any trackables with that ID!`
                             : textAsEmbed(
                                 `You don't have a trackable!` +
 								`\n` +
-								// @ts-ignore
 								`Create your own with ${cmds.trackable.create.mention}, find others in your servers, or check [#find-a-trackable](<${config.invite}>).`
                             )
                     );
@@ -700,7 +693,6 @@ module.exports = {
                         ...textAsEmbed(
                             `You don't have a trackable!` +
 							`\n` +
-							// @ts-ignore
 							`Try finding one in your servers, create your own with ${cmds.trackable.create.mention}, or check [#find-a-trackable](<${config.invite}>).`
                         ),
                         ephemeral: true
@@ -778,7 +770,6 @@ module.exports = {
                     { upsert: true }
                 );
 
-                // @ts-ignore
                 cmd.reply(`I silenced these notifications. You can turn them back on with ${cmds.personal_config.mention}`);
             }
 
@@ -888,7 +879,6 @@ module.exports = {
 
                     if (alreadyHoldingTrackable) {
                         return cmd.reply({
-                            // @ts-ignore
                             content: `You already have a trackable in your inventory. Place your current trackable somewhere with ${cmds.trackable.place.mention} before picking up a new one.`,
                             ephemeral: true
                         });
@@ -922,7 +912,6 @@ module.exports = {
 
                     if (usersSinceLast == 0) {
                         return cmd.reply({
-                            // @ts-ignore
                             content: `Let someone else move this trackable first. In the meantime, you can create your own with ${cmds.trackable.create.mention} or find a different Trackable.`,
                             ephemeral: true
                         });
@@ -947,7 +936,6 @@ module.exports = {
 
                     await cmd.followUp({
                         ...textAsEmbed(
-                            // @ts-ignore
                             `You have picked up this trackable! Now go share it somewhere with ${cmds.trackable.place.mention}\n` +
 							`\n` +
 							`You can even share it in servers that don't have Stewbot if you [add Stewbot to your apps](<${config.install}>)!`
@@ -996,7 +984,6 @@ module.exports = {
                         trackableData.save();
 
                         // Update the message with new layout
-                        // @ts-ignore
                         await cmd.update({
                             ...getTrackableEditor(trackableData, isInSudoChannel)
                         });
@@ -1007,7 +994,6 @@ module.exports = {
                         trackableData.save();
 
                         // Update the message with new color
-                        // @ts-ignore
                         await cmd.update({
                             ...getTrackableEditor(trackableData, isInSudoChannel)
                         });
@@ -1087,7 +1073,6 @@ module.exports = {
                         await trackableData.save();
 
                         await cmd.reply({
-                            // @ts-ignore
                             content: `Trackable published!\n\nNow you can send it somewhere with ${cmds.trackable.place.mention}. If you install Stewbot to your profile, you can even send it in servers that don't use Stewbot!`,
                             ephemeral: true
                         });
@@ -1120,7 +1105,7 @@ module.exports = {
 
                     trackableData.save();
 
-                    // @ts-ignore
+                    // @ts-ignore - ts not supporting update
                     return await cmd.update({
                         ...getTrackableEditor(trackableData, isInSudoChannel),
                         ephemeral: !isInSudoChannel
@@ -1164,7 +1149,6 @@ module.exports = {
 
         // We can't use cmds outside the module exports so add it at boot
         aboutTrackables.embeds[0].description = aboutTrackables.embeds[0].description
-        // @ts-ignore
             .replaceAll("/trackable create", cmds.trackable.create.mention);
     }
 };
@@ -1233,7 +1217,6 @@ cronJob("0 * * * *", async () => {
                 new EmbedBuilder()
                     .setDescription(
                         `Your current trackable, ${inlineCode(trackable.name)}, will expire ${expiresAtTimestamp}!\n` +
-						// @ts-ignore
 						`[Add me to your apps](${config.install}) if you haven't yet, then place the trackable in a server with ${cmds.trackable.place.mention}.`
                     )
                     .setThumbnail(trackable.img)

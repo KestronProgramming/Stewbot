@@ -141,7 +141,6 @@ module.exports = {
 
                     if (!trackable) return cmd.followUp("I couldn't find this trackable");
 
-                    // @ts-ignores
                     cmd.followUp(getTrackableEditor(trackable, true));
                     break;
                 }

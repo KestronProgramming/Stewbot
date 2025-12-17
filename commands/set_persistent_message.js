@@ -36,7 +36,6 @@ async function checkPersistentDeletion(guildStore, channelId, messageId) {
 
     const channel = client.channels.cache.get(channelId);
     if (channel.isSendable()) {
-        // @ts-ignore
         channel.send(`I have detected that a moderator deleted the persistent message set for this channel, and as such I have deactivated it. To reactivate it, a moderator can run ${cmds?.set_persistent_message?.mention ?? "the persistent message command"}.`).catch(() => {});
     }
 }
@@ -203,7 +202,6 @@ module.exports = {
             }
             else {
                 if (msg.channel.isSendable()) {
-                    // @ts-ignore
                     msg.channel.send(`I do not have sufficient permissions to manage persistent messages for this channel. Please make sure I can manage webhooks, read message history, and delete messages and then run ${cmds.set_persistent_message.mention}.`);
                 }
 

@@ -67,9 +67,7 @@ module.exports = {
         t.text = await censor(t.text);
         await cmd.followUp(
             `Attempted to translate${t.text !== input
-            // @ts-ignore
                 ? `:\n\`\`\`\n${escapeBackticks(t.text)}\n\`\`\`\n-# If this is incorrect, try using ${cmds.translate.mention} again and specify more.`
-            // @ts-ignore
                 : `, but I was unable to. Try using ${cmds.translate.mention} again and specify more.`
             }`
         );

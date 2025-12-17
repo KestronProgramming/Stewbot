@@ -10,7 +10,7 @@ const cron = require("node-cron");
 // Temp value for now to avoid circular references
 let messageDataCache, Guilds, GuildUsers;
 
-// @ts-ignore
+// @ts-ignore See comment below
 // eslint-disable-next-line unused-imports/no-unused-vars, no-unused-vars
 let censor = (...args) => "";
 
@@ -18,7 +18,6 @@ let censor = (...args) => "";
 setTimeout(() => {
     // @ts-ignore
     censor = require("./commands/filter").censor;
-    // @ts-ignore
     ({ messageDataCache, Guilds, GuildUsers } = require("./commands/modules/database"));
 }, 1);
 

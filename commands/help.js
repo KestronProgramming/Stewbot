@@ -12,7 +12,6 @@ function applyContext(context = {}) {
 const { limitLength } = require("../utils.js");
 const config = require("../data/config.json");
 const fs = require("fs");
-// @ts-ignore
 const Fuse = require("fuse.js");
 const fuseOptions = {
     includeScore: true,
@@ -150,7 +149,7 @@ function makeHelp(page, categories, filterMode, forWho) {
 }
 
 function sortByMatch(items, text) {
-    // @ts-ignore
+    // @ts-ignore - Fuse ts checking is broken
     const fuse = new Fuse(items.map(item => ({ item })), fuseOptions);
     const scoredResults = fuse.search(text)
         .filter(result => result.score <= 2) // Roughly similar-ish
@@ -287,9 +286,7 @@ module.exports = {
             const forWho = opts[3];
 
             if (forWho !== cmd.user.id) {
-                // @ts-ignore
                 cmd.reply({
-                    // @ts-ignore
                     content: `This isn't your help command! Use ${cmds.help.mention} to start your own help command.`,
                     ephemeral: true
                 });
@@ -364,12 +361,9 @@ module.exports = {
     // Build dynamic help pages when the bot is ready
     async [Events.ClientReady]() {
         // Once commands are loaded
-        // @ts-ignore cmds is populated globally
         Object.keys(commands).forEach(commandName => {
-            // @ts-ignore
             var cmd = commands[commandName];
             if (cmd.data?.help?.shortDesc !== undefined && cmd.data?.help?.shortDesc !== `Stewbot's Admins Only` && cmd.data?.help?.helpCategories.length > 0) {
-                // @ts-ignore cmds is populated globally
                 const commandMention = cmds[cmd.data?.command?.name]?.mention || `\`${commandName}\` Module`; // non-command modules don't have a mention
                 helpCommands.push(Object.assign({
                     name: cmd.data?.command?.name || commandName,
@@ -379,7 +373,6 @@ module.exports = {
             else if (cmd.data?.help?.shortDesc !== `Stewbot's Admins Only`) {
                 Object.keys(cmd.data?.help || []).forEach(subcommand => {
                     var subcommandHelp = cmd.data?.help[subcommand];
-                    // @ts-ignore cmds is populated globally
                     const subcommandMention = cmds[cmd.data?.command?.name]?.[subcommand]?.mention || `\`${commandName}\` Module`; // No case for this rn but might have one in the future
                     if (subcommandHelp.helpCategories?.length > 0) {
                         helpCommands.push(Object.assign({

@@ -81,7 +81,6 @@ module.exports = {
             response += `\nPlease note, I couldn't delete the full requested ${requestedNum} because some are older than two weeks.`;
         }
         if (dateLimited === -1) {
-            // @ts-ignore
             response = `My apologies, an unknown error was encountered. This error has been reported, feel free to use ${cmds.report_problem.mention} to report additional details.`;
         }
 

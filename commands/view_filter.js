@@ -64,7 +64,6 @@ module.exports = {
             });
         }
         else {
-            // @ts-ignore
             await cmd.followUp(`This server doesn't have any words blacklisted at the moment. To add some, you can use ${cmds.filter.add.mention}.`);
         }
     },

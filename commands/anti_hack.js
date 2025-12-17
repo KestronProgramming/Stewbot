@@ -254,7 +254,6 @@ module.exports = {
                             }
 
                             let timeoutAttemptMessage = timeoutable
-                                // @ts-ignore
                                 ? `I temporarily applied a timeout. To remove this timeout, <@${msg.author.id}> can use ${cmds.captcha.mention} in a DM with me, or a moderator can remove this timeout manually.`
                                 : `I tried to apply a timeout to this account, but either I lack the \`Timeout Members\` permission, my role needs to be dragged above theirs, or they are an administrator. It is advisable to grant me these permissions to defend against spam and hacked accounts.`;
 
@@ -277,18 +276,15 @@ module.exports = {
                                 content:
                                     `I have detected unusual activity from <@${msg.author.id}>${autoDeleteNotice}. ${timeoutAttemptMessage}\n` +
                                     `\n` +
-                                    // @ts-ignore
                                     `If a mod wishes to change settings related to this behavior designed to protect servers from mass spam and hacked accounts, run ${cmds.anti_hack?.mention || "/anti_hack"}.` + // TODO: fix
                                     missingPermissionsMessage,
-                                // @ts-ignore
-                                components: components
+                                components: components.map(c => c.toJSON())
                             });
 
                             // Finally, DM This user if the message was set to go to a log channel
                             if (toNotify && toLog) {
                                 msg.author.send(
                                     `I have detected unusual activity from your account, you have been given a timeout in one or more servers.\n` +
-                                    // @ts-ignore
                                     `To remove this timeout, you can use can use ${cmds.captcha.mention} in a DM with me.`
                                 );
                             }

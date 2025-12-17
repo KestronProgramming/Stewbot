@@ -42,9 +42,7 @@ module.exports = {
 
         const guild = await guildByObj(cmd.guild);
         if (!guild?.counting?.active) {
-            // @ts-ignore
             await cmd.followUp({
-                // @ts-ignore
                 content: `Counting isn't active in this server! Use ${cmds.counting.config.mention} to set it up.`,
                 ephemeral: true
             });

@@ -52,7 +52,6 @@ function getCommandPaths(cmds, includeAllModules) {
 
 function getCommandFromPath(cmdPath) {
     var [commandName, subcommandName] = cmdPath.split(" ");
-    // @ts-ignore
     var command = cmds[commandName];
     if (subcommandName) {
         command = command[subcommandName];
@@ -177,7 +176,6 @@ module.exports = {
 
         const guild = await guildByObj(cmd.guild);
 
-        // @ts-ignore
         const allCommands = getCommandPaths(cmds, true);
         const commandToBlock = cmd.options.getString("command");
         const unblock = cmd.options.getBoolean("unblock");
@@ -218,13 +216,12 @@ module.exports = {
     },
 
     async autocomplete(cmd) {
-        // @ts-ignore
         let   allCommands = getCommandPaths(cmds, true);
         const userInput = cmd.options.getFocused() || "";
 
         // Get the top matching results
         if (userInput) {
-            // @ts-ignore
+            // @ts-ignore - Fuse ts checking is broken
             const fuse = new Fuse(allCommands.map(item => ({ item })), fuseOptions);
             const scoredResults = fuse.search(userInput)
                 .filter(result => result.score <= 3.5) // Very roughly similar-ish

@@ -332,12 +332,10 @@ module.exports = {
 
             cmd.followUp({
                 content: `<t:${Math.round(Number(startingTime) / 1000)}:t>`,
-                // @ts-ignore
-                components: components.timestamp
+                components: components.timestamp.map(c => c.toJSON())
             });
         }
         else {
-            // @ts-ignore
             cmd.followUp(`This command needs you to set your timezone first! Run ${cmds.personal_config.mention} and specify \`configure_timezone\` to get started,`);
         }
     },

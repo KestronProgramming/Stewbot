@@ -78,7 +78,6 @@ module.exports = {
         switch (cmd.options.getString("which")) {
             case "levels":
                 if (!guild.levels.active) {
-                    // @ts-ignore
                     cmd.followUp(`This server doesn't use level ups at the moment. It can be configured using ${cmds.levels_config.mention}.`);
                     return;
                 }
@@ -157,7 +156,6 @@ module.exports = {
                 break;
             case "emojiboard":
                 if (guild?.emojiboards.size < 1) {
-                    // @ts-ignore
                     cmd.followUp(`This server doesn't use any emojiboards at the moment. It can be configured using ${cmds.emojiboard.add.mention}.`);
                     break;
                 }
@@ -170,7 +168,7 @@ module.exports = {
                     break;
                 }
 
-                // @ts-ignore
+                // @ts-ignore - ts trips up on filter
                 const topPosters = await Guilds.aggregate([
                     { $match: { id: cmd.guild.id } },
                     { $project: {
@@ -283,7 +281,6 @@ module.exports = {
                 break;
             case "profanity":
                 if (!guild.filter.active) {
-                    // @ts-ignore
                     cmd.followUp(`This server doesn't use the filter at the moment. It can be configured using ${cmds.filter.config.mention}.`);
                     return;
                 }
@@ -356,7 +353,6 @@ module.exports = {
                 break;
             case "cleanliness":
                 if (!guild.filter.active) {
-                    // @ts-ignore
                     cmd.followUp(`This server doesn't use the filter at the moment. It can be configured using ${cmds.filter.config.mention}.`);
                     return;
                 }

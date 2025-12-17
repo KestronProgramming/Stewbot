@@ -371,7 +371,6 @@ module.exports = {
                             `This message appears to contain **hidden content** via abusing discord formatting. Links may not lead where embeds show.\n` +
                             `\n` +
                             `-# If you need to disable this feature, run ${"`/badware_scanner format_exploits:false`"}\n` +
-                            // @ts-ignore
                             `-# This is a **new feature**. If you encounter issues, please report details with ${cmds.report_problem.mention}`
                         );
                     }
@@ -490,7 +489,6 @@ module.exports = {
 
                         let message =
                             `<@${msg.author.id}> I deleted your message because the following attachments contained sensitive metadata (e.g. the GPS/location the photo was taken): \`${leakedNames.join("`, `")}\`\n` +
-                            // @ts-ignore
                             `-# You can prevent this feature by running ${cmds.personal_config.mention}\n`;
 
                         if (msg.content)
@@ -511,7 +509,6 @@ module.exports = {
                                     `I suggest deleting your message.\n` +
                                     `\n` +
                                     `I tried to delete it myself, but do not have sufficient permissions in the server (\`Manage_Messages\`).\n` +
-                                    // @ts-ignore
                                     `-# You can prevent this feature by running ${cmds.personal_config.mention}`
                         }).catch(() => {});
                     }

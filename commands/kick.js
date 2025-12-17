@@ -74,7 +74,6 @@ module.exports = {
         }
 
         if (targetMember.id === client.user.id) {
-            // @ts-ignore
             return cmd.followUp(`I cannot kick myself. I apologize for any inconveniences I may have caused. You can use ${cmds.report_problem.mention} if there's something that needs improvement.`);
         }
 

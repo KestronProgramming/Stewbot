@@ -12,7 +12,7 @@ function applyContext(context = {}) {
 // #endregion CommandBoilerplate
 
 /** @type {import("compromise").default} */
-// @ts-ignore
+// @ts-ignore - Compromise ts checking is broken
 const nlp = require("compromise");
 
 const mathjs = require("mathjs");
@@ -260,7 +260,6 @@ module.exports = {
 
             case "set_number":
                 if (!guild.counting.active) {
-                    // @ts-ignore
                     cmd.followUp(`This server doesn't use counting at the moment, configure it with ${cmds["counting config"]}.`);
                     break;
                 }

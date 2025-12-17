@@ -167,7 +167,6 @@ module.exports = {
                     `**Warnings in ${cmd.guild.name}**${
                         warningsMessage.length > 0
                             ? warningsMessage.join("")
-                            // @ts-ignore
                             : `\n-# No Warnings have been issued. Use ${cmds.warn.mention} to issue a warning.`}`
                 ),
                 allowedMentions: { parse: [] }

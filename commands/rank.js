@@ -55,7 +55,6 @@ module.exports = {
         const guild = await guildByObj(cmd.guild);
 
         if (!guild.levels.active) {
-            // @ts-ignore
             cmd.followUp(`This server doesn't use level ups at the moment. It can be configured using ${cmds.levels_config.mention}.`);
             return;
         }
