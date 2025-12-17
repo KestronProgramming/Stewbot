@@ -1,8 +1,7 @@
 // #region CommandBoilerplate
-const Categories = require("./modules/Categories");
 const client = require("../client.js");
-const { Guilds, Users, ConfigDB, guildByID, userByID, guildByObj, userByObj } = require("./modules/database.js")
-const { Events, SlashCommandBuilder, Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, GatewayIntentBits, ModalBuilder, TextInputBuilder, TextInputStyle, Partials, ActivityType, PermissionFlagsBits, DMChannel, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType, AuditLogEvent, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageReaction, MessageType } = require("discord.js");
+const { ConfigDB } = require("./modules/database.js");
+const { Events, SlashCommandBuilder, ActivityType, PermissionFlagsBits } = require("discord.js");
 function applyContext(context = {}) {
     for (let key in context) {
         this[key] = context[key];
@@ -31,8 +30,9 @@ async function refreshStatusHandler() {
                 { type: ActivityType.Custom }
             );
             statusIndex++;
-        }, Math.max(delay, 1000))
-    } else {
+        }, Math.max(delay, 1000));
+    }
+    else {
         client.user.setActivity(
             statuses?.[0],
             { type: ActivityType.Custom }
@@ -43,50 +43,50 @@ async function refreshStatusHandler() {
 module.exports = {
     data: {
         command: new SlashCommandBuilder()
-			.setName('motd')
-			.setDescription(`Change the bot's status`)
-			.addSubcommand(subcommand =>
-				subcommand
-					.setName("add")
-					.setDescription("Add a new status message")
-					.addStringOption(option => 
-						option
-							.setName("status")
-							.setDescription("The status message")
-							.setRequired(true)
-					)
-			)
-			.addSubcommand(subcommand => 
-				subcommand
-					.setName("remove")
-					.setDescription("Remove a status message")
-					.addStringOption(option => 
-						option
-							.setName("status")
-							.setDescription("The status message")
-							.setRequired(true)
-							.setAutocomplete(true)
-					)
-			)
-			.addSubcommand(subcommand =>
-				subcommand
-					.setName("delay")
-					.setDescription("Set the cycle delay")
-					.addNumberOption(option => 
-						option
-							.setName("milliseconds")
-							.setDescription("The time in milliseconds between statuses")
-							.setRequired(true)
-					)
-			)
-			.setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
-            
-        extra: {"contexts": [0], "integration_types": [0]},
+            .setName("motd")
+            .setDescription(`Change the bot's status`)
+            .addSubcommand(subcommand =>
+                subcommand
+                    .setName("add")
+                    .setDescription("Add a new status message")
+                    .addStringOption(option =>
+                        option
+                            .setName("status")
+                            .setDescription("The status message")
+                            .setRequired(true)
+                    )
+            )
+            .addSubcommand(subcommand =>
+                subcommand
+                    .setName("remove")
+                    .setDescription("Remove a status message")
+                    .addStringOption(option =>
+                        option
+                            .setName("status")
+                            .setDescription("The status message")
+                            .setRequired(true)
+                            .setAutocomplete(true)
+                    )
+            )
+            .addSubcommand(subcommand =>
+                subcommand
+                    .setName("delay")
+                    .setDescription("Set the cycle delay")
+                    .addNumberOption(option =>
+                        option
+                            .setName("milliseconds")
+                            .setDescription("The time in milliseconds between statuses")
+                            .setRequired(true)
+                    )
+            )
+            .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
+
+        extra: { "contexts": [0], "integration_types": [0] },
 
         requiredGlobals: [],
         help: {
-            helpCategories: [""],//Do not show in any automated help pages
-            shortDesc: "Stewbot's Admins Only",//Should be the same as the command setDescription field
+            helpCategories: [""], //Do not show in any automated help pages
+            shortDesc: "Stewbot's Admins Only", //Should be the same as the command setDescription field
             detailedDesc: //Detailed on exactly what the command does and how to use it
                 `Stewbot's Admins Only`
         }
@@ -100,22 +100,23 @@ module.exports = {
 
             const subcommand = cmd.options.getSubcommand();
             let delay = cmd.options.getNumber("milliseconds");
-            let status = cmd.options.getString("status")?.normalize()?.trim();
+            let status = cmd.options.getString("status")?.normalize()
+                ?.trim();
 
             let config = await ConfigDB.findOne();
 
             switch (subcommand) {
-                case "add": 
-                    config.MOTD.statuses.push(status)
-                    break
+                case "add":
+                    config.MOTD.statuses.push(status);
+                    break;
 
-                case "remove": 
+                case "remove":
                     config.MOTD.statuses = config.MOTD.statuses.filter( s =>
                         s.normalize().trim() !== status
-                    )
-                    break
+                    );
+                    break;
 
-                case "delay": 
+                case "delay":
                     config.MOTD.delay = Math.max(delay, 1000);
                     break;
             }
@@ -124,23 +125,24 @@ module.exports = {
             await refreshStatusHandler();
             cmd.followUp("Done.");
 
-        } else {
+        }
+        else {
             cmd.followUp("This command is for bot administrators only.");
         }
     },
 
     async autocomplete(cmd) {
-        let allStatues = await ConfigDB.findOne({}).distinct("MOTD.statuses")
+        let allStatues = await ConfigDB.findOne({}).distinct("MOTD.statuses");
         let autocompletes = allStatues.map(status => ({
             name: status,
             value: status
-        }))
+        }));
 
         cmd.respond(autocompletes);
     },
 
-    async [Events.ClientReady] () {
+    async [Events.ClientReady]() {
         setTimeout(refreshStatusHandler, 500);
-        setInterval(refreshStatusHandler, 60000 * 5)
+        setInterval(refreshStatusHandler, 60000 * 5);
     }
 };

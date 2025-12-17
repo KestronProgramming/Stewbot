@@ -10,19 +10,24 @@ function applyContext(context = {}) {
 
 // #endregion CommandBoilerplate
 
-const { limitLength } = require("../utils.js")
+const { limitLength } = require("../utils.js");
 const config = require("../data/config.json");
 const { censor } = require("./filter");
 
 module.exports = {
     data: {
         // Slash command data
-        command: new SlashCommandBuilder().setName("admin_message").setDescription("Anonymously make a post in the server's name")
+        command: new SlashCommandBuilder().setName("admin_message")
+            .setDescription("Anonymously make a post in the server's name")
             .addStringOption(option =>
-                option.setName("what").setDescription("What to say").setMaxLength(2000).setRequired(true)
-            ).addUserOption(option =>
+                option.setName("what").setDescription("What to say")
+                    .setMaxLength(2000)
+                    .setRequired(true)
+            )
+            .addUserOption(option =>
                 option.setName("target").setDescription("The user to message")
-            ).setDefaultMemberPermissions(PermissionFlagsBits.KickMembers),
+            )
+            .setDefaultMemberPermissions(PermissionFlagsBits.KickMembers),
 
         // Optional fields
 
@@ -37,7 +42,7 @@ module.exports = {
             shortDesc: "Post anonymously in the server's name",
             detailedDesc:
                 `Moderators can use this command to make a post in the server's name. If you specify a user, Stewbot will DM the selected user with the message of choice. If no user is selected, the bot will use webhooks to post your message in the server's name in the same channel this command is used in.`
-        },
+        }
     },
 
     /** @param {import('discord.js').ChatInputCommandInteraction} cmd */
@@ -61,22 +66,25 @@ module.exports = {
             let worked = true;
             try {
                 await target.send({
-                    embeds: [{
-                        type: EmbedType.Rich,
-                        title: limitLength(await censor(cmd.guild.name), 80),
-                        description: await censor(message.replaceAll("\\n", "\n")),
-                        color: 0x006400,
-                        thumbnail: {
-                            url: String(cmd.guild.iconURL() || ""),
-                            height: 0,
-                            width: 0,
-                        },
-                        footer: {
-                            text: `This message was sent by a moderator of ${cmd.guild.name}`
+                    embeds: [
+                        {
+                            type: EmbedType.Rich,
+                            title: limitLength(await censor(cmd.guild.name), 80),
+                            description: await censor(message.replaceAll("\\n", "\n")),
+                            color: 0x006400,
+                            thumbnail: {
+                                url: String(cmd.guild.iconURL() || ""),
+                                height: 0,
+                                width: 0
+                            },
+                            footer: {
+                                text: `This message was sent by a moderator of ${cmd.guild.name}`
+                            }
                         }
-                    }]
-                })
-            } catch (e) {
+                    ]
+                });
+            }
+            catch (e) {
                 worked = false;
             }
             await cmd.followUp(
@@ -91,11 +99,11 @@ module.exports = {
             let resp = {
                 "content": await censor(message.replaceAll("\\n", "\n")),
                 "avatarURL": cmd.guild.iconURL() || undefined,
-                "username": limitLength(await censor(cmd.guild.name), 80),
+                "username": limitLength(await censor(cmd.guild.name), 80)
             };
             // Discord server name edge case
             if (resp?.username?.toLowerCase().includes("discord")) {
-                resp.username = "[SERVER]"
+                resp.username = "[SERVER]";
             }
             let webhook = await cmd.channel.fetchWebhooks();
             let hook = webhook.find(h => h.token);

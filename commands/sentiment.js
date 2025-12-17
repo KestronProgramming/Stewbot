@@ -1,10 +1,10 @@
 // #region CommandBoilerplate
 const Categories = require("./modules/Categories");
-const { Events }=require("discord.js");
+const { Events } = require("discord.js");
 
 // #endregion CommandBoilerplate
 
-const Sentiment = require('sentiment');
+const Sentiment = require("sentiment");
 const sentiment = new Sentiment();
 
 function textToEmojiSentiment(text) {
@@ -12,35 +12,35 @@ function textToEmojiSentiment(text) {
 
     // Return if the message is too large (announcement that mentions Stewbot among others, etc)
     if (text.length > 200) {
-        return [ '😐', false ]
+        return ["😐", false];
     }
 
     const result = sentiment.analyze(text);
 
     // Take combined score and calculate final score based on size of message
-    const neutralizedScore = result.score / (result.calculation.length||1);
+    const neutralizedScore = result.score / (result.calculation.length || 1);
 
     // The better model takes longer, so we'll swap to the fast one to prevent ddos if necessary
 
     // Most words lie between 4 to -4, a very few of them go up to 5.
-    
+
     /** @type {[string, number]} */
     // @ts-ignore
     var [emoji, chance] = ((score) => {
-        const neutral = [ '👋', 0.2 ]
+        const neutral = ["👋", 0.2];
         // Positive
-        if (score >= 5) return [process.env.beta?'<:jerry:1281416051409555486>':"<:jerry:1280238994277535846>", 1];
-        if (score >= 3) return ['🧡', 1];
-        if (score >= 1) return ['🍲', 0.7];
+        if (score >= 5) return [process.env.beta ? "<:jerry:1281416051409555486>" : "<:jerry:1280238994277535846>", 1];
+        if (score >= 3) return ["🧡", 1];
+        if (score >= 1) return ["🍲", 0.7];
         // No sentiment - TODO: wave should only react at random
         if (score == 0) return neutral;
         // Negative
-        if (score <= -4) return ['😭', 1];
-        if (score <= -3) return ['💔', 1];
-        if (score <= -1) return ['😕', 0.3];
+        if (score <= -4) return ["😭", 1];
+        if (score <= -3) return ["💔", 1];
+        if (score <= -1) return ["😕", 0.3];
         // Fallback
         return neutral;
-    })(neutralizedScore)
+    })(neutralizedScore);
 
     const toReact = Math.random() < chance;
 
@@ -49,31 +49,31 @@ function textToEmojiSentiment(text) {
 }
 
 module.exports = {
-	data: {
-		command: null,
+    data: {
+        command: null,
 
-		// Not all modules will have help commands, but they can in theory to showcase bot features.
-		help: {
-			helpCategories: [Categories.Server_Only, Categories.Entertainment, Categories.Bot, Categories.Module],
-			shortDesc: "React when Stewbot is mentioned",//Should be the same as the command setDescription field
-			detailedDesc: //Detailed on exactly what the command does and how to use it
+        // Not all modules will have help commands, but they can in theory to showcase bot features.
+        help: {
+            helpCategories: [Categories.Server_Only, Categories.Entertainment, Categories.Bot, Categories.Module],
+            shortDesc: "React when Stewbot is mentioned", //Should be the same as the command setDescription field
+            detailedDesc: //Detailed on exactly what the command does and how to use it
 				`Runs basic sentiment-analysis on messages mentioning Stewbot to determine how to react.`
-		},
-	},
+        }
+    },
 
-    /** 
-     * @param {import('discord.js').Message} msg 
+    /**
+     * @param {import('discord.js').Message} msg
      * */
-    async [Events.MessageCreate] (msg) {
+    async [Events.MessageCreate](msg) {
         // Sentiment Analysis reactions
         let containsStewbot = /\bstewbot\'?s?\b/i.test(msg.content);
         let containsStewbeta = process.env.beta && /\bstewbeta\'?s?\b/i.test(msg.content);
 
         if (
             // @ts-ignore
-            !msg.filtered && 
-            !msg.author?.bot && 
-            (containsStewbot||containsStewbeta)
+            !msg.filtered &&
+            !msg.author?.bot &&
+            (containsStewbot || containsStewbeta)
         ) {
             var [emoji, toReact] = textToEmojiSentiment(msg.content);
             if (toReact) {
@@ -81,5 +81,5 @@ module.exports = {
                 msg.react(emoji).catch(() => {});
             }
         }
-	}
+    }
 };

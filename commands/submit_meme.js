@@ -9,19 +9,27 @@ function applyContext(context = {}) {
 }
 
 // #endregion CommandBoilerplate
-const fs = require("fs")
-const { limitLength } = require("../utils.js")
+const fs = require("fs");
+const { limitLength } = require("../utils.js");
 const config = require("../data/config.json");
 
-const components = [new ActionRowBuilder().addComponents(
-    new ButtonBuilder().setCustomId("save_meme").setLabel("Approve meme").setStyle(ButtonStyle.Success),
-    new ButtonBuilder().setCustomId("delete-all").setLabel("Delete message").setStyle(ButtonStyle.Danger)
-).toJSON()];
+const components = [
+    new ActionRowBuilder().addComponents(
+        new ButtonBuilder().setCustomId("save_meme")
+            .setLabel("Approve meme")
+            .setStyle(ButtonStyle.Success),
+        new ButtonBuilder().setCustomId("delete-all")
+            .setLabel("Delete message")
+            .setStyle(ButtonStyle.Danger)
+    )
+        .toJSON()
+];
 
 module.exports = {
     data: {
         // Slash command data
-        command: new ContextMenuCommandBuilder().setName("submit_meme").setType(ApplicationCommandType.Message),
+        command: new ContextMenuCommandBuilder().setName("submit_meme")
+            .setType(ApplicationCommandType.Message),
 
         // Optional fields
 
@@ -36,11 +44,11 @@ module.exports = {
 
         help: {
             helpCategories: [Categories.Bot, Categories.Entertainment, Categories.Context_Menu],
-			shortDesc: "Submit a meme to the Stewbot moderators for verification to show up in `/fun meme`",//Should be the same as the command setDescription field
-			detailedDesc: //Detailed on exactly what the command does and how to use it
-				// @ts-ignore
-				`Using this command on a message with an image or video will submit it to the Stewbot moderators to verify to begin showing up in the ${cmds.fun.meme.mention} command. This is a context menu command, and is accessed by holding down on a message on mobile, or right clicking on desktop, and then selecting "Apps".`
-        },
+            shortDesc: "Submit a meme to the Stewbot moderators for verification to show up in `/fun meme`", //Should be the same as the command setDescription field
+            detailedDesc: //Detailed on exactly what the command does and how to use it
+                // @ts-ignore
+                `Using this command on a message with an image or video will submit it to the Stewbot moderators to verify to begin showing up in the ${cmds.fun.meme.mention} command. This is a context menu command, and is accessed by holding down on a message on mobile, or right clicking on desktop, and then selecting "Apps".`
+        }
     },
 
     /** @param {import('discord.js').MessageContextMenuCommandInteraction} cmd */
@@ -52,7 +60,7 @@ module.exports = {
             return;
         }
         let i = 0;
-        let files = [ ]
+        let files = [];
         for (let a of cmd.targetMessage.attachments) {
             var temp = a[1].url.split("?")[0].split(".");
             let dots = temp[temp.length - 1];
@@ -60,31 +68,32 @@ module.exports = {
                 await cmd.followUp({ content: `I don't support/recognize the file extension \`.${dots}\``, ephemeral: true });
                 return;
             }
-            await fetch(a[1].url).then(d => d.arrayBuffer()).then(d => {
-                const tempMeme = new AttachmentBuilder(Buffer.from(d), { name: `${i}.${dots}` });
-                files.push(tempMeme);
-            });
+            await fetch(a[1].url).then(d => d.arrayBuffer())
+                .then(d => {
+                    const tempMeme = new AttachmentBuilder(Buffer.from(d), { name: `${i}.${dots}` });
+                    files.push(tempMeme);
+                });
             i++;
         }
         const targetChannel = client.channels.cache.get(process.env.beta ? config.betaNoticeChannel : config.noticeChannel);
         if (
-            !targetChannel.isTextBased() || 
+            !targetChannel.isTextBased() ||
             !targetChannel.isSendable()
         ) {
             await cmd.followUp({ content: "Unable to submit meme right now; report channel is unavailable.", ephemeral: true });
             return;
         }
 
-        await targetChannel.send({ 
-            content: limitLength(`User ${cmd.user.username} submitted a meme for evaluation.`), 
-            files: files, 
-            components: components 
+        await targetChannel.send({
+            content: limitLength(`User ${cmd.user.username} submitted a meme for evaluation.`),
+            files: files,
+            components: components
         });
         await cmd.followUp({ content: `Submitted for evaluation`, ephemeral: true });
     },
 
     subscribedButtons: ["save_meme"],
-	
+
     /** @param {import('discord.js').ButtonInteraction} cmd */
     async onbutton(cmd, context) {
         applyContext(context);

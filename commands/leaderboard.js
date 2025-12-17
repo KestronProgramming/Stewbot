@@ -1,7 +1,7 @@
 // #region CommandBoilerplate
 const Categories = require("./modules/Categories");
 const client = require("../client.js");
-const { Guilds, GuildUsers, guildByObj, guildUserByObj } = require("./modules/database.js")
+const { Guilds, GuildUsers, guildByObj, guildUserByObj } = require("./modules/database.js");
 const { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits, GuildMember } = require("discord.js");
 function applyContext(context = {}) {
     for (let key in context) {
@@ -11,28 +11,35 @@ function applyContext(context = {}) {
 
 // #endregion CommandBoilerplate
 
-const { getEmojiFromMessage } = require('./emojiboard');
+const { getEmojiFromMessage } = require("./emojiboard");
 const { isDirty } = require("./filter");
-const { getLvl } = require("./rank.js")
+const { getLvl } = require("./rank.js");
 
 module.exports = {
     data: {
         // Slash command data
-        command: new SlashCommandBuilder().setName("leaderboard").setDescription("View a leaderboard for a guild or a rank card for a user.")
+        command: new SlashCommandBuilder().setName("leaderboard")
+            .setDescription("View a leaderboard for a guild or a rank card for a user.")
             .addStringOption(option =>
-                option.setName("which").setDescription("Which leaderboard do you want to see?").setChoices(
-                    { name: "Counting", value: "counting" },
-                    { name: "Emojiboard", value: "emojiboard" },
-                    { name: "Cleanliness", value: "cleanliness" },
-                    { name: "Profanity", value: "profanity" },
-                    { name: "Level-Ups", value: "levels" }
-                ).setRequired(true)
-            ).addUserOption(option =>
+                option.setName("which").setDescription("Which leaderboard do you want to see?")
+                    .setChoices(
+                        { name: "Counting", value: "counting" },
+                        { name: "Emojiboard", value: "emojiboard" },
+                        { name: "Cleanliness", value: "cleanliness" },
+                        { name: "Profanity", value: "profanity" },
+                        { name: "Level-Ups", value: "levels" }
+                    )
+                    .setRequired(true)
+            )
+            .addUserOption(option =>
                 option.setName("who").setDescription("If applicable, who's spot on the leaderboard do you wish to highlight?")
-            ).addStringOption(option =>
+            )
+            .addStringOption(option =>
                 option.setName("emoji").setDescription("If emojiboard, which emoji do you want a leaderboard for?")
-            ).addBooleanOption(option =>
-                option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
+            )
+            .addBooleanOption(option =>
+                option.setName("private").setDescription("Make the response ephemeral?")
+                    .setRequired(false)
             ),
 
         // Optional fields
@@ -43,10 +50,10 @@ module.exports = {
 
         help: {
             helpCategories: [Categories.Information, Categories.Entertainment],
-			shortDesc: "View a leaderboard",//Should be the same as the command setDescription field
-			detailedDesc: //Detailed on exactly what the command does and how to use it
+            shortDesc: "View a leaderboard", //Should be the same as the command setDescription field
+            detailedDesc: //Detailed on exactly what the command does and how to use it
 				`View one of the leaderboards. See what server has globally counted the highest, how many people in this server have been on the emojiboard the most times, who has broken the filter rules the least, who has broken them the most (if you're an admin), or who's gotten the highest amount of server XP`
-        },
+        }
 
     },
 
@@ -56,13 +63,14 @@ module.exports = {
 
         let guild;
         let requestedUser;
-        let emoji = cmd.options.getString("emoji")
+        let emoji = cmd.options.getString("emoji");
 
         // Only some leaderboards are able to be used in servers
         if (cmd.guild?.id === undefined && cmd.options.getString("which") !== "counting") {
             cmd.followUp(`This leaderboard can only be used in servers that have it enabled. Try in a server that uses it!`);
             return;
-        } else {
+        }
+        else {
             // Only create guild if we need it
             guild = await guildByObj(cmd.guild);
         }
@@ -83,7 +91,7 @@ module.exports = {
                     const requestedUserRank = await GuildUsers.countDocuments({
                         guildId: cmd.guild.id,
                         $or: [
-                            { exp: { $gt: requestedUser.exp } },
+                            { exp: { $gt: requestedUser.exp } }
                         ]
                     }) + 1;
 
@@ -93,7 +101,7 @@ module.exports = {
                         cmd.followUp(`I am unaware of this user presently`);
                         return;
                     }
-                    
+
                     const levelEmbed = new EmbedBuilder()
                         .setTitle(`Rank for ${cmd.guild.name}`)
                         .setColor(0x006400)
@@ -123,10 +131,10 @@ module.exports = {
 
                 // Leaderboard leaderboard
                 const mostLevelsUsers = await GuildUsers.find({
-                    "guildId": cmd.guild.id,
+                    "guildId": cmd.guild.id
                 })
                     .select("userId lvl exp")
-                    .sort([['lvl', -1], ['exp', -1]]) // Sort by level, then the users within those level
+                    .sort([["lvl", -1], ["exp", -1]]) // Sort by level, then the users within those level
                     .limit(10)
                     .lean();
 
@@ -198,13 +206,13 @@ module.exports = {
                     { $match: {
                         total: { $gt: 0 }
                     } }
-                ].filter(s=>s!=undefined))
+                ].filter(s => s != undefined));
 
                 leaderboard = topPosters
                     .map((user, i) => `\n${["🥇", "🥈", "🥉", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"][i]}. <@${user._id}> ${user.total} emojiboards`)
                     .join("");
-                
-                
+
+
                 const emojiName = emote && emote.includes(":") ? emote.split(":")[1] : (emoji ?? "Emoji");
                 const emoteEmbed = new EmbedBuilder()
                     .setTitle(`${cmd.guild.name} ${emote ? emote : emoji ?? "Emoji"}board Leaderboard`)
@@ -224,26 +232,26 @@ module.exports = {
                     "counting": { $exists: true },
                     "counting.highestNum": { $gt: 0 },
                     "counting.public": true,
-                    "counting.legit": true,
+                    "counting.legit": true
                 })
                     .select("id counting")
-                    .sort([['counting.highestNum', -1]])
+                    .sort([["counting.highestNum", -1]])
                     .limit(10)
                     .lean();
 
                 // Process into easier to read format
                 let leaders = []; // [name, highestNum, id]
                 for (const guild of topCountingGuilds) {
-                    const discordGuild = await client.guilds.fetch(guild.id).catch(()=>null);
+                    const discordGuild = await client.guilds.fetch(guild.id).catch(() => null);
                     const guildName = discordGuild?.name
-                        ? await isDirty(discordGuild.name, cmd.guild?.id, true) 
-                            ? "[Blocked name]" 
+                        ? await isDirty(discordGuild.name, cmd.guild?.id, true)
+                            ? "[Blocked name]"
                             : discordGuild.name
-                        : "Unknown Guild"
+                        : "Unknown Guild";
 
                     leaders.push([
-                        guildName, 
-                        guild.counting.highestNum, 
+                        guildName,
+                        guild.counting.highestNum,
                         guild.id
                     ]);
                 }
@@ -252,11 +260,11 @@ module.exports = {
                 if (cmd.guild && guild?.counting?.active) {
                     const place = leaders.map(a => a[2]).indexOf(cmd.guildId);
                     let placeEnd = ["st", "nd", "rd"][place] || "th";
-                    
-                    footerRank = 
-                        `${cmd.guild.name} is in ${place+1}${placeEnd} place with a high score of ${guild.counting.highestNum}.`
+
+                    footerRank =
+                        `${cmd.guild.name} is in ${place + 1}${placeEnd} place with a high score of ${guild.counting.highestNum}.`;
                 }
-                
+
                 const countingEmbed = new EmbedBuilder()
                     .setTitle(`Counting Leaderboard`)
                     .setDescription(
@@ -280,7 +288,7 @@ module.exports = {
                     return;
                 }
 
-                if(!(cmd.member instanceof GuildMember) || !cmd.member?.permissions.has(PermissionFlagsBits.ManageMessages)){
+                if (!(cmd.member instanceof GuildMember) || !cmd.member?.permissions.has(PermissionFlagsBits.ManageMessages)) {
                     cmd.followUp(`I'm sorry, to prevent being filtered being used as a game this leaderboard is only available to moderators.`);
                     return;
                 }
@@ -293,10 +301,10 @@ module.exports = {
                     const requestedUserInfractions = requestedUser.infractions || 0;
                     const requestedUserRank = await GuildUsers.countDocuments({
                         guildId: cmd.guild.id,
-                        infractions: { $gt: requestedUserInfractions },
+                        infractions: { $gt: requestedUserInfractions }
                     }) + 1;
 
-                    const discordUser = await client.users.fetch(usr).catch(()=>null);
+                    const discordUser = await client.users.fetch(usr).catch(() => null);
 
                     const profanityEmbed = new EmbedBuilder()
                         .setTitle(`Profanity rank for ${cmd.guild.name}`)
@@ -308,7 +316,7 @@ module.exports = {
                         })
                         .addFields(
                             { name: `Times Filtered`, value: `${requestedUserInfractions || 0}`, inline: true },
-                            { name: `Profanity Rank`, value: `#${requestedUserRank}`, inline: true },
+                            { name: `Profanity Rank`, value: `#${requestedUserRank}`, inline: true }
                         )
                         .setFooter({ text: `Profanity Leaderboard` });
 
@@ -323,10 +331,10 @@ module.exports = {
                 // Compile leaderboard for whole server
 
                 const mostProfaneUsers = await GuildUsers.find({
-                    "guildId": cmd.guild.id,
+                    "guildId": cmd.guild.id
                 })
                     .select("userId infractions")
-                    .sort([['infractions', -1]])
+                    .sort([["infractions", -1]])
                     .limit(10)
                     .lean();
 
@@ -345,7 +353,7 @@ module.exports = {
                     content: `**Profanity Leaderboard**`,
                     embeds: [profanityBoard]
                 });
-            break;
+                break;
             case "cleanliness":
                 if (!guild.filter.active) {
                     // @ts-ignore
@@ -365,28 +373,28 @@ module.exports = {
                         $expr: {
                             $or: [
                                 // Get all users with less infractions in our DB.
-                                // TODO: unstored users kinda aren't counted, so assume everyone not in our DB is 0 
+                                // TODO: unstored users kinda aren't counted, so assume everyone not in our DB is 0
                                 { $lt: [
                                     { $ifNull: ["$infractions", 0] }, // Treat missing infractions as 0
                                     requestedUserInfractions
-                                ]},
+                                ] },
 
                                 // Users with the same amount of infractions but more time spent in the server are cleaner
                                 { $and: [
                                     { $eq: [
-                                            { $ifNull: ["$infractions", 0] },
-                                            requestedUserInfractions
-                                    ]},
+                                        { $ifNull: ["$infractions", 0] },
+                                        requestedUserInfractions
+                                    ] },
                                     { $gt: [
                                         { $ifNull: ["$exp", 0] },
                                         requestedUserExp
-                                    ]}
-                                ]}
+                                    ] }
+                                ] }
                             ]
                         }
                     }) + 1;
 
-                    const discordUser = await client.users.fetch(usr).catch(()=>null);
+                    const discordUser = await client.users.fetch(usr).catch(() => null);
 
                     const cleanEmbed = new EmbedBuilder()
                         .setTitle(`Cleanliness rank for ${cmd.guild.name}`)
@@ -412,13 +420,13 @@ module.exports = {
 
                 // Server cleanliness leaderboard
                 const mostCleanUsers = await GuildUsers.find({
-                    "guildId": cmd.guild.id,
+                    "guildId": cmd.guild.id
                 })
                     .select("userId infractions exp")
-                    .sort([['infractions', 1], ['exp', -1]]) // fewest infractions, then higher exp
+                    .sort([["infractions", 1], ["exp", -1]]) // fewest infractions, then higher exp
                     .limit(10)
                     .lean();
-                
+
 
                 const cleanBoard = new EmbedBuilder()
                     .setTitle(`${cmd.guild.name} Cleanliness Leaderboard`)
@@ -435,7 +443,7 @@ module.exports = {
                     content: `**Cleanliness Leaderboard**`,
                     embeds: [cleanBoard]
                 });
-            break;
+                break;
         }
 
     }

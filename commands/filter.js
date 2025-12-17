@@ -10,9 +10,9 @@ function applyContext(context = {}) {
 }
 
 // NOTE:
-// This is a PRIORITY module. 
+// This is a PRIORITY module.
 // That means this module will be run before any others
-// 
+//
 // Impacts:
 //  1. This module's MessageCreate handler sets a msg.filtered attribute on the msg object
 //     that can be used elsewhere in the code.
@@ -25,9 +25,9 @@ const LRUCache = require("lru-cache").LRUCache;
 const ms = require("ms");
 // var RE2 = require("re2");
 
-/** 
+/**
  * Cache for guild.filter.blacklist
- * @type {LRUCache<string, import("./modules/database.js").RawGuildDoc['filter']>} 
+ * @type {LRUCache<string, import("./modules/database.js").RawGuildDoc['filter']>}
  * */
 let guildFilterCache = new LRUCache({ ttl: ms("5s"), max: 50 });
 
@@ -55,27 +55,27 @@ let guildFilterCache = new LRUCache({ ttl: ms("5s"), max: 50 });
 // }
 
 function escapeRegex(input) {
-    return input.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+    return input.replace(/[-\/\\^$*+?.()|[\]{}]/g, "\\$&");
 }
 
 function defangURL(message) {
     const urlPattern = /(https?:\/\/[^\s]+)/g;
     return message.replace(urlPattern, (url) => {
-        return url.replace(/:\/\//g, '[://]').replace(/\./g, '[.]');
+        return url.replace(/:\/\//g, "[://]").replace(/\./g, "[.]");
     });
 }
 
 /** @deprecated Use `censor()` or `isDirty()` instead */
-const checkDirty = async function (guildID, what, filter = false, applyGlobalFilter = false) { // This function is important enough we can make it global
+const checkDirty = async function(guildID, what, filter = false, applyGlobalFilter = false) { // This function is important enough we can make it global
     // If filter is false, it returns: hasBadWords
     // If filter is true, it returns [hadBadWords, censoredMessage, wordsFound]
     // guildID can supply an array for the blacklist instead.
 
-    const originalContent = what; // Because we're preprocessing content, if the message was clean allow the original content without preprocessing 
+    const originalContent = what; // Because we're preprocessing content, if the message was clean allow the original content without preprocessing
 
     if (!guildID || !what)
         if (!filter) return false;
-        else[false, what, []];
+        else [false, what, []];
 
     // Preprocessing - anything here is destructive and will be processed this way if filtered
     what = String(what).replace(/<:(\w+):[0-9]+>/g, ":$1:"); // unsnowflake emojis
@@ -88,7 +88,7 @@ const checkDirty = async function (guildID, what, filter = false, applyGlobalFil
 
     let blacklist = [];
 
-    if (typeof (guildID) == "string") {
+    if (typeof(guildID) == "string") {
         // TODO: consider way to rewrite this to cache blocked words. As this currently queries the DB on every single message
         // @ts-ignore
         const localGuild = await Guilds.findOrCreate({ id: guildID })
@@ -113,7 +113,7 @@ const checkDirty = async function (guildID, what, filter = false, applyGlobalFil
 
     if (blacklist) for (let blockedWord of blacklist) {
         // Ignore the new beta json format for now
-        if (typeof (blockedWord) !== 'string') {
+        if (typeof(blockedWord) !== "string") {
             continue;
         }
 
@@ -139,14 +139,15 @@ const checkDirty = async function (guildID, what, filter = false, applyGlobalFil
                 word = word + "(ing|s|ed|er|ism|ist|es|ual)?"; // match variations
             }
             blockedWordRegex = new RegExp(`(\\b|^)${word}(\\b|$)`, "ig");
-        } catch (e) {
+        }
+        catch (e) {
             // This should only ever be hit on old servers that have invalid regex before the escapeRegex was implemented
             if (!e?.message?.includes?.("http")) notify("Caught filter error:\n" + JSON.stringify(e.message) + "\n" + e.stack);
             // We can ignore this filter word
             continue;
         }
 
-        // Check for the word 
+        // Check for the word
         if (blockedWordRegex.test(what) || what === blockedWord) {
             dirty = true;
             if (!filter) {
@@ -169,7 +170,8 @@ const checkDirty = async function (guildID, what, filter = false, applyGlobalFil
         // Additional sanitization content
         if (dirty) {
             what = defangURL(what);
-        } else {
+        }
+        else {
             what = originalContent; // Put snowflakes back how they were
         }
 
@@ -206,7 +208,7 @@ async function getCachedServerBlacklist(guild) {
 
     // Populate cache
     let guildId;
-    if (typeof (guild) == "string") {
+    if (typeof(guild) == "string") {
         guildId = guild;
 
         // Confirm in cache
@@ -217,7 +219,8 @@ async function getCachedServerBlacklist(guild) {
 
             guildFilterCache.set(guildId, globalGuild.filter);
         }
-    } else /** It's a mongo object */ {
+    }
+    else /** It's a mongo object */ {
         // Set directly
         guildId = guild.id;
         guildFilterCache.set(guildId, guild.filter);
@@ -228,16 +231,16 @@ async function getCachedServerBlacklist(guild) {
     return thisServerFilter.blacklist;
 }
 
-/** 
+/**
  * This function censors output against the specified server and the home server.
- * 
+ *
  * @param {String} text - The text to censor.
  * @param {String|Guild|import("./modules/database.js").RawGuildDoc} guild - The guild as a MongoDB object, guild ID, or discord.js object. A MongoDB object is preferable, as it requires less lookups.
  * @param {boolean} [global=false] Whether to apply the home server filter. This should be applied to all output that looks like it is coming from stewbot, e.g. AI.
- * 
+ *
  * @returns {Promise<[ Boolean, String, String[] ]>} A promise for the filtered text and found words.
  */
-async function censorWithFound(text, guild, global=false) {
+async function censorWithFound(text, guild, global = false) {
     // Start off blacklist with our baseline
     let blacklist = global ? await getCachedHomeBlacklist() : [];
 
@@ -245,41 +248,41 @@ async function censorWithFound(text, guild, global=false) {
     if (guild) blacklist = blacklist.concat(await getCachedServerBlacklist(guild));
 
     // @ts-ignore
-    const [wasFiltered, censoredText, foundWords ] = await checkDirty(blacklist, text, true);
+    const [wasFiltered, censoredText, foundWords] = await checkDirty(blacklist, text, true);
 
-    if (!wasFiltered) return [ false, text, [] ];
-    else return [ wasFiltered, censoredText, foundWords ];
+    if (!wasFiltered) return [false, text, []];
+    else return [wasFiltered, censoredText, foundWords];
 }
 
-/** 
+/**
  * This function censors output against the specified server and the home server.
  * Providing just text will result in checking against the home server.
- * 
+ *
  * @param {String} text - The text to censor.
  * @param {String|Guild|import("./modules/database.js").RawGuildDoc?} guild - The guild as a MongoDB object, guild ID, or discord.js object. A MongoDB object is preferable, as it requires less lookups.
  * @param {boolean?} [global] Whether to apply the home server filter. This should be applied to all output that looks like it is coming from stewbot, e.g. AI.
- * 
+ *
  * @returns {Promise<String>} A promise for the filtered text.
  */
-async function censor(text, guild=undefined, global=false) {
+async function censor(text, guild = undefined, global = false) {
     // If only text is provided, assume we're checking globally
     if (!guild) global = true;
 
-    const [ wasFiltered, censoredText, foundWords ] = await censorWithFound(text, guild, global);
+    const [wasFiltered, censoredText, foundWords] = await censorWithFound(text, guild, global);
     return censoredText;
 }
 
-/** 
+/**
  * This function checks text against the specified server and the home server.
  * Call without arguments to check against home server.
- * 
+ *
  * @param {String} text - The text to sensor.
  * @param {String|Guild|import("./modules/database.js").RawGuildDoc?} guild - The guild as a MongoDB object, guild ID, or discord.js object. A MongoDB object is preferable, as it requires less lookups.
  * @param {boolean?} [global=false] Whether to apply the home server filter. This should be applied to all output that looks like it is coming from stewbot, e.g. AI.
- * 
+ *
  * @returns {Promise<Boolean>} A promise for the filtered text and found words.
  */
-async function isDirty(text, guild=undefined, global=false) {
+async function isDirty(text, guild = undefined, global = false) {
     // If only text is provided, assume we're checking globally
     if (!guild) global = true;
 
@@ -304,37 +307,63 @@ module.exports = {
 
     data: {
         // Slash command data
-        command: new SlashCommandBuilder().setName("filter").setDescription("Manage the filter for this server").addSubcommand(command =>
-            command.setName("config").setDescription("Configure the filter for this server").addBooleanOption(option =>
-                option.setName("active").setDescription("Should I remove messages that contain words configured in the blacklist?").setRequired(true)
-            ).addBooleanOption(option =>
-                option.setName("censor").setDescription("Should I remove the filtered words from the message (true), or delete the message entirely (false)?")
-            ).addBooleanOption(option =>
-                option.setName("log").setDescription("Post a summary of filtered messages to a staff channel? (Must set 'channel' on this command if true)")
-            ).addChannelOption(option =>
-                option.setName("channel").setDescription("Which channel should I post summaries of deleted messages to?").addChannelTypes(ChannelType.GuildText)
-            ).addBooleanOption(option =>
-                option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
+        command: new SlashCommandBuilder().setName("filter")
+            .setDescription("Manage the filter for this server")
+            .addSubcommand(command =>
+                command.setName("config").setDescription("Configure the filter for this server")
+                    .addBooleanOption(option =>
+                        option.setName("active").setDescription("Should I remove messages that contain words configured in the blacklist?")
+                            .setRequired(true)
+                    )
+                    .addBooleanOption(option =>
+                        option.setName("censor").setDescription("Should I remove the filtered words from the message (true), or delete the message entirely (false)?")
+                    )
+                    .addBooleanOption(option =>
+                        option.setName("log").setDescription("Post a summary of filtered messages to a staff channel? (Must set 'channel' on this command if true)")
+                    )
+                    .addChannelOption(option =>
+                        option.setName("channel").setDescription("Which channel should I post summaries of deleted messages to?")
+                            .addChannelTypes(ChannelType.GuildText)
+                    )
+                    .addBooleanOption(option =>
+                        option.setName("private").setDescription("Make the response ephemeral?")
+                            .setRequired(false)
+                    )
             )
-        ).addSubcommand(command =>
-            command.setName("add").setDescription('Add a word to the filter').addStringOption(option =>
-                option.setName("word").setDescription("The word to blacklist").setRequired(true)
-            ).addBooleanOption(option =>
-                option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
+            .addSubcommand(command =>
+                command.setName("add").setDescription("Add a word to the filter")
+                    .addStringOption(option =>
+                        option.setName("word").setDescription("The word to blacklist")
+                            .setRequired(true)
+                    )
+                    .addBooleanOption(option =>
+                        option.setName("private").setDescription("Make the response ephemeral?")
+                            .setRequired(false)
+                    )
             )
-        ).addSubcommand(command =>
-            command.setName("remove").setDescription('Remove a word from the filter').addStringOption(option =>
-                option.setName("word").setDescription("The word to remove from the blacklist").setRequired(true)
-            ).addBooleanOption(option =>
-                option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
+            .addSubcommand(command =>
+                command.setName("remove").setDescription("Remove a word from the filter")
+                    .addStringOption(option =>
+                        option.setName("word").setDescription("The word to remove from the blacklist")
+                            .setRequired(true)
+                    )
+                    .addBooleanOption(option =>
+                        option.setName("private").setDescription("Make the response ephemeral?")
+                            .setRequired(false)
+                    )
             )
-        ).addSubcommand(command =>
-            command.setName("import").setDescription("Import a CSV wordlist").addAttachmentOption(option =>
-                option.setName("file").setDescription("A .csv with comma separated words you'd like to block").setRequired(true)
-            ).addBooleanOption(option =>
-                option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
+            .addSubcommand(command =>
+                command.setName("import").setDescription("Import a CSV wordlist")
+                    .addAttachmentOption(option =>
+                        option.setName("file").setDescription("A .csv with comma separated words you'd like to block")
+                            .setRequired(true)
+                    )
+                    .addBooleanOption(option =>
+                        option.setName("private").setDescription("Make the response ephemeral?")
+                            .setRequired(false)
+                    )
             )
-        ).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
+            .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
 
         extra: { "contexts": [0], "integration_types": [0], "cat": 6 },
 
@@ -369,7 +398,7 @@ module.exports = {
                     // @ts-ignore
                     `Import a .csv file containing a list of words separated by commas to block. You can generate one from another server's filter using the ${cmds.view_filter.mention} command.`
             }
-        },
+        }
     },
 
     /** @param {import('discord.js').ChatInputCommandInteraction} cmd */
@@ -395,15 +424,16 @@ module.exports = {
                             ? ""
                             // @ts-ignore
                             : `To begin filtering in this server, use ${cmds.filter.config.mention}.`
-                            }`
+                        }`
                     });
-                } else {
+                }
+                else {
                     guild.filter.blacklist.push(word);
                     cmd.followUp(`Added ||${word}|| to the filter for this server.${guild.filter.active
                         ? ""
                         // @ts-ignore
                         : `\n\nThe filter for this server is currently disabled. To enable it, use ${cmds.filter.config.mention}.`
-                        }`);
+                    }`);
 
                     try {
                         const existingRules = await cmd.guild.autoModerationRules.fetch();
@@ -417,20 +447,21 @@ module.exports = {
                                 eventType: AutoModerationRuleEventType.MemberUpdate,
                                 triggerType: AutoModerationRuleTriggerType.MemberProfile,
                                 triggerMetadata: {
-                                    keywordFilter: [word],
+                                    keywordFilter: [word]
                                 },
                                 actions: [{
-                                    type: 4,
+                                    type: 4
                                 }]
                             });
-                        } else {
+                        }
+                        else {
                             // Rebrand the rule to us if they already have one
-                            if (profileRule.name !== 'Stewbot Profile Filter') {
+                            if (profileRule.name !== "Stewbot Profile Filter") {
                                 await profileRule.edit({
-                                    name: 'Stewbot Profile Filter',
+                                    name: "Stewbot Profile Filter",
                                     enabled: true,
                                     actions: [{
-                                        type: AutoModerationActionType.BlockMemberInteraction,
+                                        type: AutoModerationActionType.BlockMemberInteraction
                                     }]
                                 });
                             }
@@ -438,17 +469,18 @@ module.exports = {
                             // Update existing rule
                             const updatedKeywords = new Set([
                                 ...(profileRule.triggerMetadata.keywordFilter || []),
-                                word,
+                                word
                             ]);
 
                             await profileRule.edit({
                                 triggerMetadata: {
-                                    keywordFilter: Array.from(updatedKeywords),
+                                    keywordFilter: Array.from(updatedKeywords)
                                 },
-                                enabled: true,
+                                enabled: true
                             });
                         }
-                    } catch (error) {
+                    }
+                    catch (error) {
                         if (error.code !== 50013 && error.code !== 50001) {
                             throw error;
                         }
@@ -469,18 +501,19 @@ module.exports = {
                 // Remove the word from our username profile filter
                 try {
                     const existingRules = await cmd.guild.autoModerationRules.fetch();
-                    let profileRule = existingRules.find(rule => rule.triggerType === 6 && rule.name === 'Stewbot Profile Filter');
+                    let profileRule = existingRules.find(rule => rule.triggerType === 6 && rule.name === "Stewbot Profile Filter");
                     if (profileRule) {
                         const updatedKeywords = new Set(profileRule.triggerMetadata.keywordFilter || []);
                         updatedKeywords.delete(word);
 
                         await profileRule.edit({
                             triggerMetadata: {
-                                keywordFilter: Array.from(updatedKeywords),
+                                keywordFilter: Array.from(updatedKeywords)
                             }
                         });
                     }
-                } catch (error) {
+                }
+                catch (error) {
                     if (error.code !== 50001) {
                         throw error;
                     }
@@ -530,7 +563,8 @@ module.exports = {
                         }
                     });
                     await cmd.followUp(addedWords.length > 0 ? limitLength(`Added the following words to the blacklist:\n- ||${addedWords.join("||\n- ||")}||`) : `Unable to add any of the words to the filter. Either there aren't any in the CSV, it's not formatted right, or all of the words are in the blacklist already.`);
-                } catch {
+                }
+                catch {
                     cmd.followUp("Sorry, failed to import words.");
                 }
                 break;
@@ -539,9 +573,9 @@ module.exports = {
         guild.save();
     },
 
-    /** 
-     * @param {import('discord.js').Message} msg 
-     * @param {import("./modules/database.js").RawGuildDoc} guildStore 
+    /**
+     * @param {import('discord.js').Message} msg
+     * @param {import("./modules/database.js").RawGuildDoc} guildStore
 =     * */
     async [Events.MessageCreate](msg, context, guildStore) {
         if (!msg.guild) return;
@@ -572,28 +606,28 @@ module.exports = {
                 );
 
                 // Send webhook
-                msg.delete().catch(()=>null);
+                msg.delete().catch(() => null);
                 if (guildStore?.filter?.censor) {
                     var replyBlip = "";
                     if (msg.type === MessageType.Reply) {
                         var rMsg = await msg.fetchReference();
                         replyBlip = `_[Reply to **${rMsg.author.username}**: ${rMsg.content
-                                .slice(0, 22)
-                                .replace(/(https?\:\/\/|\n)/gi, "")
-                                .replace(/\@/gi, "[@]")}${rMsg.content.length > 22
-                                ? "..."
-                                : ""
-                            }](<https://discord.com/channels/${rMsg.guild.id}/${rMsg.channel.id}/${rMsg.id}>)_\n`;
+                            .slice(0, 22)
+                            .replace(/(https?\:\/\/|\n)/gi, "")
+                            .replace(/\@/gi, "[@]")}${rMsg.content.length > 22
+                            ? "..."
+                            : ""
+                        }](<https://discord.com/channels/${rMsg.guild.id}/${rMsg.channel.id}/${rMsg.id}>)_\n`;
                     }
 
                     const filteredMessageData = {
                         "username": msg.member?.nickname || msg.author.globalName || msg.author.username,
                         "avatarURL": msg.member?.displayAvatarURL(),
-                        "content": 
+                        "content":
                             limitLength(
                                 `\`\`\`\nThe following message from ${msg.author.username} has been censored by Stewbot.\`\`\`${
                                     replyBlip
-                                }${msg.content}`),
+                                }${msg.content}`)
                     };
 
                     sendHook(filteredMessageData, msg, true);
@@ -614,7 +648,8 @@ module.exports = {
                                 }`
                             )
                         ).catch(() => { });
-                    } catch (e) { }
+                    }
+                    catch (e) { }
                 }
                 if (guildStore.filter.log && guildStore.filter.channel) {
                     const c = client.channels.cache.get(guildStore.filter.channel);
@@ -656,7 +691,7 @@ module.exports = {
         let [filtered, filteredContent, foundWords] = await censorWithFound(msg.content, readGuild, false);
 
         if (filtered) {
-            if (msg.deletable) msg.delete().catch(()=>null);
+            if (msg.deletable) msg.delete().catch(() => null);
 
             Users.updateOne({ id: msg.author.id }, {
                 $inc: { infractions: 1 }

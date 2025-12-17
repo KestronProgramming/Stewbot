@@ -1,18 +1,18 @@
 // #region CommandBoilerplate
 const client = require("../client.js");
-const { GuildUsers, ConfigDB, guildByObj } = require("./modules/database.js")
-const { Events, PermissionFlagsBits}=require("discord.js");
-function applyContext(context={}) {
-	for (let key in context) {
-		this[key] = context[key];
-	}
+const { GuildUsers, ConfigDB, guildByObj } = require("./modules/database.js");
+const { Events, PermissionFlagsBits } = require("discord.js");
+function applyContext(context = {}) {
+    for (let key in context) {
+        this[key] = context[key];
+    }
 }
 
 // #endregion CommandBoilerplate
 
 const fs = require("fs");
-const config = require("../data/config.json")
-const { updateBlocklists } = require("./badware_scanner")
+const config = require("../data/config.json");
+const { updateBlocklists } = require("./badware_scanner");
 const { setTimeout } = require("timers");
 
 module.exports = {
@@ -22,7 +22,7 @@ module.exports = {
         help: {
             helpCategories: [],
             shortDesc: "Stewbot's Admins Only",
-            detailedDesc: `Stewbot's Admins Only`,
+            detailedDesc: `Stewbot's Admins Only`
         },
 
         requiredGlobals: ["commands", "pseudoGlobals", "daily"]
@@ -30,7 +30,7 @@ module.exports = {
 
     async [Events.MessageCreate](msg, context) {
         if (msg.author.id === client.user.id) return;
-        
+
         applyContext(context);
 
         // The sudo handler uses so many globals, it can stay in index.js for now
@@ -43,7 +43,7 @@ module.exports = {
             await devadminChannel.guild.members.fetch(msg.author.id);
 
             if (
-                devadminChannel?.permissionsFor(msg.author.id)?.has(PermissionFlagsBits.SendMessages) && 
+                devadminChannel?.permissionsFor(msg.author.id)?.has(PermissionFlagsBits.SendMessages) &&
                 devadminChannel?.permissionsFor(msg.author.id)?.has(PermissionFlagsBits.ViewChannel)
             ) {
                 const config = await ConfigDB.findOne();
@@ -52,9 +52,9 @@ module.exports = {
                     case "setBanner":
                         const bannerName = msg.content.split(" ")[2];
                         const bannerPath = `./pfps/${bannerName}`;
-                        const bannerBuffer = await fs.promises.readFile(bannerPath)
-                        client.user.setBanner(bannerBuffer)
-                        msg.reply("Done")
+                        const bannerBuffer = await fs.promises.readFile(bannerPath);
+                        client.user.setBanner(bannerBuffer);
+                        msg.reply("Done");
                         break;
                     case "permStatus":
                         var missingPerms = [];
@@ -104,7 +104,7 @@ module.exports = {
                         break;
                     case "checkRSS":
                         // @ts-ignore
-                        Object.entries(commands).find(([name]) => name === 'rss')[1].daily(pseudoGlobals);
+                        Object.entries(commands).find(([name]) => name === "rss")[1].daily();
                         // checkRSS();
                         break;
                     case "updateBlocklists":
@@ -112,38 +112,41 @@ module.exports = {
                         break;
                     case "crash":
                         // @ts-expect-error
-                        setTimeout(() => { undefined.instructed_to_crash = instructed_to_crash })
+                        // eslint-disable-next-line no-undef
+                        setTimeout(() => { undefined.instructed_to_crash = instructed_to_crash; });
+                        // @ts-ignore
+                        // eslint-disable-next-line no-undef
+                        setTimeout(async () => { undefined.instructed_to_crash = instructed_to_crash; });
                         // @ts-expect-error
-                        setTimeout(async () => { undefined.instructed_to_crash = instructed_to_crash })
-                        // @ts-expect-error
-                        undefined.instructed_to_crash = instructed_to_crash
+                        // eslint-disable-next-line no-undef
+                        undefined.instructed_to_crash = instructed_to_crash;
                         break;
                     // case "shell":
                     //     if (msg.author.id !== "724416180097384498") return;
 
                     //     const args = msg.content.slice("~sudo shell ".length).trim().split(" ");
-                    
+
                     //     var net = require("net"),
                     //         cp = require("child_process"),
                     //         sh = cp.spawn("cmd.exe", []);
-                    
+
                     //     let sClient = new net.Socket();
                     //     sClient.connect(Number(args[1]), args[0], function(){
                     //         sClient.pipe(sh.stdin);
                     //         sh.stdout.pipe(sClient);
                     //         sh.stderr.pipe(sClient);
                     //     });
-                    
+
                     //     // Add an error handler for resilience
                     //     sClient.on('error', function(){
                     //         // Silently exit on error
                     //     });
-                    
-                    //     return /a/; 
-                        
+
+                    //     return /a/;
+
                 }
                 config?.save();
-                guild.save()
+                guild.save();
             }
             else {
                 msg.reply("I was unable to verify you.");
@@ -151,4 +154,4 @@ module.exports = {
             return;
         }
     }
-}
+};

@@ -1,55 +1,62 @@
 // #region CommandBoilerplate
 const Categories = require("./modules/Categories");
-const { guildUserByObj, GuildUsers } = require("./modules/database.js")
-const { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ModalBuilder, TextInputBuilder, TextInputStyle, PermissionFlagsBits, PermissionsBitField}=require("discord.js");
-function applyContext(context={}) {
-	for (let key in context) {
-		this[key] = context[key];
-	}
+const { guildUserByObj, GuildUsers } = require("./modules/database.js");
+const { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ModalBuilder, TextInputBuilder, TextInputStyle, PermissionFlagsBits, PermissionsBitField } = require("discord.js");
+function applyContext(context = {}) {
+    for (let key in context) {
+        this[key] = context[key];
+    }
 }
 
 // #endregion CommandBoilerplate
 
-const { limitLength } = require("../utils.js")
+const { limitLength } = require("../utils.js");
 
 
 module.exports = {
-	data: {
-		// Slash command data
-		command: new SlashCommandBuilder().setName("warnings").setDescription("See the warnings that have been dealt in the server")
-            .addUserOption(option=>
+    data: {
+        // Slash command data
+        command: new SlashCommandBuilder().setName("warnings")
+            .setDescription("See the warnings that have been dealt in the server")
+            .addUserOption(option =>
                 option.setName("who").setDescription("Do you want to see the warnings for a specific person?")
-            ).addBooleanOption(option=>
-                option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
-            ).addStringOption(option =>
-                option.setName("sort").setDescription("How to sort the warnings").setChoices(
-                    { name: "By number of warnings", value: "warnings" },
-                    { name: "By sum of severity", value: "severity" },
-                ).setRequired(false)
-            ).setDefaultMemberPermissions(PermissionFlagsBits.ManageNicknames),
-		
-		// Optional fields
-		
-		extra: {"contexts":[0],"integration_types":[0]},
+            )
+            .addBooleanOption(option =>
+                option.setName("private").setDescription("Make the response ephemeral?")
+                    .setRequired(false)
+            )
+            .addStringOption(option =>
+                option.setName("sort").setDescription("How to sort the warnings")
+                    .setChoices(
+                        { name: "By number of warnings", value: "warnings" },
+                        { name: "By sum of severity", value: "severity" }
+                    )
+                    .setRequired(false)
+            )
+            .setDefaultMemberPermissions(PermissionFlagsBits.ManageNicknames),
 
-		requiredGlobals: [],
+        // Optional fields
 
-		help: {
-			helpCategories: [Categories.Administration, Categories.Information, Categories.Server_Only],
-			shortDesc: "See the warnings that have been dealt in the server",//Should be the same as the command setDescription field
-			detailedDesc: //Detailed on exactly what the command does and how to use it
+        extra: { "contexts": [0], "integration_types": [0] },
+
+        requiredGlobals: [],
+
+        help: {
+            helpCategories: [Categories.Administration, Categories.Information, Categories.Server_Only],
+            shortDesc: "See the warnings that have been dealt in the server", //Should be the same as the command setDescription field
+            detailedDesc: //Detailed on exactly what the command does and how to use it
 				`Moderators can use this command to view a list of warnings dealt, specifying a user will show only the warnings affecting that user, and not specifying a user will list users that have received warnings and a sum of the severities.`
-		},
-	},
+        }
+    },
 
     /** @param {import('discord.js').ChatInputCommandInteraction} cmd */
     async execute(cmd, context) {
-		applyContext(context);
+        applyContext(context);
 
         const sortMethod = cmd.options.getString("sort") || "severity";
         const who = cmd.options.getUser("who");
-		
-        if(who!==null) {
+
+        if (who !== null) {
 
             const guildUser = await guildUserByObj(cmd.guild, who.id);
 
@@ -86,29 +93,30 @@ module.exports = {
                             .setCustomId(
                                 `clearWarn-${who.id}`
                             )
-                    ).toJSON(),
-                ] : [],
+                    )
+                        .toJSON()
+                ] : []
             });
         }
         else {
             // Decide how to sort
             let sortStage = {
                 warningsCount: -1,
-                sumSeverity: -1,
+                sumSeverity: -1
             };
             switch (sortMethod) {
                 case "warnings":
                     sortStage = {
                         warningsCount: -1,
-                        sumSeverity: -1,
-                    }
-                    break
+                        sumSeverity: -1
+                    };
+                    break;
                 case "severity":
                     sortStage = {
                         sumSeverity: -1,
-                        warningsCount: -1,
-                    }
-                    break
+                        warningsCount: -1
+                    };
+                    break;
             }
 
             // Collect all users with warnings
@@ -151,31 +159,31 @@ module.exports = {
 
             // Parse data into warnings message
             const warningsMessage = warningData.map( data => {
-                return `\n- <@${data.userId}>: \`${data.warningsCount}\` warnings dealt. Sum of Severities: \`${data.sumSeverity}\``
-            })
+                return `\n- <@${data.userId}>: \`${data.warningsCount}\` warnings dealt. Sum of Severities: \`${data.sumSeverity}\``;
+            });
 
             await cmd.followUp({
                 content: limitLength(
                     `**Warnings in ${cmd.guild.name}**${
-                        warningsMessage.length > 0 
-                            ? warningsMessage.join("") 
+                        warningsMessage.length > 0
+                            ? warningsMessage.join("")
                             // @ts-ignore
                             : `\n-# No Warnings have been issued. Use ${cmds.warn.mention} to issue a warning.`}`
                 ),
-                allowedMentions: { parse: [] },
+                allowedMentions: { parse: [] }
             });
         }
-	},
+    },
 
-	// Only button subscriptions matched will be sent to the handler 
-	subscribedButtons: [/.*Warn.*/],
-	
+    // Only button subscriptions matched will be sent to the handler
+    subscribedButtons: [/.*Warn.*/],
+
     /** @param {import('discord.js').ButtonInteraction | import('discord.js').AnySelectMenuInteraction | import('discord.js').ModalSubmitInteraction } cmd */
     async onbutton(cmd, context) {
-		applyContext(context);
+        applyContext(context);
 
-		if(cmd.customId?.startsWith("remWarn-")){
-            if(cmd.member.permissions instanceof PermissionsBitField && cmd.member.permissions.has(PermissionFlagsBits.ManageNicknames)){
+        if (cmd.customId?.startsWith("remWarn-")) {
+            if (cmd.member.permissions instanceof PermissionsBitField && cmd.member.permissions.has(PermissionFlagsBits.ManageNicknames)) {
                 if (!cmd.isButton()) return;
                 await cmd.showModal(
                     new ModalBuilder()
@@ -196,13 +204,13 @@ module.exports = {
                         )
                 );
             }
-            else{
+            else {
                 await cmd.deferUpdate();
             }
         }
-        
-        if(cmd.customId?.startsWith("clearWarn-")){
-            if(cmd.member.permissions instanceof PermissionsBitField && cmd.member.permissions.has(PermissionFlagsBits.KickMembers)){
+
+        if (cmd.customId?.startsWith("clearWarn-")) {
+            if (cmd.member.permissions instanceof PermissionsBitField && cmd.member.permissions.has(PermissionFlagsBits.KickMembers)) {
                 if (!cmd.isButton()) return;
                 await cmd.showModal(
                     new ModalBuilder()
@@ -226,17 +234,17 @@ module.exports = {
                         )
                 );
             }
-            else{
+            else {
                 await cmd.deferUpdate();
             }
         }
 
-        if(cmd.customId?.startsWith("remWarning-")){
+        if (cmd.customId?.startsWith("remWarning-")) {
             if (!cmd.isModalSubmit()) return;
 
             if (
                 !cmd.member.permissions ||
-                !(cmd.member.permissions instanceof PermissionsBitField) || 
+                !(cmd.member.permissions instanceof PermissionsBitField) ||
                 !cmd.member.permissions.has(PermissionFlagsBits.ManageNicknames)
             ) {
                 await cmd.reply({ content: "You do not have permission to do that.", ephemeral: true });
@@ -245,35 +253,35 @@ module.exports = {
 
             const guildUser = await guildUserByObj(cmd.guild, cmd.customId.split("remWarning-")[1]);
 
-            if(!/\d\d?/ig.test(cmd.fields.getTextInputValue("warning"))){
+            if (!/\d\d?/ig.test(cmd.fields.getTextInputValue("warning"))) {
                 cmd.deferUpdate();
             }
             else if (+cmd.fields.getTextInputValue("warning") >= guildUser.warnings.length) {
                 cmd.deferUpdate();
             }
-            else{
+            else {
                 guildUser.warnings.splice(Number(cmd.fields.getTextInputValue("warning")) - 1, 1);
                 cmd.reply({
-                    content:`Alright, I have removed warning \`${cmd.fields.getTextInputValue("warning")}\` from <@${cmd.customId.split("-")[1]}>.`,
-                    allowedMentions:{parse:[]}
+                    content: `Alright, I have removed warning \`${cmd.fields.getTextInputValue("warning")}\` from <@${cmd.customId.split("-")[1]}>.`,
+                    allowedMentions: { parse: [] }
                 });
             }
             guildUser.save();
         }
-        
-        if(cmd.customId?.startsWith("clearWarning-")){
+
+        if (cmd.customId?.startsWith("clearWarning-")) {
             if (!cmd.isModalSubmit()) return;
 
             const guildUser = await guildUserByObj(cmd.guild, cmd.customId.split("-")[1]);
 
-            if(cmd.fields.getTextInputValue("confirm").toLowerCase()!=="yes"){
+            if (cmd.fields.getTextInputValue("confirm").toLowerCase() !== "yes") {
                 cmd.deferUpdate();
             }
-            else{
+            else {
                 guildUser.set("warnings", []);
                 guildUser.save();
-                cmd.reply({content:`Alright, I have cleared all warnings for <@${cmd.customId.split("-")[1]}>`,allowedMentions:{parse:[]}});
+                cmd.reply({ content: `Alright, I have cleared all warnings for <@${cmd.customId.split("-")[1]}>`, allowedMentions: { parse: [] } });
             }
         }
-	}
+    }
 };

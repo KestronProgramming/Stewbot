@@ -1,13 +1,13 @@
 // #region CommandBoilerplate
 const Categories = require("./modules/Categories");
 const client = require("../client.js");
-const { Guilds, guildByObj } = require("./modules/database.js")
+const { Guilds, guildByObj } = require("./modules/database.js");
 const { Events, PermissionFlagsBits } = require("discord.js");
 
 // #endregion CommandBoilerplate
 
 const config = require("../data/config.json");
-const { notify } = require("../utils")
+const { notify } = require("../utils");
 
 async function sendWelcome(guild) {
     guild = await client.guilds.fetch(guild.id); // fetch the full guild
@@ -33,7 +33,7 @@ async function sendWelcome(guild) {
                         "EmbedLinks": "Without this permission, any function where I would be uploading an image will not work",
                         "AttachFiles": "Without this permission, any function where I upload a file (primarily images) does not work",
                         "ManageRoles": "Without this permission, I cannot help you automatically manage roles for sticky roles or auto roles",
-                        "ManageWebhooks": "Without this permission, I cannot run level-ups, the censor function of the filter, one of the emojiboard modes, anonymous admin messaging, auto join and leave messages, tickets, or a couple other things.",
+                        "ManageWebhooks": "Without this permission, I cannot run level-ups, the censor function of the filter, one of the emojiboard modes, anonymous admin messaging, auto join and leave messages, tickets, or a couple other things."
                     };
                     Object.keys(PermissionFlagsBits).forEach(perm => {
                         if (!guild.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits[perm]) && neededPerms.hasOwnProperty(perm)) {
@@ -117,7 +117,7 @@ async function sendWelcome(guild) {
                     }
 
                     await msg.channel.send({ content: "Greetings!", embeds: embs });
-                    console.log("New server welcomed")
+                    console.log("New server welcomed");
 
                     guildStore.sentWelcome = true;
                     await guildStore.save();
@@ -138,15 +138,15 @@ module.exports = {
             shortDesc: "Welcomer module.",
             detailedDesc:
                 `When Stewbot is added to a new server, this module attempts to find the most appropriate channel to post an intro message in.
-                This message can recommend commands and explain how Stewbot works. `,
-        },
+                This message can recommend commands and explain how Stewbot works. `
+        }
     },
 
-    async [Events.GuildCreate] (guild) {
+    async [Events.GuildCreate](guild) {
         await sendWelcome(guild);
     },
 
-    async [Events.ClientReady] () {
+    async [Events.ClientReady]() {
         // Check for new servers that got added / removed while we were offline
         const guilds = await client.guilds.fetch();
         guilds.forEach(async guild => {
@@ -156,10 +156,10 @@ module.exports = {
                 .catch(() => null);
 
             if (!knownGuild) {
-                notify("Added to **new server** (detected on boot scan)")
+                notify("Added to **new server** (detected on boot scan)");
                 await guildByObj(guild); // This will create the guild
                 sendWelcome(guild);
             }
         });
-	}
+    }
 };

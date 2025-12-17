@@ -1,104 +1,109 @@
 // #region CommandBoilerplate
 const Categories = require("./modules/Categories");
 const client = require("../client.js");
-const { Guilds, guildByObj, guildUserByObj, guildUserByID } = require("./modules/database.js")
-const { Events, SlashCommandBuilder, PermissionFlagsBits}=require("discord.js");
-function applyContext(context={}) {
-	for (let key in context) {
-		this[key] = context[key];
-	}
+const { Guilds, guildByObj, guildUserByObj, guildUserByID } = require("./modules/database.js");
+const { Events, SlashCommandBuilder, PermissionFlagsBits } = require("discord.js");
+function applyContext(context = {}) {
+    for (let key in context) {
+        this[key] = context[key];
+    }
 }
 
 // #endregion CommandBoilerplate
 
 module.exports = {
-	data: {
-		// Slash command data
-		command: new SlashCommandBuilder().setName("sticky-roles").setDescription("Add roles back to a user who left and rejoined")
-			.addBooleanOption(option=>
-				option.setName("active").setDescription("Should I add roles back to users who left and rejoined?").setRequired(true)
-			).addBooleanOption(option=>
-				option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
-			).setDefaultMemberPermissions(PermissionFlagsBits.ManageRoles),
-		
-		// Optional fields
-		
-		extra: {"contexts":[0],"integration_types":[0]},
+    data: {
+        // Slash command data
+        command: new SlashCommandBuilder().setName("sticky-roles")
+            .setDescription("Add roles back to a user who left and rejoined")
+            .addBooleanOption(option =>
+                option.setName("active").setDescription("Should I add roles back to users who left and rejoined?")
+                    .setRequired(true)
+            )
+            .addBooleanOption(option =>
+                option.setName("private").setDescription("Make the response ephemeral?")
+                    .setRequired(false)
+            )
+            .setDefaultMemberPermissions(PermissionFlagsBits.ManageRoles),
 
-		requiredGlobals: [],
+        // Optional fields
 
-		help: { 
-			helpCategories: [Categories.General, Categories.Administration, Categories.Configuration, Categories.Server_Only, Categories.Safety],
-			shortDesc: "Add roles back to a user who left and rejoined",//Should be the same as the command setDescription field
-			detailedDesc: //Detailed on exactly what the command does and how to use it
+        extra: { "contexts": [0], "integration_types": [0] },
+
+        requiredGlobals: [],
+
+        help: {
+            helpCategories: [Categories.General, Categories.Administration, Categories.Configuration, Categories.Server_Only, Categories.Safety],
+            shortDesc: "Add roles back to a user who left and rejoined", //Should be the same as the command setDescription field
+            detailedDesc: //Detailed on exactly what the command does and how to use it
 				`If a user leaves the server and then comes back and this setting is enabled, Stewbot will automatically reapply the roles the user had beforehand. This is useful for roles that limit or enhance the user's permissions.`
-		},
-	},
+        }
+    },
 
-	// This module should be run before auto-join-roles
-	priority: 50,
+    // This module should be run before auto-join-roles
+    priority: 50,
 
     /** @param {import('discord.js').ChatInputCommandInteraction} cmd */
     async execute(cmd, context) {
-		applyContext(context);
+        applyContext(context);
 
-		const updates = {
-			"stickyRoles": cmd.options.getBoolean("active")
-		}
-		
-		if(!cmd.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageRoles)){
-			updates.stickyRoles=false;
-			await cmd.followUp(`I do not have the MANAGE_ROLES permission for this server, so I cannot run sticky roles.`);
-			return;
-		}
+        const updates = {
+            "stickyRoles": cmd.options.getBoolean("active")
+        };
 
-		// Push updates
-		await guildByObj(cmd.guild, updates)
+        if (!cmd.guild?.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageRoles)) {
+            updates.stickyRoles = false;
+            await cmd.followUp(`I do not have the MANAGE_ROLES permission for this server, so I cannot run sticky roles.`);
+            return;
+        }
 
-		await cmd.followUp("Sticky roles configured. Please be aware I can only manage roles lower than my highest role in the server roles list.");
-	},
+        // Push updates
+        await guildByObj(cmd.guild, updates);
 
-	/** @param {import("discord.js").GuildMember} member */
-	async [Events.GuildMemberAdd](member, readGuildStore) {
+        await cmd.followUp("Sticky roles configured. Please be aware I can only manage roles lower than my highest role in the server roles list.");
+    },
 
-		// Track whether we added any roles to know whether or not to apply auto join roles.
-		let addedStickyRoles = 0;
+    /** @param {import("discord.js").GuildMember} member */
+    async [Events.GuildMemberAdd](member, readGuildStore) {
 
-		if (readGuildStore.stickyRoles) {
-			let myUser = await member.guild?.members.fetch(client.user.id)
-			if (!myUser?.permissions.has(PermissionFlagsBits.ManageRoles)) {
-				Guilds.updateOne({ id: readGuildStore.id }, { 
-					$set: { "stickyRoles": false }
-				})
-			}
-			else {
-				const guildUser = await guildUserByObj(member.guild, member.id);
-				let myRole = myUser.roles.highest.position;
+        // Track whether we added any roles to know whether or not to apply auto join roles.
+        let addedStickyRoles = 0;
 
-				for (const roleId of guildUser.roles) {
-					try {
-						var role = await member.guild.roles.fetch(roleId);
-						if (role && role.id !== member.guild.id) {
-							if (myRole > role.rawPosition) {
-								member.roles.add(role).catch(() => null);
-								addedStickyRoles++;
-							}
-						}
-					}
-					catch (e) { }
-				}
-			}
-		}
+        if (readGuildStore.stickyRoles) {
+            let myUser = await member.guild?.members.fetch(client.user.id);
+            if (!myUser?.permissions.has(PermissionFlagsBits.ManageRoles)) {
+                Guilds.updateOne({ id: readGuildStore.id }, {
+                    $set: { "stickyRoles": false }
+                });
+            }
+            else {
+                const guildUser = await guildUserByObj(member.guild, member.id);
+                let myRole = myUser.roles.highest.position;
 
-		// Signal to other modules like auto-join-roles
-		// @ts-ignore
-		if (addedStickyRoles > 0) member.addedStickyRoles = true;
-	},
+                for (const roleId of guildUser.roles) {
+                    try {
+                        var role = await member.guild.roles.fetch(roleId);
+                        if (role && role.id !== member.guild.id) {
+                            if (myRole > role.rawPosition) {
+                                member.roles.add(role).catch(() => null);
+                                addedStickyRoles++;
+                            }
+                        }
+                    }
+                    catch (e) { }
+                }
+            }
+        }
 
-	async [Events.GuildMemberRemove] (member) {
-		// Save all this user's roles
-		await guildUserByID(member.guild.id, member.id, {
-			"roles": member.roles.cache.map(r => r.id) 
-		}, true);
-	}
+        // Signal to other modules like auto-join-roles
+        // @ts-ignore
+        if (addedStickyRoles > 0) member.addedStickyRoles = true;
+    },
+
+    async [Events.GuildMemberRemove](member) {
+        // Save all this user's roles
+        await guildUserByID(member.guild.id, member.id, {
+            "roles": member.roles.cache.map(r => r.id)
+        }, true);
+    }
 };

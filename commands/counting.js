@@ -1,7 +1,7 @@
 // #region CommandBoilerplate
 const Categories = require("./modules/Categories");
 const client = require("../client.js");
-const { GuildUsers, guildByObj, guildUserByObj } = require("./modules/database.js")
+const { GuildUsers, guildByObj, guildUserByObj } = require("./modules/database.js");
 const { Events, SlashCommandBuilder, PermissionFlagsBits, ChannelType } = require("discord.js");
 function applyContext(context = {}) {
     for (let key in context) {
@@ -13,48 +13,49 @@ function applyContext(context = {}) {
 
 /** @type {import("compromise").default} */
 // @ts-ignore
-const nlp = require('compromise');
+const nlp = require("compromise");
 
-const mathjs = require('mathjs');
+const mathjs = require("mathjs");
 const { canUseRole } = require("../utils.js");
 
 function processForNumber(text) {
-    text = text?.toLowerCase() || '';
+    text = text?.toLowerCase() || "";
 
     const text2MathMap = {
-        'plus': '+',
-        'minus': '-',
-        'times': '*',
-        'multiplied by': '*',
-        'divided by': '/',
-        'to the power of': '^',
-        'squared': '^2',
-        'cubed': '^3',
+        "plus": "+",
+        "minus": "-",
+        "times": "*",
+        "multiplied by": "*",
+        "divided by": "/",
+        "to the power of": "^",
+        "squared": "^2",
+        "cubed": "^3"
     };
 
     // Temporarily replace " - " or "-" with a unique marker
-    text = text.replace(/(\s*-\s+)|(\s+-\s*)/g, ' __HYD__ ');  // Replace spaces around hyphen or just hyphen
-    text = text.replace(/(\s*minus\s+)|(\s+minus\s*)/g, ' __HYD__ ');
+    text = text.replace(/(\s*-\s+)|(\s+-\s*)/g, " __HYD__ ");  // Replace spaces around hyphen or just hyphen
+    text = text.replace(/(\s*minus\s+)|(\s+minus\s*)/g, " __HYD__ ");
 
     var doc = nlp(text);
     doc.numbers().toNumber();
     text = doc.text();
 
     for (let [word, symbol] of Object.entries(text2MathMap)) {
-        text = text.replace(new RegExp(`\\b${word}\\b`, 'g'), symbol);
+        text = text.replace(new RegExp(`\\b${word}\\b`, "g"), symbol);
     }
 
-    text = text.replace(/__HYD__/g, '-');
+    text = text.replace(/__HYD__/g, "-");
 
     // Extract equation as far up as is possible
-    text = text.match(/^([0-9+\-*/^()\s\.]|sqrt)+/, '')?.[0]?.trim() || '';
+    text = text.match(/^([0-9+\-*/^()\s\.]|sqrt)+/, "")?.[0]?.trim() || "";
 
     try {
         let result = +mathjs.evaluate(text);
         if (result) {
-            return +result.toFixed(1)
+            return +result.toFixed(1);
         }
-    } catch (error) {
+    }
+    catch (error) {
         return null;
     }
     return null;
@@ -66,36 +67,58 @@ module.exports = {
 
     data: {
         // Slash command data
-        command: new SlashCommandBuilder().setName("counting").setDescription("Manage counting functions for this server")
+        command: new SlashCommandBuilder().setName("counting")
+            .setDescription("Manage counting functions for this server")
             .addSubcommand(command =>
-                command.setName("config").setDescription("Configure counting for this server").addBooleanOption(option =>
-                    option.setName("active").setDescription("Do counting things in this server?").setRequired(true)
-                ).addChannelOption(option =>
-                    option.setName("channel").setDescription("Channel to count in").addChannelTypes(ChannelType.GuildText)
-                ).addBooleanOption(option =>
-                    option.setName("reset").setDescription("Reset the count if a wrong number is posted (True to be on leaderboard)")
-                ).addBooleanOption(option =>
-                    option.setName("public").setDescription("Do you want this server to show up in the counting leaderboard?")
-                ).addIntegerOption(option =>
-                    option.setName("posts_between_turns").setDescription("How many posts do you need to wait between turns?").setMinValue(0)
-                ).addBooleanOption(option =>
-                    option.setName("apply-a-fail-role").setDescription("Should I apply a role to users who fail the count?")
-                ).addRoleOption(option =>
-                    option.setName("fail-role").setDescription("If fail roles are on, which role should be applied?")
-                ).addBooleanOption(option =>
-                    option.setName("apply-a-warn-role").setDescription("Should I apply a role to users who are warned?")
-                ).addRoleOption(option =>
-                    option.setName("warn-role").setDescription("If warn roles are on, which role should be applied?")
-                ).addBooleanOption(option =>
-                    option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
-                )
-            ).addSubcommand(command =>
-                command.setName("set_number").setDescription("Set the next number to count at (Disqualifies from leaderboard)").addIntegerOption(option =>
-                    option.setName("num").setDescription("The number to count at next").setRequired(true).setMinValue(0)
-                ).addBooleanOption(option =>
-                    option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
-                )
-            ).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
+                command.setName("config").setDescription("Configure counting for this server")
+                    .addBooleanOption(option =>
+                        option.setName("active").setDescription("Do counting things in this server?")
+                            .setRequired(true)
+                    )
+                    .addChannelOption(option =>
+                        option.setName("channel").setDescription("Channel to count in")
+                            .addChannelTypes(ChannelType.GuildText)
+                    )
+                    .addBooleanOption(option =>
+                        option.setName("reset").setDescription("Reset the count if a wrong number is posted (True to be on leaderboard)")
+                    )
+                    .addBooleanOption(option =>
+                        option.setName("public").setDescription("Do you want this server to show up in the counting leaderboard?")
+                    )
+                    .addIntegerOption(option =>
+                        option.setName("posts_between_turns").setDescription("How many posts do you need to wait between turns?")
+                            .setMinValue(0)
+                    )
+                    .addBooleanOption(option =>
+                        option.setName("apply-a-fail-role").setDescription("Should I apply a role to users who fail the count?")
+                    )
+                    .addRoleOption(option =>
+                        option.setName("fail-role").setDescription("If fail roles are on, which role should be applied?")
+                    )
+                    .addBooleanOption(option =>
+                        option.setName("apply-a-warn-role").setDescription("Should I apply a role to users who are warned?")
+                    )
+                    .addRoleOption(option =>
+                        option.setName("warn-role").setDescription("If warn roles are on, which role should be applied?")
+                    )
+                    .addBooleanOption(option =>
+                        option.setName("private").setDescription("Make the response ephemeral?")
+                            .setRequired(false)
+                    )
+            )
+            .addSubcommand(command =>
+                command.setName("set_number").setDescription("Set the next number to count at (Disqualifies from leaderboard)")
+                    .addIntegerOption(option =>
+                        option.setName("num").setDescription("The number to count at next")
+                            .setRequired(true)
+                            .setMinValue(0)
+                    )
+                    .addBooleanOption(option =>
+                        option.setName("private").setDescription("Make the response ephemeral?")
+                            .setRequired(false)
+                    )
+            )
+            .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
 
         // Optional fields
 
@@ -116,7 +139,7 @@ module.exports = {
                 detailedDesc:
                     `Sets the next number for you to count at. If the number you choose is greater than one, this will disqualify the server from the leaderboard until a reset.`
             }
-        },
+        }
     },
 
     /** @param {import('discord.js').ChatInputCommandInteraction} cmd */
@@ -210,25 +233,26 @@ module.exports = {
                 // Check whether the config is legit
                 if (!guild.counting.reset || guild.counting.takeTurns < 1) {
                     guild.counting.legit = false;
-                } else {
+                }
+                else {
                     // Now that we reset the count to 0 when resetting, it's safe to call it legit here.
                     guild.counting.legit = true;
                 }
 
                 await cmd.followUp(`Alright, I configured counting for this server.${
-                        disclaimers.map(d => `\n\n${d}`).join("")
-                    }${
-                        resetJustSet 
-                            ? "\nBecause you just enabled `reset`, the count has been set to 1."
-                            : ""
-                    }
+                    disclaimers.map(d => `\n\n${d}`).join("")
+                }${
+                    resetJustSet
+                        ? "\nBecause you just enabled `reset`, the count has been set to 1."
+                        : ""
+                }
                     ${
-                        turnsJustLegit 
+                        turnsJustLegit
                             ? "\nBecause you just set `posts_between_turns` and reset is enabled, the count has been reset."
                             : ""
                     }${
-                        guild.counting.legit 
-                            ? "" 
+                        guild.counting.legit
+                            ? ""
                             : `\n-# Please be aware this server is currently ineligible for the leaderboard. To fix this, make sure that reset is set to true, that the posts between turns is at least 1, and that you don't set the number to anything higher than 1 manually.`
                     }`
                 );
@@ -254,11 +278,11 @@ module.exports = {
         guild.save();
     },
 
-    /** 
-     * @param {import('discord.js').Message} msg 
-     * @param {import("./modules/database.js").GuildDoc} guildStore 
+    /**
+     * @param {import('discord.js').Message} msg
+     * @param {import("./modules/database.js").GuildDoc} guildStore
      * */
-    async [Events.MessageCreate] (msg, context, guildStore) {
+    async [Events.MessageCreate](msg, context, guildStore) {
         if (!msg.guild) return;
         applyContext(context);
 
@@ -273,15 +297,15 @@ module.exports = {
             // Fetch the full guild object for simplicity - TODO_DB: this could be made more efficient
             let guild = await guildByObj(msg.guild);
             let guildCounting = guild.counting;
-            
+
             // Fetch the guild user's doc if we're counting
-            guildUser = await guildUserByObj(msg.guild, msg.author.id)
+            guildUser = await guildUserByObj(msg.guild, msg.author.id);
             if (!guildUser) return;
 
             // If the server uses counting, but Stewbot cannot add reactions or send messages, don't do counting
             if (
-                !("permissionsFor" in msg.channel) || 
-                !msg.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.AddReactions) || 
+                !("permissionsFor" in msg.channel) ||
+                !msg.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.AddReactions) ||
                 !msg.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages)
             ) {
                 guildCounting.active = false;
@@ -297,7 +321,7 @@ module.exports = {
                         // Discord glitches if the reaction is added too quickly
                         setTimeout(_ => {
                             // user could have blocked, a bot could have deleted it faster, etc...
-                            msg.react("✅").catch(_=>{});
+                            msg.react("✅").catch(_ => {});
                         }, 150);
 
                         guildCounting.nextNum++;
@@ -321,12 +345,12 @@ module.exports = {
                             if (guildCounting.reset) {
                                 guildCounting.nextNum = 1;
                                 if (guildCounting.reset && guildCounting.takeTurns > 0) guildCounting.legit = true;
-                                
+
                                 await GuildUsers.updateMany(
                                     { guildId: msg.guild.id, countTurns: { $gt: 0 } },
                                     { $set: { countTurns: 0 } }
                                 );
-        
+
                                 if (guildCounting.failRoleActive && msg.guild.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageRoles)) {
                                     var fr = msg.guild.roles.cache.get(guildCounting.failRole);
                                     if (fr === null || fr === undefined) {
@@ -334,7 +358,8 @@ module.exports = {
                                     }
                                     else {
                                         if (msg.guild.members.cache.get(client.user.id).roles.highest.position > fr.rawPosition) {
-                                            try { await msg.member.roles.add(fr); } catch { }
+                                            try { await msg.member.roles.add(fr); }
+                                            catch { }
                                         }
                                         else {
                                             guildCounting.failRoleActive = false;
@@ -354,7 +379,8 @@ module.exports = {
                                 }
                                 else {
                                     if (msg.guild.members.cache.get(client.user.id).roles.highest.position > wr.rawPosition) {
-                                        try { await msg.member.roles.add(wr); } catch { }
+                                        try { await msg.member.roles.add(wr); }
+                                        catch { }
                                     }
                                     else {
                                         guildCounting.warnRoleActive = false;
@@ -370,8 +396,8 @@ module.exports = {
                     if (guildUser.beenCountWarned && guildCounting.reset) {
                         msg.reply(`⛔ **Reset**\nNope, that was incorrect! The next number to post was going to be \`${guildCounting.nextNum}\`, but now it's \`1\`.`);
                         guildCounting.nextNum = 1;
-                        
-                        if (guildCounting.reset && guildCounting.takeTurns > 0) 
+
+                        if (guildCounting.reset && guildCounting.takeTurns > 0)
                             guildCounting.legit = true;
 
                         await GuildUsers.updateMany(
@@ -386,7 +412,8 @@ module.exports = {
                             }
                             else {
                                 if (msg.guild.members.cache.get(client.user.id).roles.highest.position > fr.rawPosition) {
-                                    try { await msg.member.roles.add(fr); } catch { }
+                                    try { await msg.member.roles.add(fr); }
+                                    catch { }
                                 }
                                 else {
                                     guildCounting.failRoleActive = false;
@@ -397,22 +424,22 @@ module.exports = {
                     }
                     else {
                         msg.reply(
-                            `⚠️ **Warning**\n`+
-                            `Nope, that's incorrect. You have been warned! Next time this will reset the count. The next number is **${guildCounting.nextNum}**.`+
-                            `\`\`\`\n`+
-                            `Numbers entered must be the last number plus one, (so if the last entered number is 148, the next number is 149).`+
-                                `${guildCounting.takeTurns > 0 
+                            `⚠️ **Warning**\n` +
+                            `Nope, that's incorrect. You have been warned! Next time this will reset the count. The next number is **${guildCounting.nextNum}**.` +
+                            `\`\`\`\n` +
+                            `Numbers entered must be the last number plus one, (so if the last entered number is 148, the next number is 149).` +
+                                `${guildCounting.takeTurns > 0
                                     ? ` You also need to make sure at least ${guildCounting.takeTurns} other 
-                                        ${guildCounting.takeTurns === 1 
-                                            ? "person" 
-                                            : "people"
-                                        } take${guildCounting.takeTurns === 1 ? "s" : ""} a turn before you take another turn.\`\`\`` 
+                                        ${guildCounting.takeTurns === 1
+                                                ? "person"
+                                                : "people"
+                                        } take${guildCounting.takeTurns === 1 ? "s" : ""} a turn before you take another turn.\`\`\``
                                     : "```"
                                 }`
                         );
-                        
+
                         guildUser.beenCountWarned = true;
-                        
+
                         if (guildCounting.warnRoleActive && msg.guild.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageRoles)) {
                             var wr = msg.guild.roles.cache.get(guildCounting.warnRole);
                             if (wr === null || wr === undefined) {
@@ -420,7 +447,8 @@ module.exports = {
                             }
                             else {
                                 if (msg.guild.members.cache.get(client.user.id).roles.highest.position > wr.rawPosition) {
-                                    try { await msg.member.roles.add(wr); } catch { }
+                                    try { await msg.member.roles.add(wr); }
+                                    catch { }
                                 }
                                 else {
                                     guildCounting.warnRoleActive = false;
@@ -436,17 +464,17 @@ module.exports = {
         }
     },
 
-    async [Events.MessageUpdate] (_, msg, readGuild) {
-        if(msg.guild?.id===undefined || client.user.id===msg.author?.id) return; // Ignore self and DMs
+    async [Events.MessageUpdate](_, msg, readGuild) {
+        if (msg.guild?.id === undefined || client.user.id === msg.author?.id) return; // Ignore self and DMs
 
         if (!readGuild?.counting?.active) return;
 
         // Counting edit handlers
-        if(readGuild.counting.channel===msg.channel.id){
+        if (readGuild.counting.channel === msg.channel.id) {
             var num = msg.content ? processForNumber(msg.content) : null;
             if (num !== null && num !== undefined) {
-                if(+num===readGuild.counting.nextNum-1){
-                    msg.channel.send(String(num)).then(m=>m.react("✅"));
+                if (+num === readGuild.counting.nextNum - 1) {
+                    msg.channel.send(String(num)).then(m => m.react("✅"));
                 }
             }
         }

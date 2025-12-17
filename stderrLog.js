@@ -5,7 +5,7 @@
 // Example useage: `node crash.js 2>&1 | ./stderrLog.js`
 // Requires logWebhook in env.json
 
-const fs = require("node:fs")
+const fs = require("node:fs");
 const logWebhook = require("./env.json").logWebhook;
 
 // Collect stdin here
@@ -23,44 +23,46 @@ process.stdin.on("readable", () => {
 process.stdin.on("end", () => {
 
     // Make data a little more readable (this can be changed if the md parsing is too ugly)
-    data = "=====\n" + data + "\n====="
+    data = "=====\n" + data + "\n=====";
 
     const isToLong = data.length > 2000;
 
     // Save just the chunk that the webhook can send (2K chars) to a var
-    const webhookData = isToLong ? data.slice(0,1997) + "..." : data; 
+    const webhookData = isToLong ? data.slice(0, 1997) + "..." : data;
 
     // Now, we'll write this error stream to a file instead
     if (isToLong) {
         // mm-dd-yyyy-<military time>
-        const dateTime = new Date().toLocaleString('en-US', {
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit',
+        const dateTime = new Date().toLocaleString("en-US", {
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit",
+            hour: "2-digit",
+            minute: "2-digit",
             hour12: false
-        }).replaceAll("/", "-").replaceAll(":", "").replaceAll(", ", "-");
-        
+        })
+            .replaceAll("/", "-")
+            .replaceAll(":", "")
+            .replaceAll(", ", "-");
+
         // write this error to file
-        fs.writeFileSync("./errorLogs/error-"+dateTime+".txt", data)
+        fs.writeFileSync("./errorLogs/error-" + dateTime + ".txt", data);
     }
 
     fetch(logWebhook, {
-        'method': 'POST',
-        'headers': {
+        "method": "POST",
+        "headers": {
             "Content-Type": "application/json"
         },
-        'body': JSON.stringify({ 
-            'username': "stderrLog.js", 
+        "body": JSON.stringify({
+            "username": "stderrLog.js",
             "content": webhookData
         })
-    }).then(re => re.text()).then(re => {
+    }).then(re => re.text())
+        .then(re => {
         // There are only responses on errors
-        if (re.trim()) {
-            console.log("Response from stderr webhook:\n" + re)
-        }
-    });
+            if (re.trim()) {
+                console.log("Response from stderr webhook:\n" + re);
+            }
+        });
 });
-
-

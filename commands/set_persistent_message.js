@@ -1,12 +1,12 @@
 // #region CommandBoilerplate
 const Categories = require("./modules/Categories");
 const client = require("../client.js");
-const { Guilds, guildByObj } = require("./modules/database.js")
-const { Events, SlashCommandBuilder, PermissionFlagsBits }=require("discord.js");
-function applyContext(context={}) {
-	for (let key in context) {
-		this[key] = context[key];
-	}
+const { Guilds, guildByObj } = require("./modules/database.js");
+const { Events, SlashCommandBuilder, PermissionFlagsBits } = require("discord.js");
+function applyContext(context = {}) {
+    for (let key in context) {
+        this[key] = context[key];
+    }
 }
 
 // #endregion CommandBoilerplate
@@ -23,7 +23,7 @@ async function checkPersistentDeletion(guildStore, channelId, messageId) {
     const lastPost = (
         await Guilds.findOne({ id: guildStore.id })
             .distinct(`persistence.${channelId}.lastPost`)
-    )[0]
+    )[0];
 
     if (lastPost !== messageId) {
         return;
@@ -42,34 +42,41 @@ async function checkPersistentDeletion(guildStore, channelId, messageId) {
 }
 
 module.exports = {
-	data: {
-		// Slash command data
-		command: new SlashCommandBuilder().setName("set_persistent_message").setDescription("Set a message that will ALWAYS be visible as the latest message posted in this channel")
-            .addBooleanOption(option=>
-                option.setName("active").setDescription("Should the persistent message be actively run in this channel?").setRequired(true)
-            ).addStringOption(option=>
-                option.setName("content").setDescription("The message to have persist").setMinLength(1)
-            ).addBooleanOption(option=>
-                option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
-            ).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
-		
-		// Optional fields
-		
-		extra: {"contexts":[0],"integration_types":[0]},
+    data: {
+        // Slash command data
+        command: new SlashCommandBuilder().setName("set_persistent_message")
+            .setDescription("Set a message that will ALWAYS be visible as the latest message posted in this channel")
+            .addBooleanOption(option =>
+                option.setName("active").setDescription("Should the persistent message be actively run in this channel?")
+                    .setRequired(true)
+            )
+            .addStringOption(option =>
+                option.setName("content").setDescription("The message to have persist")
+                    .setMinLength(1)
+            )
+            .addBooleanOption(option =>
+                option.setName("private").setDescription("Make the response ephemeral?")
+                    .setRequired(false)
+            )
+            .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
 
-		requiredGlobals: [],
+        // Optional fields
 
-        help:{
+        extra: { "contexts": [0], "integration_types": [0] },
+
+        requiredGlobals: [],
+
+        help: {
             helpCategories: [Categories.General, Categories.Information, Categories.Configuration, Categories.Administration, Categories.Server_Only],
-			shortDesc: "Set a message that will ALWAYS be visible as the latest message posted in this channel",//Should be the same as the command setDescription field
-			detailedDesc: //Detailed on exactly what the command does and how to use it
+            shortDesc: "Set a message that will ALWAYS be visible as the latest message posted in this channel", //Should be the same as the command setDescription field
+            detailedDesc: //Detailed on exactly what the command does and how to use it
 				`Configure a persistent message that will, in the server's name, always be persistently posted on the bottom of this channel.`
         }
-	},
+    },
 
     /** @param {import('discord.js').ChatInputCommandInteraction} cmd */
     async execute(cmd, context) {
-		applyContext(context);
+        applyContext(context);
 
         const guild = await guildByObj(cmd.guild);
 
@@ -78,25 +85,26 @@ module.exports = {
             try {
                 var lastPersistent = await cmd.channel.messages.fetch(guild.persistence.get(cmd.channel.id).lastPost);
                 if (lastPersistent) await lastPersistent.delete();
-            } catch {}
+            }
+            catch {}
         }
-        
+
         // Initialize data
-        if(!guild.persistence.has(cmd.channel.id)){
+        if (!guild.persistence.has(cmd.channel.id)) {
             guild.persistence.set(cmd.channel.id, {
-                "active":   false,
-                "content":  "<Persistent Message Placeholder>",
+                "active": false,
+                "content": "<Persistent Message Placeholder>",
                 "lastPost": null
             });
         }
 
-        guild.persistence.get(cmd.channel.id).active=cmd.options.getBoolean("active");
+        guild.persistence.get(cmd.channel.id).active = cmd.options.getBoolean("active");
 
-        if(cmd.options.getString("content")!==null) guild.persistence.get(cmd.channel.id).content=cmd.options.getString("content");
+        if (cmd.options.getString("content") !== null) guild.persistence.get(cmd.channel.id).content = cmd.options.getString("content");
         const botPerms = cmd.channel.permissionsFor(client.user.id);
         if (
-            botPerms?.has(PermissionFlagsBits.ManageWebhooks) && 
-            botPerms.has(PermissionFlagsBits.ReadMessageHistory) && 
+            botPerms?.has(PermissionFlagsBits.ManageWebhooks) &&
+            botPerms.has(PermissionFlagsBits.ReadMessageHistory) &&
             botPerms.has(PermissionFlagsBits.ManageMessages) &&
             "fetchWebhooks" in cmd.channel &&
             "createWebhook" in cmd.channel
@@ -119,11 +127,11 @@ module.exports = {
                 let hook = webhooks.find(h => h.token);
                 if (!hook) {
                     const channel = await client.channels.fetch(cmd.channel.id);
-                    hook = (channel && "createWebhook" in channel) 
+                    hook = (channel && "createWebhook" in channel)
                         ? await channel.createWebhook({
                             name: config.name,
                             avatar: config.pfp
-                        }) 
+                        })
                         : null;
                 }
                 if (hook) {
@@ -134,66 +142,67 @@ module.exports = {
         }
         else {
             cmd.followUp(`I need to be able to read message history, delete messages, and manage webhooks to use persistent messages. Without these permissions I cannot manage persistent messages here.`);
-            guild.persistence.get(cmd.channel.id).active=false;
+            guild.persistence.get(cmd.channel.id).active = false;
         }
 
         await guild.save();
-	},
+    },
 
-    /** 
-     * @param {import('discord.js').Message} msg 
-     * @param {import("./modules/database.js").GuildDoc} guildStore 
+    /**
+     * @param {import('discord.js').Message} msg
+     * @param {import("./modules/database.js").GuildDoc} guildStore
      * */
-    async [Events.MessageCreate] (msg, context, guildStore) {
+    async [Events.MessageCreate](msg, context, guildStore) {
         if (msg.webhookId) return;
         if (!msg.guild) return;
-		applyContext(context);
+        applyContext(context);
 
         // const guild = await guildByObj(msg.guild);
         const guild = guildStore;
 
         // Persistent messages, if the server has them enabled
-        if(
-            guild.persistence[msg.channel.id]?.active && 
+        if (
+            guild.persistence[msg.channel.id]?.active &&
             "permissionsFor" in msg.channel &&
             "fetchWebhooks" in msg.channel &&
             "createWebhook" in msg.channel
         ) {
             const permissions = msg.channel.permissionsFor(client.user.id);
-            if(permissions?.has(PermissionFlagsBits.ManageWebhooks) && permissions.has(PermissionFlagsBits.ManageMessages) && permissions.has(PermissionFlagsBits.ReadMessageHistory)){
-                if(guild.persistence[msg.channel.id].lastPost){
+            if (permissions?.has(PermissionFlagsBits.ManageWebhooks) && permissions.has(PermissionFlagsBits.ManageMessages) && permissions.has(PermissionFlagsBits.ReadMessageHistory)) {
+                if (guild.persistence[msg.channel.id].lastPost) {
                     msg.channel.messages.fetch(guild.persistence[msg.channel.id].lastPost).then(mes => {
-                        mes?.delete()?.catch(()=>{});
-                    }).catch(()=>{});
+                        mes?.delete()?.catch(() => {});
+                    })
+                        .catch(() => {});
                 }
-                var resp={
-                    "content":guild.persistence[msg.channel.id].content,
-                    "avatarURL":msg.guild.iconURL(),
-                    "username":msg.guild.name
+                var resp = {
+                    "content": guild.persistence[msg.channel.id].content,
+                    "avatarURL": msg.guild.iconURL(),
+                    "username": msg.guild.name
                 };
                 let webhooks = await msg.channel.fetchWebhooks();
                 let hook = webhooks.find(h => h.token);
 
                 if (!hook) {
                     const channel = await client.channels.fetch(msg.channel.id);
-                    hook = (channel && "createWebhook" in channel) 
+                    hook = (channel && "createWebhook" in channel)
                         ? await channel.createWebhook({
                             name: config.name,
                             avatar: config.pfp
-                        }) 
+                        })
                         : null;
                 }
                 if (!hook) return;
 
-                const newMessage = await hook.send(resp)
-                
+                const newMessage = await hook.send(resp);
+
                 await guildByObj(msg.guild, {
                     [`persistence.${msg.channel.id}.lastPost`]: newMessage.id
                 });
 
             }
             else {
-                if(msg.channel.isSendable()){
+                if (msg.channel.isSendable()) {
                     // @ts-ignore
                     msg.channel.send(`I do not have sufficient permissions to manage persistent messages for this channel. Please make sure I can manage webhooks, read message history, and delete messages and then run ${cmds.set_persistent_message.mention}.`);
                 }
@@ -208,11 +217,11 @@ module.exports = {
         }
     },
 
-    async [Events.MessageDelete] (msg, guildStore) {
-        if(!msg.guild) return;
+    async [Events.MessageDelete](msg, guildStore) {
+        if (!msg.guild) return;
 
         if (guildStore?.persistence?.[msg.channel.id]?.active && guildStore.persistence?.[msg.channel.id]?.lastPost === msg.id) {
-            setTimeout(() => { checkPersistentDeletion(guildStore, msg.channel.id, msg.id) }, 1500);
+            setTimeout(() => { checkPersistentDeletion(guildStore, msg.channel.id, msg.id); }, 1500);
         }
     }
 };

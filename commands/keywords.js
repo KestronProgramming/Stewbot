@@ -9,100 +9,100 @@ function applyContext(context = {}) {
 
 // #endregion CommandBoilerplate
 
-// 
+//
 // TEMPLATE-module.js is a minimal template for modules that do not have attached commands.
 // 	These can be message handlers like ~sudo, etc
-// 
+//
 
 
 //Old variables from back in the day, may be unoptimized, unused, or otherwise
 const keyword = [
     {
-        keywords: ['thank', 'you', 'stewbot'],
+        keywords: ["thank", "you", "stewbot"],
         response: "You are welcome",
         dm: "",
         only: false,
         message: false,
-        timeout: 0,
+        timeout: 0
     },
     {
-        keywords: ['ty', 'stewbot'],
+        keywords: ["ty", "stewbot"],
         response: "You are welcome",
         dm: "",
         only: false,
         message: false,
-        timeout: 0,
+        timeout: 0
     },
     {
-        keywords: ['god', 'dead'],
+        keywords: ["god", "dead"],
         response: "https://www.youtube.com/watch?v=07BBKkkkiCI",
         dm: "",
         only: false,
         message: false,
-        timeout: 0,
+        timeout: 0
     },
     {
         keywords: ["dead"],
         response: "My posts are equipped with defibrillators.",
         only: false,
         timeout: 0,
-        message: false,
+        message: false
     },
     {
         keywords: ["heart", "attack"],
         response: "My posts are equipped with defibrillators.",
         only: false,
         timeout: 0,
-        message: false,
+        message: false
     },
     {
         keywords: ["wassup"],
         response: "The sky is up.",
         only: false,
         timeout: 0,
-        message: false,
+        message: false
     },
     {
         keywords: ["sleep"],
         response: "Adolescents should always get at least 8-9 hours of sleep each night.",
         only: false,
         timeout: 0,
-        message: false,
+        message: false
     },
     {
         keywords: ["what's", "up"],
         response: "The sky is up.",
         only: false,
         timeout: 0,
-        message: false,
+        message: false
     },
     {
         keywords: ["no", "offense"],
         response: "I am a robot, I cannot be offended.",
         only: false,
         message: false,
-        timeout: 0,
+        timeout: 0
     },
     {
         keywords: ["no", "offence"],
         response: "I am a robot, I cannot be offended.",
         only: false,
         message: false,
-        timeout: 0,
+        timeout: 0
     },
     {
         keywords: ["ow"],
         response: "On a scale of 1-10, how would you rate your pain?\nhttps://th.bing.com/th/id/R.0ac8bd2af895c546d6802cc8803db1ee?rik=uHFTb0b3ii%2bbng&pid=ImgRaw&r=0&sres=1&sresct=1",
         only: true,
         message: false,
-        timeout: 0,
+        timeout: 0
     },
     {
         keywords: ["oof"],
         response: "On a scale of 1-10, how would you rate your pain?\nhttps://th.bing.com/th/id/R.0ac8bd2af895c546d6802cc8803db1ee?rik=uHFTb0b3ii%2bbng&pid=ImgRaw&r=0&sres=1&sresct=1",
         only: true,
         message: false,
-        timeout: 0,
+        timeout: 0
     },
     {
         keywords: ["good", "boy"],
@@ -110,7 +110,7 @@ const keyword = [
         dm: "🍭",
         only: false,
         message: true,
-        timeout: 0,
+        timeout: 0
     },
     {
         keywords: ["laundry"],
@@ -118,7 +118,7 @@ const keyword = [
         dm: "🍭",
         only: false,
         message: false,
-        timeout: 0,
+        timeout: 0
     },
     {
         keywords: ["doesn't", "make", "sense"],
@@ -126,7 +126,7 @@ const keyword = [
         dm: "🍭",
         only: false,
         message: false,
-        timeout: 0,
+        timeout: 0
     },
     {
         keywords: ["no", "sense"],
@@ -134,7 +134,7 @@ const keyword = [
         dm: "🍭",
         only: false,
         message: false,
-        timeout: 0,
+        timeout: 0
     },
     {
         keywords: ["confused"],
@@ -142,7 +142,7 @@ const keyword = [
         dm: "🍭",
         only: false,
         message: false,
-        timeout: 0,
+        timeout: 0
     },
     {
         keywords: ["confusing"],
@@ -150,7 +150,7 @@ const keyword = [
         dm: "🍭",
         only: false,
         message: false,
-        timeout: 0,
+        timeout: 0
     },
     {
         keywords: ["bruno"],
@@ -158,7 +158,7 @@ const keyword = [
         dm: "🍭",
         only: false,
         message: false,
-        timeout: 0,
+        timeout: 0
     },
     {
         keywords: ["don't", "talk"],
@@ -166,7 +166,7 @@ const keyword = [
         dm: "🍭",
         only: false,
         message: false,
-        timeout: 0,
+        timeout: 0
     },
     {
         keywords: ["can i have staff"],
@@ -174,7 +174,7 @@ const keyword = [
         dm: "🍭",
         only: false,
         message: false,
-        timeout: 0,
+        timeout: 0
     },
     {
         keywords: ["can i have mod"],
@@ -182,7 +182,7 @@ const keyword = [
         dm: "🍭",
         only: false,
         message: false,
-        timeout: 0,
+        timeout: 0
     }
 ];
 
@@ -198,19 +198,19 @@ module.exports = {
             helpCategories: [Categories.Module],
             shortDesc: "Keywords from back in Kestron-Tron's day",
             detailedDesc: //Detailed on exactly what the command does and how to use it
-                `Bringing back some of the more fun and less professional features from back in Kestron-Tron's day.`,
+                `Bringing back some of the more fun and less professional features from back in Kestron-Tron's day.`
 
             // If this module can't be blocked, specify a reason
             // block_module_message: "Discord requires bot avatars to be set globally, so we cannot be blocked this module in this server.",
 
-        },
+        }
     },
 
-    /** 
-     * @param {import('discord.js').Message} msg 
-     * @param {import("./modules/database.js").GuildDoc} guildStore 
+    /**
+     * @param {import('discord.js').Message} msg
+     * @param {import("./modules/database.js").GuildDoc} guildStore
      * */
-    async [Events.MessageCreate] (msg, context, guildStore) {
+    async [Events.MessageCreate](msg, context, guildStore) {
         applyContext(context);
 
         if (!msg.channel?.isSendable?.()) return;

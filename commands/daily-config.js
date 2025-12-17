@@ -1,24 +1,24 @@
 // #region CommandBoilerplate
 const Categories = require("./modules/Categories");
 const client = require("../client.js");
-const { Guilds, ConfigDB, guildByObj } = require("./modules/database.js")
-const { AttachmentBuilder, SlashCommandBuilder, PermissionFlagsBits, ChannelType }=require("discord.js");
-function applyContext(context={}) {
-	for (let key in context) {
-		this[key] = context[key];
-	}
+const { Guilds, ConfigDB, guildByObj } = require("./modules/database.js");
+const { AttachmentBuilder, SlashCommandBuilder, PermissionFlagsBits, ChannelType } = require("discord.js");
+function applyContext(context = {}) {
+    for (let key in context) {
+        this[key] = context[key];
+    }
 }
 
 // #endregion CommandBoilerplate
 
-const fs = require("node:fs")
-const Turndown = require('turndown');
+const fs = require("node:fs");
+const Turndown = require("turndown");
 var turndown = new Turndown();
 const { notify } = require("../utils");
 
-async function sendDailiesToSubscribed(type, message={}) {
-    const dailySubbedGuilds = await Guilds.find({ 
-        [`daily.${type}.active`]: true 
+async function sendDailiesToSubscribed(type, message = {}) {
+    const dailySubbedGuilds = await Guilds.find({
+        [`daily.${type}.active`]: true
     }).lean();
 
     const erroredGuilds = [];
@@ -27,16 +27,18 @@ async function sendDailiesToSubscribed(type, message={}) {
         const subbedChannel = guild.daily[type].channel;
         try {
             const channel = await client.channels.fetch(subbedChannel);
-            
+
             if (channel.isSendable()) {
                 await channel.send(message);
-            } else {
+            }
+            else {
                 erroredGuilds.push(guild.id);
             }
-        } catch (err) {
+        }
+        catch (err) {
             // Let's not just delete all errors
             // Report the error, if need be later we can add specific error types that delete it
-            notify(`Error in sending ${type} daily to specific server:\n` + err.stack)
+            notify(`Error in sending ${type} daily to specific server:\n` + err.stack);
 
             // erroredGuilds.push(guild.id);
         }
@@ -45,49 +47,60 @@ async function sendDailiesToSubscribed(type, message={}) {
     // Disable on guilds without perms
     if (erroredGuilds.length > 0) {
         await Guilds.updateMany(
-            { id: { $in: erroredGuilds } }, 
+            { id: { $in: erroredGuilds } },
             { $set: {
-                [`daily.${type}.active`]: false 
+                [`daily.${type}.active`]: false
             } }
         );
     }
 }
 
 module.exports = {
-	data: {
-		// Slash command data
-		command: new SlashCommandBuilder().setName("daily-config").setDescription("Configure daily postings")
-            .addStringOption(option=>
-                option.setName("type").setDescription("What kind of daily post are you configuring?").addChoices(
-                    {"name":"Devotionals","value":"devos"},
-                    {"name":"Memes","value":"memes"},
-                    {"name":"Verse of the Day","value":"verses"}
-                ).setRequired(true)
-            ).addBooleanOption(option=>
-                option.setName("active").setDescription("Should I run this daily type?").setRequired(true)
-            ).addChannelOption(option=>
-                option.setName("channel").setDescription("The channel for me to post this daily type in").addChannelTypes(ChannelType.GuildText).setRequired(true)
-            ).addBooleanOption(option=>
-                option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
-            ).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
-		
-		// Optional fields
-		
-		extra: {"contexts":[0],"integration_types":[0]},
+    data: {
+        // Slash command data
+        command: new SlashCommandBuilder().setName("daily-config")
+            .setDescription("Configure daily postings")
+            .addStringOption(option =>
+                option.setName("type").setDescription("What kind of daily post are you configuring?")
+                    .addChoices(
+                        { "name": "Devotionals", "value": "devos" },
+                        { "name": "Memes", "value": "memes" },
+                        { "name": "Verse of the Day", "value": "verses" }
+                    )
+                    .setRequired(true)
+            )
+            .addBooleanOption(option =>
+                option.setName("active").setDescription("Should I run this daily type?")
+                    .setRequired(true)
+            )
+            .addChannelOption(option =>
+                option.setName("channel").setDescription("The channel for me to post this daily type in")
+                    .addChannelTypes(ChannelType.GuildText)
+                    .setRequired(true)
+            )
+            .addBooleanOption(option =>
+                option.setName("private").setDescription("Make the response ephemeral?")
+                    .setRequired(false)
+            )
+            .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
 
-		requiredGlobals: [],
+        // Optional fields
 
-		help: {
-			helpCategories: [Categories.Information, Categories.Entertainment, Categories.Administration, Categories.Configuration, Categories.Server_Only],
-			shortDesc: "Configure daily postings",
-			detailedDesc: 
+        extra: { "contexts": [0], "integration_types": [0] },
+
+        requiredGlobals: [],
+
+        help: {
+            helpCategories: [Categories.Information, Categories.Entertainment, Categories.Administration, Categories.Configuration, Categories.Server_Only],
+            shortDesc: "Configure daily postings",
+            detailedDesc:
 				`Configure daily devotions, a daily verse of the day, and/or a daily meme to be posted to any channel you'd like every day at noon UTC.`
-		},
-	},
+        }
+    },
 
     /** @param {import('discord.js').ChatInputCommandInteraction} cmd */
     async execute(cmd, context) {
-		applyContext(context);
+        applyContext(context);
 
         const updates = {};
 
@@ -99,8 +112,8 @@ module.exports = {
         updates[`daily.${type}.channel`] = channel.id;
 
         await guildByObj(cmd.guild, updates);
-        
-        if(!("isSendable" in channel) || !channel.isSendable()){
+
+        if (!("isSendable" in channel) || !channel.isSendable()) {
             cmd.followUp(`I can't send messages in that channel, so I can't run daily ${type}.`);
             return;
         }
@@ -108,114 +121,118 @@ module.exports = {
         cmd.followUp(
             `${updates[`daily.${type}.active`]
                 ? "A"
-                :"Dea"
+                : "Dea"
             }ctivated daily \`${type}\` for this server in <#${channel.id}>.`
         );
-	},
+    },
 
     async daily(context) {
-		applyContext(context);
+        applyContext(context);
 
         // Daily devo
-        var dailyDevo=[];
+        var dailyDevo = [];
         try {
-            const req = await fetch("https://www.biblegateway.com/devotionals/niv-365-devotional/today")
+            const req = await fetch("https://www.biblegateway.com/devotionals/niv-365-devotional/today");
             const d = await req.text();
 
-            var temp=turndown.turndown(d.split(`<div class="col-xs-12">`)[1].split("</div>")[0].trim()).split("\\n");
-            var cc=0;
-            var cOn=0;
-            var now=new Date();
-            temp.forEach(t=>{
-                if(cc+t.length>4000){
-                    dailyDevo[cOn]={
+            var temp = turndown.turndown(d.split(`<div class="col-xs-12">`)[1].split("</div>")[0].trim()).split("\\n");
+            var cc = 0;
+            var cOn = 0;
+            var now = new Date();
+            temp.forEach(t => {
+                if (cc + t.length > 4000) {
+                    dailyDevo[cOn] = {
                         "type": "rich",
                         "title": `The NIV 365 Day Devotional`,
-                        "description": dailyDevo[cOn].startsWith("undefined")?dailyDevo[cOn].slice(9):dailyDevo[cOn],
+                        "description": dailyDevo[cOn].startsWith("undefined") ? dailyDevo[cOn].slice(9) : dailyDevo[cOn],
                         "color": 0x773e09,
                         "url": `https://www.biblegateway.com/devotionals/niv-365-devotional/2024/today`,
-                        "footer":{
-                            "text":`Bible Gateway, ${now.getMonth()+1}/${now.getDate()}/${now.getFullYear()}`
+                        "footer": {
+                            "text": `Bible Gateway, ${now.getMonth() + 1}/${now.getDate()}/${now.getFullYear()}`
                         }
                     };
                     cOn++;
                     dailyDevo.push("");
-                    cc=0;
+                    cc = 0;
                 }
-                cc+=t.length;
-                dailyDevo[cOn]+=`${t}\n`;
+                cc += t.length;
+                dailyDevo[cOn] += `${t}\n`;
             });
-            dailyDevo[dailyDevo.length-1]={
+            dailyDevo[dailyDevo.length - 1] = {
                 "type": "rich",
                 "title": `The NIV 365 Day Devotional`,
-                "description": dailyDevo[cOn].startsWith("undefined")?dailyDevo[cOn].slice(9):dailyDevo[cOn],
+                "description": dailyDevo[cOn].startsWith("undefined") ? dailyDevo[cOn].slice(9) : dailyDevo[cOn],
                 "color": 0x773e09,
                 "url": `https://www.biblegateway.com/devotionals/niv-365-devotional/today`,
-                "footer":{
-                    "text":`Bible Gateway, ${now.getMonth()+1}/${now.getDate()}/${now.getFullYear()}`
-                }
-            }
-
-            await sendDailiesToSubscribed("devos", {embeds: dailyDevo});
-
-        } catch (e) {
-            notify("Devo daily: " + e.stack);
-        }
-        
-        // Verse of the day
-        try {
-            const req = await fetch("https://www.bible.com/verse-of-the-day")
-            const d = await req.text();
-            var now=new Date();
-            const nextData = JSON.parse(d.match(/<script id="__NEXT_DATA__" type="application\/json">(.+?)<\/script>/)[1])
-            const verse = nextData.props.pageProps.verses[0];
-            const versionData = nextData.props.pageProps.versionData; 
-    
-            // var verseContainer=d.split(`mbs-3 border border-l-large rounded-1 border-black dark:border-white pli-1 plb-1 pis-2`)[1].split("</div>")[0].split("</a>");
-            var votd={
-                "type":"rich",
-                "title":`Verse of the Day`,
-                // "description":`${verseContainer[0].split(">")[verseContainer[0].split(">").length-1]}\n\\- ${verseContainer[1].split("</p>")[0].split(">")[verseContainer[1].split("</p>")[0].split(">").length-1]}`,
-                "description":`${verse.content}\n\n\\- **${verse.reference.human}** (${versionData.abbreviation})`,
-                "color":0x773e09,
-                "url":"https://www.bible.com/verse-of-the-day",
-                "footer":{
-                    "text":`${now.getMonth()+1}/${now.getDate()}/${now.getFullYear()}`
+                "footer": {
+                    "text": `Bible Gateway, ${now.getMonth() + 1}/${now.getDate()}/${now.getFullYear()}`
                 }
             };
-    
-            await sendDailiesToSubscribed("verses", {embeds: [votd]});
-    
-        } catch (e) {
+
+            await sendDailiesToSubscribed("devos", { embeds: dailyDevo });
+
+        }
+        catch (e) {
+            notify("Devo daily: " + e.stack);
+        }
+
+        // Verse of the day
+        try {
+            const req = await fetch("https://www.bible.com/verse-of-the-day");
+            const d = await req.text();
+            var now = new Date();
+            const nextData = JSON.parse(d.match(/<script id="__NEXT_DATA__" type="application\/json">(.+?)<\/script>/)[1]);
+            const verse = nextData.props.pageProps.verses[0];
+            const versionData = nextData.props.pageProps.versionData;
+
+            // var verseContainer=d.split(`mbs-3 border border-l-large rounded-1 border-black dark:border-white pli-1 plb-1 pis-2`)[1].split("</div>")[0].split("</a>");
+            var votd = {
+                "type": "rich",
+                "title": `Verse of the Day`,
+                // "description":`${verseContainer[0].split(">")[verseContainer[0].split(">").length-1]}\n\\- ${verseContainer[1].split("</p>")[0].split(">")[verseContainer[1].split("</p>")[0].split(">").length-1]}`,
+                "description": `${verse.content}\n\n\\- **${verse.reference.human}** (${versionData.abbreviation})`,
+                "color": 0x773e09,
+                "url": "https://www.bible.com/verse-of-the-day",
+                "footer": {
+                    "text": `${now.getMonth() + 1}/${now.getDate()}/${now.getFullYear()}`
+                }
+            };
+
+            await sendDailiesToSubscribed("verses", { embeds: [votd] });
+
+        }
+        catch (e) {
             notify("Verse Of The Day error: " + e.stack);
         };
 
         // Send the daily meme to each server
         try {
             const botSettings = await ConfigDB.findOneAndUpdate(
-                {}, 
-                { $inc: { dailyMeme: 1 } }, 
+                {},
+                { $inc: { dailyMeme: 1 } },
                 { new: true }
-            ).select("dailyMeme").lean();
+            ).select("dailyMeme")
+                .lean();
             const memes = await fs.promises.readdir("./memes");
             const selectedMemeName = memes[botSettings.dailyMeme % memes.length];
 
-            console.log(botSettings.dailyMeme)
-                
+            console.log(botSettings.dailyMeme);
+
             // Read the selected meme file into a buffer
             const selectedMemeBuffer = await fs.promises.readFile(`./memes/${selectedMemeName}`);
 
             // Create an attachment from the buffer
-            const attachment = new AttachmentBuilder(selectedMemeBuffer, { 
+            const attachment = new AttachmentBuilder(selectedMemeBuffer, {
                 name: selectedMemeName,
                 description: "Today's daily meme."
             });
 
             await sendDailiesToSubscribed("memes", {
                 content: `## Daily Meme\n-# Meme \\#${botSettings.dailyMeme}`,
-                files: [ attachment ],
+                files: [attachment]
             });
-        } catch (e) {
+        }
+        catch (e) {
             notify("Meme Of The Day error: " + e.stack);
         };
     }

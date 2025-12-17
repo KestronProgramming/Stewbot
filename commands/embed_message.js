@@ -1,54 +1,57 @@
 // #region CommandBoilerplate
 const Categories = require("./modules/Categories");
 const client = require("../client.js");
-const { Users, userByObj } = require("./modules/database.js")
-const { Events, SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits}=require("discord.js");
-function applyContext(context={}) {
-	for (let key in context) {
-		this[key] = context[key];
-	}
+const { Users, userByObj } = require("./modules/database.js");
+const { Events, SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits } = require("discord.js");
+function applyContext(context = {}) {
+    for (let key in context) {
+        this[key] = context[key];
+    }
 }
 
 // #endregion CommandBoilerplate
 
-const { getPrimedEmbed } = require("./prime_embed.js")
+const { getPrimedEmbed } = require("./prime_embed.js");
 const { notify } = require("../utils");
 const { isDirty, censor } = require("./filter");
 
-const kaProgramRegex =/\b(?!<)https?:\/\/(?:www\.)?khanacademy\.org\/(cs|computer-programming|hour-of-code|python-program)\/[a-z,\d,-]+\/\d+(?!>)\b/gi;
-const discordMessageRegex =/\b(?!<)https?:\/\/(ptb\.|canary\.)?discord(app)?.com\/channels\/(\@me|\d+)\/\d+\/\d+(?!>)\b/gi;
+const kaProgramRegex = /\b(?!<)https?:\/\/(?:www\.)?khanacademy\.org\/(cs|computer-programming|hour-of-code|python-program)\/[a-z,\d,-]+\/\d+(?!>)\b/gi;
+const discordMessageRegex = /\b(?!<)https?:\/\/(ptb\.|canary\.)?discord(app)?.com\/channels\/(\@me|\d+)\/\d+\/\d+(?!>)\b/gi;
 
 module.exports = {
-	data: {
-		// Slash command data
-		command: new SlashCommandBuilder().setName("embed_message").setDescription("Embed a message link from another channel or server")
-            .addStringOption(option=>
-                option.setName("link").setDescription("The message link, or PRIMED if you used the /prime_embed context menu command").setRequired(true)
-                .setAutocomplete(true) // Autocomplete suggests a static `PRIMED` which is nice for mobile users
+    data: {
+        // Slash command data
+        command: new SlashCommandBuilder().setName("embed_message")
+            .setDescription("Embed a message link from another channel or server")
+            .addStringOption(option =>
+                option.setName("link").setDescription("The message link, or PRIMED if you used the /prime_embed context menu command")
+                    .setRequired(true)
+                    .setAutocomplete(true) // Autocomplete suggests a static `PRIMED` which is nice for mobile users
             ),
-		
-		// Optional fields
-		
-		extra: {"contexts":[0,1,2],"integration_types":[0,1]},
 
-		requiredGlobals: [],
+        // Optional fields
 
-		help: {
-			helpCategories: [Categories.General, Categories.Information, Categories.Entertainment],
-			shortDesc: "Embed a message link from another channel or server",
-			detailedDesc: 
+        extra: { "contexts": [0, 1, 2], "integration_types": [0, 1] },
+
+        requiredGlobals: [],
+
+        help: {
+            helpCategories: [Categories.General, Categories.Information, Categories.Entertainment],
+            shortDesc: "Embed a message link from another channel or server",
+            detailedDesc:
 				`This command allows you to enter a message link from any channel or server you are in and have Stewbot to display it. If Stewbot does not share the server with you, you can still embed it by installing Stewbot to use everywhere (click his PFP and then "Add App" to do so) and then using the "prime_embed" context menu command (right click on desktop, hold down on mobile, then press Apps) on the message you'd like to embed, and then using this command and entering "PRIMED".`
-		},
-	},
+        }
+    },
 
     /** @param {import('discord.js').ChatInputCommandInteraction} cmd */
     async execute(cmd, context) {
-		applyContext(context);
+        applyContext(context);
 
         const user = await userByObj(cmd.user);
 
 
-        if (cmd.options.getString("link").toLowerCase().trim() === "primed") {
+        if (cmd.options.getString("link").toLowerCase()
+            .trim() === "primed") {
             if (!user.primedEmbed) {
                 return cmd.followUp("You don't have any primed embeds. Rightclick a message, go to Apps, and click prime_embed to set one.");
             }
@@ -67,7 +70,7 @@ module.exports = {
                 let slashes = cmd.options.getString("link").split("channels/")[1].split("/");
                 let embs = [];
                 let fils = [];
-                
+
                 try {
                     // @ts-ignore
                     const failedMessage = `Failed to embed message. Try opening the context menu (holding down on mobile, right clicking on desktop) and pressing Apps -> prime_embed, then use ${cmds.embed_message.mention} and type **PRIMED** into it. If I'm not in the server you want to embed a message from, you can use me anywhere by pressing my profile, then Add App, then Use it Everywhere.`;
@@ -82,7 +85,7 @@ module.exports = {
 
                     let channelName = "";
                     if (mes.guild?.name && ("name" in mes.channel)) channelName = mes.guild.name + " / " + mes.channel.name;
-                    if (mes.channel.isDMBased()) channelName = `DM with ${client.user.username}`
+                    if (mes.channel.isDMBased()) channelName = `DM with ${client.user.username}`;
 
                     if (
                         (await isDirty(mes.content, cmd.guild, true)) ||
@@ -101,26 +104,26 @@ module.exports = {
                         .setTitle("(Jump to message)")
                         .setURL(cmd.options.getString("link"))
                         .setAuthor({
-                            name: mes.author.globalName||mes.author.username,
+                            name: mes.author.globalName || mes.author.username,
                             iconURL: "" + mes.author.displayAvatarURL(),
-                            url: "https://discord.com/users/" + mes.author.id,
+                            url: "https://discord.com/users/" + mes.author.id
                         })
-                        .setDescription(mes.content||null)
+                        .setDescription(mes.content || null)
                         .setTimestamp(new Date(mes.createdTimestamp))
                         .setFooter({
                             text: channelName,
-                            iconURL: mes.guild.iconURL(),
+                            iconURL: mes.guild.iconURL()
                         });
 
-                    var attachedImg=false;
+                    var attachedImg = false;
                     mes.attachments.forEach((attached) => {
                         let url = attached.url;
-                        if(attachedImg||!(/(png|jpe?g)/i.test(url))){ // TODO: increase embeded attachment types
+                        if (attachedImg || !(/(png|jpe?g)/i.test(url))) { // TODO: increase embeded attachment types
                             fils.push(url);
                         }
-                        else{
+                        else {
                             messEmbed.setImage(url);
-                            attachedImg=true;
+                            attachedImg = true;
                         }
                     });
 
@@ -136,7 +139,7 @@ module.exports = {
                         embeds: embs
                     });
                 }
-                catch(e){
+                catch (e) {
                     console.log(e);
                     cmd.followUp(`I'm sorry, I can't access that message.`);
                 }
@@ -145,16 +148,16 @@ module.exports = {
                 cmd.followUp(`I didn't get that. Are you sure this is a valid message link? You can get one by accessing the context menu on a message, and pressing \`Copy Message Link\`.`);
             }
         }
-        
-	},
+
+    },
 
     // Watch for discord message embeds
-    /** 
-     * @param {import('discord.js').Message} msg 
-     * @param {import("./modules/database.js").GuildDoc} guildStore 
+    /**
+     * @param {import('discord.js').Message} msg
+     * @param {import("./modules/database.js").GuildDoc} guildStore
      * */
-    async [Events.MessageCreate] (msg, context, guildStore) {
-		applyContext(context);
+    async [Events.MessageCreate](msg, context, guildStore) {
+        applyContext(context);
 
         // Discord message embeds
         var links = msg.content.match(discordMessageRegex) || [];
@@ -165,7 +168,7 @@ module.exports = {
                 // Make sure we have perms to embed
                 if (
                     !("permissionsFor" in msg.channel) ||
-                    !msg.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages) || 
+                    !msg.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.SendMessages) ||
                     !msg.channel.permissionsFor(msg.author.id).has(PermissionFlagsBits.EmbedLinks)
                 ) {
                     links = progs = [];
@@ -178,7 +181,7 @@ module.exports = {
                     .select("config.embedPreviews")
                     .lean({ virtuals: true });
 
-                if (!user.config?.embedPreviews) { 
+                if (!user.config?.embedPreviews) {
                     links = progs = [];
                     return;
                 }
@@ -194,28 +197,28 @@ module.exports = {
                     links = progs = [];
                     return;
                 }
-            })()
+            })();
         }
 
         var embs = [];
         var fils = [];
-        for(var i=0;i<links.length;i++){
-            let linkIDs=links[i].split("channels/")[1].split("/");
-            try{
-                var channelLinked=await client.channels.fetch(linkIDs[linkIDs.length-2]);
+        for (var i = 0;i < links.length;i++) {
+            let linkIDs = links[i].split("channels/")[1].split("/");
+            try {
+                var channelLinked = await client.channels.fetch(linkIDs[linkIDs.length - 2]);
                 if (!("messages" in channelLinked)) return;
-                var mes=await channelLinked.messages.fetch(linkIDs[linkIDs.length-1]);
+                var mes = await channelLinked.messages.fetch(linkIDs[linkIDs.length - 1]);
 
                 let channelName = "";
                 if (mes.guild?.name && ("name" in mes.channel)) channelName = mes.guild.name + " / " + mes.channel.name;
-                if (mes.channel.isDMBased()) channelName = `DM with ${client.user.username}`
+                if (mes.channel.isDMBased()) channelName = `DM with ${client.user.username}`;
 
-                if(
+                if (
                     await isDirty(mes.content, guildStore) ||
                     await isDirty(mes.author.globalName || mes.author.username, guildStore) ||
                     await isDirty(mes.guild.name, guildStore) ||
                     await isDirty(channelName, guildStore)
-                ){
+                ) {
                     embs.push(
                         new EmbedBuilder()
                             .setColor("#006400")
@@ -235,13 +238,13 @@ module.exports = {
                     .setAuthor({
                         name: await censor(mes.member?.nickname || mes.author.globalName || mes.author.username),
                         iconURL: "" + mes.author.displayAvatarURL(),
-                        url: "https://discord.com/users/" + mes.author.id,
+                        url: "https://discord.com/users/" + mes.author.id
                     })
                     .setDescription(await censor(mes.content) || null)
                     .setTimestamp(new Date(mes.createdTimestamp))
                     .setFooter({
                         text: channelName,
-                        iconURL: mes.guild.iconURL(),
+                        iconURL: mes.guild.iconURL()
                     });
 
                 var attachedImg = false;
@@ -262,8 +265,8 @@ module.exports = {
                     embs.push(messEmbed);
                 }
             }
-            catch(e){
-                notify(`Error embedding message:\n${e.stack}`)
+            catch (e) {
+                notify(`Error embedding message:\n${e.stack}`);
             }
         }
 
@@ -278,93 +281,96 @@ module.exports = {
         }
 
         // #region KA Embeds
-        for(var i=0;i<progs.length;i++){
-            let prog=progs[i];
-            var progId = prog.split("/")[prog.split("/").length-1].split("?")[0];
-            var embeds=[];
+        for (var i = 0;i < progs.length;i++) {
+            let prog = progs[i];
+            var progId = prog.split("/")[prog.split("/").length - 1].split("?")[0];
+            var embeds = [];
             await fetch(`https://kap-archive.bhavjit.com/s/${progId}`, { method: "POST" })
-            .then(d => d.json().catch(e => {console.error("Error in KAP /s/ endpoint",e); return false})).then(async d=>{
-                let clr = 0x00ff00, progDeleted;
-                if (d?.archive?.sourceDeleted || !d) {
-                    clr = 0xffff00;
-                    progsDeleted = true;
-                    progDeleted = true;
-                    if (!d) {
-                        // Fallback to /g/ endpoint if possible
-                        console.warn("KAP /s/ endpoint failed. Falling back to /g/ endpoint");
-                        d = await fetch(`https://kap-archive.bhavjit.com/g/${progId}`, { method: "POST" })
-                            .then(d=>d.json()).then(d=>d.status === 200 ? d : false)
-                            .catch(e => console.error("Error in KAP /g/ fallback",e));
+                .then(d => d.json().catch(e => {console.error("Error in KAP /s/ endpoint", e); return false;}))
+                .then(async d => {
+                    let clr = 0x00ff00, progDeleted;
+                    if (d?.archive?.sourceDeleted || !d) {
+                        clr = 0xffff00;
+                        progsDeleted = true;
+                        progDeleted = true;
                         if (!d) {
-                            console.warn("KAP /g/ fallback was not successful");
-                            return;
+                        // Fallback to /g/ endpoint if possible
+                            console.warn("KAP /s/ endpoint failed. Falling back to /g/ endpoint");
+                            d = await fetch(`https://kap-archive.bhavjit.com/g/${progId}`, { method: "POST" })
+                                .then(d => d.json())
+                                .then(d => d.status === 200 ? d : false)
+                                .catch(e => console.error("Error in KAP /g/ fallback", e));
+                            if (!d) {
+                                console.warn("KAP /g/ fallback was not successful");
+                                return;
+                            }
                         }
                     }
-                }
-                embeds.push({
-                    type: "rich",
-                    title: d.title,
-                    description: `\u200b`,
-                    color: clr,
-                    author: {
-                        name: `Made by ${d.author.nick}`,
-                        url: `https://www.khanacademy.org/profile/${d.author.id}`,
-                    },
-                    fields: [
-                        {
-                            name: `Created`,
-                            value: `${new Date(d.created).toDateString()}`,
-                            inline: true
+                    embeds.push({
+                        type: "rich",
+                        title: d.title,
+                        description: `\u200b`,
+                        color: clr,
+                        author: {
+                            name: `Made by ${d.author.nick}`,
+                            url: `https://www.khanacademy.org/profile/${d.author.id}`
                         },
-                        {
-                            name: `Last Updated`,
-                            value: `${new Date(d.updated).toDateString()}`,
-                            inline: true
+                        fields: [
+                            {
+                                name: `Created`,
+                                value: `${new Date(d.created).toDateString()}`,
+                                inline: true
+                            },
+                            {
+                                name: `Last Updated`,
+                                value: `${new Date(d.updated).toDateString()}`,
+                                inline: true
+                            },
+                            {
+                                name: `Last Updated in Archive`,
+                                value: `${new Date(d.archive.updated).toDateString()}`,
+                                inline: true
+                            },
+                            {
+                                name: `Width/Height`,
+                                value: `${d.width}/${d.height}`,
+                                inline: true
+                            },
+                            {
+                                name: `Votes`,
+                                value: `${d.votes}`,
+                                inline: true
+                            },
+                            {
+                                name: `Spin-Offs`,
+                                value: `${d.spinoffs}`,
+                                inline: true
+                            }
+                        ],
+                        image: {
+                            url: `https://${ progDeleted ? "kap-archive.bhavjit.com/thumb/" : "www.khanacademy.org/computer-programming/i/" }${d.id}/latest.png`,
+                            height: 0,
+                            width: 0
                         },
-                        {
-                            name: `Last Updated in Archive`,
-                            value: `${new Date(d.archive.updated).toDateString()}`,
-                            inline: true
+                        thumbnail: {
+                            url: `https://media.discordapp.net/attachments/810540153294684195/994417360737935410/ka-logo-zoomedout.png`,
+                            height: 0,
+                            width: 0
                         },
-                        {
-                            name: `Width/Height`,
-                            value: `${d.width}/${d.height}`,
-                            inline: true
+                        footer: {
+                            text: `${ progDeleted ? "Retrieved from" : "Backed up to" } https://kap-archive.bhavjit.com/`,
+                            icon_url: `https://media.discordapp.net/attachments/810540153294684195/994417360737935410/ka-logo-zoomedout.png`
                         },
-                        {
-                            name: `Votes`,
-                            value: `${d.votes}`,
-                            inline: true
-                        },
-                        {
-                            name: `Spin-Offs`,
-                            value: `${d.spinoffs}`,
-                            inline: true
-                        },
-                    ],
-                    image: {
-                        url: `https://${ progDeleted ? "kap-archive.bhavjit.com/thumb/" : "www.khanacademy.org/computer-programming/i/" }${d.id}/latest.png`,
-                        height: 0,
-                        width: 0,
-                    },
-                    thumbnail: {
-                        url: `https://media.discordapp.net/attachments/810540153294684195/994417360737935410/ka-logo-zoomedout.png`,
-                        height: 0,
-                        width: 0,
-                    },
-                    footer: {
-                        text: `${ progDeleted ? "Retrieved from" : "Backed up to" } https://kap-archive.bhavjit.com/`,
-                        icon_url: `https://media.discordapp.net/attachments/810540153294684195/994417360737935410/ka-logo-zoomedout.png`,
-                    },
-                    url: progDeleted ? `https://kap-archive.bhavjit.com/view?p=${d.id}` : `https://www.khanacademy.org/${d.type === "PYTHON" ? "python-program" : "computer-programming"}/i/${d.id}`
-                });
-            }).catch(e => console.error(e));
+                        url: progDeleted ? `https://kap-archive.bhavjit.com/view?p=${d.id}` : `https://www.khanacademy.org/${d.type === "PYTHON" ? "python-program" : "computer-programming"}/i/${d.id}`
+                    });
+                })
+                .catch(e => console.error(e));
         }
-        if(embeds?.length>0){
+        if (embeds?.length > 0) {
             msg.suppressEmbeds(true);
-            let cont = `Backed program${embeds.length>1?"s":""} up to`;
-            if (progsDeleted) cont = `${embeds.length>1?"Backed programs up to and/or retrieved programs from":"Program retrieved from"}`;
-            msg.reply({content: `${cont} the KAP Archive, which you can visit [here](https://kap-archive.bhavjit.com/).`,embeds:embeds,allowedMentions:{parse:[]}});
+            let cont = `Backed program${embeds.length > 1 ? "s" : ""} up to`;
+            if (progsDeleted) cont = `${embeds.length > 1 ? "Backed programs up to and/or retrieved programs from" : "Program retrieved from"}`;
+            msg.reply({ content: `${cont} the KAP Archive, which you can visit [here](https://kap-archive.bhavjit.com/).`, embeds: embeds, allowedMentions: { parse: [] } });
         }
         // #endregion KA Embeds
 

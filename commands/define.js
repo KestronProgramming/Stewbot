@@ -1,10 +1,10 @@
 // #region CommandBoilerplate
 const Categories = require("./modules/Categories");
-const { SlashCommandBuilder, EmbedType}=require("discord.js");
-function applyContext(context={}) {
-	for (let key in context) {
-		this[key] = context[key];
-	}
+const { SlashCommandBuilder, EmbedType } = require("discord.js");
+function applyContext(context = {}) {
+    for (let key in context) {
+        this[key] = context[key];
+    }
 }
 
 // #endregion CommandBoilerplate
@@ -13,36 +13,41 @@ const { notify } = require("../utils");
 const { isDirty } = require("./filter");
 
 module.exports = {
-	data: {
-		// Slash command data
-		command: new SlashCommandBuilder().setName("define").setDescription("Get the definition for a word").addStringOption(option=>
-                option.setName("what").setDescription("What to define").setRequired(true)
-            ).addBooleanOption(option=>
-                option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
+    data: {
+        // Slash command data
+        command: new SlashCommandBuilder().setName("define")
+            .setDescription("Get the definition for a word")
+            .addStringOption(option =>
+                option.setName("what").setDescription("What to define")
+                    .setRequired(true)
+            )
+            .addBooleanOption(option =>
+                option.setName("private").setDescription("Make the response ephemeral?")
+                    .setRequired(false)
             ),
-		extra: {"contexts": [0,1,2], "integration_types": [0,1]},
-		
-		// Optional fields
-		requiredGlobals: [],
+        extra: { "contexts": [0, 1, 2], "integration_types": [0, 1] },
 
-		help: {
-			helpCategories: [Categories.Information, Categories.General],
-			shortDesc: "Get the definition for a word",
-			detailedDesc: 
+        // Optional fields
+        requiredGlobals: [],
+
+        help: {
+            helpCategories: [Categories.Information, Categories.General],
+            shortDesc: "Get the definition for a word",
+            detailedDesc:
 				`Look up the specified word in the dictionary and view the definitions.`
-		},
-	},
+        }
+    },
 
     /** @param {import('discord.js').ChatInputCommandInteraction} cmd */
     async execute(cmd, context) {
-		applyContext(context);
+        applyContext(context);
 
         try {
-            const res = await fetch("https://api.dictionaryapi.dev/api/v2/entries/en/"+cmd.options.getString("what"));
+            const res = await fetch("https://api.dictionaryapi.dev/api/v2/entries/en/" + cmd.options.getString("what"));
             let wordDefinition = await res.json();
-            
+
             wordDefinition = wordDefinition[0];
-            
+
             if (wordDefinition?.meanings) {
                 if (await isDirty(wordDefinition.word, cmd.guild, true)) {
                     cmd.followUp({
@@ -67,23 +72,24 @@ module.exports = {
                         });
                     }
                 }
-                cmd.followUp({embeds:[{
+                cmd.followUp({ embeds: [{
                     type: EmbedType.Rich,
-                    title: "Definition of "+wordDefinition.word,
+                    title: "Definition of " + wordDefinition.word,
                     description: wordDefinition.origin,
                     color: 0x773e09,
-                    fields: defs.slice(0,25),
+                    fields: defs.slice(0, 25),
                     footer: {
-                        text: wordDefinition.phonetic,
+                        text: wordDefinition.phonetic
                     }
-                }]});
+                }] });
             }
-            else { 
+            else {
                 cmd.followUp("I'm sorry, I didn't find a definition for that");
             }
-        } catch (e) {
+        }
+        catch (e) {
             notify("Dictionary error:\n" + String(e.stack));
             cmd.followUp("I'm sorry, I didn't find a definition for that");
         };
-    },
+    }
 };

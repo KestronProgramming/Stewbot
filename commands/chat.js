@@ -1,67 +1,67 @@
 // #region CommandBoilerplate
 const Categories = require("./modules/Categories");
 const client = require("../client.js");
-const { userByObj } = require("./modules/database.js")
-const { Events, SlashCommandBuilder}=require("discord.js");
-function applyContext(context={}) {
-	for (let key in context) {
-		this[key] = context[key];
-	}
+const { userByObj } = require("./modules/database.js");
+const { Events, SlashCommandBuilder } = require("discord.js");
+function applyContext(context = {}) {
+    for (let key in context) {
+        this[key] = context[key];
+    }
 }
 // #endregion CommandBoilerplate
 
-const { limitLength, notify } = require("../utils.js")
+const { limitLength, notify } = require("../utils.js");
 const fs = require("fs");
 const ms = require("ms");
 const NodeCache = require("node-cache");
 const { censor } = require("./filter");
 
 // AI SDKs
-const { groq } = require('@ai-sdk/groq');
-const { streamText } = require('ai');
+const { groq } = require("@ai-sdk/groq");
+const { streamText } = require("ai");
 
 // Configuration
 const COOLDOWN_SECONDS = 3;
 const COOLDOWN_MS = COOLDOWN_SECONDS * 1000;
 
 // Server IPs and User IDs who need to wait for the requests to finish - this clears after 2 min in case of an error
-let activeAIRequests = new NodeCache({ stdTTL: ms("5m")/1000, checkperiod: 120 });
+let activeAIRequests = new NodeCache({ stdTTL: ms("5m") / 1000, checkperiod: 120 });
 // Cooldown tracker for rate limiting
 let userCooldowns = new NodeCache({ stdTTL: COOLDOWN_SECONDS, checkperiod: 1 });
 
-// Non-persistent store of convos with users 
+// Non-persistent store of convos with users
 let convoCache = {};
 
 function resetAIRequests() {
-    activeAIRequests.flushAll()
-    userCooldowns.flushAll()
+    activeAIRequests.flushAll();
+    userCooldowns.flushAll();
 }
 
 //#region Tools
 
 // Setup discord -> tool calling functions
 const GeminiType = {
-    STRING: 'STRING',
-    NUMBER: 'NUMBER',
-    INTEGER: 'INTEGER',
-    BOOLEAN: 'BOOLEAN',
-    ARRAY: 'ARRAY',
-    OBJECT: 'OBJECT',
+    STRING: "STRING",
+    NUMBER: "NUMBER",
+    INTEGER: "INTEGER",
+    BOOLEAN: "BOOLEAN",
+    ARRAY: "ARRAY",
+    OBJECT: "OBJECT"
 };
 
 // Mapping from Discord ApplicationCommandOptionType enum values
 // https://discord-api-types.dev/api/discord-api-types-v10/enum/ApplicationCommandOptionType
 function discordTypeToGeminiType(discordType) {
     switch (discordType) {
-        case 3: return 'STRING'; // STRING
-        case 4: return 'INTEGER'; // INTEGER
-        case 5: return 'BOOLEAN'; // BOOLEAN
-        case 6: return 'STRING'; // USER (ID or mention)
-        case 7: return 'STRING'; // CHANNEL (ID or mention)
-        case 8: return 'STRING'; // ROLE (ID or mention)
-        case 9: return 'STRING'; // MENTIONABLE
-        case 10: return 'NUMBER'; // NUMBER
-        case 11: return 'STRING'; // ATTACHMENT (ID or URL placeholder)
+        case 3: return "STRING"; // STRING
+        case 4: return "INTEGER"; // INTEGER
+        case 5: return "BOOLEAN"; // BOOLEAN
+        case 6: return "STRING"; // USER (ID or mention)
+        case 7: return "STRING"; // CHANNEL (ID or mention)
+        case 8: return "STRING"; // ROLE (ID or mention)
+        case 9: return "STRING"; // MENTIONABLE
+        case 10: return "NUMBER"; // NUMBER
+        case 11: return "STRING"; // ATTACHMENT (ID or URL placeholder)
         default:
             console.warn(`Unknown Discord option type: ${discordType}. Defaulting to STRING.`);
             return GeminiType.STRING; // Fallback
@@ -72,7 +72,7 @@ function processParameterOptions(discordOptions) {
     const parameters = {
         type: GeminiType.OBJECT, // Or Type.OBJECT
         properties: {},
-        required: [],
+        required: []
     };
 
     if (!discordOptions || !Array.isArray(discordOptions)) {
@@ -90,7 +90,7 @@ function processParameterOptions(discordOptions) {
         // Enhance description with constraints
         let enhancedDesc = paramDesc;
         if (paramOption.channel_types) {
-            enhancedDesc += ` (Channel types: ${paramOption.channel_types.join(', ')})`; // You might map numbers to names
+            enhancedDesc += ` (Channel types: ${paramOption.channel_types.join(", ")})`; // You might map numbers to names
         }
         if (paramOption.min_length !== undefined) {
             enhancedDesc += ` (Min length: ${paramOption.min_length})`;
@@ -99,14 +99,14 @@ function processParameterOptions(discordOptions) {
             enhancedDesc += ` (Max length: ${paramOption.max_length})`;
         }
         if (paramOption.choices && Array.isArray(paramOption.choices)) {
-            const choiceList = paramOption.choices.map(c => `'${c.name}' (${c.value})`).join(', ');
+            const choiceList = paramOption.choices.map(c => `'${c.name}' (${c.value})`).join(", ");
             enhancedDesc += ` (Choices: ${choiceList})`;
         }
         // Add min/max value if applicable (for NUMBER/INTEGER types if present in your data)
 
         parameters.properties[paramName] = {
             type: discordTypeToGeminiType(paramOption.type),
-            description: enhancedDesc,
+            description: enhancedDesc
         };
 
         if (paramOption.required) {
@@ -118,7 +118,7 @@ function processParameterOptions(discordOptions) {
     if (parameters.required.length === 0) {
         delete parameters.required;
     }
-    
+
     // Keep properties object even if empty, Gemini seems to require it.
     // if (Object.keys(parameters.properties).length === 0) {
     //    delete parameters.properties;
@@ -166,15 +166,17 @@ function convertCommandsToTools(commandsLoaded) {
                     const tool = {
                         name: toolName,
                         description: toolDescription,
-                        parameters: parameters,
+                        parameters: parameters
                     };
                     tools.push(tool);
-                } else {
+                }
+                else {
                     // Handle cases where a command might unexpectedly mix subcommands and direct parameters
                     console.warn(`Command '${commandName}' has an option '${subCommandOption.name}' that looks like a direct parameter mixed with subcommands. Skipping.`);
                 }
             }
-        } else {
+        }
+        else {
             // --- Process as Main Command (with or without parameters) ---
             const toolName = commandName;
             // For non-subcommand commands, the 'help' object directly contains the details (if structured like admin_message)
@@ -187,7 +189,7 @@ function convertCommandsToTools(commandsLoaded) {
             const tool = {
                 name: toolName,
                 description: toolDescription,
-                parameters: parameters, // Contains parameters if mainCommand.options existed, empty otherwise
+                parameters: parameters // Contains parameters if mainCommand.options existed, empty otherwise
             };
             tools.push(tool);
         }
@@ -236,10 +238,10 @@ async function postprocessAIMessage(message, guild) {
     let thinkingRegexNewline = /^Here is my thought process:[^\w]*/m;
     let responseRegexNewline = /^Here is my response:[^\w]*/m;
     if (thinkingRegexNewline.test(message)) {
-        message = message.replace(thinkingRegexNewline, '$&\n');
+        message = message.replace(thinkingRegexNewline, "$&\n");
     }
     if (responseRegexNewline.test(message)) {
-        message = message.replace(responseRegexNewline, '$&\n');
+        message = message.replace(responseRegexNewline, "$&\n");
     }
 
     // Make thought process smaller text
@@ -251,17 +253,18 @@ async function postprocessAIMessage(message, guild) {
         let responseStart = responseMatch.index + responseMatch[0].length;
         let thinkingBlock = message.substring(thinkingStart, responseStart);
         let processedThinkingBlock = thinkingBlock
-            .split('\n')
+            .split("\n")
             .map(line => {
                 if (line.length === 0) return line;
-                return '-# ' + line;
-            }).join('\n');
+                return "-# " + line;
+            })
+            .join("\n");
 
         message = message.substring(0, thinkingStart) + processedThinkingBlock + message.substring(responseStart);
     }
 
 
-    return message
+    return message;
 }
 
 async function getAiResponse(threadID, message, thinking = null, contextualData = {}, notify = null, retryAttempt = 0) {
@@ -283,14 +286,14 @@ async function getAiResponse(threadID, message, thinking = null, contextualData 
             systemPrompt: systemPrompt,
             messages: [],
             contextualData,
-            lastMessage: Date.now(),
+            lastMessage: Date.now()
         };
     }
 
     // Add user message to history
     convoCache[threadID].messages.push({
-        role: 'user',
-        content: message,
+        role: "user",
+        content: message
     });
 
     let response = null;
@@ -298,13 +301,13 @@ async function getAiResponse(threadID, message, thinking = null, contextualData 
 
     try {
         const result = await streamText({
-            model: groq('openai/gpt-oss-120b'),
+            model: groq("openai/gpt-oss-120b"),
             system: convoCache[threadID].systemPrompt,
-            messages: convoCache[threadID].messages,
+            messages: convoCache[threadID].messages
         });
 
         // Collect the full response from the stream
-        let fullText = '';
+        let fullText = "";
         for await (const textPart of result.textStream) {
             fullText += textPart;
         }
@@ -315,28 +318,31 @@ async function getAiResponse(threadID, message, thinking = null, contextualData 
                 convoCache[threadID].messages.pop();
                 delete convoCache[threadID];
                 return getAiResponse(threadID, message, thinking, contextualData, notify, retryAttempt + 1);
-            } else {
+            }
+            else {
                 notify && notify(`Error with AI API response: Empty response received`);
                 return [`Sorry, there was an error with the AI response. It has already been reported. Try again later.`, false];
             }
         }
 
         response = fullText;
-        
+
         // Add assistant response to history
         convoCache[threadID].messages.push({
-            role: 'assistant',
-            content: response,
+            role: "assistant",
+            content: response
         });
 
-    } catch (e) {
+    }
+    catch (e) {
         notify && notify(`AI API error: \n${e.stack}`);
         console.error("AI API error:", e);
         response = `Sorry, there was an error with the AI response. It has already been reported. Try again later.`;
         success = false;
         // Remove the failed user message from history
         convoCache[threadID].messages.pop();
-    } finally {
+    }
+    finally {
         if (convoCache[threadID]) {
             convoCache[threadID].lastMessage = Date.now();
         }
@@ -350,14 +356,14 @@ function checkRateLimit(userId) {
     if (activeAIRequests.has(userId)) {
         return { allowed: false, message: "You already have an active chat request. Please wait for that one to finish before requesting another." };
     }
-    
+
     // Check if user is on cooldown
     const cooldownRemaining = userCooldowns.get(userId);
     if (cooldownRemaining) {
         const secondsLeft = Math.ceil((cooldownRemaining - Date.now()) / 1000);
-        return { allowed: false, message: `To keep the ping-AI free, please wait ${secondsLeft} more second${secondsLeft !== 1 ? 's' : ''} before trying again.` };
+        return { allowed: false, message: `To keep the ping-AI free, please wait ${secondsLeft} more second${secondsLeft !== 1 ? "s" : ""} before trying again.` };
     }
-    
+
     return { allowed: true };
 }
 
@@ -371,7 +377,8 @@ module.exports = {
     convertCommandsToTools,
 
     data: {
-        command: new SlashCommandBuilder().setName('chat').setDescription('Chat with Stewbot')
+        command: new SlashCommandBuilder().setName("chat")
+            .setDescription("Chat with Stewbot")
             .addStringOption(option =>
                 option
                     .setName("message")
@@ -386,7 +393,7 @@ module.exports = {
             ),
 
         // Optional fields
-        extra: { "contexts": [0, 1, 2], "integration_types": [0, 1] },//Where the command can be used and what kind of installs it supports
+        extra: { "contexts": [0, 1, 2], "integration_types": [0, 1] }, //Where the command can be used and what kind of installs it supports
 
         // Allow variables from the global index file to be accessed here - requiredGlobals["helpPages"]
         requiredGlobals: [],
@@ -395,7 +402,7 @@ module.exports = {
             helpCategories: [Categories.General, Categories.Bot, Categories.Information, Categories.Entertainment],
             shortDesc: "Ask Stewbot's AI something",
             detailedDesc: "Have a fun chat with Stewbot's self-hosted AI"
-        },
+        }
     },
     /** @param {import('discord.js').ChatInputCommandInteraction} cmd */
     async execute(cmd, globalsContext) {
@@ -426,10 +433,10 @@ module.exports = {
 
         let [response, success] = await getAiResponse(threadID, message, thinking, {
             name: cmd.user.username,
-            server: cmd.guild ? cmd.guild.name : "Direct Messages",
+            server: cmd.guild ? cmd.guild.name : "Direct Messages"
         }, notify);
 
-        response = await postprocessAIMessage(limitLength(response), cmd.guild)
+        response = await postprocessAIMessage(limitLength(response), cmd.guild);
         response = await censor(String(response), cmd.guild, true);
 
         cmd.followUp({
@@ -441,12 +448,12 @@ module.exports = {
         startCooldown(cmd.user.id);
     },
 
-    /** 
-     * @param {import('discord.js').Message} msg 
-     * @param {import("./modules/database.js").GuildDoc} guildStore 
-     * @param {import("./modules/database.js").GuildUserDoc} guildStore 
+    /**
+     * @param {import('discord.js').Message} msg
+     * @param {import("./modules/database.js").GuildDoc} guildStore
+     * @param {import("./modules/database.js").GuildUserDoc} guildStore
      * */
-    async [Events.MessageCreate] (msg, globals, guildStore) {
+    async [Events.MessageCreate](msg, globals, guildStore) {
         applyContext(globals);
 
         if (!("send" in msg.channel)) return;
@@ -455,12 +462,12 @@ module.exports = {
 
         // Check the guild settings since we already have it first
         const guild = guildStore;
-        if (!guild?.config?.ai) return; 
+        if (!guild?.config?.ai) return;
 
         // Then as long as the user did not blacklist it
         const user = await userByObj(msg.author);
         if (user?.config?.aiPings) {
-            
+
             // Check rate limits
             const rateLimitCheck = checkRateLimit(msg.author.id);
             if (!rateLimitCheck.allowed) {
@@ -470,7 +477,8 @@ module.exports = {
                         content: rateLimitCheck.message,
                         allowedMentions: { parse: [] }
                     });
-                } catch (e) {
+                }
+                catch (e) {
                     console.error("Failed to send rate limit message:", e);
                 }
                 return;
@@ -485,15 +493,16 @@ module.exports = {
 
             [response, success] = await getAiResponse(threadID, message, false, {
                 name: msg.author.username,
-                server: msg.guild ? msg.guild.name : "Direct Messages",
+                server: msg.guild ? msg.guild.name : "Direct Messages"
             }, notify, 0);
 
             if (success) { // Only reply if it worked, don't send error codes in reply to replies
                 let stillExists; // Message could have been deleted/filtered since sending
                 try {
-                    stillExists = await msg.channel.messages.fetch(msg.id)
-                } catch {
-                    stillExists = false
+                    stillExists = await msg.channel.messages.fetch(msg.id);
+                }
+                catch {
+                    stillExists = false;
                 }
 
                 response = await postprocessAIMessage(response, msg.guild);
@@ -503,14 +512,15 @@ module.exports = {
                 var emojiEnding = /[\p{Emoji}\uFE0F]$/u;
                 var emoji = null;
                 if (stillExists && emojiEnding.test(response)) {
-                    emoji = response.match(emojiEnding)[0]
-                    response = response.replace(emojiEnding, '')
+                    emoji = response.match(emojiEnding)[0];
+                    response = response.replace(emojiEnding, "");
                 }
 
                 // React
                 try {
                     if (emoji) await msg.react(emoji);
-                } catch {
+                }
+                catch {
                     // Some emojis are not in discord
                     response += emoji;
                 }
@@ -531,19 +541,21 @@ module.exports = {
                     if (stillExists) {
                         await msg.reply({
                             content: chunk,
-                            allowedMentions: { parse: [] },
+                            allowedMentions: { parse: [] }
                         });
-                    } else {
+                    }
+                    else {
                         await msg.channel.send({
                             content: chunk,
-                            allowedMentions: { parse: [] },
+                            allowedMentions: { parse: [] }
                         });
                     }
                 }
 
                 activeAIRequests.del(msg.author.id);
                 startCooldown(msg.author.id);
-            } else {
+            }
+            else {
                 activeAIRequests.del(msg.author.id);
             }
         }

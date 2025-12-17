@@ -1,9 +1,9 @@
 // #region CommandBoilerplate
-const { SlashCommandBuilder, PermissionFlagsBits}=require("discord.js");
-function applyContext(context={}) {
-	for (let key in context) {
-		this[key] = context[key];
-	}
+const { SlashCommandBuilder, PermissionFlagsBits } = require("discord.js");
+function applyContext(context = {}) {
+    for (let key in context) {
+        this[key] = context[key];
+    }
 }
 
 // #endregion CommandBoilerplate
@@ -14,49 +14,49 @@ const fs = require("fs/promises");
 const { notify } = require("../utils");
 
 module.exports = {
-	data: {
-		sudo: true,
+    data: {
+        sudo: true,
 
-		command: new SlashCommandBuilder()
-			.setName('launch_commands')
-			.setDescription('Relaunch commands')
-			.setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
-		
-		extra: {"contexts": [0], "integration_types": [0]},
+        command: new SlashCommandBuilder()
+            .setName("launch_commands")
+            .setDescription("Relaunch commands")
+            .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
 
-		requiredGlobals: [],
+        extra: { "contexts": [0], "integration_types": [0] },
 
-		help: {
-			helpCategories: [""],//Don't show in any automatic help pages
-			shortDesc: "Stewbot's Admins Only",//Should be the same as the command setDescription field
-			detailedDesc: //Detailed on exactly what the command does and how to use it
+        requiredGlobals: [],
+
+        help: {
+            helpCategories: [""], //Don't show in any automatic help pages
+            shortDesc: "Stewbot's Admins Only", //Should be the same as the command setDescription field
+            detailedDesc: //Detailed on exactly what the command does and how to use it
 				`Stewbot's Admins Only`
-		},
-	},
+        }
+    },
 
     /** @param {import('discord.js').ChatInputCommandInteraction} cmd */
     async execute(cmd, context) {
-		applyContext(context);
-		
-		// Code
-        if(cmd.guild?.id===config.homeServer && cmd.channel?.id===config.commandChannel){
-			// Update commands
-			const result = await launchCommands();
+        applyContext(context);
+
+        // Code
+        if (cmd.guild?.id === config.homeServer && cmd.channel?.id === config.commandChannel) {
+            // Update commands
+            const result = await launchCommands();
             await cmd.followUp(`Launching commands...\n${result}`);
 
-			// Update the live bot commands
-			const commandsText = await fs.readFile(`data/commands.json`, "utf-8");
-			var newCmds = JSON.parse( commandsText );
-			Object.keys(newCmds).forEach(key=>{
-				global.cmds[key] = newCmds[key];
-			});
+            // Update the live bot commands
+            const commandsText = await fs.readFile(`data/commands.json`, "utf-8");
+            var newCmds = JSON.parse( commandsText );
+            Object.keys(newCmds).forEach(key => {
+                global.cmds[key] = newCmds[key];
+            });
         }
-        else if(cmd.guild?.id===config.homeServer){
+        else if (cmd.guild?.id === config.homeServer) {
             cmd.followUp(`Not here.`);
         }
-        else{
+        else {
             notify(`Launch commands was used outside of Kestron Central by <@${cmd.user.id}>.`);
-			cmd.followUp(`No.`);
+            cmd.followUp(`No.`);
         }
-	}
+    }
 };

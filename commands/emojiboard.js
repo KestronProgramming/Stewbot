@@ -1,7 +1,7 @@
 // #region CommandBoilerplate
 const Categories = require("./modules/Categories");
 const client = require("../client.js");
-const { Guilds, guildByID, guildByObj } = require("./modules/database.js")
+const { Guilds, guildByID, guildByObj } = require("./modules/database.js");
 const { Events, InteractionContextType: IT, ApplicationIntegrationType: AT, SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits, ChannelType } = require("discord.js");
 function applyContext(context = {}) {
     for (let key in context) {
@@ -22,7 +22,9 @@ function getEmojiFromMessage(emoji) {
     }
 
     // if emoji is a unicode emoji, return the emoji encoded as a list of 6 digit hex values
-    return emoji.split('').map(char => char.codePointAt(0).toString(16).padStart(6, '0')).join('');
+    return emoji.split("").map(char => char.codePointAt(0).toString(16)
+        .padStart(6, "0"))
+        .join("");
 }
 
 function parseEmoji(emoji) {
@@ -31,13 +33,14 @@ function parseEmoji(emoji) {
     }
 
     if (emoji.length % 6 !== 0) {
-        return emoji
+        return emoji;
     }
 
     try {
         // split into groups of 6 characters and convert to unicode
         return String.fromCodePoint(...emoji.match(/.{6}/g).map(hex => parseInt(hex, 16)));
-    } catch (error) {
+    }
+    catch (error) {
         return emoji;
     }
 }
@@ -57,7 +60,7 @@ function getStarMsg(msg) {
 }
 
 async function doEmojiboardReaction(react) {
-    if (react.message.guildId == '0') return; // DMs patch
+    if (react.message.guildId == "0") return; // DMs patch
 
     const emoji = getEmojiFromMessage(
         react.emoji.requiresColons ?
@@ -85,7 +88,7 @@ async function doEmojiboardReaction(react) {
 
     const messageData = await react.message.channel.messages.fetch(react.message.id);
     const foundReactions = messageData.reactions.cache.get(react.emoji.id || react.emoji.name);
-    const selfReactions = react.message.reactions.cache.filter(r => r.users.cache.has(react.message.author.id) && r.emoji.name === react.emoji.name)
+    const selfReactions = react.message.reactions.cache.filter(r => r.users.cache.has(react.message.author.id) && r.emoji.name === react.emoji.name);
 
     // exit if we haven't reached the threshold
     if ((emojiboard.threshold + selfReactions.size) > foundReactions?.count) {
@@ -115,7 +118,8 @@ async function doEmojiboardReaction(react) {
         try {
             var refMessage = await messageData.fetchReference();
             replyBlip = `_[Reply to **${refMessage.author.username}**: ${refMessage.content.slice(0, 22).replace(/(https?\:\/\/|\n)/ig, "")}${refMessage.content.length > 22 ? "..." : ""}](<https://discord.com/channels/${refMessage.guild.id}/${refMessage.channel.id}/${refMessage.id}>)_`;
-        } catch (e) { }
+        }
+        catch (e) { }
     }
 
     const resp = { files: [] };
@@ -156,7 +160,7 @@ async function doEmojiboardReaction(react) {
 
             const hook = await fallbackChannel.createWebhook({
                 name: config.name,
-                avatar: config.pfp,
+                avatar: config.pfp
             });
 
             let response = await hook.send({
@@ -176,7 +180,7 @@ async function doEmojiboardReaction(react) {
                         `https://cdn.discordapp.com/emojis/${react.emoji.id}.png`
                 ) :
                 undefined
-        )
+        );
 
         resp.embeds = [new EmbedBuilder()
             .setColor(0x006400)
@@ -190,7 +194,7 @@ async function doEmojiboardReaction(react) {
             .setDescription(`${replyBlip ? `${replyBlip}\n` : ""}${react.message.content ? react.message.content : "⠀"}`)
             .setTimestamp(new Date(react.message.createdTimestamp))
             .setFooter({
-                text: `${!emojiURL ? react.emoji.name + ' ' : ''}${react.message.channel.name}`,
+                text: `${!emojiURL ? react.emoji.name + " " : ""}${react.message.channel.name}`,
                 iconURL: emojiURL
             })
             .setImage(react.message.attachments.first() ? react.message.attachments.first().url : null)
@@ -198,7 +202,7 @@ async function doEmojiboardReaction(react) {
         if (emojiboard.messType === "1") {
             resp.content = getStarMsg(react.message);
         }
-        const c = client.channels.cache.get(emojiboard.channel)
+        const c = client.channels.cache.get(emojiboard.channel);
         if (!c || !("permissionsFor" in c) || !c.isTextBased?.()) return;
         if (!c.permissionsFor(client.user.id).has(PermissionFlagsBits.ManageWebhooks)) {
             emojiboard.active = false;
@@ -227,33 +231,44 @@ module.exports = {
         // Slash command data
         command: new SlashCommandBuilder()
             .setContexts(
-                IT.Guild,          // Server command
+                IT.Guild          // Server command
                 // IT.BotDM,          // Bot's DMs
                 // IT.PrivateChannel, // User commands
             )
             .setIntegrationTypes(
-                AT.GuildInstall,   // Install to servers
+                AT.GuildInstall   // Install to servers
                 // AT.UserInstall     // Install to users
             )
-            .setName("emojiboard").setDescription("Manage emojiboards for this server")
+            .setName("emojiboard")
+            .setDescription("Manage emojiboards for this server")
             .addSubcommand(subcommand =>
                 subcommand
                     .setName("add")
                     .setDescription("Create a new emojiboard")
                     .addStringOption(option =>
-                        option.setName("emoji").setDescription("The emoji to react with to trigger the emojiboard").setRequired(true)
-                    ).addChannelOption(option =>
-                        option.setName("channel").setDescription("The channel to post the emojiboard in").addChannelTypes(ChannelType.GuildText).setRequired(true)
-                    ).addIntegerOption(option =>
-                        option.setName("threshold").setDescription("How many reactions are needed to trigger starboard? (Default: 3)").setMinValue(1)
-                    ).addStringOption(option =>
-                        option.setName("message_type").setDescription("What should the bot's starboard posts look like?").addChoices(
-                            { "name": "Make it look like the user posted", "value": "0" },
-                            { "name": "Post an embed with the message and a greeting", "value": "1" },
-                            { "name": "Post an embed with the message", "value": "2" }
-                        )
-                    ).addBooleanOption(option =>
-                        option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
+                        option.setName("emoji").setDescription("The emoji to react with to trigger the emojiboard")
+                            .setRequired(true)
+                    )
+                    .addChannelOption(option =>
+                        option.setName("channel").setDescription("The channel to post the emojiboard in")
+                            .addChannelTypes(ChannelType.GuildText)
+                            .setRequired(true)
+                    )
+                    .addIntegerOption(option =>
+                        option.setName("threshold").setDescription("How many reactions are needed to trigger starboard? (Default: 3)")
+                            .setMinValue(1)
+                    )
+                    .addStringOption(option =>
+                        option.setName("message_type").setDescription("What should the bot's starboard posts look like?")
+                            .addChoices(
+                                { "name": "Make it look like the user posted", "value": "0" },
+                                { "name": "Post an embed with the message and a greeting", "value": "1" },
+                                { "name": "Post an embed with the message", "value": "2" }
+                            )
+                    )
+                    .addBooleanOption(option =>
+                        option.setName("private").setDescription("Make the response ephemeral?")
+                            .setRequired(false)
                     )
             )
             .addSubcommand(subcommand =>
@@ -261,10 +276,12 @@ module.exports = {
                     .setName("remove")
                     .setDescription("Remove an emojiboard")
                     .addStringOption(option =>
-                        option.setName("emoji").setDescription("The emoji to remove the emojiboard for").setRequired(true)
+                        option.setName("emoji").setDescription("The emoji to remove the emojiboard for")
+                            .setRequired(true)
                     )
                     .addBooleanOption(option =>
-                        option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
+                        option.setName("private").setDescription("Make the response ephemeral?")
+                            .setRequired(false)
                     )
             )
             .addSubcommand(subcommand =>
@@ -272,21 +289,31 @@ module.exports = {
                     .setName("edit")
                     .setDescription("Configure an emojiboard")
                     .addStringOption(option =>
-                        option.setName("emoji").setDescription("The emojiboard to edit").setRequired(true)
-                    ).addBooleanOption(option =>
+                        option.setName("emoji").setDescription("The emojiboard to edit")
+                            .setRequired(true)
+                    )
+                    .addBooleanOption(option =>
                         option.setName("active").setDescription("Should I post messages to the configured channel?")
-                    ).addChannelOption(option =>
-                        option.setName("channel").setDescription("The channel to post messages to").addChannelTypes(ChannelType.GuildText)
-                    ).addIntegerOption(option =>
-                        option.setName("threshold").setDescription("How many reactions are needed to trigger starboard?").setMinValue(1)
-                    ).addStringOption(option =>
-                        option.setName("message_type").setDescription("What should the bot's starboard posts look like?").addChoices(
-                            { "name": "Make it look like the user posted", "value": "0" },
-                            { "name": "Post an embed with the message and a greeting", "value": "1" },
-                            { "name": "Post an embed with the message", "value": "2" }
-                        )
-                    ).addBooleanOption(option =>
-                        option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
+                    )
+                    .addChannelOption(option =>
+                        option.setName("channel").setDescription("The channel to post messages to")
+                            .addChannelTypes(ChannelType.GuildText)
+                    )
+                    .addIntegerOption(option =>
+                        option.setName("threshold").setDescription("How many reactions are needed to trigger starboard?")
+                            .setMinValue(1)
+                    )
+                    .addStringOption(option =>
+                        option.setName("message_type").setDescription("What should the bot's starboard posts look like?")
+                            .addChoices(
+                                { "name": "Make it look like the user posted", "value": "0" },
+                                { "name": "Post an embed with the message and a greeting", "value": "1" },
+                                { "name": "Post an embed with the message", "value": "2" }
+                            )
+                    )
+                    .addBooleanOption(option =>
+                        option.setName("private").setDescription("Make the response ephemeral?")
+                            .setRequired(false)
                     )
             )
             .addSubcommand(subcommand =>
@@ -294,7 +321,8 @@ module.exports = {
                     .setName("view")
                     .setDescription("View all active emojiboards and their settings")
                     .addBooleanOption(option =>
-                        option.setName("private").setDescription("Make the response ephemeral?").setRequired(false)
+                        option.setName("private").setDescription("Make the response ephemeral?")
+                            .setRequired(false)
                     )
             )
             .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
@@ -309,7 +337,7 @@ module.exports = {
                 `Manage emojiboards for Stewbot to run. If the emoji you choose is reacted enough times on a message (configurable threshold), then it will be posted to a highlights reel channel of your choosing.\n
 				You can choose if Stewbot should display a random message and an embed with the message, just an embed with the message, or use webhooks to appear as if the user who originally made the post in question posted it there themselves.\n
 				Use the subcommands to add, remove, edit, or view emojiboards.`
-        },
+        }
     },
 
     /** @param {import('discord.js').ChatInputCommandInteraction} cmd */
@@ -476,7 +504,7 @@ module.exports = {
                     board: "$emojiboards.v"
                 }
             }
-        ])
+        ]);
 
         postToRedact.forEach(async ({ emoji, board }) => {
             if (emoji) {
@@ -493,13 +521,14 @@ module.exports = {
 
                     // Otherwise delete it (webhooks for example)
                     else if (messageToDelete.deletable) {
-                        await messageToDelete.delete()
+                        await messageToDelete.delete();
                         return;
                     }
-                } catch (e) {
+                }
+                catch (e) {
                     // Cache issues, nothing we can do
                 }
             }
-        })
+        });
     }
 };

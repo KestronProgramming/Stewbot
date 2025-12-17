@@ -1,9 +1,9 @@
 // Stewbot main file.
-// This file dispatches events to the files they need to go to, 
+// This file dispatches events to the files they need to go to,
 //   connects to the database, and registers event handlers.
 //
 // Note:
-// Other important logic handling database cleanup, 
+// Other important logic handling database cleanup,
 //   general management, etc., is inside `./commands/core.js`
 
 
@@ -11,9 +11,9 @@
 global.bootedAt = Date.now();
 
 // === Load envs
-const envs = require('./env.json');
-Object.keys(envs).forEach(key => process.env[key] = envs[key] );
-if (process.env.beta == 'false') delete process.env.beta; // ENVs are all strings, so make it falsy if it's "false"
+const envs = require("./env.json");
+Object.keys(envs).forEach(key => process.env[key] = envs[key]);
+if (process.env.beta == "false") delete process.env.beta; // ENVs are all strings, so make it falsy if it's "false"
 
 // === Import everything
 const cmds = global.cmds = require("./data/commands.json");
@@ -27,22 +27,21 @@ const commandsLoadedPromise = getCommands();
 console.log("Importing backup.js");
 console.log("Importing everything else");
 const mongoose = require("mongoose");
-const { guildByID, guildByObj } = require('./commands/modules/database');
+const { guildByID, guildByObj } = require("./commands/modules/database");
 const { notify, getReadOnlyDBs } = require("./utils");
 const { checkForMongoRestore } = require("./backup.js");
-const { isModuleBlocked } = require("./commands/block_module.js")
+const { isModuleBlocked } = require("./commands/block_module.js");
 console.log("Importing InfluxDB");
-const { initInflux, queueCommandMetric } = require('./commands/modules/metrics')
-initInflux()
-
+const { initInflux, queueCommandMetric } = require("./commands/modules/metrics");
+initInflux();
 
 
 // === Register listeners
-let commands = global.commands = { }
-let dailyListenerModules  = { };
-let buttonListenerModules = { };
+let commands = global.commands = {};
+let dailyListenerModules = {};
+let buttonListenerModules = {};
 const pseudoGlobals = { config }; // data that should be passed to each module
-let commandListenerRegister = commandsLoadedPromise.then( commandsLoaded => {
+let commandListenerRegister = commandsLoadedPromise.then(commandsLoaded => {
     // This code registers all requested listeners
     // This method allows any event type to be easily added to a command file
     // The functions `onbutton` and `autocomplete` are both still available for convenience.
@@ -54,9 +53,9 @@ let commandListenerRegister = commandsLoadedPromise.then( commandsLoaded => {
     function getSubscribedCommands(commands, subscription) {
         return Object.fromEntries(
             (Object.entries(commands)
-                    .filter(([name, command]) => command[subscription]) // Get all subscribed modules
+                .filter(([name, command]) => command[subscription]) // Get all subscribed modules
             ).sort((a, b) => (a[1].data?.priority ?? 100) - (b[1].data?.priority ?? 100))
-        )
+        );
     }
 
     // Load some custom listener functions
@@ -68,22 +67,22 @@ let commandListenerRegister = commandsLoadedPromise.then( commandsLoaded => {
         // MessageCreate is a high-traffic handler, we inject database lookups here so that each handler
         //   doesn't need waste power preforming duplicate lookups.
         [Events.MessageCreate]: async (...args) => {
-            const [ readGuildUser, readGuild, readHomeGuild ] = await getReadOnlyDBs(args[0]);
-            return [ ...args, pseudoGlobals, readGuild, readGuildUser, readHomeGuild ]
+            const [readGuildUser, readGuild, readHomeGuild] = await getReadOnlyDBs(args[0]);
+            return [...args, pseudoGlobals, readGuild, readGuildUser, readHomeGuild];
         },
 
         [Events.MessageUpdate]: async (...args) => {
-            const [ readGuildUser, readGuild, readHomeGuild ] = await getReadOnlyDBs(args[0]);
-            return [ ...args, readGuild, readGuildUser, readHomeGuild ]
+            const [readGuildUser, readGuild, readHomeGuild] = await getReadOnlyDBs(args[0]);
+            return [...args, readGuild, readGuildUser, readHomeGuild];
         },
 
         [Events.MessageDelete]: async (...args) => {
-            const [ readGuildUser, readGuild, readHomeGuild ] = await getReadOnlyDBs(args[0]);
-            return [ ...args, readGuild, readGuildUser ]
+            const [readGuildUser, readGuild, readHomeGuild] = await getReadOnlyDBs(args[0]);
+            return [...args, readGuild, readGuildUser];
         },
 
         [Events.MessageReactionAdd]: async (...args) => {
-            let [ react, user ] = args;
+            let [react, user] = args;
 
             // Resolve partials so we always have full data
             await Promise.all([
@@ -95,27 +94,27 @@ let commandListenerRegister = commandsLoadedPromise.then( commandsLoaded => {
                 guildId: args[0].message.guild?.id,
                 userId: args[1].id
             });
-            return [ ...args, readGuild, readGuildUser ]
+            return [...args, readGuild, readGuildUser];
         },
 
         [Events.GuildMemberAdd]: async (...args) => {
-            let [ member ] = args;
-            const [ readGuildUser, readGuild, readHomeGuild ] = await getReadOnlyDBs({
+            let [member] = args;
+            const [readGuildUser, readGuild, readHomeGuild] = await getReadOnlyDBs({
                 guildId: args[0].guild?.id,
                 userId: args[0].id
             });
-            return [...args, readGuild]
+            return [...args, readGuild];
         },
 
         [Events.GuildMemberRemove]: async (...args) => {
-            let [ member ] = args;
-            const [ readGuildUser, readGuild, readHomeGuild ] = await getReadOnlyDBs({
+            let [member] = args;
+            const [readGuildUser, readGuild, readHomeGuild] = await getReadOnlyDBs({
                 guildId: args[0].guild?.id,
                 userId: args[0].id
             });
-            return [...args, readGuild]
+            return [...args, readGuild];
         }
-    }
+    };
 
     let commandsArray = Object.values(commands)
         .sort((a, b) => {
@@ -133,17 +132,17 @@ let commandListenerRegister = commandsLoadedPromise.then( commandsLoaded => {
     interceptors.push({
         // Ignore bots on MessageCreate
         [Events.MessageCreate]: (handler, ...args) => (args[0].author.bot || args[0].author.id === client.user?.id)
-    })
+    });
 
     for (const listenerName of Object.values(Events)) { // For every type of discord event
 
         const listeningCommands = Object.freeze(
             commandsArray.filter(command => command[listenerName]) // Get listening functions
-        )
+        );
         if (!listeningCommands.length) continue;
 
         client.on(String(listenerName), async (...args) => {
-            
+
             // Modify args if needed for this type
             const argInjector = argInjectors[listenerName];
             if (argInjector) args = await argInjector(...args);
@@ -155,26 +154,26 @@ let commandListenerRegister = commandsLoadedPromise.then( commandsLoaded => {
                 for (const interceptor of interceptors) {
                     if (interceptor[listenerName] && interceptor[listenerName](command, ...args)) return;
                 };
-                
+
                 let promise = handler(...args);
-                
+
                 // If a specific execution order is requested, wait for it to finish.
                 if ("priority" in command) await promise;
             }
-        })
+        });
     }
 });
 
 
 // === Schedule `daily` execution
-const daily = global.daily = function(dontLoop=false){
-    if(!dontLoop) setInterval(()=> { daily(true) },60000*60*24);
-    
+const daily = global.daily = function(dontLoop = false) {
+    if (!dontLoop) setInterval(() => { daily(true); }, 60000 * 60 * 24);
+
     // Dispatch daily calls to all listening modules
-    Object.values(dailyListenerModules).forEach(module => module.daily(pseudoGlobals))
-}
-client.once(Events.ClientReady, async () => {        
-    var now=new Date();
+    Object.values(dailyListenerModules).forEach(module => module.daily(pseudoGlobals));
+};
+client.once(Events.ClientReady, async () => {
+    var now = new Date();
     setTimeout(
         daily,
         // Schedule dailies to start at 11 AM (host device tz, UTC in this case) the next day
@@ -184,25 +183,26 @@ client.once(Events.ClientReady, async () => {
 });
 
 // === Dispatch command execute / autocomplete / buttons where they need to go.
-client.on(Events.InteractionCreate, async cmd=>{
-    const asyncTasks = [ ]; // Any non-awaited functions go here to fully known when this command is done executing for metrics
+client.on(Events.InteractionCreate, async cmd => {
+    const asyncTasks = []; // Any non-awaited functions go here to fully known when this command is done executing for metrics
     const intStartTime = Date.now();
-    
+
     // @ts-ignore
     const commandScript = commands[cmd.commandName];
-    if (!commandScript && (cmd.isCommand() || cmd.isAutocomplete())) return; // Ignore any potential cache issues 
+    if (!commandScript && (cmd.isCommand() || cmd.isAutocomplete())) return; // Ignore any potential cache issues
 
     // Check permissions manually due to Discord security bugs on interpreting
     const AdminPermissions = BigInt(8);
     if ((cmd.isChatInputCommand() || cmd.isMessageContextMenuCommand()) && commandScript?.data?.command?.default_member_permissions) {
         const requiredPermissions = BigInt(commandScript.data.command.default_member_permissions);
         if (requiredPermissions && cmd.member && cmd.guild) {
+            // @ts-ignore
             const memberPermissions = BigInt(cmd.member.permissions);
             const hasAdminPerms = (memberPermissions & AdminPermissions) === AdminPermissions; // Admins bypass perm checks
             if (!hasAdminPerms && (memberPermissions & requiredPermissions) !== requiredPermissions) {
-                await cmd.reply({ 
-                    content: "You don't have permission to use this command.", 
-                    ephemeral: true 
+                await cmd.reply({
+                    content: "You don't have permission to use this command.",
+                    ephemeral: true
                 });
                 return;
             }
@@ -211,22 +211,23 @@ client.on(Events.InteractionCreate, async cmd=>{
 
     //// Manage deferring
     let deferedResponse;
-    if(cmd.isChatInputCommand() || cmd.isMessageContextMenuCommand()) { 
-        // Always obey the `private` property, if not defined default to the `deferEphemeral` property. 
+    if (cmd.isChatInputCommand() || cmd.isMessageContextMenuCommand()) {
+        // Always obey the `private` property, if not defined default to the `deferEphemeral` property.
         const private = cmd.isChatInputCommand() ? cmd.options.getBoolean("private") : null;
         const subcommand = cmd.isChatInputCommand() ? cmd.options.getSubcommand(false) : null;
         let forceEphemeral = false;
         let detailedExtra = {};
         if (commandScript?.data?.deferEphemeral) {
-            if (typeof(commandScript.data.deferEphemeral) == "object" && subcommand) {
+            if (typeof (commandScript.data.deferEphemeral) == "object" && subcommand) {
                 let subcommandData = commandScript.data.deferEphemeral[subcommand];
-                if (typeof(subcommandData) == "object") {
+                if (typeof (subcommandData) == "object") {
                     detailedExtra = subcommandData;
-                } else {
+                }
+                else {
                     forceEphemeral = subcommandData; // It's just a raw boolean
                 }
             }
-            else if (typeof(commandScript.data.deferEphemeral) == "boolean") {
+            else if (typeof (commandScript.data.deferEphemeral) == "boolean") {
                 forceEphemeral = commandScript.data.deferEphemeral;
             }
         }
@@ -246,7 +247,7 @@ client.on(Events.InteractionCreate, async cmd=>{
 
         asyncTasks.push(
             commands?.[cmd.commandName]?.autocomplete?.(cmd, providedGlobals)
-        )
+        );
     }
 
     //// Slash commands
@@ -256,21 +257,20 @@ client.on(Events.InteractionCreate, async cmd=>{
     ) {
         // Here we artificially provide the full path since slash commands can have subcommands
         // @ts-ignore
-        const listeningModule = [ `${cmd.commandName} ${
-            cmd.isChatInputCommand()
-                ? cmd.options.getSubcommand(false)
-                : ""
-        }`.trim(), commandScript ];
-        
+        const listeningModule = [`${cmd.commandName} ${cmd.isChatInputCommand()
+            ? cmd.options.getSubcommand(false)
+            : ""
+            }`.trim(), commandScript];
+
         // TODO_DB: this could be made more efficient by passing in the readonly guilds as objects
-        const [ blocked, errorMsg ] = isModuleBlocked(listeningModule, 
-            (await guildByObj(cmd.guild)), 
+        const [blocked, errorMsg] = isModuleBlocked(listeningModule,
+            (await guildByObj(cmd.guild)),
             (await guildByID(config.homeServer)),
             // @ts-ignore
             cmd.member?.permissions?.has?.(PermissionFlagsBits.Administrator)
-        )
+        );
         if (blocked) return cmd.followUp(errorMsg);
-        
+
         // Checks passed, gather requested data
         const providedGlobals = { ...pseudoGlobals };
         const requestedGlobals = commandScript.data?.requiredGlobals || commandScript.requestGlobals?.() || [];
@@ -281,22 +281,24 @@ client.on(Events.InteractionCreate, async cmd=>{
         // Run, and catch errors
         try {
             await commands[cmd.commandName].execute(cmd, providedGlobals, deferedResponse);
-        } catch(e) {
+        }
+        catch (e) {
             // Catch blocked by automod
             if (e.code === 200000) {
-                cmd.followUp(`Sorry, something in this reply was blocked by AutoMod.`)
+                cmd.followUp("Sorry, something in this reply was blocked by AutoMod.");
             }
 
             try {
                 cmd.followUp(
-                    `Sorry, some error was encountered. It has already been reported, there is nothing you need to do.\n` +
+                    "Sorry, some error was encountered. It has already been reported, there is nothing you need to do.\n" +
                     `However, you can keep up with Stewbot's latest features and patches in the [Support Server](<${config.invite}>).`
-                )
-            } catch {}
+                );
+            }
+            catch { }
             throw e; // Throw it so that it hits the error notifiers
         }
     }
- 
+
     //// Buttons, Modals, and Select Menu
     // Anything that has an ID can be sent
     if ("customId" in cmd) {
@@ -306,7 +308,7 @@ client.on(Events.InteractionCreate, async cmd=>{
             let subbed = false;
             for (const sub of moduleSubscriptions) {
                 if (
-                    (typeof sub === 'string' && sub === cmd.customId) || 
+                    (typeof sub === "string" && sub === cmd.customId) ||
                     (sub instanceof RegExp && sub.test(cmd.customId))
                 ) {
                     subbed = true;
@@ -314,8 +316,8 @@ client.on(Events.InteractionCreate, async cmd=>{
                 }
             }
 
-            if (subbed) asyncTasks.push(module.onbutton(cmd, pseudoGlobals))
-        })
+            if (subbed) asyncTasks.push(module.onbutton(cmd, pseudoGlobals));
+        });
     }
 
     // Wait for everything to complete
@@ -327,22 +329,22 @@ client.on(Events.InteractionCreate, async cmd=>{
 
 // Don't crash on any type of error
 // @ts-ignore
-process.on('unhandledRejection', e => notify(e.stack));
-process.on('uncaughtException', e => notify(e.stack));
+process.on("unhandledRejection", e => notify(e.stack));
+process.on("uncaughtException", e => notify(e.stack));
 
 async function start() {
     // Register all handlers to the client
     await commandListenerRegister;
 
     // Check if we're restoring from a backup checkpoint
-    await checkForMongoRestore()
+    await checkForMongoRestore();
 
     // Connect to the db
-    console.log("Connecting to database")
-    await mongoose.connect(`${process.env.databaseURI}/${process.env.beta ? "stewbeta" : "stewbot"}`)
-    
+    console.log("Connecting to database");
+    await mongoose.connect(`${process.env.databaseURI}/${process.env.beta ? "stewbeta" : "stewbot"}`);
+
     // Login
-    console.log("Logging in")
+    console.log("Logging in");
     await client.login(process.env.beta ? process.env.betaToken : process.env.token);
 }
 start();
