@@ -285,12 +285,12 @@ module.exports = {
                             let missingPermissionsMessage = "";
                             if (missingPermissions.length > 0) {
                                 const formattedMissing = listFormatter.format(missingPermissions.map(p => `\`${p}\``));
-                                missingPermissionsMessage = `\n\n-# :warning: I am missing the ${formattedMissing} ${missingPermissions.length > 1 ? "permissions" : "permission"}, so some features are limited.`;
+                                missingPermissionsMessage = `-# :warning: I am missing the ${formattedMissing} ${missingPermissions.length > 1 ? "permissions" : "permission"}, so some features are limited.`;
                             }
 
                             const timeoutIssues = [];
 
-                            if (!botHasTimeoutPermission) timeoutIssues.push("I don't have the Timeout Members permission");
+                            if (!botHasTimeoutPermission) timeoutIssues.push("I don't have the `Timeout Members` permission");
                             if (userIsOwner) timeoutIssues.push("the user is the server owner");
                             else if (userIsAdmin) timeoutIssues.push("the user is an administrator");
                             else if (!msg.member.manageable) timeoutIssues.push("my highest role is below theirs");
@@ -350,19 +350,15 @@ module.exports = {
                                                 new ThumbnailBuilder()
                                                     .setURL("attachment://antiHack.png")
                                             )
-                                            .addTextDisplayComponents([
+                                            .addTextDisplayComponents(
                                                 new TextDisplayBuilder().setContent(
                                                     `I have detected unusual activity from <@${msg.author.id}>${autoDeleteNotice}. ${timeoutAttemptMessage}\n`
                                                 )
-                                            ])
+                                            )
                                     )
-                                    .addSectionComponents(
-                                        ...(missingPermissionsMessage
-                                            ? [
-                                                new SectionBuilder().addTextDisplayComponents(
-                                                    new TextDisplayBuilder().setContent(missingPermissionsMessage)
-                                                )
-                                            ]
+                                    .addTextDisplayComponents(
+                                        ...(missingPermissions.length > 0
+                                            ? [new TextDisplayBuilder().setContent(missingPermissionsMessage)]
                                             : []
                                         )
                                     )
@@ -382,14 +378,14 @@ module.exports = {
                                     )
                             ];
 
-                            if (sendRow.length > 0) components.push(
-                                new ActionRowBuilder().addComponents(
-                                    ...sendRow
-                                )
-                            );
+                            // if (sendRow.length > 0) components.push(
+                            //     new ActionRowBuilder().addComponents(
+                            //         ...sendRow
+                            //     )
+                            // );
 
                             if (toNotify) await logChannel.send({
-                                components: components.map(c => c.toJSON()),
+                                components: components,
                                 flags: MessageFlags.IsComponentsV2,
                                 files: [new AttachmentBuilder("pfps/antiHack.png").setName("antiHack.png")]
                             });
