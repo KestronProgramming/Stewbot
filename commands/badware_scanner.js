@@ -27,6 +27,7 @@ const blocklists = [
         filename: "badware.txt"
     }
 ];
+const blocklistCache = new Map();
 
 // If we can't sent messages, warn with an emoji (added to bot in dev console)
 const scamEmoji = process.env.beta ? "<:This_Post_May_Contain_A_Scam:1330320295357055067>" : "<:This_Post_May_Contain_A_Scam:1330318400668565534>";
@@ -84,6 +85,37 @@ async function loadBlocklist(url) {
     return rules.join("\n");
 }
 
+/** Loads blocklist into ram from disk, fetching from web if needed */
+async function getCachedBlocklist(blocklist) {
+    const blocklistLoc = `${blocklistsLocation}/${blocklist.filename}`;
+
+    const cached = blocklistCache.get(blocklist.filename);
+    if (cached) return cached;
+
+    try {
+        const fromDisk = await fs.promises.readFile(blocklistLoc, "utf-8");
+        blocklistCache.set(blocklist.filename, fromDisk);
+        return fromDisk;
+    }
+    catch {
+        // Refresh if missing
+        const fetched = await refreshBlocklist(blocklist);
+        return fetched;
+    }
+}
+
+/** Loads blocklist into ram from web, and saves to disk */
+async function refreshBlocklist(blocklist) {
+    const blocklistLoc = `${blocklistsLocation}/${blocklist.filename}`;
+    const fetched = await loadBlocklist(blocklist.url);
+
+    await fs.promises.mkdir(blocklistsLocation, { recursive: true });
+    await fs.promises.writeFile(blocklistLoc, fetched);
+
+    blocklistCache.set(blocklist.filename, fetched);
+    return fetched;
+}
+
 function getHostname(url) {
     try {
         const parsedUrl = new URL(url);
@@ -95,6 +127,7 @@ function getHostname(url) {
     }
 }
 
+/** Raw internal function to check a URL against a blocklist */
 function isUrlBlocked(url, blocklist) {
     if (typeof blocklist === "string") {
         blocklist = blocklist.split("\n");
@@ -190,20 +223,12 @@ function isUrlBlocked(url, blocklist) {
     return false;
 }
 
+/** Checks if URL is blocked against all our lists  */
 async function checkURL(inputUrl, overrideCache = false) {
     for (const blocklist of blocklists) {
-        const blocklistLoc = `${blocklistsLocation}/${blocklist.filename}`;
-        let blocklistContent;
-
-        if (overrideCache || !fs.existsSync(blocklistLoc)) {
-            // Download if we don't have it already
-            blocklistContent = await loadBlocklist(blocklist.url);
-            if (!fs.existsSync(blocklistsLocation)) fs.mkdirSync(blocklistsLocation);
-            await fs.promises.writeFile(blocklistLoc, blocklistContent);
-        }
-        else {
-            blocklistContent = await fs.promises.readFile(blocklistLoc, "utf-8");
-        }
+        const blocklistContent = overrideCache
+            ? await refreshBlocklist(blocklist)
+            : await getCachedBlocklist(blocklist);
 
         // Now check against it
         const isBlocked = isUrlBlocked(inputUrl, blocklistContent);
@@ -213,8 +238,10 @@ async function checkURL(inputUrl, overrideCache = false) {
 }
 
 function updateBlocklists() {
-    // A quick an easy way
-    checkURL("https://google.com", true);
+    // Refresh all blocklists from source regardless of disk state.
+    return Promise.all(blocklists.map(blocklist =>
+        refreshBlocklist(blocklist).catch(console.error)
+    ));
 }
 
 // Functions for hidden URL alert
@@ -636,6 +663,6 @@ module.exports = {
     // Daily update our uBlock lists
     async daily() {
         // Update badware blocklists
-        updateBlocklists();
+        await updateBlocklists();
     }
 };
