@@ -353,9 +353,18 @@ module.exports = {
                                             .addTextDisplayComponents([
                                                 new TextDisplayBuilder().setContent(
                                                     `I have detected unusual activity from <@${msg.author.id}>${autoDeleteNotice}. ${timeoutAttemptMessage}\n`
-                                                ),
-                                                missingPermissionsMessage ? new TextDisplayBuilder().setContent(`${missingPermissionsMessage}`) : null
-                                            ].filter(Boolean))
+                                                )
+                                            ])
+                                    )
+                                    .addSectionComponents(
+                                        ...(missingPermissionsMessage
+                                            ? [
+                                                new SectionBuilder().addTextDisplayComponents(
+                                                    new TextDisplayBuilder().setContent(missingPermissionsMessage)
+                                                )
+                                            ]
+                                            : []
+                                        )
                                     )
                                     .addSeparatorComponents(
                                         new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
@@ -370,11 +379,14 @@ module.exports = {
                                     )
                                     .addTextDisplayComponents(
                                         new TextDisplayBuilder().setContent(`-# Control detection settings with ${cmds.anti_hack.mention}.`)
-                                    ),
+                                    )
+                            ];
+
+                            if (sendRow.length > 0) components.push(
                                 new ActionRowBuilder().addComponents(
                                     ...sendRow
                                 )
-                            ];
+                            );
 
                             if (toNotify) await logChannel.send({
                                 components: components.map(c => c.toJSON()),
