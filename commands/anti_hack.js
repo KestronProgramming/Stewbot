@@ -15,6 +15,7 @@ const { requireServer } = require("../utils.js");
 const crypto = require("crypto");
 const ms = require("ms");
 const { messageIdToWarnings } = require("./badware_scanner.js");
+const listFormatter = new Intl.ListFormat("en", { style: "long", type: "conjunction" });
 // const LRUCache = require("lru-cache").LRUCache;
 
 
@@ -138,7 +139,8 @@ module.exports = {
         let autoDelete = guild.config.antihack_auto_delete;
 
         const userIsAdmin = msg.member.permissions.has(PermissionFlagsBits.Administrator);
-        const timeoutable = msg.member.manageable && !userIsAdmin;
+        const userIsOwner = msg.guild.ownerId === msg.author.id;
+        const timeoutable = msg.member.manageable && !userIsAdmin && !userIsOwner;
 
         // Anti-hack message
         if (msg.guild && !msg.author.bot) {
@@ -174,14 +176,16 @@ module.exports = {
                     // Handle this user
                     user.captcha = true;
                     var botInServer = msg.guild?.members.cache.get(client.user.id);
+                    const botHasTimeoutPermission = botInServer?.permissions?.has(PermissionFlagsBits.ModerateMembers) || false;
+                    const canTimeoutUser = timeoutable && botHasTimeoutPermission;
                     if (
                         botInServer &&
                         !guild.disableAntiHack &&
                         // Users who complete captchas are marked as safe for a week.
-                        Date.now() - (userInGuild.safeTimestamp || 0) > ms("7d")
+                        Date.now() - userInGuild.safeTimestamp < ms("7d")
                     ) {
                         // Timeout if we have perms
-                        if (timeoutable) {
+                        if (canTimeoutUser) {
                             msg.member.timeout(
                                 ms("1d"),
                                 `Detected spam activity of high profile pings and/or a URL of some kind. Automatically applied for safety.`
@@ -212,47 +216,52 @@ module.exports = {
 
                             // Build buttons based on what permissions the bot has over the user.
                             const sendRow = [];
-                            let missingPermissions = [];
+                            const missingPermissions = [];
+
+                            const botHasTimeoutPermission = botInServer.permissions.has(PermissionFlagsBits.ModerateMembers);
+                            const botHasBanPermission = botInServer.permissions.has(PermissionFlagsBits.BanMembers);
+                            const botHasKickPermission = botInServer.permissions.has(PermissionFlagsBits.KickMembers);
+                            const botHasManageMessages = botInServer.permissions.has(PermissionFlagsBits.ManageMessages);
 
                             // Timeout button
-                            if (botInServer.permissions.has(PermissionFlagsBits.ModerateMembers) && timeoutable) { // TODO: check this works
+                            if (canTimeoutUser) { // TODO: check this works
                                 sendRow.push(new ButtonBuilder().setCustomId("untimeout-" + msg.author.id)
                                     .setLabel("Remove Timeout")
                                     .setStyle(ButtonStyle.Success));
                             }
-                            else missingPermissions.push("Timeout Members");
+                            else if (!botHasTimeoutPermission) missingPermissions.push("Timeout Members");
 
                             // Ban button
-                            if (botInServer.permissions.has(PermissionFlagsBits.BanMembers) && msg.member.bannable) {
+                            if (botHasBanPermission && msg.member.bannable) {
                                 sendRow.push(new ButtonBuilder().setCustomId("ban-" + msg.author.id)
                                     .setLabel(`Ban`)
                                     .setStyle(ButtonStyle.Danger));
                             }
-                            else missingPermissions.push("Ban Members");
+                            else if (!botHasBanPermission) missingPermissions.push("Ban Members");
 
                             // Kick button
-                            if (botInServer.permissions.has(PermissionFlagsBits.KickMembers) && msg.member.kickable) {
+                            if (botHasKickPermission && msg.member.kickable) {
                                 sendRow.push(new ButtonBuilder().setCustomId("kick-" + msg.author.id)
                                     .setLabel(`Kick`)
                                     .setStyle(ButtonStyle.Danger));
                             }
-                            else missingPermissions.push("Kick Members");
+                            else if (!botHasKickPermission) missingPermissions.push("Kick Members");
 
                             // Delete messages button
-                            if (botInServer.permissions.has(PermissionFlagsBits.ManageMessages)) {
+                            if (botHasManageMessages) {
                                 if (autoDelete) {
                                     // Delete without asking
                                     for (var i = 0; i < cache[msg.guild.id].users[msg.author.id].lastMessages.length; i++) {
                                         try {
-                                            let channel = await client.channels.cache.get(
+                                            let channel = client.channels.cache.get(
                                                 cache[msg.guild.id].users[msg.author.id].lastMessages[i].split("/")[0]
                                             );
                                             if (!channel || !("messages" in channel)) continue;
 
                                             let badMess = await channel.messages?.fetch(
                                                 cache[msg.guild.id].users[msg.author.id].lastMessages[i].split("/")[1]
-                                            );
-                                            deleteMsgAndWarnings(badMess);
+                                            ).catch(() => null);
+                                            deleteMsgAndWarnings(badMess).catch(() => { });
                                             // badMess.delete().catch(() => { });
                                         }
                                         catch (e) { console.log(e); }
@@ -276,14 +285,36 @@ module.exports = {
                             // Build a message indicating
                             let missingPermissionsMessage = "";
                             if (missingPermissions.length > 0) {
-                                missingPermissions.unshift("\n\n-# :warning: I am missing the following permissions, features will be limited:");
-                                missingPermissionsMessage = missingPermissions.join("\n-# - ");
-                                missingPermissionsMessage += "\n\n-# Note: this could also be due to my role being below the triggering user, or the triggering user being an administrator.";
+                                const formattedMissing = listFormatter.format(missingPermissions.map(p => `\`${p}\``));
+                                missingPermissionsMessage = `\n\n-# :warning: I am missing the ${formattedMissing} ${missingPermissions.length > 1 ? "permissions" : "permission"}, so some features are limited.`;
                             }
 
-                            let timeoutAttemptMessage = timeoutable
-                                ? `I temporarily applied a timeout. To remove this timeout, <@${msg.author.id}> can use ${cmds.captcha.mention} in a DM with me, or a moderator can remove this timeout manually.`
-                                : `I tried to apply a timeout to this account, but either I lack the \`Timeout Members\` permission, my role needs to be dragged above theirs, or they are an administrator. It is advisable to grant me these permissions to defend against spam and hacked accounts.`;
+                            const timeoutIssues = [];
+
+                            if (!botHasTimeoutPermission) timeoutIssues.push("I don't have the Timeout Members permission");
+                            if (userIsOwner) timeoutIssues.push("the user is the server owner");
+                            else if (userIsAdmin) timeoutIssues.push("the user is an administrator");
+                            else if (!msg.member.manageable) timeoutIssues.push("my highest role is below theirs");
+
+                            const timeoutIssueText = timeoutIssues.length > 0
+                                ? listFormatter.format(timeoutIssues)
+                                : "an unknown permission issue"; // If we can't and don't know why, it was some recent discord.js change.
+
+                            const timeoutFixes = [];
+                            if (!userIsOwner && !userIsAdmin) {
+                                if (!botHasTimeoutPermission) timeoutFixes.push("granting me the `Timeout Members` permission");
+                                if (!msg.member.manageable) timeoutFixes.push("placing my role above theirs");
+                            }
+
+                            let timeoutFixText = "";
+                            if (timeoutFixes.length > 0) {
+                                const formattedFixes = listFormatter.format(timeoutFixes);
+                                timeoutFixText = ` ${formattedFixes.charAt(0).toUpperCase() + formattedFixes.slice(1)} would allow me to defend against spam and hacked accounts.`;
+                            }
+
+                            let timeoutAttemptMessage = canTimeoutUser
+                                ? `I temporarily applied a timeout. To remove this timeout, <@${msg.author.id}> can use ${cmds.captcha.mention} in a DM with me.`
+                                : `I tried to apply a timeout to this account but couldn't because ${timeoutIssueText}.${timeoutFixText}`;
 
                             let autoDeleteNotice = autoDelete
                                 ? " which has since been automatically deleted"
@@ -304,7 +335,7 @@ module.exports = {
                                 content:
                                     `I have detected unusual activity from <@${msg.author.id}>${autoDeleteNotice}. ${timeoutAttemptMessage}\n` +
                                     `\n` +
-                                    `If a mod wishes to change settings related to this behavior designed to protect servers from mass spam and hacked accounts, run ${cmds.anti_hack?.mention || "/anti_hack"}.` + // TODO: fix
+                                    `-# Configure detection in your server settings with ${cmds.anti_hack.mention}.` +
                                     missingPermissionsMessage,
                                 components: components.map(c => c.toJSON())
                             });
