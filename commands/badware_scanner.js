@@ -369,14 +369,14 @@ module.exports = {
             await guildByObj(cmd.guild, updates);
         }
 
-        cmd.followUp("Badware Scanner configured.");
+        await cmd.followUp("Badware Scanner configured.");
     },
 
     /**
      * @param {import('discord.js').Message} msg
      * @param {import("./modules/database.js").GuildDoc} guildStore
      * */
-    async [Events.MessageCreate](msg, guildStore) {
+    async [Events.MessageCreate](msg, _pseudoGlobals, guildStore) {
         try {
             const sendable = msg.channel.isSendable();
             const reactable = ("permissionsFor" in msg.channel) && msg.channel.permissionsFor(client.user).has(PermissionFlagsBits.AddReactions);
