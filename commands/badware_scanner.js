@@ -1,7 +1,7 @@
 const Categories = require("./modules/Categories");
 const client = require("../client.js");
 const { guildByObj, userByObj } = require("./modules/database.js");
-const { Events, DiscordAPIError, SlashCommandBuilder, PermissionFlagsBits } = require("discord.js");
+const { Events, DiscordAPIError, SlashCommandBuilder, PermissionFlagsBits, TextDisplayBuilder, SeparatorSpacingSize, SeparatorBuilder, ContainerBuilder, MessageFlags } = require("discord.js");
 const ExifReader = require("exifreader");
 const { URL } = require("url");
 const fs = require("node:fs");
@@ -387,13 +387,37 @@ module.exports = {
             if (msg.guild && !(guildStore.config.format_exploit_check === false)) {
                 if (hasFormatExploit(msg.content) || detectMalEmbedLink(msg.content)) {
                     if (sendable) {
-                        return await msg.reply(
-                            `## :warning: WARNING :warning:\n` +
-                            `This message appears to contain **hidden content** via abusing discord formatting. Links may not lead where embeds show.\n` +
-                            `\n` +
-                            `-# If you need to disable this feature, run ${"`/badware_scanner format_exploits:false`"}\n` +
-                            `-# This is a **new feature**. If you encounter issues, please report details with ${cmds.report_problem.mention}`
-                        ).then(addMessageToWarningMap);
+                        const components = [
+                            new ContainerBuilder()
+                                .setAccentColor(15834383)
+                                .addTextDisplayComponents(
+                                    new TextDisplayBuilder()
+                                        .setContent("##  ⚠️ WARNING ⚠️")
+                                )
+                                .addTextDisplayComponents(
+                                    new TextDisplayBuilder()
+                                        .setContent(`This message appears to contain **hidden content** via abusing discord formatting. Links may not lead where embeds show.`)
+                                )
+                                .addSeparatorComponents(
+                                    new SeparatorBuilder()
+                                        .setSpacing(SeparatorSpacingSize.Large)
+                                        .setDivider(true)
+                                )
+                                .addTextDisplayComponents(
+                                    new TextDisplayBuilder()
+                                        .setContent(`-# Configure detection with ${cmds.badware_scanner.mention}`)
+                                )
+                                .addTextDisplayComponents(
+                                    new TextDisplayBuilder()
+                                        .setContent(`-# This is a **new feature**. If you encounter issues, please report details with ${cmds.report_problem.mention}`)
+                                )
+                        ];
+
+                        return await msg.reply({
+                            components: components,
+                            flags: MessageFlags.IsComponentsV2,
+                            allowedMentions: { parse: [] }
+                        }).then(addMessageToWarningMap);
                     }
                     else if (reactable) {
                         await msg.react("⚠️");
@@ -410,12 +434,33 @@ module.exports = {
                     const triggerdBlocklist = await checkURL(link);
                     if (triggerdBlocklist) {
                         if (sendable) {
-                            return await msg.reply(
-                                `## :warning: WARNING :warning:\n` +
-                                `The link sent in this message was found in the blocklist [${triggerdBlocklist.title}](${triggerdBlocklist.url})\n` +
-                                `\n` +
-                                `-# If you need to disable this feature, run ${"`/badware_scanner domain_scanning:false`"}`
-                            ).then(addMessageToWarningMap);
+                            const components = [
+                                new ContainerBuilder()
+                                    .setAccentColor(15834383)
+                                    .addTextDisplayComponents(
+                                        new TextDisplayBuilder()
+                                            .setContent("##  ⚠️ WARNING ⚠️")
+                                    )
+                                    .addTextDisplayComponents(
+                                        new TextDisplayBuilder()
+                                            .setContent(`The link sent in this message was found in the blocklist [${triggerdBlocklist.title}](${triggerdBlocklist.url})`)
+                                    )
+                                    .addSeparatorComponents(
+                                        new SeparatorBuilder()
+                                            .setSpacing(SeparatorSpacingSize.Large)
+                                            .setDivider(true)
+                                    )
+                                    .addTextDisplayComponents(
+                                        new TextDisplayBuilder()
+                                            .setContent(`-# Configure detection with ${cmds.badware_scanner.mention}`)
+                                    )
+                            ];
+
+                            return await msg.reply({
+                                components: components,
+                                flags: MessageFlags.IsComponentsV2,
+                                allowedMentions: { parse: [] }
+                            }).then(addMessageToWarningMap);
                         }
                         else if (reactable) {
                             await msg.react("⚠️");
@@ -431,17 +476,35 @@ module.exports = {
                 // Warn about discord reset link
                 if (msg.content?.toLowerCase().includes("discord://-/reset")) {
                     if (sendable) {
+                        const components = [
+                            new ContainerBuilder()
+                                .setAccentColor(15834383)
+                                .addTextDisplayComponents(
+                                    new TextDisplayBuilder()
+                                        .setContent("##  ⚠️ WARNING ⚠️")
+                                )
+                                .addTextDisplayComponents(
+                                    new TextDisplayBuilder()
+                                        .setContent(`The link in this message will **reset your discord client** and force a password reset.\n`)
+                                )
+                                .addSeparatorComponents(
+                                    new SeparatorBuilder()
+                                        .setSpacing(SeparatorSpacingSize.Large)
+                                        .setDivider(true)
+                                )
+                                .addTextDisplayComponents(
+                                    new TextDisplayBuilder()
+                                        .setContent(`-# Configure detection with ${cmds.badware_scanner.mention}`)
+                                )
+                        ];
+
                         return await msg.reply({
-                            content:
-                                `## :warning: WARNING :warning:\n` +
-                                `The link in this message will **reset your discord client** and force a password reset.\n` +
-                                `\n` +
-                                `-# If you need to disable this feature, run ${"`/badware_scanner fake_link_check:false`"}`,
+                            components: components,
+                            flags: MessageFlags.IsComponentsV2,
                             allowedMentions: { parse: [] }
                         }).then(addMessageToWarningMap);
                     }
                     else if (reactable) {
-                        // await msg.react('🛑');
                         await msg.react("⚠️");
                         return await msg.react(scamEmoji);
                     }
@@ -451,17 +514,35 @@ module.exports = {
                 const fakeLink = detectMismatchedDomains(msg.content);
                 if (fakeLink) {
                     if (sendable) {
+                        const components = [
+                            new ContainerBuilder()
+                                .setAccentColor(15834383)
+                                .addTextDisplayComponents(
+                                    new TextDisplayBuilder()
+                                        .setContent("##  ⚠️ WARNING ⚠️")
+                                )
+                                .addTextDisplayComponents(
+                                    new TextDisplayBuilder()
+                                        .setContent(`The link in this message links to **${fakeLink.real}**, NOT **${fakeLink.fake}**, which it looks like.`)
+                                )
+                                .addSeparatorComponents(
+                                    new SeparatorBuilder()
+                                        .setSpacing(SeparatorSpacingSize.Large)
+                                        .setDivider(true)
+                                )
+                                .addTextDisplayComponents(
+                                    new TextDisplayBuilder()
+                                        .setContent(`-# Configure detection with ${cmds.badware_scanner.mention}`)
+                                )
+                        ];
+
                         return await msg.reply({
-                            content:
-                                `## :warning: WARNING :warning:\n` +
-                                `The link in this message links to **${fakeLink.real}**, NOT **${fakeLink.fake}**, which it looks like.\n` +
-                                `\n` +
-                                `-# If you need to disable this feature, run ${"`/badware_scanner fake_link_check:false`"}`,
+                            components: components,
+                            flags: MessageFlags.IsComponentsV2,
                             allowedMentions: { parse: [] }
                         }).then(addMessageToWarningMap);
                     }
                     else if (reactable) {
-                        // await msg.react('🛑');
                         await msg.react("⚠️");
                         return await msg.react(scamEmoji);
                     }
