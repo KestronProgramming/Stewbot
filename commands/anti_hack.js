@@ -2,7 +2,7 @@
 const Categories = require("./modules/Categories");
 const client = require("../client.js");
 const { guildByID, guildByObj, userByObj, guildUserByObj } = require("./modules/database.js");
-const { Events, InteractionContextType: IT, ApplicationIntegrationType: AT, SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionFlagsBits } = require("discord.js");
+const { Events, InteractionContextType: IT, ApplicationIntegrationType: AT, SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionFlagsBits, ContainerBuilder, TextDisplayBuilder, SectionBuilder, ThumbnailBuilder, SeparatorBuilder, SeparatorSpacingSize, MessageFlags, AttachmentBuilder } = require("discord.js");
 function applyContext(context = {}) {
     for (let key in context) {
         this[key] = context[key];
@@ -20,7 +20,7 @@ const listFormatter = new Intl.ListFormat("en", { style: "long", type: "conjunct
 
 
 // Store post hashes so we can catch repeat posts
-const cache = {};
+const cache = {}; // TODO: lru cache
 
 /**
  * Deletes a message and any warnings from the badware_scanner replying to it
@@ -174,7 +174,6 @@ module.exports = {
                     const userInGuild = guildUserStore; //await guildUserByObj(msg.guild, msg.author.id);
 
                     // Handle this user
-                    user.captcha = true;
                     var botInServer = msg.guild?.members.cache.get(client.user.id);
                     const botHasTimeoutPermission = botInServer?.permissions?.has(PermissionFlagsBits.ModerateMembers) || false;
                     const canTimeoutUser = timeoutable && botHasTimeoutPermission;
@@ -182,7 +181,7 @@ module.exports = {
                         botInServer &&
                         !guild.disableAntiHack &&
                         // Users who complete captchas are marked as safe for a week.
-                        Date.now() - userInGuild.safeTimestamp < ms("7d")
+                        Date.now() - (userInGuild.safeTimestamp || Date.now()) < ms("7d")
                     ) {
                         // Timeout if we have perms
                         if (canTimeoutUser) {
@@ -320,24 +319,67 @@ module.exports = {
                                 ? " which has since been automatically deleted"
                                 : "";
 
-                            const components = [];
+                            // const components = [];
 
-                            if (sendRow.length > 0) {
-                                components.push(
-                                    new ActionRowBuilder().addComponents(
-                                        ...sendRow
-                                    )
-                                );
-                            }
+                            // if (sendRow.length > 0) {
+                            //     components.push(
+                            //         new ActionRowBuilder().addComponents(
+                            //             ...sendRow
+                            //         )
+                            //     );
+                            // }
 
                             // Warn, then delete the message afterwards so they see it was deleted
+                            // if (toNotify) await logChannel.send({
+                            //     content:
+                            //         `I have detected unusual activity from <@${msg.author.id}>${autoDeleteNotice}. ${timeoutAttemptMessage}\n` +
+                            //         `\n` +
+                            //         `-# Configure detection in your server settings with ${cmds.anti_hack.mention}.` +
+                            //         missingPermissionsMessage,
+                            //     components: components.map(c => c.toJSON())
+                            // });
+
+                            const components = [
+                                new ContainerBuilder()
+                                    .addTextDisplayComponents(
+                                        new TextDisplayBuilder().setContent("## Hacked Account Blocked")
+                                    )
+                                    .addSectionComponents(
+                                        new SectionBuilder()
+                                            .setThumbnailAccessory(
+                                                new ThumbnailBuilder()
+                                                    .setURL("attachment://antiHack.png")
+                                            )
+                                            .addTextDisplayComponents([
+                                                new TextDisplayBuilder().setContent(
+                                                    `I have detected unusual activity from <@${msg.author.id}>${autoDeleteNotice}. ${timeoutAttemptMessage}\n`
+                                                ),
+                                                missingPermissionsMessage ? new TextDisplayBuilder().setContent(`${missingPermissionsMessage}`) : null
+                                            ].filter(Boolean))
+                                    )
+                                    .addSeparatorComponents(
+                                        new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+                                            .setDivider(true)
+                                    )
+                                    .addTextDisplayComponents(
+                                        new TextDisplayBuilder().setContent(`[Protect your server with Stewbot](${config.install})`)
+                                    )
+                                    .addSeparatorComponents(
+                                        new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+                                            .setDivider(true)
+                                    )
+                                    .addTextDisplayComponents(
+                                        new TextDisplayBuilder().setContent(`-# Control detection settings with ${cmds.anti_hack.mention}.`)
+                                    ),
+                                new ActionRowBuilder().addComponents(
+                                    ...sendRow
+                                )
+                            ];
+
                             if (toNotify) await logChannel.send({
-                                content:
-                                    `I have detected unusual activity from <@${msg.author.id}>${autoDeleteNotice}. ${timeoutAttemptMessage}\n` +
-                                    `\n` +
-                                    `-# Configure detection in your server settings with ${cmds.anti_hack.mention}.` +
-                                    missingPermissionsMessage,
-                                components: components.map(c => c.toJSON())
+                                components: components.map(c => c.toJSON()),
+                                flags: MessageFlags.IsComponentsV2,
+                                files: [new AttachmentBuilder("pfps/antiHack.png").setName("antiHack.png")]
                             });
 
                             // Finally, DM This user if the message was set to go to a log channel

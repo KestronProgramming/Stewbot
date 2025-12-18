@@ -108,8 +108,6 @@ module.exports = {
 
                     const user = await userByObj(cmd.user);
 
-                    user.captcha = false;
-
                     antiHackCache[user.id].lastHash = "";
                     antiHackCache[user.id].hashStreak = 0;
 
