@@ -8,6 +8,28 @@ const fs = require("node:fs");
 const { limitLength } = require("../utils.js");
 const { censor } = require("./filter");
 const linkify = require("linkifyjs");
+const { LRUCache } = require("lru-cache");
+const ms = require("ms");
+
+/**
+ * Store message ID to warning ID so we can delete warnings when the source message is deleted by anti-hack
+ * @type {LRUCache<string, {channelId: string, messageId: string}[]>}
+ * */
+const messageIdToWarnings = new LRUCache({ max: 500, ttl: ms("3 min") });
+
+
+// URL blockers
+const blocklistsLocation = `./data/filterCache/`;
+const blocklists = [
+    {
+        title: "uBlock Origin's Badware List",
+        url: "https://raw.githubusercontent.com/uBlockOrigin/uAssets/master/filters/badware.txt",
+        filename: "badware.txt"
+    }
+];
+
+// If we can't sent messages, warn with an emoji (added to bot in dev console)
+const scamEmoji = process.env.beta ? "<:This_Post_May_Contain_A_Scam:1330320295357055067>" : "<:This_Post_May_Contain_A_Scam:1330318400668565534>";
 
 // Attachment leak-checkers
 const filetypeScanners = {
@@ -37,21 +59,19 @@ const filetypeScanners = {
     }
 };
 
-// URL blockers
-const blocklistsLocation = `./data/filterCache/`;
-const blocklists = [
-    {
-        title: "uBlock Origin's Badware List",
-        url: "https://raw.githubusercontent.com/uBlockOrigin/uAssets/master/filters/badware.txt",
-        filename: "badware.txt"
-    }
-];
+// Utils
+/** @param {import('discord.js').Message} replyingMessage */
+function addMessageToWarningMap(replyingMessage) {
+    const warnings = messageIdToWarnings.get(replyingMessage.reference.messageId) || [];
+    // Store reference to this reply
+    warnings.push({
+        channelId: replyingMessage.reference.channelId,
+        messageId: replyingMessage.id
+    });
+    messageIdToWarnings.set(replyingMessage.reference.messageId, warnings);
+}
 
-// If we can't sent messages, warn with an emoji (added to bot in dev console)
-const scamEmoji = process.env.beta ? "<:This_Post_May_Contain_A_Scam:1330320295357055067>" : "<:This_Post_May_Contain_A_Scam:1330318400668565534>";
-
-
-// Functions for ublock list checker
+// Functions for uBlock Origin list checker
 async function loadBlocklist(url) {
     const response = await fetch(url);
     const text = await response.text();
@@ -282,7 +302,8 @@ async function getBufferFromFetch(res) {
 }
 
 module.exports = {
-    updateBlocklists: updateBlocklists, // This function will be called in the dailies
+    updateBlocklists: updateBlocklists, // Called from sudo
+    messageIdToWarnings: messageIdToWarnings,
 
     data: {
         command: new SlashCommandBuilder().setName("badware_scanner")
@@ -372,7 +393,7 @@ module.exports = {
                             `\n` +
                             `-# If you need to disable this feature, run ${"`/badware_scanner format_exploits:false`"}\n` +
                             `-# This is a **new feature**. If you encounter issues, please report details with ${cmds.report_problem.mention}`
-                        );
+                        ).then(addMessageToWarningMap);
                     }
                     else if (reactable) {
                         await msg.react("⚠️");
@@ -394,7 +415,7 @@ module.exports = {
                                 `The link sent in this message was found in the blocklist [${triggerdBlocklist.title}](${triggerdBlocklist.url})\n` +
                                 `\n` +
                                 `-# If you need to disable this feature, run ${"`/badware_scanner domain_scanning:false`"}`
-                            );
+                            ).then(addMessageToWarningMap);
                         }
                         else if (reactable) {
                             await msg.react("⚠️");
@@ -417,7 +438,7 @@ module.exports = {
                                 `\n` +
                                 `-# If you need to disable this feature, run ${"`/badware_scanner fake_link_check:false`"}`,
                             allowedMentions: { parse: [] }
-                        });
+                        }).then(addMessageToWarningMap);
                     }
                     else if (reactable) {
                         // await msg.react('🛑');
@@ -437,7 +458,7 @@ module.exports = {
                                 `\n` +
                                 `-# If you need to disable this feature, run ${"`/badware_scanner fake_link_check:false`"}`,
                             allowedMentions: { parse: [] }
-                        });
+                        }).then(addMessageToWarningMap);
                     }
                     else if (reactable) {
                         // await msg.react('🛑');

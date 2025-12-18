@@ -14,9 +14,35 @@ function applyContext(context = {}) {
 const { requireServer } = require("../utils.js");
 const crypto = require("crypto");
 const ms = require("ms");
+const { messageIdToWarnings } = require("./badware_scanner.js");
+// const LRUCache = require("lru-cache").LRUCache;
+
 
 // Store post hashes so we can catch repeat posts
 const cache = {};
+
+/**
+ * Deletes a message and any warnings from the badware_scanner replying to it
+ * @param {import('discord.js').Message} message
+ * */
+async function deleteMsgAndWarnings(message) {
+    const replies = messageIdToWarnings.get(message.id) || [];
+
+    await Promise.all([
+        // Delete original message
+        message.delete().catch(() => {}),
+
+        // Delete all warning messages
+        ...replies.map(async ({ channelId, messageId }) => {
+            const channel = client.channels.cache.get(channelId);
+            if (!channel?.isTextBased()) return;
+            try {
+                await channel.messages.delete(messageId);
+            }
+            catch {}
+        })
+    ]);
+}
 
 module.exports = {
     antiHackCache: cache,
@@ -226,13 +252,15 @@ module.exports = {
                                             let badMess = await channel.messages?.fetch(
                                                 cache[msg.guild.id].users[msg.author.id].lastMessages[i].split("/")[1]
                                             );
-                                            badMess.delete().catch(() => { }); // TODO: make one bulk-delete request instead of 4
+                                            deleteMsgAndWarnings(badMess);
+                                            // badMess.delete().catch(() => { });
                                         }
                                         catch (e) { console.log(e); }
                                     }
 
                                     // Finally, delete this current trigger message
-                                    msg.delete().catch(() => { });
+                                    deleteMsgAndWarnings(msg);
+                                    // msg.delete().catch(() => { });
 
                                     // Since they are deleted, now ignore them
                                     cache[msg.guild.id].users[msg.author.id].lastMessages = [];
@@ -345,7 +373,8 @@ module.exports = {
                                     cmd.customId.split("-")[1]
                                 ].lastMessages[i].split("/")[1]
                             );
-                            badMess.delete().catch(() => { });
+                            deleteMsgAndWarnings(badMess);
+                            // badMess.delete().catch(() => { });
                             cache[cmd.guild.id].users[cmd.customId.split("-")[1]].lastMessages.splice(i, 1);
                             i--;
                         }
@@ -406,7 +435,8 @@ module.exports = {
                                     cmd.customId.split("-")[1]
                                 ].lastMessages[i].split("/")[1]
                             ).catch(() => null);
-                            badMess?.delete().catch(() => null);
+                            deleteMsgAndWarnings(badMess);
+                            // badMess?.delete().catch(() => null);
                             cache[cmd.guild.id].users[cmd.customId.split("-")[1]].lastMessages.splice(i, 1);
                             i--;
                         }
@@ -438,7 +468,8 @@ module.exports = {
                                 cmd.customId.split("-")[1]
                             ].lastMessages[i].split("/")[1]
                         );
-                        badMess.delete().catch(() => null);
+                        deleteMsgAndWarnings(badMess);
+                        // badMess.delete().catch(() => null);
                         cache[cmd.guild.id].users[cmd.customId.split("-")[1]].lastMessages.splice(i, 1);
                         i--;
                     }
