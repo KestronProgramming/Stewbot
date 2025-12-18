@@ -182,12 +182,10 @@ client.once(Events.ClientReady, async () => {
 
 // === Dispatch command execute / autocomplete / buttons where they need to go.
 client.on(Events.InteractionCreate, async cmd => {
-    if (!("commandName" in cmd)) return; // Ignore non-command interactions
-
     const asyncTasks = []; // Any non-awaited functions go here to fully known when this command is done executing for metrics
     const intStartTime = Date.now();
 
-    const commandScript = commands[cmd.commandName];
+    const commandScript = ("commandName" in cmd) ? commands[cmd.commandName] : null;
     if (!commandScript && (cmd.isCommand() || cmd.isAutocomplete())) return; // Ignore any potential cache issues
 
     // Check permissions manually due to Discord security bugs on interpreting
