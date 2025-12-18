@@ -84,7 +84,7 @@ let commandListenerRegister = commandsLoadedPromise.then(commandsLoaded => {
 
             // Resolve partials so we always have full data
             await Promise.all([
-                react.partial ? react.fetch() : null,
+                react.partial ? react.fetch().catch(() => null) : null,
                 react.message?.partial ? react.message.fetch().catch(() => null) : null
             ]);
 
