@@ -25,6 +25,7 @@ const components = [
         .toJSON()
 ];
 
+/** @type {import("../command-module").CommandModule} */
 module.exports = {
     data: {
         // Slash command data
@@ -50,7 +51,6 @@ module.exports = {
         }
     },
 
-    /** @param {import('discord.js').MessageContextMenuCommandInteraction} cmd */
     async execute(cmd, context) {
         applyContext(context);
 
@@ -93,7 +93,6 @@ module.exports = {
 
     subscribedButtons: ["save_meme"],
 
-    /** @param {import('discord.js').ButtonInteraction} cmd */
     async onbutton(cmd, context) {
         applyContext(context);
 

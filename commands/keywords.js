@@ -186,6 +186,7 @@ const keyword = [
     }
 ];
 
+/** @type {import("../command-module").CommandModule} */
 module.exports = {
     data: {
         command: null,

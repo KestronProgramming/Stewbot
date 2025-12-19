@@ -15,6 +15,7 @@ function applyContext(context = {}) {
 //
 
 
+/** @type {import("../command-module").CommandModule} */
 module.exports = {
     data: {
         command: new SlashCommandBuilder().setName("donate")
@@ -38,7 +39,6 @@ module.exports = {
         }
     },
 
-    /** @param {import('discord.js').ChatInputCommandInteraction} cmd */
     async execute(cmd, context) {
         applyContext(context);
 

@@ -8,6 +8,7 @@ const { notify } = require("../utils");
 const ms = require("ms");
 const { startBackupThreadPromise } = require("../backup.js");
 
+/** @type {import("../command-module").CommandModule} */
 module.exports = {
     data: {
         command: null,

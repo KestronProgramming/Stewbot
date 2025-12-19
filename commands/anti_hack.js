@@ -45,6 +45,7 @@ async function deleteMsgAndWarnings(message) {
     ]);
 }
 
+/** @type {import("../command-module").CommandModule} */
 module.exports = {
     antiHackCache: cache,
 
@@ -88,7 +89,6 @@ module.exports = {
         }
     },
 
-    /** @param {import('discord.js').ChatInputCommandInteraction} cmd */
     async execute(cmd, context) {
         if (requireServer(cmd)) return;
         applyContext(context);
@@ -415,7 +415,6 @@ module.exports = {
     // Only button subscriptions matched will be sent to the handler
     subscribedButtons: [/ban-.*/, /kick-.*/, /untimeout-.*/, /del-.*/],
 
-    /** @param {import('discord.js').ButtonInteraction} cmd */
     async onbutton(cmd, context) {
         if (!cmd.guild) return;
         if (!cmd.member || typeof(cmd.member.permissions) !== "object") return;

@@ -16,6 +16,7 @@ function applyContext(context = {}) {
 // 	These can be message handlers like ~sudo, etc
 //
 
+/** @type {import("../command-module").CommandModule} */
 module.exports = {
     data: {
         command: null,
@@ -40,12 +41,7 @@ module.exports = {
         }
     },
 
-    /**
-     * @param {import('discord.js').Message} msg
-     * @param {GuildDoc} guildStore
-     * @param {GuildUserDoc} guildUserStore
-     * */
-    async [Events.MessageCreate](msg, context) {
+    async [Events.MessageCreate](msg, context, readGuild, readGuildUser, readHomeGuild) {
         applyContext(context);
         // `context` currently does not respect requested globals
     },

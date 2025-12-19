@@ -13,6 +13,7 @@ const { launchCommands } = require(`../launchCommands.js`);
 const fs = require("fs/promises");
 const { notify } = require("../utils");
 
+/** @type {import("../command-module").CommandModule} */
 module.exports = {
     data: {
         sudo: true,
@@ -34,7 +35,6 @@ module.exports = {
         }
     },
 
-    /** @param {import('discord.js').ChatInputCommandInteraction} cmd */
     async execute(cmd, context) {
         applyContext(context);
 

@@ -13,6 +13,7 @@ const translate = require("@vitalets/google-translate-api").translate;
 const { escapeBackticks } = require("../utils.js");
 const { isDirty, censor } = require("./filter");
 
+/** @type {import("../command-module").CommandModule} */
 module.exports = {
     data: {
         // Slash command data
@@ -47,7 +48,6 @@ module.exports = {
         }
     },
 
-    /** @param {import('discord.js').ChatInputCommandInteraction} cmd */
     async execute(cmd, context) {
         applyContext(context);
         const input = cmd.options.getString("what") ?? "";

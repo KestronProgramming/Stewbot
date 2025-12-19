@@ -14,6 +14,7 @@ const translate = require("@vitalets/google-translate-api").translate; // Import
 const { escapeBackticks } = require("../utils.js");
 const { censor } = require("./filter");
 
+/** @type {import("../command-module").CommandModule} */
 module.exports = {
     data: {
         // Slash command data
@@ -37,7 +38,6 @@ module.exports = {
         }
     },
 
-    /** @param {import('discord.js').MessageContextMenuCommandInteraction} cmd */
     async execute(cmd, context) {
         applyContext(context);
 

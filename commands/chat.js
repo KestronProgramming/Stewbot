@@ -372,6 +372,7 @@ function startCooldown(userId) {
 }
 //#endregion
 
+/** @type {import("../command-module").CommandModule} */
 module.exports = {
     resetAIRequests,
     convertCommandsToTools,
@@ -404,7 +405,6 @@ module.exports = {
             detailedDesc: "Have a fun chat with Stewbot's self-hosted AI"
         }
     },
-    /** @param {import('discord.js').ChatInputCommandInteraction} cmd */
     async execute(cmd, globalsContext) {
         applyContext(globalsContext);
 

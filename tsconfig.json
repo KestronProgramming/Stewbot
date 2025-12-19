@@ -7,7 +7,7 @@
     "ignoreDeprecations": "6.0",
     "module": "commonjs",
     "allowJs": true,
-    "checkJs": false,
+    "checkJs": false, // Don't give errors, just give intellisense
     "noEmit": true,
     "strict": false,
     "target": "es2024",
@@ -20,7 +20,8 @@
   },
   "include": [
     "**/*.js",
-    "./globals.d.ts"
+    "./globals.d.ts", // Define globals we use
+    "./command-module.d.ts", // Define command module structure
   ],
   "exclude": [
     "node_modules",

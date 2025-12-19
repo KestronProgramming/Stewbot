@@ -246,6 +246,7 @@ function parsePoll(c, published = false) {
 const NodeCache = require("node-cache");
 const pollSettingsCache = new NodeCache({ stdTTL: 60 * 60 }); // 1 hour
 
+/** @type {import("../command-module").CommandModule} */
 module.exports = {
     data: {
         // Slash command data
@@ -290,7 +291,6 @@ module.exports = {
         }
     },
 
-    /** @param {import('discord.js').ChatInputCommandInteraction} cmd */
     async execute(cmd, context) {
         applyContext(context);
         if (await isDirty(cmd.options.getString("prompt"), cmd.guild)) {
@@ -326,7 +326,6 @@ module.exports = {
 
     subscribedButtons: [/poll-.+/, /voted.*/],
 
-    /** @param {import('discord.js').ButtonInteraction | import('discord.js').AnySelectMenuInteraction | import('discord.js').ModalSubmitInteraction } cmd */
     async onbutton(cmd, context) {
         applyContext(context);
 

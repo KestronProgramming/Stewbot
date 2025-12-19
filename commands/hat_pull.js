@@ -107,6 +107,7 @@ async function resetHatScheduleLocks() {
         });
 }
 
+/** @type {import("../command-module").CommandModule} */
 module.exports = {
     finHatPull,
     scheduleTodaysHats,
@@ -158,7 +159,6 @@ module.exports = {
         }
     },
 
-    /** @param {import('discord.js').ChatInputCommandInteraction} cmd */
     async execute(cmd, context) {
         applyContext(context);
 
@@ -242,7 +242,6 @@ module.exports = {
     // Only button subscriptions matched will be sent to the handler
     subscribedButtons: [/.*HatPull/],
 
-    /** @param {import('discord.js').ButtonInteraction} cmd */
     async onbutton(cmd, context) {
         applyContext(context);
         if (!("customId" in cmd)) return;

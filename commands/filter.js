@@ -300,6 +300,7 @@ async function isDirty(text, guild = undefined, global = false) {
 }
 
 
+/** @type {import("../command-module").CommandModule} */
 module.exports = {
     checkDirty: checkDirty,           // Deprecated
     censorWithFound: censorWithFound, // For knowing what was filtered, and if it was.
@@ -401,7 +402,6 @@ module.exports = {
         }
     },
 
-    /** @param {import('discord.js').ChatInputCommandInteraction} cmd */
     async execute(cmd, context) {
         applyContext(context);
 
@@ -569,10 +569,6 @@ module.exports = {
         guild.save();
     },
 
-    /**
-     * @param {import('discord.js').Message} msg
-     * @param {import("./modules/database.js").RawGuildDoc} guildStore
-=     * */
     async [Events.MessageCreate](msg, context, guildStore) {
         if (!msg.guild) return;
         if (msg.webhookId) return; // Ignore webhooks, since we post filters as webhooks.
@@ -674,10 +670,6 @@ module.exports = {
         msg.filtered = wasFiltered;
     },
 
-    /**
-     * @param {import('discord.js').Message} msg
-     * @param {import("./modules/database.js").RawGuildDoc} readGuild
-     */
     async [Events.MessageUpdate](_, msg, readGuild) {
         if (msg.guild?.id === undefined || client.user.id === msg.author?.id) return; // Ignore self and DMs
         if (!readGuild?.filter?.active) return;

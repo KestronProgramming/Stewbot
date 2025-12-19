@@ -60,6 +60,7 @@ async function holidayPfpCheck() {
     await botConfig.save();
 }
 
+/** @type {import("../command-module").CommandModule} */
 module.exports = {
     data: {
         command: null,

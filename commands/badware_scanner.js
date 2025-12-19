@@ -328,6 +328,7 @@ async function getBufferFromFetch(res) {
     return Buffer.from(buffer);
 }
 
+/** @type {import("../command-module").CommandModule} */
 module.exports = {
     updateBlocklists: updateBlocklists, // Called from sudo
     messageIdToWarnings: messageIdToWarnings,
@@ -375,7 +376,6 @@ module.exports = {
         }
     },
 
-    /** @param {import('discord.js').ChatInputCommandInteraction} cmd */
     async execute(cmd) {
         const updates = {};
 

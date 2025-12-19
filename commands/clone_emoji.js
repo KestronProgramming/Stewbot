@@ -58,6 +58,7 @@ async function uploadEmoji(url, name, guild) {
     return [true, `Emoji cloned: ${newEmoji}\nYou have ${slotsLeft} ${isAnimated ? "animated " : ""}emoji slots left in this server.`];
 }
 
+/** @type {import("../command-module").CommandModule} */
 module.exports = {
     data: {
         // Slash command data
@@ -98,7 +99,6 @@ module.exports = {
         }
     },
 
-    /** @param {import('discord.js').ChatInputCommandInteraction} cmd */
     async execute(cmd, context) {
         applyContext(context);
 

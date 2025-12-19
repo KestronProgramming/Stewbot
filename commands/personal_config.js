@@ -20,6 +20,7 @@ const { parseTextDateIfValid_Version } = require("./timestamp");
 // )]
 
 
+/** @type {import("../command-module").CommandModule} */
 module.exports = {
     data: {
         // Slash command data
@@ -67,7 +68,6 @@ module.exports = {
         }
     },
 
-    /** @param {import('discord.js').ChatInputCommandInteraction} cmd */
     async execute(cmd, context) {
         applyContext(context);
 
@@ -144,7 +144,6 @@ module.exports = {
 
     subscribedButtons: ["tzUp", "tzDown", "tzSave"],
 
-    /** @param {import('discord.js').ButtonInteraction} cmd */
     async onbutton(cmd, context) {
         applyContext(context);
 

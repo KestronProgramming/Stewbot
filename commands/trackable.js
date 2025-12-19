@@ -453,6 +453,7 @@ async function genTrackerId() {
     return tempId;
 }
 
+/** @type {import("../command-module").CommandModule} */
 module.exports = {
     getTrackableEmbed,
     getTrackableEditor,
@@ -527,7 +528,6 @@ module.exports = {
         }
     },
 
-    /** @param {import('discord.js').ChatInputCommandInteraction} cmd */
     async execute(cmd, _context, deferredResponse) {
         switch (cmd.options.getSubcommand()) {
             case "about":
@@ -744,7 +744,6 @@ module.exports = {
         }
     },
 
-    /** @param {import('discord.js').Interaction} cmd */
     async [Events.InteractionCreate](cmd) {
         if (!cmd.isStringSelectMenu() && !cmd.isButton() && !cmd.isModalSubmit()) return;
         if (!cmd.customId.startsWith("silence_trackable_expiry_notifs") &&

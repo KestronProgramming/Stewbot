@@ -12,6 +12,7 @@ function applyContext(context = {}) {
 
 const config = require("../data/config.json");
 
+/** @type {import("../command-module").CommandModule} */
 module.exports = {
     data: {
         // Slash command data
@@ -38,7 +39,6 @@ module.exports = {
         }
     },
 
-    /** @param {import('discord.js').ContextMenuCommandInteraction} cmd */
     async execute(cmd, context) {
         applyContext(context);
         if (!cmd.isMessageContextMenuCommand()) return; // Should not
@@ -84,7 +84,6 @@ module.exports = {
     // Only button subscriptions matched will be sent to the handler
     subscribedButtons: ["move-message"],
 
-    /** @param {import('discord.js').ButtonInteraction | import('discord.js').AnySelectMenuInteraction | import('discord.js').ModalSubmitInteraction } cmd */
     async onbutton(cmd, context) {
         applyContext(context);
 

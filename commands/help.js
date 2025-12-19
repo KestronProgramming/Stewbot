@@ -157,6 +157,7 @@ function sortByMatch(items, text) {
     return scoredResults.map(entry => entry.item.item);
 }
 
+/** @type {import("../command-module").CommandModule} */
 module.exports = {
     data: {
         // Slash command data
@@ -185,7 +186,6 @@ module.exports = {
         }
     },
 
-    /** @param {import('discord.js').ChatInputCommandInteraction} cmd */
     async execute(cmd, context) {
         applyContext(context);
         if (cmd.options.getString("module") === null) {
@@ -274,7 +274,6 @@ module.exports = {
     // Only button subscriptions matched will be sent to the handler
     subscribedButtons: [/help-.*/],
 
-    /** @param {import('discord.js').ButtonInteraction} cmd */
     async onbutton(cmd, context) {
         applyContext(context);
 

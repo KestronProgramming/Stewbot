@@ -221,6 +221,7 @@ async function doEmojiboardReaction(react) {
     guild.save();
 }
 
+/** @type {import("../command-module").CommandModule} */
 module.exports = {
     getStarMsg,
     getEmojiFromMessage,
@@ -340,7 +341,6 @@ module.exports = {
         }
     },
 
-    /** @param {import('discord.js').ChatInputCommandInteraction} cmd */
     async execute(cmd, context) {
         applyContext(context);
 

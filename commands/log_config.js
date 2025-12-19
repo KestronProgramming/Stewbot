@@ -143,6 +143,7 @@ async function logGuildMemberUpdate(packet) {
 
 }
 
+/** @type {import("../command-module").CommandModule} */
 module.exports = {
     data: {
         // Slash command data
@@ -198,7 +199,6 @@ module.exports = {
         }
     },
 
-    /** @param {import('discord.js').ChatInputCommandInteraction} cmd */
     async execute(cmd, context) {
         applyContext(context);
 
@@ -227,7 +227,6 @@ module.exports = {
     },
 
 
-    /** @param {import("discord.js").User | import("discord.js").PartialUser} oldUser - The user object before the update. */
     async [Events.UserUpdate](oldUser) {
         // To log global changes, we need the original member, which is only provided in the user update event.
         // We then broadcast this data to individual servers that trigger the `GUILD_MEMBER_UPDATE` event.

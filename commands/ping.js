@@ -17,6 +17,7 @@ const { notify } = require("../utils");
 
 let uptime = 0; // Bot uptime in seconds I think?
 
+/** @type {import("../command-module").CommandModule} */
 module.exports = {
     data: {
         // Slash command data
@@ -42,7 +43,6 @@ module.exports = {
         }
     },
 
-    /** @param {import('discord.js').ChatInputCommandInteraction} cmd */
     async execute(cmd, context) {
         applyContext(context);
 
@@ -68,7 +68,7 @@ module.exports = {
         );
     },
 
-    async [Events.ClientReady]() {
+    async [Events.ClientReady](test) {
         let bootMOTD = ``;
 
         // Determine uptime

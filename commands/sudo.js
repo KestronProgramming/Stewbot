@@ -15,6 +15,7 @@ const config = require("../data/config.json");
 const { updateBlocklists } = require("./badware_scanner");
 const { setTimeout } = require("timers");
 
+/** @type {import("../command-module").CommandModule} */
 module.exports = {
     data: {
         command: null,

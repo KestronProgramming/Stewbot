@@ -337,6 +337,7 @@ function formatMinesweeperBoard(board, revealed, emojis, width, height) {
     return output;
 }
 
+/** @type {import("../command-module").CommandModule} */
 module.exports = {
     data: {
         // Slash command data
@@ -492,7 +493,6 @@ module.exports = {
 
     },
 
-    /** @param {import('discord.js').ChatInputCommandInteraction} cmd */
     async execute(cmd, context) {
         applyContext(context);
 
@@ -648,8 +648,6 @@ module.exports = {
 
     subscribedButtons: ["racMove", "racJoin", "moveModal"],
 
-    // TODO: All onbutton's need to be updated to this jsdoc
-    /** @param {import('discord.js').ButtonInteraction | import('discord.js').AnySelectMenuInteraction | import('discord.js').ModalSubmitInteraction } cmd */
     async onbutton(cmd, context) {
         applyContext(context);
         if (!("customId" in cmd)) return;

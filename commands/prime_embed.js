@@ -58,6 +58,7 @@ async function getPrimedEmbed(userId, guildIn) {
     return emb;
 }
 
+/** @type {import("../command-module").CommandModule} */
 module.exports = {
     getPrimedEmbed,
 
@@ -85,7 +86,6 @@ module.exports = {
         }
     },
 
-    /** @param {import('discord.js').MessageContextMenuCommandInteraction} cmd */
     async execute(cmd, context) {
         applyContext(context);
         if (!cmd.isMessageContextMenuCommand()) return;

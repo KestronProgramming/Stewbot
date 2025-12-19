@@ -14,6 +14,7 @@ const { limitLength } = require("../utils.js");
 const config = require("../data/config.json");
 const { censor } = require("./filter");
 
+/** @type {import("../command-module").CommandModule} */
 module.exports = {
     data: {
         // Slash command data
@@ -45,7 +46,6 @@ module.exports = {
         }
     },
 
-    /** @param {import('discord.js').ChatInputCommandInteraction} cmd */
     async execute(cmd, context) {
         applyContext(context);
 

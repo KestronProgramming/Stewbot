@@ -18,6 +18,7 @@ const { isDirty, censor } = require("./filter");
 const kaProgramRegex = /\b(?!<)https?:\/\/(?:www\.)?khanacademy\.org\/(cs|computer-programming|hour-of-code|python-program)\/[a-z,\d,-]+\/\d+(?!>)\b/gi;
 const discordMessageRegex = /\b(?!<)https?:\/\/(ptb\.|canary\.)?discord(app)?.com\/channels\/(@me|\d+)\/\d+\/\d+(?!>)\b/gi;
 
+/** @type {import("../command-module").CommandModule} */
 module.exports = {
     data: {
         // Slash command data
@@ -43,7 +44,6 @@ module.exports = {
         }
     },
 
-    /** @param {import('discord.js').ChatInputCommandInteraction} cmd */
     async execute(cmd, context) {
         applyContext(context);
 

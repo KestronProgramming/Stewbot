@@ -51,6 +51,7 @@ async function checkTagUpdate(packet) {
     }
 }
 
+/** @type {import("../command-module").CommandModule} */
 module.exports = {
     data: {
         command: new SlashCommandBuilder()
@@ -81,7 +82,6 @@ You can disable the feature using the \`active\` flag.`
         }
     },
 
-    /** @param {import('discord.js').ChatInputCommandInteraction} cmd */
     async execute(cmd, context) {
         applyContext(context);
 

@@ -62,6 +62,7 @@ function processForNumber(text) {
 }
 
 
+/** @type {import("../command-module").CommandModule} */
 module.exports = {
     processForNumber,
 
@@ -142,7 +143,6 @@ module.exports = {
         }
     },
 
-    /** @param {import('discord.js').ChatInputCommandInteraction} cmd */
     async execute(cmd, context) {
         applyContext(context);
 

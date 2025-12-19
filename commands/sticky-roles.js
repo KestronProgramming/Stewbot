@@ -11,6 +11,7 @@ function applyContext(context = {}) {
 
 // #endregion CommandBoilerplate
 
+/** @type {import("../command-module").CommandModule} */
 module.exports = {
     data: {
         // Slash command data
@@ -43,7 +44,6 @@ module.exports = {
     // This module should be run before auto-join-roles
     priority: 50,
 
-    /** @param {import('discord.js').ChatInputCommandInteraction} cmd */
     async execute(cmd, context) {
         applyContext(context);
 
@@ -63,7 +63,6 @@ module.exports = {
         await cmd.followUp("Sticky roles configured. Please be aware I can only manage roles lower than my highest role in the server roles list.");
     },
 
-    /** @param {import("discord.js").GuildMember} member */
     async [Events.GuildMemberAdd](member, readGuildStore) {
 
         // Track whether we added any roles to know whether or not to apply auto join roles.

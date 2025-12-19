@@ -53,6 +53,7 @@ async function scheduleTodaysTemproles() {
     });
 }
 
+/** @type {import("../command-module").CommandModule} */
 module.exports = {
     scheduleTodaysTemproles,
 
@@ -95,7 +96,6 @@ module.exports = {
         }
     },
 
-    /** @param {import('discord.js').ChatInputCommandInteraction} cmd */
     async execute(cmd, context) {
         applyContext(context);
 
@@ -196,7 +196,6 @@ module.exports = {
 
     subscribedButtons: [/finishTempRole-.*/],
 
-    /** @param {import('discord.js').ButtonInteraction} cmd */
     async onbutton(cmd, context) {
         applyContext(context);
 

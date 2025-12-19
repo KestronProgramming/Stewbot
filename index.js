@@ -207,7 +207,7 @@ client.on(Events.InteractionCreate, async cmd => {
     }
 
     //// Manage deferring
-    let deferedResponse;
+    let deferredResponse;
     if (cmd.isChatInputCommand() || cmd.isMessageContextMenuCommand()) {
         // Always obey the `private` property, if not defined default to the `deferEphemeral` property.
         const private = cmd.isChatInputCommand() ? cmd.options.getBoolean("private") : null;
@@ -228,7 +228,7 @@ client.on(Events.InteractionCreate, async cmd => {
                 forceEphemeral = commandScript.data.deferEphemeral;
             }
         }
-        deferedResponse = await cmd.deferReply({
+        deferredResponse = await cmd.deferReply({
             ephemeral: private ?? forceEphemeral ?? false,
             ...detailedExtra // This allows fields like withResponse to be specified
         });
@@ -277,7 +277,7 @@ client.on(Events.InteractionCreate, async cmd => {
 
         // Run, and catch errors
         try {
-            await commands[cmd.commandName].execute(cmd, providedGlobals, deferedResponse);
+            await commands[cmd.commandName].execute(cmd, providedGlobals, deferredResponse);
         }
         catch (e) {
             // Catch blocked by automod

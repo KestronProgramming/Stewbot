@@ -13,6 +13,7 @@ function applyContext(context = {}) {
 const { limitLength } = require("../utils.js");
 
 
+/** @type {import("../command-module").CommandModule} */
 module.exports = {
     data: {
         // Slash command data
@@ -49,7 +50,6 @@ module.exports = {
         }
     },
 
-    /** @param {import('discord.js').ChatInputCommandInteraction} cmd */
     async execute(cmd, context) {
         applyContext(context);
 
@@ -177,7 +177,6 @@ module.exports = {
     // Only button subscriptions matched will be sent to the handler
     subscribedButtons: [/.*Warn.*/],
 
-    /** @param {import('discord.js').ButtonInteraction | import('discord.js').AnySelectMenuInteraction | import('discord.js').ModalSubmitInteraction } cmd */
     async onbutton(cmd, context) {
         applyContext(context);
 

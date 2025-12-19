@@ -290,6 +290,7 @@ const components = {
         )
 };
 
+/** @type {import("../command-module").CommandModule} */
 module.exports = {
     parseTextDateIfValid_Version,
 
@@ -318,7 +319,6 @@ module.exports = {
         }
     },
 
-    /** @param {import('discord.js').ChatInputCommandInteraction} cmd */
     async execute(cmd, context) {
         applyContext(context);
 
@@ -343,7 +343,6 @@ module.exports = {
     // Only button subscriptions matched will be sent to the handler
     subscribedButtons: ["timestamp", "howToCopy", "onDesktop", /ts.*/],
 
-    /** @param {import('discord.js').ButtonInteraction | import('discord.js').AnySelectMenuInteraction | import('discord.js').ModalSubmitInteraction } cmd */
     async onbutton(cmd, context) {
         applyContext(context);
 

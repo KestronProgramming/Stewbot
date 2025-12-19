@@ -121,6 +121,7 @@ async function sendWelcome(guild) {
     };
 }
 
+/** @type {import("../command-module").CommandModule} */
 module.exports = {
     sendWelcome,
 

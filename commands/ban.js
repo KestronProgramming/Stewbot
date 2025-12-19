@@ -131,6 +131,7 @@ async function scheduleTodaysUnbans() {
     );
 }
 
+/** @type {import("../command-module").CommandModule} */
 module.exports = {
     finTempBan,
     scheduleTodaysUnbans,
@@ -176,7 +177,6 @@ module.exports = {
         }
     },
 
-    /** @param {import('discord.js').ChatInputCommandInteraction} cmd */
     async execute(cmd, context) {
         applyContext(context);
 
@@ -276,7 +276,6 @@ module.exports = {
     // Only button subscriptions matched will be sent to the handler
     subscribedButtons: [/unban-.*/],
 
-    /** @param {import('discord.js').ButtonInteraction} cmd */
     async onbutton(cmd, context) {
         applyContext(context);
 

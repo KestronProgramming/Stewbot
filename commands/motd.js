@@ -40,6 +40,7 @@ async function refreshStatusHandler() {
     }
 }
 
+/** @type {import("../command-module").CommandModule} */
 module.exports = {
     data: {
         command: new SlashCommandBuilder()
@@ -92,7 +93,6 @@ module.exports = {
         }
     },
 
-    /** @param {import('discord.js').ChatInputCommandInteraction} cmd */
     async execute(cmd, context) {
         applyContext(context);
 

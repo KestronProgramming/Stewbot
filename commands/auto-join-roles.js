@@ -11,6 +11,7 @@ function applyContext(context = {}) {
 
 // #endregion CommandBoilerplate
 
+/** @type {import("../command-module").CommandModule} */
 module.exports = {
     data: {
         // Slash command data
@@ -34,7 +35,6 @@ module.exports = {
         }
     },
 
-    /** @param {import('discord.js').ChatInputCommandInteraction} cmd */
     async execute(cmd, context) {
         applyContext(context);
 
@@ -60,7 +60,6 @@ module.exports = {
         });
     },
 
-    /** @param {import("discord.js").GuildMember} member */
     async [Events.GuildMemberAdd](member, readGuildStore) {
 
         // @ts-ignore - addedStickyRoles is a property we set in higher priority modules
@@ -85,7 +84,6 @@ module.exports = {
         }
     },
 
-    /** @param {import('discord.js').Interaction} cmd */
     async [Events.InteractionCreate](cmd) {
         if (!cmd.isRoleSelectMenu()) return;
         if (cmd.customId !== "join-roleOption") return;

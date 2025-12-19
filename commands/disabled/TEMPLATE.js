@@ -16,7 +16,7 @@ function applyContext(context = {}) {
 //  Any module/command can be derived from these.
 //
 
-
+/** @type {import("../command-module").CommandModule} */
 module.exports = {
     data: {
         command: new SlashCommandBuilder()
@@ -64,33 +64,19 @@ module.exports = {
         }
     },
 
-    /** @param {import('discord.js').ChatInputCommandInteraction} cmd */
-    async execute(cmd, context) {
+    async execute(cmd, context, deferredResponse) {
         applyContext(context);
 
         cmd.followUp(`Jerry the rope!`);
     },
 
-    /**
-     * @param {import('discord.js').Message} msg
-     * @param {GuildDoc} guildStore
-     * @param {GuildUserDoc} guildUserStore
-     * */
-    async [Events.MessageCreate](msg, context) {
+    async [Events.MessageCreate](msg, context, readGuild, readGuildUser, readHomeGuild) {
         applyContext(context);
         // `context` currently does not respect requested globals
     },
 
-    /**
-	 * @param {import('discord.js').PartialMessage | import('discord.js').Message} msgO
-	 * @param {import('discord.js').PartialMessage | import('discord.js').Message} msg
-	 */
-    async [Events.MessageUpdate](msgO, msg, readGuild, guildUserStore) {
-        applyContext(context);
-        // `context` currently does not respect requested globals
+    async [Events.MessageUpdate](msgO, msg, readGuild, readGuildUser, readHomeGuild) {
 
-        // WARNING: not implemented yet
-        // TODO: implement this handler
     },
 
     async autocomplete(cmd) {
@@ -105,7 +91,6 @@ module.exports = {
     // Only button subscriptions matched will be sent to the handler
     subscribedButtons: ["example", /example/],
 
-    /** @param {import('discord.js').ButtonInteraction} cmd */
     async onbutton(cmd, context) {
         applyContext(context);
 

@@ -48,6 +48,7 @@ function textToEmojiSentiment(text) {
     return [emoji, toReact];
 }
 
+/** @type {import("../command-module").CommandModule} */
 module.exports = {
     data: {
         command: null,

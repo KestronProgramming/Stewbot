@@ -93,7 +93,8 @@
         "run.bat": true,
         "tsconfig.json": true,
         "run.sh": true,
-        "globals.d.ts": true 
+        "globals.d.ts": true,
+        "command-module.d.ts": true,
     },
 
     // Project specific

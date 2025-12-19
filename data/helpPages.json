@@ -1,7 +1,7 @@
 [
     {
         "name": "admin_message",
-        "mention": "</admin_message:1448914141330018324>",
+        "mention": "`admin_message` Module",
         "helpCategories": [
             "Administration",
             "Server_Only"

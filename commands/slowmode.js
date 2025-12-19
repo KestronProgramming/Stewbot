@@ -98,6 +98,7 @@ async function scheduleTodaysSlowmode() {
     );
 }
 
+/** @type {import("../command-module").CommandModule} */
 module.exports = {
     finTempSlow,
     scheduleTodaysSlowmode,
@@ -169,7 +170,6 @@ module.exports = {
         }
     },
 
-    /** @param {import('discord.js').ChatInputCommandInteraction} cmd */
     async execute(cmd, context) {
         applyContext(context);
         const botPerms = cmd.channel?.permissionsFor?.(client.user.id);
@@ -259,7 +259,6 @@ module.exports = {
     // Only button subscriptions matched will be sent to the handler
     subscribedButtons: ["revertTempSlow"],
 
-    /** @param {import('discord.js').ButtonInteraction} cmd */
     async onbutton(cmd, context) {
         applyContext(context);
 

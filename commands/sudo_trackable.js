@@ -4,6 +4,7 @@ const { InteractionContextType: IT, ApplicationIntegrationType: AT, SlashCommand
 const { getTrackableEditor } = require("./trackable.js");
 const { isSudo } = require("../utils.js");
 
+/** @type {import("../command-module").CommandModule} */
 module.exports = {
     data: {
         sudo: true,
@@ -94,7 +95,6 @@ module.exports = {
         }
     },
 
-    /** @param {import('discord.js').ChatInputCommandInteraction} cmd */
     async execute(cmd) {
         const isSudoUser = await isSudo(cmd.user.id);
 

@@ -20,6 +20,7 @@ function getLvl(lvl) {
     return total;
 }
 
+/** @type {import("../command-module").CommandModule} */
 module.exports = {
     getLvl, // exported functions
 
@@ -48,7 +49,6 @@ module.exports = {
         }
     },
 
-    /** @param {import('discord.js').ChatInputCommandInteraction} cmd */
     async execute(cmd, context) {
         applyContext(context);
 

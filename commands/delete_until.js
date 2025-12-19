@@ -15,6 +15,7 @@ const NodeCache = require("node-cache");
 const bulkMessageCache = new NodeCache({ stdTTL: 60 * 5 }); // A list of button IDs to the messages they should delete.
 
 
+/** @type {import("../command-module").CommandModule} */
 module.exports = {
     data: {
         // Slash command data
@@ -49,7 +50,6 @@ module.exports = {
         }
     },
 
-    /** @param {import('discord.js').MessageContextMenuCommandInteraction} cmd */
     async execute(cmd, context) {
         applyContext(context);
 
@@ -90,7 +90,7 @@ module.exports = {
 
     subscribedButtons: [/bdelete-.+/],
 
-    /** @param {import('discord.js').ButtonInteraction} cmd */
+    /* @param {import('discord.js').ButtonInteraction} cmd */
     async onbutton(cmd, context) {
         applyContext(context);
 

@@ -13,6 +13,7 @@ function applyContext(context = {}) {
 
 const { notify } = require("../utils");
 
+/** @type {import("../command-module").CommandModule} */
 module.exports = {
     data: {
         // Slash command data
@@ -44,7 +45,6 @@ module.exports = {
         }
     },
 
-    /** @param {import('discord.js').ChatInputCommandInteraction} cmd */
     async execute(cmd, context) {
         applyContext(context);
         if (!cmd.channel.permissionsFor(client.user.id).has(PermissionFlagsBits.ManageMessages)) {

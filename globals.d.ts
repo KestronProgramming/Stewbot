@@ -1,14 +1,8 @@
 // This prevents intellisence from complaining about globals.
 // You could just set each to "Any", but I prefer to have more specific typings.
 
-/** Map of command name to loaded command module */
-declare const commands: any;
 
-declare const client: import('discord.js').Client<true>;
-declare const bootedAt: number;
-declare const cmds: typeof import("./data/commands.json");
-declare const config: typeof import('./data/config.js');
-
+// Inject our custom globals
 declare global {
     var commands: any;
     var client: import('discord.js').Client<true>;
@@ -28,5 +22,16 @@ declare global {
       }
     
 }
+
+// Globals can be accessed at root level without specifying global. first.
+
+/** Map of command name to loaded command module */
+declare const commands: any;
+
+declare const client: import('discord.js').Client<true>;
+declare const bootedAt: number;
+declare const cmds: typeof import("./data/commands.json");
+declare const config: typeof import('./data/config.js');
+
 
 export {}

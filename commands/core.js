@@ -8,6 +8,7 @@ const { Events } = require("discord.js");
 
 const { notify } = require("../utils");
 
+/** @type {import("../command-module").CommandModule} */
 module.exports = {
     data: {
         command: null,
