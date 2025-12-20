@@ -30,11 +30,6 @@ export default defineConfig([
             }
         },
         rules: {
-            // Recommended JS configs, but downgrade errors to warnings
-            ...Object.fromEntries(
-                Object.entries(js.configs.recommended.rules || {}).map(([rule, config]) => [rule, Array.isArray(config) ? ["warn", ...config.slice(1)] : config === "error" ? "warn" : config])
-            ),
-
             // Extract and merge all tseslint recommended rules
             ...Object.fromEntries(
                 (Array.isArray(tseslint.configs.recommendedTypeChecked)
@@ -47,8 +42,13 @@ export default defineConfig([
                     )
             ),
 
+            // Recommended JS configs, but downgrade errors to warnings - after tslint so they can override
+            ...Object.fromEntries(
+                Object.entries(js.configs.recommended.rules || {}).map(([rule, config]) => [rule, Array.isArray(config) ? ["warn", ...config.slice(1)] : config === "error" ? "warn" : config])
+            ),
 
-            // Actually important rules - will keep off for now but need to refractor to fix later - TODO
+
+            // Actually important ts rules - will keep off for now but need to refractor to fix later - TODO
             "@typescript-eslint/no-floating-promises": "off",
             "prefer-const": "off",
             "no-var": "off",
@@ -63,9 +63,6 @@ export default defineConfig([
                 }
             ],
 
-            // Warn about not defined
-            "no-undef": "warn",
-
             // Disable strict TypeScript rules that don't make sense for JS
             "@typescript-eslint/no-var-requires": "off",
             "@typescript-eslint/explicit-function-return-type": "off",
@@ -79,7 +76,26 @@ export default defineConfig([
             "@typescript-eslint/no-unused-vars": "off", // Handled by unused-imports plugin
             "@typescript-eslint/no-require-imports": "off",
 
+            
+            // Important rules
+            "no-undef": "warn",
+            "no-use-before-define": ["warn", { "functions": false, "classes": true, "variables": true }],
+            "no-implicit-coercion": "warn",
+            "no-shadow": ["warn", { "allow": ["_"] }],
+            "no-eval": "error",
+            "no-implied-eval": "error",
+            "no-new-func": "error",
 
+            // Rules our codebase hasn't triggered, so I don't know if they are useful - disabled until I see them in action in our codebase
+            // "no-redeclare": "error",
+            // "no-undef-init": "error",
+            // "no-self-compare": "error",
+            // "no-unreachable-loop": "error",
+            // "default-case-last": "error",
+            // "no-fallthrough": "error",
+            // "no-async-promise-executor": "error",
+            // "no-unsafe-negation": "error",
+            // "no-unused-private-class-members": "error",
 
             // Formatting rules
             "@stylistic/indent": ["warn", 4], // or 2, depending on your preference
