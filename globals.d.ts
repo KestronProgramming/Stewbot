@@ -1,10 +1,14 @@
 // This prevents intellisence from complaining about globals.
 // You could just set each to "Any", but I prefer to have more specific typings.
 
-
 // Inject our custom globals
 declare global {
-    var commands: any;
+    // Make discord types globally accessible
+    type Message = import("discord.js").Message;
+    type Guild = import("discord.js").Guild;
+    type InteractionReplyOptions = import("discord.js").InteractionReplyOptions;
+
+    var commands: import("./command-module").CommandModule[];
     var client: import('discord.js').Client<true>;
     var bootedAt: number;
     var cmds: typeof import("./data/commands.json");

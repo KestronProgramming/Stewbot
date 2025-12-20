@@ -75,7 +75,7 @@ const checkDirty = async function(guildID, what, filter = false, applyGlobalFilt
 
     if (!guildID || !what)
         if (!filter) return false;
-        else [false, what, []];
+        else return [false, what, []];
 
     // Preprocessing - anything here is destructive and will be processed this way if filtered
     what = String(what).replace(/<:(\w+):[0-9]+>/g, ":$1:"); // unsnowflake emojis

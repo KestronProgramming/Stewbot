@@ -45,6 +45,7 @@ type CommandModule = {
         command?: SlashCommandBuilder | { name: string; description: string; default_member_permissions?: string };
         requiredGlobals?: string[];
         deferEphemeral?: boolean | Record<string, unknown>;
+        deferBlocked?: boolean | Record<string, boolean>;
         priority?: number;
         [key: string]: unknown;
     };

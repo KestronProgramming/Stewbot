@@ -16,10 +16,13 @@ export default defineConfig([
         files: ["**/*.{js,mjs,cjs}"],
         plugins: {
             js,
+            "@typescript-eslint": tseslint.plugin,
             "unused-imports": unusedImports,
             "@stylistic": stylistic
         },
-        extends: ["js/recommended"],
+        extends: [
+            "js/recommended"
+        ],
         languageOptions: {
             globals: {
                 ...globals.browser,
@@ -27,10 +30,56 @@ export default defineConfig([
             }
         },
         rules: {
-            // Convert all errors to warnings
+            // Recommended JS configs, but downgrade errors to warnings
             ...Object.fromEntries(
                 Object.entries(js.configs.recommended.rules || {}).map(([rule, config]) => [rule, Array.isArray(config) ? ["warn", ...config.slice(1)] : config === "error" ? "warn" : config])
             ),
+
+            // Extract and merge all tseslint recommended rules
+            ...Object.fromEntries(
+                (Array.isArray(tseslint.configs.recommendedTypeChecked)
+                    ? tseslint.configs.recommendedTypeChecked
+                    : [tseslint.configs.recommendedTypeChecked]
+                )
+                    .flatMap(config => Object.entries(config.rules || {}))
+                    .map(([rule, config]) =>
+                        [rule, Array.isArray(config) ? ["warn", ...config.slice(1)] : config === "error" ? "warn" : config]
+                    )
+            ),
+
+
+            // Actually important rules - will keep off for now but need to refractor to fix later - TODO
+            "@typescript-eslint/no-floating-promises": "off",
+            "prefer-const": "off",
+            "no-var": "off",
+            "@typescript-eslint/require-await": "off",
+            "@typescript-eslint/unbound-method": "off",
+
+            // Warn about checking truthiness of promises in JS files
+            "@typescript-eslint/no-misused-promises": [
+                "warn", {
+                    "checksConditionals": true,
+                    "checksVoidReturn": false
+                }
+            ],
+
+            // Warn about not defined
+            "no-undef": "warn",
+
+            // Disable strict TypeScript rules that don't make sense for JS
+            "@typescript-eslint/no-var-requires": "off",
+            "@typescript-eslint/explicit-function-return-type": "off",
+            "@typescript-eslint/explicit-module-boundary-types": "off",
+            "@typescript-eslint/ban-ts-comment": "off",
+            "@typescript-eslint/no-unsafe-member-access": "off",
+            "@typescript-eslint/no-unsafe-assignment": "off",
+            "@typescript-eslint/no-unsafe-call": "off",
+            "@typescript-eslint/no-unsafe-return": "off",
+            "@typescript-eslint/no-unsafe-argument": "off",
+            "@typescript-eslint/no-unused-vars": "off", // Handled by unused-imports plugin
+            "@typescript-eslint/no-require-imports": "off",
+
+
 
             // Formatting rules
             "@stylistic/indent": ["warn", 4], // or 2, depending on your preference
@@ -105,15 +154,14 @@ export default defineConfig([
     // JavaScript-specific configuration with TypeScript parser for better checking
     {
         files: ["**/*.js"],
-        plugins: {
-            "@typescript-eslint": tseslint.plugin
-        },
+        plugins: {},
         languageOptions: {
             sourceType: "commonjs",
             parser: tseslint.parser,
             parserOptions: {
-                project: true, // Enable type-aware linting for JS files too
-                allowAutomaticSingleRunInference: true
+                tsconfigRootDir: import.meta.dirname,
+                // project: "./tsconfig.json",
+                projectService: true,
             },
             globals: {
                 ...globals.node, // Ensure Node.js globals for .js files
@@ -126,22 +174,6 @@ export default defineConfig([
             }
         },
         rules: {
-            // Allow require() imports in JS files
-            "@typescript-eslint/no-require-imports": "off",
-
-            // Warn about checking truthiness of promises in JS files
-            "@typescript-eslint/no-misused-promises": [
-                "warn", {
-                    "checksConditionals": true,
-                    "checksVoidReturn": false
-                }
-            ],
-
-            // Disable strict TypeScript rules that don't make sense for JS
-            "@typescript-eslint/no-var-requires": "off",
-            "@typescript-eslint/explicit-function-return-type": "off",
-            "@typescript-eslint/explicit-module-boundary-types": "off",
-
             // Unused imports rules
             "unused-imports/no-unused-imports": "error",
             "unused-imports/no-unused-vars": [
@@ -154,14 +186,15 @@ export default defineConfig([
             ],
 
             // Allow unused vars that start with _
-            "no-unused-vars": [
-                "warn", {
-                    "vars": "all",
-                    "varsIgnorePattern": "^_",
-                    "args": "after-used",
-                    "argsIgnorePattern": "^_"
-                }
-            ],
+            // "no-unused-vars": [
+            //     "warn", {
+            //         "vars": "all",
+            //         "varsIgnorePattern": "^_",
+            //         "args": "after-used",
+            //         "argsIgnorePattern": "^_"
+            //     }
+            // ],
+            "no-unused-vars": "off", // Already have one aboves
 
             // Allow empty catch blocks
             "no-empty": ["warn", { "allowEmptyCatch": true }],

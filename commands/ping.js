@@ -68,7 +68,7 @@ module.exports = {
         );
     },
 
-    async [Events.ClientReady](test) {
+    async [Events.ClientReady]() {
         let bootMOTD = ``;
 
         // Determine uptime
