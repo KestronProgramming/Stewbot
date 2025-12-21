@@ -428,11 +428,7 @@ module.exports = {
                             `\`\`\`\n` +
                             `Numbers entered must be the last number plus one, (so if the last entered number is 148, the next number is 149).` +
                                 `${guildCounting.takeTurns > 0
-                                    ? ` You also need to make sure at least ${guildCounting.takeTurns} other 
-                                        ${guildCounting.takeTurns === 1
-                                                ? "person"
-                                                : "people"
-                                        } take${guildCounting.takeTurns === 1 ? "s" : ""} a turn before you take another turn.\`\`\``
+                                    ? ` You also need to make sure at least ${guildCounting.takeTurns} other ${guildCounting.takeTurns === 1 ? "person" : "people"} take${guildCounting.takeTurns === 1 ? "s" : ""} a turn before you take another turn.\`\`\``
                                     : "```"
                                 }`
                         );

@@ -1,3 +1,10 @@
+const enableInflux = !process.env.beta || process.env.INFLUX_ENABLE_BETA;
+if (!enableInflux) {
+    console.log("[InfluxDB] Disabled in beta environment.");
+    module.exports = { initInflux: async () => {}, queueCommandMetric: () => {} };
+    return;
+}
+
 const { InfluxDB, Point } = require("@influxdata/influxdb-client");
 const { influx } = require("../../data/config.json");
 const { influxToken } = require("../../env.json");
@@ -8,6 +15,8 @@ let pointQueue = [];
 const ms = require("ms");
 
 async function initInflux() {
+    if (!enableInflux) return;
+
     try {
         if (!influxToken) throw new Error("No influx token set in env.json");
 
@@ -18,7 +27,11 @@ async function initInflux() {
             // https://influxdata.github.io/influxdb-client-js/influxdb-client.writeretryoptions.html
         };
 
-        influxClient = new InfluxDB({ url: influx.url, token: influxToken });
+        influxClient = new InfluxDB({
+            url: influx.url,
+            token: influxToken,
+            timeout: 800
+        });
         writeApi = influxClient.getWriteApi(influx.org, influx.bucket, "s");
         connected = true;
 
