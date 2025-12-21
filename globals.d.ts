@@ -8,6 +8,8 @@ declare global {
     type Guild = import("discord.js").Guild;
     type InteractionReplyOptions = import("discord.js").InteractionReplyOptions;
 
+    type HydratedDocument<T> = import("mongoose").HydratedDocument<T>;
+
     var commands: import("./command-module").CommandModule[];
     var client: import('discord.js').Client<true>;
     var bootedAt: number;

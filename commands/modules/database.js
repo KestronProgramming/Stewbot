@@ -171,6 +171,8 @@ let guildConfigSchema = new mongoose.Schema({
     fake_link_check: { type: Boolean, default: true },
     format_exploit_check: { type: Boolean, default: true },
     ai: { type: Boolean, default: true },
+    aiAccessMode: { type: String, enum: ["disabled", "whitelist", "blacklist"], default: "disabled" },
+    aiAccessRoles: { type: [String], default: [] },
     embedPreviews: { type: Boolean, default: true },
     levelUpMsgs: { type: Boolean, default: false },
     keywords: { type: Boolean, default: false }
@@ -319,36 +321,6 @@ let userSchema = new mongoose.Schema({
     hat_pull: hatPullSchema, // This one does not need defaults, it is checked for existence
     timer: timerSchema,
     captcha: Boolean
-});
-
-let trackableSchema = new mongoose.Schema({
-    id: { type: String, required: true, unique: true },
-    owner: { type: String, required: true },   // ID of the creator of this trackable.
-    creationDate: { type: Number, default: Date.now, required: true },
-    current: { type: String, required: true }, // Current holder (user or channel). u/c prepends the ID.
-    name: { type: String, required: true, default: "My New Trackable" },
-    img: {
-        type: String,
-        required: true
-    },
-    desc: {
-        type: String,
-        required: true,
-        default: `This is a trackable. [Install Stewbot](${config.install}), then run \`/trackable create\` to create your own! You can edit this message.`
-    },
-    tag: { type: String, required: true, default: "Look at my new trackable!!" },
-    currentName: { type: String, required: true },
-    placed: { type: Number, required: true,  default: Date.now },
-    layout: { type: Number, required: true, default: 0 }, // The type of layout
-    color: { type: Number, required: true, default: 0x00d7ff },
-    pastLocations: { type: [String], required: true, default: [] },
-    status: { type: String, required: true, enum: ["editing", "published", "banned"], default: "editing" },
-
-    expirationWarnedAboutAt: { type: Number, required: false }, // For expiration - this needs to be unset when moved around
-
-    // Current location for linking
-    currentGuildId: String,
-    currentMessageId: String
 });
 
 userSchema.index({ "hat_pull.location": 1 });
@@ -552,6 +524,52 @@ async function guildUserByObj(guild, userID, updateData = {}) {
 }
 //#endregion
 
+//#region Other
+let trackableSchema = new mongoose.Schema({
+    id: { type: String, required: true, unique: true },
+    owner: { type: String, required: true },   // ID of the creator of this trackable.
+    creationDate: { type: Number, default: Date.now, required: true },
+    current: { type: String, required: true }, // Current holder (user or channel). u/c prepends the ID.
+    name: { type: String, required: true, default: "My New Trackable" },
+    img: {
+        type: String,
+        required: true
+    },
+    desc: {
+        type: String,
+        required: true,
+        default: `This is a trackable. [Install Stewbot](${config.install}), then run \`/trackable create\` to create your own! You can edit this message.`
+    },
+    tag: { type: String, required: true, default: "Look at my new trackable!!" },
+    currentName: { type: String, required: true },
+    placed: { type: Number, required: true,  default: Date.now },
+    layout: { type: Number, required: true, default: 0 }, // The type of layout
+    color: { type: Number, required: true, default: 0x00d7ff },
+    pastLocations: { type: [String], required: true, default: [] },
+    status: { type: String, required: true, enum: ["editing", "published", "banned"], default: "editing" },
+
+    expirationWarnedAboutAt: { type: Number, required: false }, // For expiration - this needs to be unset when moved around
+
+    // Current location for linking
+    currentGuildId: String,
+    currentMessageId: String
+});
+
+let personalAiSchema = new mongoose.Schema({
+    id: { type: String, required: true, unique: true }, // either UserID or GuildID.
+    key: { type: String, required: true }, // API key
+
+    // Options
+    subsequentToolLimit: { type: Number }, // Subsequent tool calls limit
+    llm_model: { type: String },
+    toolBlacklist: { type: [String] }, // Tools to disable
+
+    // Guild-only options
+    ownerId: { type: String, required: true }, // Key owner if server key
+    ratelimit: { type: Number }, // How many requests per ratelimit cycle
+    ratelimitCycleLength: { type: Number } // How long a ratelimit cycle should last
+});
+//#endregion
 
 // Cache invalidators
 guildSchema.post("save", doc => { messageDataCache.delete(doc.id || ""); });
@@ -565,6 +583,7 @@ const Guilds = mongoose.model("guilds", guildSchema);
 const GuildUsers = mongoose.model("guildusers", guildUserSchema);
 const Users = mongoose.model("users", userSchema);
 const Trackables = mongoose.model("trackables", trackableSchema);
+const PersonalAIs = mongoose.model("personal_ais", personalAiSchema);
 
 // Drop indexes of docs where metadata was changed
 async function dropIndexes(Model) {
@@ -628,8 +647,8 @@ module.exports = {
     guildUserByObj,
 
     ConfigDB,
-
     Trackables,
+    PersonalAIs,
 
     // Utilities
     keyDecode,

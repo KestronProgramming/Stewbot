@@ -16,7 +16,9 @@
 
     "skipLibCheck": true,
     "incremental": true,
-    "assumeChangesOnlyAffectDirectDependencies": true
+    "assumeChangesOnlyAffectDirectDependencies": true,
+
+    "maxNodeModuleJsDepth": 0
   },
   "include": [
     "**/*.js",
@@ -25,6 +27,7 @@
   ],
   "exclude": [
     "node_modules",
-    "./commands/disabled/"
+    "./commands/disabled/",
+    "**/node_modules/zod/**" // Zod has a bug that causes infinite ts recursion
   ]
 }

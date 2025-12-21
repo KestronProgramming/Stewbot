@@ -85,6 +85,7 @@ export default defineConfig([
             "no-eval": "error",
             "no-implied-eval": "error",
             "no-new-func": "error",
+            "radix": "warn",
 
             // Rules our codebase hasn't triggered, so I don't know if they are useful - disabled until I see them in action in our codebase
             // "no-redeclare": "error",

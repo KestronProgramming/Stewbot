@@ -16,7 +16,7 @@ module.exports = {
     data: {
         // Slash command data
         command: new SlashCommandBuilder().setName("report_problem")
-            .setDescription("Report an error with the bot to be reviewed")
+            .setDescription("Report an error, bug, or feedback with the bot to be reviewed")
             .addStringOption(option =>
                 option.setName("type").setDescription("What kind of problem are you reporting?")
                     .addChoices(

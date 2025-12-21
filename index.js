@@ -23,11 +23,13 @@ console.log("Importing commands");
 const { getCommands } = require("./launchCommands.js"); // Note: current setup requires this to be before the commands.json import (the cmd.globals setting)
 const commandsLoadedPromise = getCommands();
 console.log("Importing backup.js");
-console.log("Importing everything else");
+console.log("Importing database");
 const mongoose = require("mongoose");
 const { guildByID, guildByObj } = require("./commands/modules/database");
-const { notify, getReadOnlyDBs } = require("./utils");
+console.log("Importing Backup.js");
 const { checkForMongoRestore } = require("./backup.js");
+console.log("Importing utils");
+const { notify, getReadOnlyDBs } = require("./utils");
 const { isModuleBlocked } = require("./commands/block_module.js");
 console.log("Importing InfluxDB");
 const { initInflux, queueCommandMetric } = require("./commands/modules/metrics");
@@ -185,7 +187,9 @@ client.on(Events.InteractionCreate, async cmd => {
     const asyncTasks = []; // Any non-awaited functions go here to fully known when this command is done executing for metrics
     const intStartTime = Date.now();
 
+    /** @type {import("./command-module").CommandModule} */
     const commandScript = ("commandName" in cmd) ? commands[cmd.commandName] : null;
+
     if (!commandScript && (cmd.isCommand() || cmd.isAutocomplete())) return; // Ignore any potential cache issues
 
     // Check permissions manually due to Discord security bugs on interpreting
@@ -213,7 +217,10 @@ client.on(Events.InteractionCreate, async cmd => {
         const private = cmd.isChatInputCommand() ? cmd.options.getBoolean("private") : null;
         const subcommand = cmd.isChatInputCommand() ? cmd.options.getSubcommand(false) : null;
         let forceEphemeral = false;
+        let deferBlocked = false;
         let detailedExtra = {};
+
+        // See if this command requests to be ephemeral
         if (commandScript?.data?.deferEphemeral) {
             if (typeof(commandScript.data.deferEphemeral) == "object" && subcommand) {
                 let subcommandData = commandScript.data.deferEphemeral[subcommand];
@@ -228,7 +235,18 @@ client.on(Events.InteractionCreate, async cmd => {
                 forceEphemeral = commandScript.data.deferEphemeral;
             }
         }
-        deferredResponse = await cmd.deferReply({
+
+        // See if this command requests to not be deferred
+        if (commandScript?.data?.deferBlocked) {
+            if (typeof(commandScript.data.deferBlocked) == "object" && subcommand) {
+                deferBlocked = commandScript.data.deferBlocked[subcommand];
+            }
+            else if (typeof(commandScript.data.deferBlocked) == "boolean") {
+                deferBlocked = commandScript.data.deferBlocked;
+            }
+        }
+
+        if (!deferBlocked) deferredResponse = await cmd.deferReply({
             ephemeral: private ?? forceEphemeral ?? false,
             ...detailedExtra // This allows fields like withResponse to be specified
         });
@@ -238,7 +256,8 @@ client.on(Events.InteractionCreate, async cmd => {
     if (cmd.isAutocomplete()) {
         const providedGlobals = { ...pseudoGlobals };
         const requestedGlobals = commandScript.data?.requiredGlobals || commandScript.requestGlobals?.() || [];
-        for (var name of requestedGlobals) {
+        for (let name of requestedGlobals) {
+            // eslint-disable-next-line no-eval
             providedGlobals[name] = eval(name.match(/[\w-]+/)[0]);
         }
 
@@ -272,6 +291,7 @@ client.on(Events.InteractionCreate, async cmd => {
         const providedGlobals = { ...pseudoGlobals };
         const requestedGlobals = commandScript.data?.requiredGlobals || commandScript.requestGlobals?.() || [];
         for (let name of requestedGlobals) {
+            // eslint-disable-next-line no-eval
             providedGlobals[name] = eval(name.match(/[\w-]+/)[0]);
         }
 

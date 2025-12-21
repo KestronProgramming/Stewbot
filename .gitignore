@@ -14,6 +14,7 @@ test*.js
 tempMove
 usage.json
 system.prompt
+system.prompt*
 temp/
 dump*
 stew*-backup.zip
