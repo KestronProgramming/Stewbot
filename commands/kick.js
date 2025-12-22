@@ -45,7 +45,7 @@ module.exports = {
             helpCategories: [Categories.General, Categories.Administration, Categories.Server_Only],
             shortDesc: "Kick a user", //Should be the same as the command setDescription field
             detailedDesc: //Detailed on exactly what the command does and how to use it
-				`Removes the specified user from the server, the user will be able to rejoin if they find a new invite.`
+				`Kick the specified user from the server for bad behavior.`
         }
     },
 
