@@ -35,6 +35,13 @@ module.exports = {
         // Optional fields
         requiredGlobals: [],
 
+        // AI tool configuration - allows AI to call this command
+        // aiToolOptions: {
+        //     toolable: true,
+        //     sendDirect: false, // Response goes back to AI so it can relay status in its own words
+        //     requiresApproval: true // Ping is safe, no approval needed
+        // },
+
         help: {
             helpCategories: [Categories.General, Categories.Bot, Categories.Information],
             shortDesc: "Check uptime stats", //Should be the same as the command setDescription field

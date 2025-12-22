@@ -120,13 +120,19 @@ module.exports = {
 
         extra: { "contexts": [0, 1, 2], "integration_types": [0, 1] },
 
+        aiToolOptions: {
+            toolable: true,
+            sendDirect: true,
+            requiresApproval: true
+        },
+
         requiredGlobals: [],
 
         help: {
             helpCategories: [Categories.General, Categories.Information, Categories.Entertainment],
             shortDesc: "Set a timer/reminder", //Should be the same as the command setDescription field
             detailedDesc: //Detailed on exactly what the command does and how to use it
-				`Set a timer that will notify you after the specified amount of time in a configurable location.`
+                `Set a timer that will notify you after the specified amount of time in a configurable location.`
         }
     },
 

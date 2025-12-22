@@ -30,6 +30,7 @@ const { limitLength, notify } = require("../utils.js");
 const ms = require("ms");
 const NodeCache = require("node-cache");
 
+// TODO: make sure custom keys default to no ratelimit
 
 function parseRoleIds(input) {
     if (!input) return [];
@@ -260,11 +261,11 @@ module.exports = {
             .setDescription("Configure AI settings")
             .addSubcommand(sub =>
                 sub.setName("personal_ai")
-                    .setDescription("Set your personal AI API key")
+                    .setDescription("Set your personal AI API key so you can have higher ratelimits.")
             )
             .addSubcommand(sub =>
                 sub.setName("server_ai")
-                    .setDescription("Set a custom server AI API key")
+                    .setDescription("Set a custom server AI API key so your server can have higher ratelimits.")
             )
             .addSubcommand(sub =>
                 sub.setName("server_ai_access")
@@ -292,12 +293,20 @@ module.exports = {
             )
             .addSubcommand(sub =>
                 sub.setName("help")
-                    .setDescription("Send an explanation for how our AI is setup, and how to configure your own API keys.")
+                    .setDescription("Send an explanation for how our AI is setup and how to get higher ratelimits.")
             )
             .addSubcommand(sub =>
                 sub.setName("terms")
                     .setDescription("View terms related to AI API key usage and billing")
             ),
+
+        aiToolOptions: {
+            toolable: {
+                "help": true
+            },
+            sendDirect: true,
+            requiresApproval: false
+        },
 
         extra: { "contexts": [0], "integration_types": [0] },
         requiredGlobals: [],

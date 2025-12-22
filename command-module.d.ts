@@ -37,6 +37,16 @@ type AugmentedClientEvents = {
     [K in Exclude<keyof ClientEvents, InjectedEvents>]: ClientEvents[K];
 };
 
+type AiToolConfig = {
+    /** Whether this command can be used as an AI tool, Can be an array of the options the AI is allowed to input. */
+    toolable: true | string[];
+    /** Whether the response should be sent directly to the AI rather than the user, so the AI can respond in it's own words. */
+    sendDirect?: boolean;
+    /** Whether this command requires user approval before being run by the AI (it will be interrupted and the user will be prompted for approval before continuing). */
+    requiresApproval?: boolean;
+};
+type AiToolOptions = AiToolConfig | Record<string, AiToolConfig>;
+
 // Type our command modules, automatically expanding discord's builtin ClientEvents.
 type CommandModule = {
     [K in keyof AugmentedClientEvents]?: (...args: AugmentedClientEvents[K]) => unknown;
@@ -47,6 +57,8 @@ type CommandModule = {
         deferEphemeral?: boolean | Record<string, unknown>;
         deferBlocked?: boolean | Record<string, boolean>;
         priority?: number;
+        /** AI tool configuration - enables AI to call this command as a tool */
+        aiToolOptions?: AiToolOptions;
         [key: string]: unknown;
     };
     priority?: number;

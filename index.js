@@ -42,6 +42,7 @@ let dailyListenerModules = {};
 let buttonListenerModules = {};
 const pseudoGlobals = { config }; // data that should be passed to each module
 let commandListenerRegister = commandsLoadedPromise.then(commandsLoaded => {
+    console.log("Loading command listeners");
     // This code registers all requested listeners
     // This method allows any event type to be easily added to a command file
     // The functions `onbutton` and `autocomplete` are both still available for convenience.
@@ -350,6 +351,7 @@ process.on("unhandledRejection", e => notify(e.stack));
 process.on("uncaughtException", e => notify(e.stack));
 
 async function start() {
+    console.log("Checking for mongo backup, commands loading");
     await Promise.all([
         // Register all handlers to the client
         commandListenerRegister,

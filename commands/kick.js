@@ -35,6 +35,12 @@ module.exports = {
 
         requiredGlobals: [],
 
+        aiToolOptions: {
+            toolable: true,
+            sendDirect: false,
+            requiresApproval: true // one day I'll add YOLO mode
+        },
+
         help: {
             helpCategories: [Categories.General, Categories.Administration, Categories.Server_Only],
             shortDesc: "Kick a user", //Should be the same as the command setDescription field

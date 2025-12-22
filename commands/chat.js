@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2025, Kestron and WKoA
- * 
+ *
  * This file was originally distributed under the BSD-3-Clause License
  * and is now relicensed under the GNU General Public License v3.0.
  *
@@ -20,29 +20,34 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
+// Yeah this is 2K lines... :bobert:
+
 const Categories = require("./modules/Categories");
 const client = require("../client.js");
-const { PersonalAIs, userByObj, guildByObj } = require("./modules/database.js");
-const { Events, SlashCommandBuilder, MessageFlags, SeparatorBuilder, SeparatorSpacingSize, TextDisplayBuilder, ContainerBuilder } = require("discord.js");
+const { PersonalAIs, userByObj, guildByObj, guildByID } = require("./modules/database.js");
+const { Events, SlashCommandBuilder, MessageFlags, SeparatorBuilder, SeparatorSpacingSize, TextDisplayBuilder, ContainerBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionFlagsBits, PermissionsBitField } = require("discord.js");
 const { limitLength, notify } = require("../utils.js");
+const { isModuleBlocked } = require("./block_module.js");
 const fs = require("fs");
 const ms = require("ms");
 const Fuse = require("fuse.js");
 const NodeCache = require("node-cache");
 const { censor } = require("./filter");
-
-// AI SDKs
 const { groq, createGroq } = require("@ai-sdk/groq");
 const { streamText, tool, stepCountIs } = require("ai");
 const { z } = require("zod");
 
 // Configuration
+const TOOL_DEFAULT_LIMIT = 5; // Default limit for tool stuff
+const TOOL_MAX_LIMIT = 15; // Max limit for tool stuff
+const TOOL_MESSAGE_PREVIEW = 200; // How many chars of a message to preview
 const REASONING_EFFORT = "low";
 const MAX_USER_MENTIONS = 3;
 const maxTools = 2;
 const COOLDOWN_MS = process.env.beta ? ms("4s") : ms("8s");
 const DEFAULT_CUSTOM_RATELIMIT = 10;
 const DEFAULT_CUSTOM_RATELIMIT_CYCLE_MS = ms("1 hour");
+const APPROVAL_TTL_MS = ms("5 minutes");
 const GROQ_MODEL = process.env.GROQ_MODEL || "openai/gpt-oss-120b";
 const systemPrompt = fs.readFileSync("./data/system.prompt").toString();
 
@@ -68,6 +73,7 @@ const noResponse = {
     ]
 };
 
+//#region Utils
 function buildAllowedMentionsForContent(content) {
     const base = { parse: [] };
     if (typeof content !== "string" || content.length === 0) {
@@ -185,6 +191,13 @@ function normalizeRoleIds(list) {
     return Array.isArray(list) ? list.filter(Boolean) : [];
 }
 
+function resetAIRequests() {
+    activeAIRequests.flushAll();
+    userCooldowns.flushAll();
+}
+//#endregion
+
+//#region Setting Utils
 async function evaluateGuildAiAccess({ mode, roles, guild, member, userId }) {
     const normalizedMode = mode || "disabled";
     const roleIds = normalizeRoleIds(roles);
@@ -331,178 +344,619 @@ async function prepareAiUsageContext({ userId, guild, member }) {
         aiOptions: buildAiOptionsFromConfig(resolved.source, resolved.config)
     };
 }
+//#endregion
 
+//#region Discord Tools
 
-function resetAIRequests() {
-    activeAIRequests.flushAll();
-    userCooldowns.flushAll();
-}
+// Pending approval requests cache
+const pendingApprovals = new NodeCache({ stdTTL: APPROVAL_TTL_MS / 1000, checkperiod: 30 });
 
-//#region Tools
+// Auto-expire approvals and resolve as denied
+pendingApprovals.on("expired", (_key, value) => {
+    if (value?.resolve) value.resolve(false);
+});
 
-// Setup discord -> tool calling functions
-const GeminiType = {
-    STRING: "STRING",
-    NUMBER: "NUMBER",
-    INTEGER: "INTEGER",
-    BOOLEAN: "BOOLEAN",
-    ARRAY: "ARRAY",
-    OBJECT: "OBJECT"
-};
+/**
+ * Creates a polyfill/mock Discord interaction object for AI tool calls.
+ * This allows command modules to be called as if they were invoked via slash command.
+ *
+ * @param {Object} params
+ * @param {Object} params.user - The Discord user object
+ * @param {Object} params.guild - The Discord guild object
+ * @param {Object} params.member - The guild member object
+ * @param {Object} params.channel - The channel where the AI is responding
+ * @param {Object} params.args - The arguments passed by the AI
+ * @param {string} params.commandName - The name of the command being invoked
+ * @param {string|null} params.subcommand - The subcommand name if applicable
+ * @returns {Object} A mock interaction object
+ */
+function createCommandPolyfill({ user, guild, member, channel, args, commandName, subcommand, sendDirectResponse }) {
+    const responses = [];
+    const fullResponses = []; // Store full message objects (for internal/debugging; not fed back to the model)
+    let hasReplied = false;
+    let isDeferred = false;
+    let lastSentMessage = null;
 
-// Mapping from Discord ApplicationCommandOptionType enum values
-// https://discord-api-types.dev/api/discord-api-types-v10/enum/ApplicationCommandOptionType
-function discordTypeToGeminiType(discordType) {
-    switch (discordType) {
-        case 3: return "STRING"; // STRING
-        case 4: return "INTEGER"; // INTEGER
-        case 5: return "BOOLEAN"; // BOOLEAN
-        case 6: return "STRING"; // USER (ID or mention)
-        case 7: return "STRING"; // CHANNEL (ID or mention)
-        case 8: return "STRING"; // ROLE (ID or mention)
-        case 9: return "STRING"; // MENTIONABLE
-        case 10: return "NUMBER"; // NUMBER
-        case 11: return "STRING"; // ATTACHMENT (ID or URL placeholder)
-        default:
-            console.warn(`Unknown Discord option type: ${discordType}. Defaulting to STRING.`);
-            return GeminiType.STRING; // Fallback
-    }
-}
+    const mockInteraction = {
+        // User and guild context
+        user,
+        member,
+        guild,
+        channel,
+        channelId: channel?.id,
+        guildId: guild?.id,
+        commandName,
 
-function processParameterOptions(discordOptions) {
-    const parameters = {
-        type: GeminiType.OBJECT, // Or Type.OBJECT
-        properties: {},
-        required: []
+        // Track if this is an AI-invoked command
+        _isAIToolCall: true,
+        _aiToolArgs: args,
+
+        // Options getter that returns AI-provided arguments
+        options: {
+            getString: (name, _required) => {
+                const val = args[name];
+                return typeof val === "string" ? val : null;
+            },
+            getInteger: (name, _required) => {
+                const val = args[name];
+                return typeof val === "number" ? Math.floor(val) : null;
+            },
+            getNumber: (name, _required) => {
+                const val = args[name];
+                return typeof val === "number" ? val : null;
+            },
+            getBoolean: (name, _required) => {
+                const val = args[name];
+                return typeof val === "boolean" ? val : null;
+            },
+            getUser: (name, _required) => {
+                const userId = args[name];
+                if (!userId) return null;
+                return guild?.members?.cache?.get(userId)?.user || client.users?.cache?.get(userId) || null;
+            },
+            getMember: (name, _required) => {
+                const userId = args[name];
+                if (!userId || !guild) return null;
+                return guild.members?.cache?.get(userId) || null;
+            },
+            getChannel: (name, _required) => {
+                const channelId = args[name];
+                if (!channelId || !guild) return null;
+                return guild.channels?.cache?.get(channelId) || null;
+            },
+            getRole: (name, _required) => {
+                const roleId = args[name];
+                if (!roleId || !guild) return null;
+                return guild.roles?.cache?.get(roleId) || null;
+            },
+            getSubcommand: (required = true) => {
+                if (!subcommand && required) {
+                    throw new Error("No subcommand was provided");
+                }
+                return subcommand;
+            },
+            getSubcommandGroup: () => null,
+            get: (name, _required) => args[name] ?? null,
+            data: Object.entries(args).map(([name, value]) => ({ name, value }))
+        },
+
+        // Response methods - capture output, and optionally send directly to user
+        reply: async (content) => {
+            hasReplied = true;
+            const messageObj = typeof content === "string" ? { content } : content;
+            const responseContent = messageObj?.content || JSON.stringify(messageObj);
+            responses.push(responseContent);
+            fullResponses.push(messageObj);
+
+            if (typeof sendDirectResponse === "function") {
+                lastSentMessage = await sendDirectResponse(messageObj);
+                return lastSentMessage;
+            }
+
+            return { content: responseContent };
+        },
+
+        followUp: async (content) => {
+            const messageObj = typeof content === "string" ? { content } : content;
+            const responseContent = messageObj?.content || JSON.stringify(messageObj);
+            responses.push(responseContent);
+            fullResponses.push(messageObj);
+
+            if (typeof sendDirectResponse === "function") {
+                lastSentMessage = await sendDirectResponse(messageObj);
+                return lastSentMessage;
+            }
+
+            return { content: responseContent };
+        },
+
+        editReply: async (content) => {
+            const messageObj = typeof content === "string" ? { content } : content;
+            const responseContent = messageObj?.content || JSON.stringify(messageObj);
+            if (responses.length > 0) {
+                responses[responses.length - 1] = responseContent;
+                fullResponses[fullResponses.length - 1] = messageObj;
+            }
+            else {
+                responses.push(responseContent);
+                fullResponses.push(messageObj);
+            }
+
+            if (typeof sendDirectResponse === "function") {
+                if (lastSentMessage && typeof lastSentMessage.edit === "function") {
+                    lastSentMessage = await lastSentMessage.edit(messageObj);
+                    return lastSentMessage;
+                }
+
+                // If we can't edit (no previous message), send a new one
+                lastSentMessage = await sendDirectResponse(messageObj);
+                return lastSentMessage;
+            }
+
+            return { content: responseContent };
+        },
+
+        deferReply: async () => {
+            isDeferred = true;
+            return {};
+        },
+
+        // Status checks
+        isCommand: () => true,
+        isChatInputCommand: () => true,
+        isMessageContextMenuCommand: () => false,
+        isAutocomplete: () => false,
+        isButton: () => false,
+        isModalSubmit: () => false,
+        isSelectMenu: () => false,
+        replied: () => hasReplied,
+        deferred: () => isDeferred,
+
+        // Get captured responses
+        _getResponses: () => responses,
+        _getResponseText: () => responses.join("\n"),
+        _getFullResponses: () => fullResponses
     };
 
-    if (!discordOptions || !Array.isArray(discordOptions)) {
-        // No parameters, return empty structure
-        // Gemini requires 'parameters', even if empty
-        delete parameters.required;
-        return parameters;
-    }
-
-    for (const paramOption of discordOptions) {
-        const paramName = paramOption.name;
-        // Fallback description if none provided
-        const paramDesc = paramOption.description || `Parameter ${paramName}`;
-
-        // Enhance description with constraints
-        let enhancedDesc = paramDesc;
-        if (paramOption.channel_types) {
-            enhancedDesc += ` (Channel types: ${paramOption.channel_types.join(", ")})`; // You might map numbers to names
-        }
-        if (paramOption.min_length !== undefined) {
-            enhancedDesc += ` (Min length: ${paramOption.min_length})`;
-        }
-        if (paramOption.max_length !== undefined) {
-            enhancedDesc += ` (Max length: ${paramOption.max_length})`;
-        }
-        if (paramOption.choices && Array.isArray(paramOption.choices)) {
-            const choiceList = paramOption.choices.map(c => `'${c.name}' (${c.value})`).join(", ");
-            enhancedDesc += ` (Choices: ${choiceList})`;
-        }
-        // Add min/max value if applicable (for NUMBER/INTEGER types if present in your data)
-
-        parameters.properties[paramName] = {
-            type: discordTypeToGeminiType(paramOption.type),
-            description: enhancedDesc
-        };
-
-        if (paramOption.required) {
-            parameters.required.push(paramName);
-        }
-    }
-
-    // If there are no required parameters, Gemini might prefer omitting the 'required' array
-    if (parameters.required.length === 0) {
-        delete parameters.required;
-    }
-
-    // Keep properties object even if empty, Gemini seems to require it.
-    // if (Object.keys(parameters.properties).length === 0) {
-    //    delete parameters.properties;
-    //}
-
-    return parameters;
+    return mockInteraction;
 }
 
-function convertCommandsToTools(commandsLoaded) {
-    const tools = [];
+/**
+ * Converts Discord command option type to Zod schema
+ */
+function discordTypeToZod(discordType, option) {
+    // https://discord-api-types.dev/api/discord-api-types-v10/enum/ApplicationCommandOptionType
+    let schema;
 
-    for (const commandName in commandsLoaded) {
-        const commandDefinition = commandsLoaded[commandName];
-        if (!commandDefinition?.data?.command) continue; // Skip malformed
-
-        const commandData = commandDefinition.data;
-        const mainCommand = commandData.command;
-        const helpData = commandData.help || {};
-
-        const hasOptions = mainCommand.options && Array.isArray(mainCommand.options) && mainCommand.options.length > 0;
-        let isSubcommandBased = false;
-
-        if (hasOptions) {
-            // Check if the *first* option looks like a subcommand (has nested options or specific type)
-            // Relying on nested 'options' seems most reliable based on your examples.
-            const firstOption = mainCommand.options[0];
-            // Type 1 = SUB_COMMAND, Type 2 = SUB_COMMAND_GROUP
-            // if (firstOption.type === 1 || firstOption.type === 2 || (firstOption.options && Array.isArray(firstOption.options))) {
-            if (firstOption.options && Array.isArray(firstOption.options)) { // Simplified check based on examples
-                isSubcommandBased = true;
+    switch (discordType) {
+        case 3: // STRING
+            schema = z.string();
+            if (option.min_length) schema = schema.min(option.min_length);
+            if (option.max_length) schema = schema.max(option.max_length);
+            if (option.choices?.length > 0) {
+                const values = option.choices.map(c => c.value);
+                schema = z.enum(values);
             }
+            break;
+        case 4: // INTEGER
+            schema = z.number().int();
+            if (option.min_value !== undefined) schema = schema.min(option.min_value);
+            if (option.max_value !== undefined) schema = schema.max(option.max_value);
+            break;
+        case 5: // BOOLEAN
+            schema = z.boolean();
+            break;
+        case 6: // USER (ID)
+        case 7: // CHANNEL (ID)
+        case 8: // ROLE (ID)
+        case 9: // MENTIONABLE (ID)
+            schema = z.string().describe("Discord snowflake ID");
+            break;
+        case 10: // NUMBER
+            schema = z.number();
+            if (option.min_value !== undefined) schema = schema.min(option.min_value);
+            if (option.max_value !== undefined) schema = schema.max(option.max_value);
+            break;
+        case 11: // ATTACHMENT
+            schema = z.string().describe("Attachment URL or ID");
+            break;
+        default:
+            schema = z.string();
+    }
+
+    return schema;
+}
+
+/**
+ * Builds a Zod input schema from Discord command options
+ */
+function buildZodSchemaFromOptions(options, allowedArgNames = null) {
+    if (!options || !Array.isArray(options) || options.length === 0) {
+        return z.object({}).strict();
+    }
+
+    const schemaObj = {};
+    const allowedSet = Array.isArray(allowedArgNames) ? new Set(allowedArgNames) : null;
+
+    for (const opt of options) {
+        // Skip the "private" option as it's Discord-specific
+        if (opt.name === "private") continue;
+
+        if (allowedSet && !allowedSet.has(opt.name)) continue;
+
+        let fieldSchema = discordTypeToZod(opt.type, opt);
+
+        // Add description
+        if (opt.description) {
+            fieldSchema = fieldSchema.describe(opt.description);
         }
 
-        if (isSubcommandBased) {
-            // --- Process Subcommands ---
-            for (const subCommandOption of mainCommand.options) {
-                // Ensure it's definitely a subcommand structure before processing
-                if (subCommandOption.options && Array.isArray(subCommandOption.options)) {
-                    const toolName = `${commandName}_${subCommandOption.name}`;
-                    // Use specific help description if available, otherwise subcommand description
-                    const toolDescription = helpData[subCommandOption.name]?.detailedDesc || subCommandOption.description || `Executes the ${toolName} action.`;
+        // Make optional if not required
+        if (!opt.required) {
+            fieldSchema = fieldSchema.optional();
+        }
 
-                    const parameters = processParameterOptions(subCommandOption.options); // Process its parameters
+        schemaObj[opt.name] = fieldSchema;
+    }
 
-                    const thisTool = {
-                        name: toolName,
-                        description: toolDescription,
-                        parameters: parameters
-                    };
-                    tools.push(thisTool);
-                }
-                else {
-                    // Handle cases where a command might unexpectedly mix subcommands and direct parameters
-                    console.warn(`Command '${commandName}' has an option '${subCommandOption.name}' that looks like a direct parameter mixed with subcommands. Skipping.`);
-                }
+    return z.object(schemaObj).strict();
+}
+
+function buildOptionTypeMap(options, allowedArgNames = null) {
+    const typeMap = new Map();
+    if (!options || !Array.isArray(options) || options.length === 0) return typeMap;
+
+    const allowedSet = Array.isArray(allowedArgNames) ? new Set(allowedArgNames) : null;
+
+    for (const opt of options) {
+        if (opt.name === "private") continue;
+        if (allowedSet && !allowedSet.has(opt.name)) continue;
+        typeMap.set(opt.name, opt.type);
+    }
+
+    return typeMap;
+}
+
+/**
+ * Gets the AI tool config for a command/subcommand
+ * @param {Object} aiToolOptions - The aiToolOptions from command data
+ * @param {string|null} subcommand - The subcommand name if applicable
+ * @returns {Object|null} The tool config or null if not toolable
+ */
+function getToolConfig(aiToolOptions, subcommand) {
+    if (!aiToolOptions) return null;
+
+    // If it's a direct config (has toolable property), return it
+    if (aiToolOptions.toolable === true || Array.isArray(aiToolOptions.toolable)) {
+        return aiToolOptions;
+    }
+
+    // Otherwise it's a map of subcommand -> config
+    if (subcommand && (aiToolOptions[subcommand]?.toolable === true || Array.isArray(aiToolOptions[subcommand]?.toolable))) {
+        return aiToolOptions[subcommand];
+    }
+
+    return null;
+}
+
+/**
+ * Creates the approval UI for a tool call
+ */
+function createApprovalEmbed(toolName, args, approvalId) {
+    const argsDisplay = Object.entries(args)
+        .map(([k, v]) => `- **${k}:** ${JSON.stringify(v)}`)
+        .join("\n") || null;
+
+    const ttlDisplay = ms(APPROVAL_TTL_MS, { long: true });
+
+    toolName = toolName.replace(/^cmd_/, "");
+
+    const container =
+        new ContainerBuilder()
+            .setAccentColor(14080271)
+            .addTextDisplayComponents(
+                new TextDisplayBuilder().setContent("## Tool Approval Needed")
+            )
+            .addTextDisplayComponents(
+                new TextDisplayBuilder().setContent(`Stewbot wants to run the \`${toolName}\` command on your behalf.`)
+            );
+
+
+    if (argsDisplay) container.addTextDisplayComponents(
+        new TextDisplayBuilder()
+            .setContent(
+                "Arguments:\n" + argsDisplay
+            )
+    );
+
+    container.addActionRowComponents(
+        new ActionRowBuilder()
+            .addComponents(
+                new ButtonBuilder()
+                    .setCustomId(`ai_approve_${approvalId}`)
+                    .setLabel("Approve")
+                    .setStyle(ButtonStyle.Success),
+                new ButtonBuilder()
+                    .setCustomId(`ai_deny_${approvalId}`)
+                    .setLabel("Deny")
+                    .setStyle(ButtonStyle.Danger)
+            )
+    );
+
+    container.addTextDisplayComponents(
+        new TextDisplayBuilder()
+            .setContent(`-# This request will expire in ${ttlDisplay}`)
+    );
+
+    return {
+        components: [container],
+        flags: [MessageFlags.IsComponentsV2]
+    };
+
+}
+
+/**
+ * Waits for user approval of a tool call
+ * @returns {Promise<boolean>} True if approved, false if denied
+ */
+async function waitForApproval(approvalId, userId) {
+    return new Promise((resolve) => {
+        pendingApprovals.set(approvalId, { resolve, userId }, APPROVAL_TTL_MS / 1000);
+    });
+}
+
+/**
+ * Handles approval button clicks
+ */
+function handleApprovalButton(customId, userId) {
+    const match = customId.match(/^ai_(approve|deny)_(.+)$/);
+    if (!match) return null;
+
+    const [, action, approvalId] = match;
+    const pending = pendingApprovals.get(approvalId);
+
+    if (!pending) return { error: "This request has expired." };
+    if (pending.userId !== userId) return { error: "Only the original requester can approve this." };
+
+    pendingApprovals.del(approvalId);
+    pending.resolve(action === "approve");
+    return { approved: action === "approve" };
+}
+
+//#endregion
+
+//#region General Tools
+
+/**
+ * Builds command-based tools from all loaded command modules that have aiToolOptions
+ * @param {Object} context - Context for tool execution
+ * @param {Object} context.user - The Discord user
+ * @param {Object} context.guild - The Discord guild
+ * @param {Object} context.member - The guild member
+ * @param {Object} context.channel - The channel
+ * @param {Function} context.sendApprovalRequest - Function to send approval UI and wait
+ * @returns {Object} Map of tool name to ai-sdk tool
+ */
+async function buildCommandTools(context) {
+    const { user, guild, member, channel, sendApprovalRequest, sendDirectResponse } = context;
+    const commandTools = {};
+
+    const homeServerId = global?.config?.homeServer;
+    const [guildStore, homeGuild] = guild?.id
+        ? await Promise.all([
+            guildByObj(guild).catch(() => null),
+            homeServerId ? guildByID(homeServerId).catch(() => null) : Promise.resolve(null)
+        ])
+        : [null, null];
+
+    const isAdmin = member?.permissions instanceof PermissionsBitField &&
+        member.permissions?.has?.(PermissionFlagsBits.Administrator);
+
+    // Access global commands
+    const loadedCommands = global.commands || {};
+
+    for (const commandName of Object.keys(loadedCommands)) {
+        const commandModule = loadedCommands[commandName];
+        if (!commandModule?.data?.command || !commandModule?.data?.aiToolOptions) continue;
+        if (typeof commandModule.execute !== "function") continue;
+
+        const commandData = commandModule.data;
+        const mainCommand = commandData.command;
+        const aiToolOptions = commandData.aiToolOptions;
+        const helpData = commandData.help || {};
+
+        // Check if command has subcommands (type 1 = SUB_COMMAND)
+        const options = mainCommand.options || [];
+        const hasSubcommands = options.length > 0 && options[0]?.type === 1;
+
+        if (hasSubcommands) {
+            // Process each subcommand
+            for (const subOpt of options) {
+                if (subOpt.type !== 1) continue; // Only SUB_COMMAND
+
+                const toolConfig = getToolConfig(aiToolOptions, subOpt.name);
+                if (!toolConfig) continue;
+
+                const listeningModule = [`${commandName} ${subOpt.name}`.trim(), commandModule];
+                const [blocked] = isModuleBlocked(
+                    listeningModule,
+                    guildStore,
+                    homeGuild,
+                    isAdmin
+                );
+                if (blocked) continue;
+
+                const allowedArgs = Array.isArray(toolConfig.toolable) ? toolConfig.toolable : null;
+                const optionTypeMap = buildOptionTypeMap(subOpt.options || [], allowedArgs);
+
+                const toolName = `cmd_${commandName}_${subOpt.name}`;
+                const toolDesc = helpData[subOpt.name]?.detailedDesc || subOpt.description || `Runs the ${commandName} ${subOpt.name} command`;
+                const inputSchema = buildZodSchemaFromOptions(subOpt.options || [], allowedArgs);
+
+                commandTools[toolName] = tool({
+                    description: toolDesc,
+                    inputSchema,
+                    execute: createToolExecutor({
+                        commandName,
+                        commandModule,
+                        subcommand: subOpt.name,
+                        toolConfig,
+                        toolName,
+                        user,
+                        guild,
+                        member,
+                        channel,
+                        sendApprovalRequest,
+                        sendDirectResponse,
+                        optionTypeMap
+                    })
+                });
             }
         }
         else {
-            // --- Process as Main Command (with or without parameters) ---
-            const toolName = commandName;
-            // For non-subcommand commands, the 'help' object directly contains the details (if structured like admin_message)
-            // Or fallback to main command description
-            const toolDescription = helpData?.detailedDesc || mainCommand.description || `Executes the ${toolName} command.`;
+            // Process as main command
+            const toolConfig = getToolConfig(aiToolOptions, null);
+            if (!toolConfig) continue;
 
-            // Process the main command's options (which are direct parameters)
-            const parameters = processParameterOptions(mainCommand.options); // Pass options directly
+            const listeningModule = [commandName, commandModule];
+            const [blocked] = isModuleBlocked(
+                listeningModule,
+                guildStore,
+                homeGuild,
+                isAdmin
+            );
+            if (blocked) continue;
 
-            const thisTool = {
-                name: toolName,
-                description: toolDescription,
-                parameters: parameters // Contains parameters if mainCommand.options existed, empty otherwise
-            };
-            tools.push(thisTool);
+            const allowedArgs = Array.isArray(toolConfig.toolable) ? toolConfig.toolable : null;
+            const optionTypeMap = buildOptionTypeMap(options, allowedArgs);
+
+            const toolName = `cmd_${commandName}`;
+            const toolDesc = helpData?.detailedDesc || mainCommand.description || `Runs the ${commandName} command`;
+            const inputSchema = buildZodSchemaFromOptions(options, allowedArgs);
+
+            commandTools[toolName] = tool({
+                description: toolDesc,
+                inputSchema,
+                execute: createToolExecutor({
+                    commandName,
+                    commandModule,
+                    subcommand: null,
+                    toolConfig,
+                    toolName,
+                    user,
+                    guild,
+                    member,
+                    channel,
+                    sendApprovalRequest,
+                    sendDirectResponse,
+                    optionTypeMap
+                })
+            });
         }
     }
 
-    return tools;
+    return commandTools;
 }
 
-// Hardcoded Discord tools the AI can call
-const TOOL_DEFAULT_LIMIT = 5;
-const TOOL_MAX_LIMIT = 15;
-const TOOL_MESSAGE_PREVIEW = 400;
+/**
+ * Creates the execute function for a command tool
+ */
+async function hydrateCachesForArgs(guild, args, optionTypeMap) {
+    if (!guild || !(optionTypeMap instanceof Map) || optionTypeMap.size === 0) return;
+
+    const fetches = [];
+
+    for (const [name, type] of optionTypeMap.entries()) {
+        const id = args?.[name];
+        if (!id || typeof id !== "string") continue;
+
+        switch (type) {
+            case 6: // USER
+                fetches.push(guild.members.fetch(id).catch(() => null));
+                fetches.push(guild.client?.users?.fetch?.(id).catch(() => null));
+                break;
+            case 7: // CHANNEL
+                fetches.push(guild.channels.fetch(id).catch(() => null));
+                break;
+            case 8: // ROLE
+                fetches.push(guild.roles.fetch(id).catch(() => null));
+                break;
+            case 9: // MENTIONABLE (user or role)
+                fetches.push(guild.roles.fetch(id).catch(() => null));
+                fetches.push(guild.members.fetch(id).catch(() => null));
+                fetches.push(guild.client?.users?.fetch?.(id).catch(() => null));
+                break;
+            default:
+                break;
+        }
+    }
+
+    if (fetches.length > 0) {
+        await Promise.all(fetches);
+    }
+}
+
+function createToolExecutor({ commandName, commandModule, subcommand, toolConfig, toolName, user, guild, member, channel, sendApprovalRequest, sendDirectResponse, optionTypeMap }) {
+    return async (args) => {
+        const requiresApproval = toolConfig.requiresApproval !== false; // Default true
+        const sendDirect = toolConfig.sendDirect !== false; // Default true
+
+        // Handle approval if required
+        if (requiresApproval && sendApprovalRequest) {
+            const approved = await sendApprovalRequest(toolName, args);
+            if (!approved) {
+                return {
+                    ok: false,
+                    denied: true,
+                    message: "The user denied this tool request. Do not attempt to call this tool again for this request."
+                };
+            }
+        }
+
+        await hydrateCachesForArgs(guild, args, optionTypeMap);
+
+        // Create the polyfill
+        const mockCmd = createCommandPolyfill({
+            user,
+            guild,
+            member,
+            channel,
+            args,
+            commandName,
+            subcommand,
+            // Only send directly when the command's tool config requests it
+            sendDirectResponse: sendDirect ? sendDirectResponse : undefined
+        });
+
+        try {
+            // Execute the command
+            await commandModule.execute(mockCmd, { config: global.config });
+
+            const responseText = mockCmd._getResponseText();
+
+            // Build the result
+            const result = {
+                ok: true,
+                response: responseText || "Command executed successfully (no output)",
+                executedAs: user.username, // Let AI know whose permissions were used
+                sendDirect,
+                note: sendDirect
+                    ? "The response was sent directly to the user. Do not re-send it unless the user asks."
+                    : `This response was generated using ${user.username}'s permissions. If the response indicates a permission error, relay that to the user.`
+            };
+
+            return result;
+        }
+        catch (error) {
+            return {
+                ok: false,
+                error: error.message || "Command execution failed",
+                executedAs: user.username
+            };
+        }
+    };
+}
+
 
 async function getGuildMember(guild, userId) {
     if (!guild) return null;
@@ -709,9 +1163,10 @@ function buildDiscordTools(guild) {
 
     return tools;
 }
+
 //#endregion
 
-//#region AI
+//#region AI Core
 async function postprocessUserMessage(message, guild) {
     message = message.replace(/<@!?(\d+)>/g, (match, userId) => {
         const username = guild?.members.cache.get(userId)?.user?.username;
@@ -760,10 +1215,12 @@ async function postprocessAIMessage(message, guild) {
  * @param {string} message - The user's message to send to the AI.
  * @param {Guild} guild
  * @param {?Object} [contextualData] - Additional contextual data to customize the system prompt.
- * @typedef {"success"|"error"|"limit"} Status
- * @returns {Promise<[InteractionReplyOptions, Status]>} Resolves to a tuple: [AI response object, status].
+ * @param {?Object} [aiOptions] - AI configuration options
+ * @param {?Object} [toolContext] - Context for building command tools (user, member, channel, sendApprovalRequest)
+ * @typedef {"success"|"error"|"limit"|"direct"} Status
+ * @returns {Promise<[InteractionReplyOptions, Status, ?Object]>} Resolves to a tuple: [AI response object, status, optional direct response].
  */
-async function getAiResponse(threadID, message, guild, contextualData = {}, aiOptions = {}) {
+async function getAiResponse(threadID, message, guild, contextualData = {}, aiOptions = {}, toolContext = null) {
     // Init convo cache
     if (
         !convoCache[threadID] ||
@@ -790,18 +1247,27 @@ async function getAiResponse(threadID, message, guild, contextualData = {}, aiOp
         role: "user",
         content: message
     });
-    let tools = buildDiscordTools(guild) || undefined;
-    const toolBlacklist = Array.isArray(aiOptions?.toolBlacklist) ? aiOptions.toolBlacklist : [];
-    if (tools) {
-        toolBlacklist.forEach(toolName => {
-            if (toolName && Object.prototype.hasOwnProperty.call(tools, toolName)) {
-                delete tools[toolName];
-            }
-        });
 
-        if (Object.keys(tools).length === 0) {
-            tools = undefined;
+    // Build Discord navigation tools
+    let tools = buildDiscordTools(guild) || {};
+
+    // Build command-based tools if enough context is provided
+    if (toolContext) {
+        const commandTools = await buildCommandTools(toolContext);
+        tools = { ...tools, ...commandTools };
+    }
+
+    // Apply tool blacklist
+    const toolBlacklist = Array.isArray(aiOptions?.toolBlacklist) ? aiOptions.toolBlacklist : [];
+    toolBlacklist.forEach(toolName => {
+        if (toolName && Object.prototype.hasOwnProperty.call(tools, toolName)) {
+            delete tools[toolName];
         }
+    });
+
+    // Convert empty tools object to undefined
+    if (Object.keys(tools).length === 0) {
+        tools = undefined;
     }
 
     const selectedModel = aiOptions?.model || GROQ_MODEL;
@@ -810,6 +1276,11 @@ async function getAiResponse(threadID, message, guild, contextualData = {}, aiOp
         source: aiOptions?.source || "global",
         limit: toolCallLimit
     };
+
+    // Track if we encounter a sendDirect tool result
+    let directResponse = null;
+    let abortForDirect = false;
+    const abortController = new AbortController();
 
     try {
         const thisGroq = aiOptions?.apiKey
@@ -824,6 +1295,7 @@ async function getAiResponse(threadID, message, guild, contextualData = {}, aiOp
             toolChoice: tools ? "auto" : undefined,
             maxOutputTokens: 2000,
             stopWhen: stepCountIs(toolCallLimit),
+            abortSignal: abortController.signal,
             providerOptions: {
                 groq: {
                     "reasoningEffort": REASONING_EFFORT, // TODO: make users able to set this themselves
@@ -840,11 +1312,72 @@ async function getAiResponse(threadID, message, guild, contextualData = {}, aiOp
                         });
                     }
                 }
+
+                // Check for sendDirect tool results - these should be sent directly to the user
+                // NOTE: ai-sdk toolResults usually look like { type: 'tool-result', toolName, input, output }
+                if (toolResults?.length > 0) {
+                    for (const toolResult of toolResults) {
+                        const payload = toolResult?.output ?? toolResult?.result ?? toolResult;
+                        const sendDirectFlag = payload?.sendDirect === true;
+                        const okFlag = payload?.ok === true; // Must explicitly be true
+
+                        if (process.env.beta) {
+                            console.log(`  sendDirect check: sendDirectFlag=${sendDirectFlag}, okFlag=${okFlag}`);
+                        }
+
+                        if (sendDirectFlag && okFlag) {
+                            directResponse = {
+                                content: payload?.response || payload?.message || "Command executed successfully (no output)",
+                                toolName: toolResult?.toolName || payload?.toolName || "tool",
+                                note: payload?.note || "The response was sent directly to the user."
+                            };
+
+                            if (!abortForDirect) {
+                                abortForDirect = true;
+                                abortController.abort(); // Stop further model generation once we have a direct response
+                            }
+
+                            break;
+                        }
+                    }
+                }
             }
         });
 
         // Wait for the COMPLETE multi-step response (includes all tool calls and final text)
-        const finalResponse = await result.response;
+        let finalResponse;
+        try {
+            finalResponse = await result.response;
+        }
+        catch (err) {
+            // If we aborted because of a direct response, swallow abort errors
+            if (!(abortForDirect && (err?.name === "AbortError" || err?.message?.includes?.("aborted")))) {
+                throw err;
+            }
+            finalResponse = { messages: [] };
+        }
+
+        // If we have a direct response from a sendDirect tool, return immediately.
+        // The tool itself already sent the user-facing message; callers must NOT send any assistant text.
+        if (directResponse) {
+            // Add messages to history for context continuity
+            if (finalResponse.messages && finalResponse.messages.length > 0) {
+                convoCache[threadID].messages.push(...finalResponse.messages);
+            }
+
+            // Add a note to the history so the AI knows the response was already delivered
+            convoCache[threadID].messages.push({
+                role: "assistant",
+                content: [{
+                    type: "text",
+                    text: `${directResponse.toolName} responded via sendDirect. ${directResponse.note || "The response was sent directly to the user."}`
+                }]
+            });
+
+            // Do not send anything else to the user for this turn.
+            // We still include a history note + tool text so the model has continuity later.
+            return [noResponse, "direct", directResponse];
+        }
 
         // Collect the full TEXT from the final step only
         let fullText = "";
@@ -866,12 +1399,13 @@ async function getAiResponse(threadID, message, guild, contextualData = {}, aiOp
                 m.content.some(c => c.type === "tool-call")
             );
 
-            const toolCallCount = finalResponse.messages?.reduce((count, ai_message) => {
-                if (ai_message.role === "assistant" && Array.isArray(ai_message.content)) {
-                    return count + ai_message.content.filter(c => c.type === "tool-call").length;
+            // Count tool calls without relying on Array.reduce typing (ai-sdk message unions can confuse linters)
+            let toolCallCount = 0;
+            for (const ai_message of (finalResponse.messages || [])) {
+                if (ai_message?.role === "assistant" && Array.isArray(ai_message.content)) {
+                    toolCallCount += Number(ai_message.content.filter(c => c.type === "tool-call").length);
                 }
-                return count;
-            }, 0) || 0;
+            }
 
             // Max tool calls, warn about limit.
             if (hadToolCalls && toolCallCount >= toolCallLimit) {
@@ -920,13 +1454,18 @@ function checkRateLimit(userId) {
 }
 //#endregion
 
+//#region Discord Events
 /** @type {import("../command-module").CommandModule} */
 module.exports = {
     resetAIRequests,
-    convertCommandsToTools,
     buildDiscordTools: buildDiscordTools,
+    buildCommandTools: buildCommandTools,
+    handleApprovalButton: handleApprovalButton,
     GROQ_MODEL: GROQ_MODEL,
     maxTools: maxTools,
+
+    // Subscribe to approval buttons
+    subscribedButtons: [/^ai_(approve|deny)_.+$/],
 
     data: {
         command: new SlashCommandBuilder().setName("chat")
@@ -996,12 +1535,37 @@ module.exports = {
             });
         }
 
-        let [response, _success] = await getAiResponse(threadID, message, cmd.guild, {
+        // Build tool context for command tools
+        const toolContext = {
+            user: cmd.user,
+            guild: cmd.guild,
+            member: cmd.member,
+            channel: cmd.channel,
+            // When a command tool is configured as sendDirect, it should be sent immediately via the same interaction.
+            sendDirectResponse: async (payload) => cmd.followUp(payload),
+            sendApprovalRequest: async (toolName, args) => {
+                const approvalId = `${cmd.user.id}_${Date.now()}_${Math.random().toString(36)
+                    .slice(2, 8)}`;
+                const approvalMessage = createApprovalEmbed(toolName, args, approvalId);
+
+                await cmd.followUp(approvalMessage);
+                return await waitForApproval(approvalId, cmd.user.id);
+            }
+        };
+
+        let [response, status] = await getAiResponse(threadID, message, cmd.guild, {
             name: cmd.user.username,
             server: cmd.guild ? cmd.guild.name : "Direct Messages"
-        }, aiUsageContext.aiOptions);
+        }, aiUsageContext.aiOptions, toolContext);
 
-        cmd.followUp(response);
+        // If a tool was sendDirect, it already sent the response; do not send anything else.
+        if (status === "direct") {
+            activeAIRequests.del(cmd.user.id);
+            userCooldowns.set(cmd.user.id, Date.now() + COOLDOWN_MS);
+            return;
+        }
+
+        await cmd.followUp(response);
 
         activeAIRequests.del(cmd.user.id);
         userCooldowns.set(cmd.user.id, Date.now() + COOLDOWN_MS);
@@ -1060,10 +1624,35 @@ module.exports = {
                 return;
             }
 
+            // Build tool context for command tools
+            const toolContext = {
+                user: msg.author,
+                guild: msg.guild,
+                member: msg.member,
+                channel: msg.channel,
+                // When a command tool is configured as sendDirect, it should be sent immediately as a reply.
+                sendDirectResponse: async (payload) => msg.reply(payload),
+                sendApprovalRequest: async (toolName, args) => {
+                    const approvalId = `${msg.author.id}_${Date.now()}_${Math.random().toString(36)
+                        .slice(2, 8)}`;
+                    const approvalMessage = createApprovalEmbed(toolName, args, approvalId);
+
+                    await msg.reply(approvalMessage);
+                    return await waitForApproval(approvalId, msg.author.id);
+                }
+            };
+
             let [response, success] = await getAiResponse(threadID, message, msg.guild, {
                 name: msg.author.username,
                 server: msg.guild ? msg.guild.name : "Direct Messages"
-            }, aiUsageContext.aiOptions);
+            }, aiUsageContext.aiOptions, toolContext);
+
+            // If a tool was sendDirect, it already sent the response; do not send anything else.
+            if (success === "direct") {
+                activeAIRequests.del(msg.author.id);
+                userCooldowns.set(msg.author.id, Date.now() + COOLDOWN_MS);
+                return;
+            }
 
             if (success !== "error") { // TODO: send some level of errors if they own the key and the error is related to Groq
                 let stillExists; // Message could have been deleted/filtered since sending
@@ -1141,5 +1730,51 @@ module.exports = {
                 activeAIRequests.del(msg.author.id);
             }
         }
+    },
+
+    // Handle approval button clicks
+    async onbutton(interaction) {
+        const result = handleApprovalButton(interaction.customId, interaction.user.id);
+
+        if (!result) {
+            // Not an approval button we recognize
+            return;
+        }
+
+        if (result.error) {
+            await interaction.reply({
+                content: result.error,
+                ephemeral: true
+            });
+            return;
+        }
+
+        const toolApproved = [
+            new ContainerBuilder()
+                .setAccentColor(65360)
+                .addTextDisplayComponents(
+                    new TextDisplayBuilder().setContent("## Tool Approved")
+                )
+                .addTextDisplayComponents(
+                    new TextDisplayBuilder().setContent("Running command...")
+                )
+        ];
+
+        const toolDenied = [
+            new ContainerBuilder()
+                .setAccentColor(14234383)
+                .addTextDisplayComponents(
+                    new TextDisplayBuilder().setContent("## Tool Denied")
+                )
+                .addTextDisplayComponents(
+                    new TextDisplayBuilder().setContent("You denied this tool request. The AI has been informed.")
+                )
+        ];
+
+        await interaction.update({
+            components: result.approved ? toolApproved : toolDenied,
+            flags: [MessageFlags.IsComponentsV2]
+        });
     }
 };
+//#endregion

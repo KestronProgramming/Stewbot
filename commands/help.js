@@ -173,6 +173,11 @@ module.exports = {
             ),
 
         // Optional fields
+        aiToolOptions: {
+            toolable: [],
+            sendDirect: true,
+            requiresApproval: false
+        },
 
         extra: { "contexts": [0, 1, 2], "integration_types": [0, 1] },
 
