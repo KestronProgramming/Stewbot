@@ -346,7 +346,7 @@ async function prepareAiUsageContext({ userId, guild, member }) {
 }
 //#endregion
 
-//#region Discord Tools
+//#region Command Tools
 
 // Pending approval requests cache
 const pendingApprovals = new NodeCache({ stdTTL: APPROVAL_TTL_MS / 1000, checkperiod: 30 });
@@ -769,6 +769,19 @@ async function buildCommandTools(context) {
         const options = mainCommand.options || [];
         const hasSubcommands = options.length > 0 && options[0]?.type === 1;
 
+        // Manually check the setDefaultMemberPermissions field
+        const AdminPermissions = BigInt(8);
+        if (commandData?.command?.default_member_permissions) {
+            const requiredPermissions = BigInt(commandData.command.default_member_permissions);
+            if (requiredPermissions) {
+                const memberPermissions = BigInt(member.permissions);
+                const hasAdminPerms = (memberPermissions & AdminPermissions) === AdminPermissions; // Admins bypass perm checks
+                if (!hasAdminPerms && (memberPermissions & requiredPermissions) !== requiredPermissions) {
+                    continue; // Don't add this tool
+                }
+            }
+        }
+
         if (hasSubcommands) {
             // Process each subcommand
             for (const subOpt of options) {
@@ -777,6 +790,7 @@ async function buildCommandTools(context) {
                 const toolConfig = getToolConfig(aiToolOptions, subOpt.name);
                 if (!toolConfig) continue;
 
+                // Ignore blocked commands
                 const listeningModule = [`${commandName} ${subOpt.name}`.trim(), commandModule];
                 const [blocked] = isModuleBlocked(
                     listeningModule,
@@ -818,6 +832,7 @@ async function buildCommandTools(context) {
             const toolConfig = getToolConfig(aiToolOptions, null);
             if (!toolConfig) continue;
 
+            // Ignore blocked commands
             const listeningModule = [commandName, commandModule];
             const [blocked] = isModuleBlocked(
                 listeningModule,
