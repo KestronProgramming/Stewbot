@@ -110,13 +110,13 @@ function parse24HourTime(text) {
 function hasRelativeTime(text) {
     const lowerText = text.toLowerCase();
 
-    // Check for complete "in X unit" patterns
-    if (/\bin\s+(\d+|a|an)\s+(second|minute|hour|day|week|month|year)s?\b/i.test(lowerText)) {
+    // Check for complete "in X unit" patterns (including abbreviations like min, hr, sec)
+    if (/\bin\s+(\d+|a|an)\s+(s(?:ec(?:ond)?)?|m(?:in(?:ute)?)?|h(?:(?:ou)?r)?|day|week|month|year)s?\b/i.test(lowerText)) {
         return true;
     }
 
-    // Check for "X unit ago" patterns
-    if (/\b(\d+|a|an)\s+(second|minute|hour|day|week|month|year)s?\s+ago\b/i.test(lowerText)) {
+    // Check for "X unit ago" patterns (including abbreviations)
+    if (/\b(\d+|a|an)\s+(s(?:ec(?:ond)?)?|m(?:in(?:ute)?)?|h(?:(?:ou)?r)?|day|week|month|year)s?\s+ago\b/i.test(lowerText)) {
         return true;
     }
 
@@ -125,6 +125,34 @@ function hasRelativeTime(text) {
            lowerText.includes("yesterday") ||
            lowerText.includes("tomorrow") ||
            /\b(today|tonight|tmrw)\b/i.test(lowerText);
+}
+
+/**
+* Check if text is a PURE relative time offset (like "in 20 min", "1 hour ago")
+* These don't need timezone conversion because they're offsets from now, not absolute times.
+* Date references like "today", "tomorrow" with explicit times still need timezone handling.
+* @param {string} text
+* @returns {boolean}
+*/
+function isPureRelativeTimeOffset(text) {
+    const lowerText = text.toLowerCase();
+
+    // "in X unit" patterns - these are pure offsets
+    if (/\bin\s+(\d+|a|an)\s+(s(?:ec(?:ond)?)?|m(?:in(?:ute)?)?|h(?:(?:ou)?r)?|day|week|month|year)s?\b/i.test(lowerText)) {
+        return true;
+    }
+
+    // "X unit ago" patterns - these are pure offsets
+    if (/\b(\d+|a|an)\s+(s(?:ec(?:ond)?)?|m(?:in(?:ute)?)?|h(?:(?:ou)?r)?|day|week|month|year)s?\s+ago\b/i.test(lowerText)) {
+        return true;
+    }
+
+    // "X unit from now" patterns
+    if (/\b(\d+|a|an)\s+(s(?:ec(?:ond)?)?|m(?:in(?:ute)?)?|h(?:(?:ou)?r)?|day|week|month|year)s?\s+from now\b/i.test(lowerText)) {
+        return true;
+    }
+
+    return false;
 }
 
 /**
@@ -282,8 +310,10 @@ module.exports = {
         if (!isRelativeTime && !timezone && !user.config.hasSetTZ) return;
 
         // Parse with appropriate timezone context
+        // Pure relative offsets (like "in 20 min") don't need timezone conversion
+        // Everything else (including "5:30 pm today") needs timezone handling
         let parsedTime;
-        if (isRelativeTime) {
+        if (isPureRelativeTimeOffset(msg.content)) {
             parsedTime = rawParsed.toJSDate();
         }
         else {
@@ -305,12 +335,11 @@ module.exports = {
         // Get the message author's user config for timezone
         const messageAuthor = await userByObj(reaction.message.author);
 
-        // Check if it's a relative time
-        const isRelativeTime = hasRelativeTime(reaction.message.content);
-
         // Parse accordingly
+        // Pure relative offsets (like "in 20 min") don't need timezone conversion
+        // Everything else (including "5:30 pm today") needs timezone handling
         let parsedTime;
-        if (isRelativeTime) {
+        if (isPureRelativeTimeOffset(reaction.message.content)) {
             const rawParsed = parseFreeformDate(reaction.message.content, sherlock_tailored, reaction.message.createdAt);
             if (!rawParsed) return;
             parsedTime = rawParsed.toJSDate();

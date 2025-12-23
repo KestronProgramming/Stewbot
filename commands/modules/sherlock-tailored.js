@@ -720,7 +720,12 @@ var Sherlock = (function() {
             // check for null input
             if (str === null) str = "";
 
-            var date = now || getNow(),
+            // Copy to prevent mutation
+            var previousNowDate = nowDate;
+            if (now) {
+                nowDate = new Date(now.getTime());
+            }
+            var date = now ? new Date(now.getTime()) : getNow(),
                 // Check if Watson is around. If not, pretend like he is to keep Sherlock company.
                 result = (typeof Watson !== "undefined") ? Watson.preprocess(str) : [str, {}],
                 str = result[0],
@@ -815,6 +820,9 @@ var Sherlock = (function() {
 
             if (typeof Watson !== "undefined")
                 Watson.postprocess(ret);
+
+            // Restore the previous nowDate
+            nowDate = previousNowDate;
 
             return ret;
         },

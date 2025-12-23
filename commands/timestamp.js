@@ -39,10 +39,30 @@ function resolveUserZone(config = {}) {
 }
 
 function parseTextDateIfValid(text, userConfig, customSherlock = sherlock, customNow) {
-    const parsed = parseFreeformDate(text, customSherlock, customNow);
+    const zone = resolveUserZone(userConfig);
+
+    // Convert the reference time (customNow) to the user's timezone to get their wall clock time
+    // Then create a "fake now" Date with those wall-clock components
+    // This ensures sherlock's "past time = tomorrow" logic works from the user's perspective
+    let effectiveNow = customNow;
+    if (customNow && zone) {
+        const userWallClock = DateTime.fromJSDate(customNow).setZone(zone);
+        // Create a Date with the same wall-clock values but treated as if they were UTC
+        // This tricks sherlock into comparing times as the user would see them
+        effectiveNow = new Date(Date.UTC(
+            userWallClock.year,
+            userWallClock.month - 1, // JavaScript months are 0-indexed
+            userWallClock.day,
+            userWallClock.hour,
+            userWallClock.minute,
+            userWallClock.second,
+            userWallClock.millisecond
+        ));
+    }
+
+    const parsed = parseFreeformDate(text, customSherlock, effectiveNow);
     if (!parsed) return null;
 
-    const zone = resolveUserZone(userConfig);
     const target = DateTime.fromObject(
         {
             year: parsed.year,
