@@ -219,13 +219,15 @@ module.exports = {
         // Don't process bot messages
         if (msg.author.bot) return;
 
-        // Get user config for timezone
-        const user = await userByObj(msg.author);
-
-        if (!readGuild.config.timeReactions || !user.config.timeReactions) return;
+        // Ignore messages that are solely numbers
+        if (/^\d+$/.test(msg.content.trim())) return;
 
         const reactable = ("permissionsFor" in msg.channel) && msg.channel.permissionsFor(client.user).has(PermissionFlagsBits.AddReactions);
         if (!reactable) return;
+
+        // Get user config for timezone
+        const user = await userByObj(msg.author);
+        if (!readGuild.config.timeReactions || !user.config.timeReactions) return;
 
         // Check if message contains a relative time or explicit time
         const isRelativeTime = hasRelativeTime(msg.content);
