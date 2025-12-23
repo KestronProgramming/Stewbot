@@ -444,7 +444,7 @@
             "Server_Only"
         ],
         "shortDesc": "Kick a user",
-        "detailedDesc": "Removes the specified user from the server, the user will be able to rejoin if they find a new invite."
+        "detailedDesc": "Kick the specified user from the server for bad behavior."
     },
     {
         "name": "leaderboard",
@@ -617,7 +617,7 @@
     },
     {
         "name": "rss follow",
-        "mention": "</rss follow:1450292696953651293>",
+        "mention": "</rss follow:1452820560760541385>",
         "helpCategories": [
             "Information",
             "Configuration",
@@ -629,18 +629,18 @@
     },
     {
         "name": "rss unfollow",
-        "mention": "</rss unfollow:1450292696953651293>",
+        "mention": "</rss unfollow:1452820560760541385>",
         "helpCategories": [
             "Configuration",
             "Administration",
             "Server_Only"
         ],
         "shortDesc": "Unfollow an RSS feed",
-        "detailedDesc": "Specify the channel the feed is followed in, and the URL of the feed to unfollow, and Stewbot will no longer post RSS updates for that feed there. You can use </rss check:1450292696953651293> to get the URL needed for this command."
+        "detailedDesc": "Specify the channel the feed is followed in, and the URL of the feed to unfollow, and Stewbot will no longer post RSS updates for that feed there. You can use </rss check:1452820560760541385> to get the URL needed for this command."
     },
     {
         "name": "rss check",
-        "mention": "</rss check:1450292696953651293>",
+        "mention": "</rss check:1452820560760541385>",
         "helpCategories": [
             "Information",
             "Administration",

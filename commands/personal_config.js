@@ -1,23 +1,38 @@
-// #region CommandBoilerplate
 const Categories = require("./modules/Categories");
 const { userByObj } = require("./modules/database.js");
 const { SlashCommandBuilder } = require("discord.js");
+const { DateTime } = require("luxon");
+const { parseFreeformDate } = require("./timestamp");
 function applyContext(context = {}) {
     for (let key in context) {
         this[key] = context[key];
     }
 }
 
-// #endregion CommandBoilerplate
+const Fuse = require("fuse.js");
+const fuseOptions = {
+    includeScore: true,
+    keys: ["item"]
+};
+
+function sortByMatch(items, text) {
+    // @ts-ignore - Fuse ts checking is broken
+    const fuse = new Fuse(items.map(item => ({ item })), fuseOptions);
+    const scoredResults = fuse.search(text)
+        .filter(result => result.score <= 2) // Roughly similar-ish
+        .sort((a, b) => a.score - b.score);
+    return scoredResults.map(entry => entry.item.item);
+}
 
 
-const { parseTextDateIfValid_Version } = require("./timestamp");
-
-// const tzConfig = [new ActionRowBuilder().addComponents(
-// 	new ButtonBuilder().setCustomId("tzUp").setEmoji("⬆️").setStyle(ButtonStyle.Primary),
-// 	new ButtonBuilder().setCustomId("tzDown").setEmoji("⬇️").setStyle(ButtonStyle.Primary),
-// 	new ButtonBuilder().setCustomId("tzSave").setEmoji("✅").setStyle(ButtonStyle.Success)
-// )]
+function formatUtcOffset(totalMinutes) {
+    const sign = totalMinutes >= 0 ? "+" : "-";
+    const abs = Math.abs(totalMinutes);
+    const hours = Math.floor(abs / 60).toString()
+        .padStart(2, "0");
+    const mins = (abs % 60).toString().padStart(2, "0");
+    return `UTC${sign}${hours}:${mins}`;
+}
 
 
 /** @type {import("../command-module").CommandModule} */
@@ -46,7 +61,14 @@ module.exports = {
                 option.setName("level_up_messages").setDescription("Do you want to receive messages letting you know you leveled up?")
             )
             .addStringOption(option =>
-                option.setName("configure_timezone").setDescription("What time is it for you right now?")
+                option.setName("timezone_region").setDescription("Your timezone region (e.g., America/New_York)")
+                    .setAutocomplete(true)
+            )
+            .addStringOption(option =>
+                option.setName("timezone_manual").setDescription("What time is it for you right now? (Manual, rounds to 15m)")
+            )
+            .addBooleanOption(option =>
+                option.setName("timezone_observes_dst").setDescription("Does your region observe daylight saving time at any point?")
             )
             .addBooleanOption(option =>
                 option.setName("attachment_protection").setDescription("Protect you from leaking personal information in your message attachments")
@@ -83,60 +105,61 @@ module.exports = {
 
         let response = "Configured your personal setup";
 
-        // Parse out timezone
-        if (cmd.options.getString("configure_timezone") !== null) {
-            const inputDate = parseTextDateIfValid_Version(cmd.options.getString("configure_timezone"), 0);
+        const manualTimeInput = cmd.options.getString("timezone_manual");
+        const regionInput = cmd.options.getString("timezone_region");
+        const dstObservesInput = cmd.options.getBoolean("timezone_observes_dst");
+        let regionConfigured = false;
 
-            if (inputDate) {
-                // Calculate timezone based off how far this is from UTC
-                const now = new Date();
-                const utcHour = now.getUTCHours();
-                const inputHour = inputDate.getUTCHours();
-                let offset = inputHour - utcHour;
-
-                // Handle wrap-around (e.g., -23 should be +1, 13-23 = -10, etc.)
-                if (offset > 12) offset -= 24;
-                if (offset < -12) offset += 24;
-
-                user.config.timeOffset = offset;
+        // Prefer explicit region if provided
+        if (regionInput) {
+            const zoned = DateTime.now().setZone(regionInput);
+            if (zoned.isValid) {
+                user.config.timeZoneRegion = zoned.zoneName;
+                user.config.timeOffsetMinutes = zoned.offset;
+                user.config.timeOffset = zoned.offset / 60;
+                user.config.manualDst = false;
+                user.config.observesDst = dstObservesInput;
                 user.config.hasSetTZ = true;
-                response += `\n\nSet your timezone to UTC${offset >= 0 ? "+" : ""}${offset}`;
+                response += `\n\nSet your timezone to ${zoned.zoneName} (${formatUtcOffset(zoned.offset)})`;
+                regionConfigured = true;
+            }
+            else {
+                response += "\n\nSorry, that timezone region was not recognized. Try something like America/New_York.";
+            }
+        }
+
+        // Manual privacy-friendly input using local time
+        if (!regionConfigured && manualTimeInput !== null) {
+            const parsed = parseFreeformDate(manualTimeInput);
+
+            if (parsed) {
+                const nowUtc = DateTime.utc();
+                const providedMinutes = parsed.hour * 60 + parsed.minute;
+                const utcMinutes = nowUtc.hour * 60 + nowUtc.minute;
+                let diffMinutes = providedMinutes - utcMinutes;
+                const maxOffsetMinutes = 14 * 60; // handle regions up to UTC+14
+
+                while (diffMinutes <= -maxOffsetMinutes) diffMinutes += 1440;
+                while (diffMinutes > maxOffsetMinutes) diffMinutes -= 1440;
+
+                const rounded = Math.round(diffMinutes / 15) * 15;
+                const baseOffset = rounded;
+
+                user.config.timeZoneRegion = "";
+                user.config.timeOffsetMinutes = baseOffset;
+                user.config.timeOffset = baseOffset / 60;
+                user.config.manualDst = false;
+                user.config.observesDst = dstObservesInput;
+                user.config.hasSetTZ = true;
+
+                response += `\n\nSet your timezone offset to ${formatUtcOffset(baseOffset)}.`;
+                if (dstObservesInput === true) response += " Your region is marked as observing daylight saving time.";
+                if (dstObservesInput === false) response += " Your region is marked as not observing daylight saving time.";
             }
             else {
                 response += "\n\nSorry, I couldn't parse your timezone. Try again?";
             }
         }
-
-
-        // // Timezone response is more complex so respond differently at the end if we're configuring that
-        // if(!cmd.options.getBoolean("configure_timezone")){
-        // 	cmd.followUp("Configured your personal setup");
-        // }
-        // else {
-        // 	const cur = new Date();
-        // 	const curHour = cur.getUTCHours();
-        // 	const curMinute = cur.getUTCMinutes();
-
-        // 	if(!user.config.hasSetTZ) user.config.timeOffset=0;
-        // 	cmd.followUp({
-        //         content: `## Timezone Configuration\n\nPlease use the buttons to make the following number your current time (you can ignore minutes)\n${
-        //             curHour + user.config.timeOffset === 0
-        //                 ? "12"
-        //                 : curHour +
-        //                       user.config.timeOffset > 12
-        //                 	? curHour + user.config.timeOffset - 12
-        //                 	: curHour + user.config.timeOffset
-        //         }:${(curMinute + "").padStart(2, "0")} ${
-        //             curHour + user.config.timeOffset > 11
-        //                 ? "PM"
-        //                 : "AM"
-        //         }\n${(
-        //             curHour + user.config.timeOffset + ""
-        //         ).padStart(2, "0")}${(curMinute + "").padStart(2, "0")}`,
-
-        // 		components: tzConfig,
-        //     });
-        // }
 
         cmd.followUp(response);
         await user.save();
@@ -148,31 +171,75 @@ module.exports = {
         applyContext(context);
 
         const user = await userByObj(cmd.user);
+        const getCurrentOffsets = () => {
+            const baseMinutes = typeof user.config.timeOffsetMinutes === "number" ? user.config.timeOffsetMinutes
+                : typeof user.config.timeOffset === "number" ? user.config.timeOffset * 60
+                    : 0;
+            const effectiveMinutes = baseMinutes;
+            return { baseMinutes, effectiveMinutes };
+        };
 
-        const cur = new Date();
-        const curHour = cur.getUTCHours();
-        const curMinute = cur.getUTCMinutes();
+        const bumpOffset = (deltaMinutes) => {
+            const { baseMinutes } = getCurrentOffsets();
+            const roundedBase = Math.round(baseMinutes / 15) * 15;
+            const nextBase = roundedBase + deltaMinutes;
+            user.config.timeOffsetMinutes = nextBase;
+            user.config.timeOffset = nextBase / 60;
+        };
+
+        const renderPrompt = () => {
+            const { effectiveMinutes } = getCurrentOffsets();
+            const displayTime = DateTime.utc().plus({ minutes: effectiveMinutes });
+            return `## Timezone Configuration\n\nPlease use the buttons to make the following number your current time\n${displayTime.toFormat("h:mm a")}\n${displayTime.toFormat("HHmm")}`;
+        };
 
         switch (cmd.customId) {
             case "tzUp":
-                user.config.timeOffset++;
-                cmd.update(`## Timezone Configuration\n\nPlease use the buttons to make the following number your current time (you can ignore minutes)\n${(curHour + user.config.timeOffset) === 0 ? "12" : (curHour + user.config.timeOffset) > 12 ? (curHour + user.config.timeOffset) - 12 : (curHour + user.config.timeOffset)}:${(curMinute + "").padStart(2, "0")} ${(curHour + user.config.timeOffset) > 11 ? "PM" : "AM"}\n${((curHour + user.config.timeOffset) + "").padStart(2, "0")}${(curMinute + "").padStart(2, "0")}`);
+                bumpOffset(15);
+                cmd.update(renderPrompt());
                 break;
             case "tzDown":
                 // NOTE: it would be better of the offset is stored in the buttons until they click save.
-                user.config.timeOffset--;
-                cmd.update(`## Timezone Configuration\n\nPlease use the buttons to make the following number your current time (you can ignore minutes)\n${(curHour + user.config.timeOffset) === 0 ? "12" : (curHour + user.config.timeOffset) > 12 ? (curHour + user.config.timeOffset) - 12 : (curHour + user.config.timeOffset)}:${(curMinute + "").padStart(2, "0")} ${(curHour + user.config.timeOffset) > 11 ? "PM" : "AM"}\n${((curHour + user.config.timeOffset) + "").padStart(2, "0")}${(curMinute + "").padStart(2, "0")}`);
+                bumpOffset(-15);
+                cmd.update(renderPrompt());
                 break;
             case "tzSave":
                 user.config.hasSetTZ = true;
+                {
+                    const { effectiveMinutes } = getCurrentOffsets();
 
-                cmd.update({
-                    content: `## Timezone Configured\n\nUTC ${user.config.timeOffset}`,
-                    components: []
-                });
+                    cmd.update({
+                        content: `## Timezone Configured\n\n${formatUtcOffset(effectiveMinutes)}`,
+                        components: []
+                    });
+                }
                 break;
         }
 
         user.save();
+    },
+
+    async autocomplete(cmd) {
+        let allTimezones = Intl.supportedValuesOf("timeZone");
+        const userInput = cmd.options.getFocused() || "";
+
+        // Get the top matching results
+        if (userInput) {
+            allTimezones = sortByMatch(allTimezones, userInput);
+        }
+
+        // Limit to discord max
+        allTimezones = allTimezones.slice(0, 25);
+
+        // Format for discord
+        let autocompletes = [];
+        for (let timezone of allTimezones) {
+            autocompletes.push({
+                name: timezone,
+                value: timezone
+            });
+        }
+
+        cmd.respond(autocompletes);
     }
 };

@@ -300,6 +300,9 @@ let userConfigSchema = new mongoose.Schema({
     levelUpMsgs: { type: Boolean, default: true },
     hasSetTZ: { type: Boolean, default: false },
     timeOffset: { type: Number, default: 0 },
+    timeOffsetMinutes: { type: Number, default: 0 },
+    timeZoneRegion: { type: String, default: "" },
+    observesDst: { type: Boolean, default: null },
     attachmentProtection: { type: Boolean, default: true }
 });
 

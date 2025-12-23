@@ -8,83 +8,56 @@ function applyContext(context = {}) {
     }
 }
 
-// #endregion CommandBoilerplate
-
-// const chrono = require('chrono-node');
-// function parseTextDateIfValid_Chrono(text, myTimezone) {
-// 	// returns null if invalid
-// 	if (!text) return null;
-
-// 	var startingTime = chrono.parseDate(text);
-// 	if (isNaN(startingTime?.getTime())) return null;
-
-// 	startingTime = getOffsetDateByUTCOffset(startingTime, myTimezone);
-// 	if (isNaN(startingTime?.getTime())) return null;
-
-// 	return startingTime;
-// }
-
 const sherlock = require("sherlockjs");
-function parseTextDateIfValid_Sherlock(text, myTimezone) {
+const { DateTime, FixedOffsetZone } = require("luxon");
+
+function parseFreeformDate(text) {
     if (!text) return null;
 
     const result = sherlock.parse(text);
     if (!result.startDate || isNaN(result.startDate.getTime())) return null;
 
-    const startingTime = getOffsetDateByUTCOffset(result.startDate, myTimezone);
-    return isNaN(startingTime?.getTime()) ? null : startingTime;
+    return DateTime.fromJSDate(result.startDate);
 }
 
-// require('sugar');
-// function parseTextDateIfValid_Sugar(text, myTimezone) {
-// 	if (!text) return null;
+function resolveUserZone(config = {}) {
+    if (config.timeZoneRegion) {
+        const zoned = DateTime.now().setZone(config.timeZoneRegion);
+        if (zoned.isValid) return zoned.zone;
+    }
 
-// 	const date = Date.create(text); // Sugar’s date parsing
-// 	if (!date || isNaN(date.getTime())) return null;
+    let baseOffset = typeof config.timeOffsetMinutes === "number" ? config.timeOffsetMinutes : 0;
+    if (baseOffset === 0 && typeof config.timeOffset === "number" && config.timeOffset !== 0) {
+        baseOffset = config.timeOffset * 60;
+    }
 
-// 	const startingTime = getOffsetDateByUTCOffset(date, myTimezone);
-// 	return isNaN(startingTime?.getTime()) ? null : startingTime;
-// }
+    return FixedOffsetZone.instance(baseOffset);
+}
 
-// require('datejs');
-// function parseTextDateIfValid_DateJS(text, myTimezone) {
-// 	if (!text) return null;
+function parseTextDateIfValid_Version(text, userConfig) {
+    const parsed = parseFreeformDate(text);
+    if (!parsed) return null;
 
-// 	const date = Date.parse(text); // returns Date object
-// 	if (!date || isNaN(date.getTime())) return null;
+    const zone = resolveUserZone(userConfig);
+    const target = DateTime.fromObject(
+        {
+            year: parsed.year,
+            month: parsed.month,
+            day: parsed.day,
+            hour: parsed.hour,
+            minute: parsed.minute,
+            second: parsed.second,
+            millisecond: parsed.millisecond
+        },
+        { zone }
+    );
 
-// 	const startingTime = getOffsetDateByUTCOffset(date, myTimezone);
-// 	return isNaN(startingTime?.getTime()) ? null : startingTime;
-// }
-
-// const nlp = require('compromise');
-// require('compromise-dates')(nlp);
-// function parseTextDateIfValid_Compromise(text, myTimezone) {
-// 	if (!text) return null;
-
-// 	const doc = nlp(text);
-// 	const dates = doc.dates().get();
-// 	if (!dates.length || !dates[0].data?.length) return null;
-
-// 	const parsed = dates[0].data[0];
-// 	const date = new Date(parsed.date || parsed.start);
-// 	if (isNaN(date.getTime())) return null;
-
-// 	const startingTime = getOffsetDateByUTCOffset(date, myTimezone);
-// 	return isNaN(startingTime?.getTime()) ? null : startingTime;
-// }
-
+    if (!target.isValid) return null;
+    return target.toUTC().toJSDate();
+}
 
 // Select which lib to use
-const parseTextDateIfValid_Version = parseTextDateIfValid_Sherlock;
-
-function getOffsetDateByUTCOffset(timestamp, targetOffset) {
-    const date = new Date(timestamp);
-    const serverOffset = date.getTimezoneOffset();
-    const targetOffsetMinutes = targetOffset * 60;
-    const offsetDiff = -serverOffset - targetOffsetMinutes;
-    return new Date(date.getTime() + (offsetDiff * 60 * 1000));
-}
+// Kept for compatibility with prior naming across commands
 
 
 const components = {
@@ -293,6 +266,7 @@ const components = {
 /** @type {import("../command-module").CommandModule} */
 module.exports = {
     parseTextDateIfValid_Version,
+    parseFreeformDate,
 
     data: {
         // Slash command data
@@ -325,18 +299,25 @@ module.exports = {
         const user = await userByObj(cmd.user);
 
         if (user.config.hasSetTZ) {
-            const myTimezone = user.config.timeOffset;
             const quickInput = cmd.options.getString("quick-input");
-            let startingTime = parseTextDateIfValid_Version(quickInput, myTimezone);
-            if (!startingTime) startingTime = new Date();
+            const userZone = resolveUserZone(user.config);
+
+            let startingTime = parseTextDateIfValid_Version(quickInput, user.config);
+            if (!startingTime) {
+                startingTime = DateTime.now().setZone(userZone)
+                    .toUTC()
+                    .toJSDate();
+            }
+
+            const unixSeconds = Math.round(DateTime.fromJSDate(startingTime).toSeconds());
 
             cmd.followUp({
-                content: `<t:${Math.round(Number(startingTime) / 1000)}:t>`,
+                content: `<t:${unixSeconds}:t>`,
                 components: components.timestamp.map(c => c.toJSON())
             });
         }
         else {
-            cmd.followUp(`This command needs you to set your timezone first! Run ${cmds.personal_config.mention} and specify \`configure_timezone\` to get started,`);
+            cmd.followUp(`This command needs you to set your timezone first! Run ${cmds.personal_config.mention} and specify \`timezone_region\` or \`timezone_manual\` to get started,`);
         }
     },
 
@@ -347,6 +328,11 @@ module.exports = {
         applyContext(context);
 
         const user = await userByObj(cmd.user);
+        const userZone = resolveUserZone(user.config);
+        const getMessageTimestampSeconds = () => Number(cmd.message.content.split(":")[1]);
+        const getMessageFormat = () => cmd.message.content.split(":")[2].split(">")[0];
+        const getZonedMessageDate = () => DateTime.fromSeconds(getMessageTimestampSeconds()).setZone(userZone);
+        const toDiscordTimestamp = (dt) => `<t:${Math.round(dt.toUTC().toSeconds())}:${getMessageFormat()}>`;
 
         switch (cmd.customId) {
             // Buttons
@@ -380,81 +366,105 @@ module.exports = {
                 // Modals
             case "tsYearModal": {
                 if (!cmd.isModalSubmit()) return;
-                let inp = cmd.fields.getTextInputValue("tsYearInp").padStart(4, "20");
+                const inp = cmd.fields.getTextInputValue("tsYearInp");
                 if (!/^\d+$/.test(inp)) {
                     cmd.deferUpdate();
                     break;
                 }
-                // @ts-ignore
-                cmd.update(`<t:${Math.round(new Date(+cmd.message.content.split(":")[1] * 1000).setUTCFullYear(+inp) / 1000)}:${cmd.message.content.split(":")[2].split(">")[0]}>`);
+
+                const updated = getZonedMessageDate().set({ year: Number(inp) });
+                if (!updated.isValid) {
+                    cmd.deferUpdate();
+                    break;
+                }
+
+                cmd.update(toDiscordTimestamp(updated));
                 break;
             }
             case "tsMinutesModal": {
                 if (!cmd.isModalSubmit()) return;
-                let inp = cmd.fields.getTextInputValue("tsMinutesInp");
+                const inp = cmd.fields.getTextInputValue("tsMinutesInp");
                 if (!/^\d+$/.test(inp)) {
                     cmd.deferUpdate();
                     break;
                 }
-                // @ts-ignore
-                cmd.update(`<t:${Math.round(new Date(+cmd.message.content.split(":")[1] * 1000).setUTCMinutes(+inp) / 1000)}:${cmd.message.content.split(":")[2].split(">")[0]}>`);
+
+                const updated = getZonedMessageDate().set({ minute: Number(inp) });
+                if (!updated.isValid) {
+                    cmd.deferUpdate();
+                    break;
+                }
+
+                cmd.update(toDiscordTimestamp(updated));
                 break;
             }
             case "tsSecondsModal": {
                 if (!cmd.isModalSubmit()) return;
-                let inp = cmd.fields.getTextInputValue("tsSecondsInp");
+                const inp = cmd.fields.getTextInputValue("tsSecondsInp");
                 if (!/^\d+$/.test(inp)) {
                     cmd.deferUpdate();
                     break;
                 }
-                // @ts-ignore
-                cmd.update(`<t:${Math.round(new Date(+cmd.message.content.split(":")[1] * 1000).setUTCSeconds(+inp) / 1000)}:${cmd.message.content.split(":")[2].split(">")[0]}>`);
+
+                const updated = getZonedMessageDate().set({ second: Number(inp) });
+                if (!updated.isValid) {
+                    cmd.deferUpdate();
+                    break;
+                }
+
+                cmd.update(toDiscordTimestamp(updated));
                 break;
             }
             case "tsHourModal": {
                 if (!cmd.isModalSubmit()) return;
-                let inp = cmd.fields.getTextInputValue("tsHourInp");
+                const inp = cmd.fields.getTextInputValue("tsHourInp");
                 if (!/^\d+$/.test(inp)) {
                     cmd.deferUpdate();
                     break;
                 }
-                let numberInput = Number(inp) - user.config.timeOffset;
-                if (cmd.fields.getTextInputValue("tsAmPm").toLowerCase()[0] === "p" && numberInput < 13) {
-                    numberInput += 12;
+
+                let hour = Number(inp);
+                const amPmInput = cmd.fields.getTextInputValue("tsAmPm").toLowerCase();
+                if (amPmInput.startsWith("p") && hour < 12) hour += 12;
+                if (amPmInput.startsWith("a") && hour === 12) hour = 0;
+                hour = ((hour % 24) + 24) % 24;
+
+                const updated = getZonedMessageDate().set({ hour });
+                if (!updated.isValid) {
+                    cmd.deferUpdate();
+                    break;
                 }
-                while (numberInput > 23) {
-                    numberInput -= 24;
-                }
-                while (numberInput < 0) {
-                    numberInput += 24;
-                }
-                // @ts-ignore
-                cmd.update(`<t:${Math.round(new Date(+cmd.message.content.split(":")[1] * 1000).setUTCHours(numberInput) / 1000)}:${cmd.message.content.split(":")[2].split(">")[0]}>`);
+
+                cmd.update(toDiscordTimestamp(updated));
                 break;
             }
             case "tsDayModal": {
                 if (!cmd.isModalSubmit()) return;
-                let inpStr = cmd.fields.getTextInputValue("tsDayInp");
+                const inpStr = cmd.fields.getTextInputValue("tsDayInp");
                 if (!/^\d+$/.test(inpStr)) {
                     cmd.deferUpdate();
                     break;
                 }
-                let inpNum = +inpStr;
-                let t = new Date(+cmd.message.content.split(":")[1] * 1000);
-                if (24 - t.getUTCHours() < user.config.timeOffset) {
-                    inpNum++;
+
+                const updated = getZonedMessageDate().set({ day: Number(inpStr) });
+                if (!updated.isValid) {
+                    cmd.deferUpdate();
+                    break;
                 }
-                if (t.getUTCHours() - user.config.timeOffset < 0) {
-                    inpNum--;
-                }
-                // @ts-ignore
-                cmd.update(`<t:${Math.round(t.setUTCDate(inpNum) / 1000)}:${cmd.message.content.split(":")[2].split(">")[0]}>`);
+
+                cmd.update(toDiscordTimestamp(updated));
                 break;
             }
             // Menus
             case "tsMonth": {
-                // @ts-ignore
-                cmd.update(`<t:${Math.round(new Date(+cmd.message.content.split(":")[1] * 1000).setUTCMonth(cmd.values[0]) / 1000)}:${cmd.message.content.split(":")[2].split(">")[0]}>`);
+                const month = Number(cmd.values[0]) + 1;
+                const updated = getZonedMessageDate().set({ month });
+                if (!updated.isValid) {
+                    cmd.deferUpdate();
+                    break;
+                }
+
+                cmd.update(toDiscordTimestamp(updated));
                 break;
             }
             case "tsType": {
