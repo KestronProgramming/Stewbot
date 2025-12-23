@@ -281,6 +281,7 @@ module.exports = {
 
         // Ignore messages that are solely numbers
         if (/^\d+$/.test(msg.content.trim())) return;
+        if (/\ba (m(?:in(?:ute)?)?) ?(ago)?\b/ig.test(msg.content.trim())) return; // Too common
 
         const reactable = ("permissionsFor" in msg.channel) && msg.channel.permissionsFor(client.user).has(PermissionFlagsBits.AddReactions);
         if (!reactable) return;

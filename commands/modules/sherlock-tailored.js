@@ -41,10 +41,13 @@ var Sherlock = (function() {
 
             relativeDateStr: "((?:next|last|this) (?:week|month|year)|tom(?:orrow)?|tmrw|tod(?:ay)?|tonight|day after (?:tom(?:orrow)?|tmrw)|yest(?:erday)?|day before yest(?:erday)?)",
 
-            inRelativeDateStr: "(\\d{1,4}|a) (day|week|month|year)s? ?(ago|old)?",
+            // inRelativeDateStr: "(\\d{1,4}|a) (day|week|month|year)s? ?(ago|old)?",
+            inRelativeDateStr: "(\\d{1,4}|a) (day|week|month|year)s? ?(ago)?",
 
-            inRelativeTime: /\b(\d{1,2} ?|a |an )(h(?:our|r)?|m(?:in(?:ute)?)?)s? ?(ago|old)?\b/,
-            inMilliTime: /\b(\d+) ?(s(?:ec(?:ond)?)?|ms|millisecond)s? ?(ago|old)?\b/,
+            // inRelativeTime: /\b(\d{1,2} ?|a |an )(h(?:our|r)?|m(?:in(?:ute)?)?)s? ?(ago|old)?\b/,
+            inRelativeTime: /\b(\d{1,2} ?|a |an )(h(?:our|r)?|m(?:in(?:ute)?)?)s? ?(ago)?\b/,
+            // inMilliTime: /\b(\d+) ?(s(?:ec(?:ond)?)?|ms|millisecond)s? ?(ago|old)?\b/,
+            inMilliTime: /\b(\d+) ?(s(?:ec(?:ond)?)?|ms|millisecond)s? ?(ago)?\b/,
             midtime: /(?:@ ?)?\b(?:at )?(dawn|morn(?:ing)?|noon|afternoon|evening|night|midnight)\b/,
 
             // 23:50, 0700, 1900
