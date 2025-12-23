@@ -764,7 +764,7 @@ module.exports = {
         if (!cmd.user?.id || (isServerModal && !cmd.guild?.id)) return;
 
         // Recheck permissions here
-        if (!cmd.memberPermissions?.has(PermissionFlagsBits.ManageGuild)) {
+        if (isServerModal && !cmd.memberPermissions?.has(PermissionFlagsBits.ManageGuild)) {
             return await cmd.reply({
                 content: "You need the `Manage Server` permission to configure server AI access.",
                 ephemeral: true
