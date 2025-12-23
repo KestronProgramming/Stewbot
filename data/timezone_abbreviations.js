@@ -197,11 +197,11 @@ module.exports = {
 
     // --- South Asia ---
     "INDIA": "Asia/Kolkata",
-    "IN": "Asia/Kolkata",
+    // "IN": "Asia/Kolkata",
     "KOLKATA": "Asia/Kolkata",
     "DELHI": "Asia/Kolkata",
     "MUMBAI": "Asia/Kolkata",
-    "IST": "Asia/Kolkata", // ambiguous (Ireland/Israel/India)
+    // "IST": "Asia/Kolkata", // ambiguous (Ireland/Israel/India)
     "PKT": "Asia/Karachi",
     "PAKISTAN": "Asia/Karachi",
     "KARACHI": "Asia/Karachi",

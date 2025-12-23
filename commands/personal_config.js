@@ -121,8 +121,12 @@ module.exports = {
                 user.config.timeZoneRegion = zoned.zoneName;
                 user.config.timeOffsetMinutes = zoned.offset;
                 user.config.timeOffset = zoned.offset / 60;
-                user.config.manualDst = false;
-                user.config.observesDst = dstObservesInput;
+
+                // Automatically detect DST by checking if offset changes between January and July
+                const winterOffset = DateTime.fromObject({ month: 1, day: 15 }, { zone: regionInput }).offset;
+                const summerOffset = DateTime.fromObject({ month: 7, day: 15 }, { zone: regionInput }).offset;
+                user.config.observesDst = winterOffset !== summerOffset;
+
                 user.config.hasSetTZ = true;
                 response += `\n\nSet your timezone to ${zoned.zoneName} (${formatUtcOffset(zoned.offset)})`;
                 regionConfigured = true;
@@ -152,7 +156,6 @@ module.exports = {
                 user.config.timeZoneRegion = "";
                 user.config.timeOffsetMinutes = baseOffset;
                 user.config.timeOffset = baseOffset / 60;
-                user.config.manualDst = false;
                 user.config.observesDst = dstObservesInput;
                 user.config.hasSetTZ = true;
 

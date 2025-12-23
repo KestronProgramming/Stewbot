@@ -11,10 +11,14 @@ function applyContext(context = {}) {
 const sherlock = require("sherlockjs");
 const { DateTime, FixedOffsetZone } = require("luxon");
 
-function parseFreeformDate(text) {
+function parseFreeformDate(text, customSherlock = sherlock, customNow) {
     if (!text) return null;
 
-    const result = sherlock.parse(text);
+    if (customNow && !customSherlock._can_pass_now_in_parse) {
+        throw new Error("The custom 'now' property can only be passed if sherlock is modified to accept it.");
+    }
+
+    const result = customSherlock.parse(text, customNow); // NOTE: customNow can only be used with a modified sherlock parser
     if (!result.startDate || isNaN(result.startDate.getTime())) return null;
 
     return DateTime.fromJSDate(result.startDate);
@@ -34,8 +38,8 @@ function resolveUserZone(config = {}) {
     return FixedOffsetZone.instance(baseOffset);
 }
 
-function parseTextDateIfValid(text, userConfig) {
-    const parsed = parseFreeformDate(text);
+function parseTextDateIfValid(text, userConfig, customSherlock = sherlock, customNow) {
+    const parsed = parseFreeformDate(text, customSherlock, customNow);
     if (!parsed) return null;
 
     const zone = resolveUserZone(userConfig);
@@ -266,7 +270,7 @@ const components = {
 /** @type {import("../command-module").CommandModule} */
 module.exports = {
     parseTextDateIfValid: parseTextDateIfValid,
-    parseFreeformDate,
+    parseFreeformDate: parseFreeformDate,
 
     data: {
         // Slash command data

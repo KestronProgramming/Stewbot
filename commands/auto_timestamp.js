@@ -3,20 +3,26 @@ const Categories = require("./modules/Categories");
 const client = require("../client.js");
 const { userByObj } = require("./modules/database.js");
 const { Events, InteractionContextType: IT, ApplicationIntegrationType: AT, SlashCommandBuilder, PermissionFlagsBits } = require("discord.js");
-const sherlockjs = require("sherlockjs");
+const sherlock_tailored = require("./modules/sherlock-tailored.js");
 const { parseTextDateIfValid, parseFreeformDate } = require("./timestamp.js");
 const { DateTime } = require("luxon");
 const TIMEZONE_MAP = require("../data/timezone_abbreviations.js");
 
 /**
 * Extracts timezone from text and returns the timezone and cleaned text
+* Also removes incomplete relative time fragments
 * @param {string} text
 * @returns {{timezone: string | null, cleanedText: string}}
 */
 function extractTimezone(text) {
+    let cleanedText = text;
+
+    // Remove trailing incomplete "in" that might confuse the parser
+    cleanedText = cleanedText.replace(/\bin\s*$/i, "").trim();
+
     // Match timezone abbreviations at the end or in the middle
     const tzRegex = /\b([A-Z]{2,5})\b/gi;
-    const matches = [...text.matchAll(tzRegex)];
+    const matches = [...cleanedText.matchAll(tzRegex)];
 
     // Check matches from end to start (prioritize timezone at end)
     for (let i = matches.length - 1; i >= 0; i--) {
@@ -25,7 +31,7 @@ function extractTimezone(text) {
 
         if (TIMEZONE_MAP[abbr]) {
             // Remove the timezone from the text
-            const cleanedText = text.slice(0, match.index) + text.slice(match.index + match[0].length);
+            cleanedText = cleanedText.slice(0, match.index) + cleanedText.slice(match.index + match[0].length);
             return {
                 timezone: TIMEZONE_MAP[abbr],
                 cleanedText: cleanedText.trim()
@@ -35,27 +41,37 @@ function extractTimezone(text) {
 
     // Also check for UTC+X or GMT+X format
     const offsetRegex = /(UTC|GMT)([+-]\d{1,2}(?::\d{2})?)/i;
-    const offsetMatch = text.match(offsetRegex);
+    const offsetMatch = cleanedText.match(offsetRegex);
     if (offsetMatch) {
-        const cleanedText = text.replace(offsetMatch[0], "").trim();
+        cleanedText = cleanedText.replace(offsetMatch[0], "").trim();
         return {
-            timezone: offsetMatch[0], // Luxon can handle UTC+5 format directly
+            timezone: offsetMatch[0],
             cleanedText: cleanedText
         };
     }
 
     return {
         timezone: null,
-        cleanedText: text
+        cleanedText: cleanedText
     };
 }
 
 /**
-* Detects and parses 24-hour time format
+* Detects and parses 24-hour time format (only unambiguous cases)
 * @param {string} text
 * @returns {{hour: number, minute: number} | null}
 */
 function parse24HourTime(text) {
+    // Check if text contains AM/PM indicators - if so, don't use 24-hour parsing
+    if (/\b(am|pm|a\.m\.|p\.m\.)\b/i.test(text)) {
+        return null;
+    }
+
+    // Check if text contains time-of-day phrases that indicate 12-hour format
+    if (/\b(morning|evening|afternoon|night|noon|midnight)\b/i.test(text)) {
+        return null;
+    }
+
     // First check for times with colons (unambiguous)
     const timeWithColonRegex = /\b([0-2]?\d):([0-5]\d)(?::([0-5]\d))?\b/g;
     const colonMatches = [...text.matchAll(timeWithColonRegex)];
@@ -87,17 +103,28 @@ function parse24HourTime(text) {
 }
 
 /**
-* Check if text contains a relative time phrase
+* Check if text contains a COMPLETE relative time phrase
 * @param {string} text
 * @returns {boolean}
 */
 function hasRelativeTime(text) {
     const lowerText = text.toLowerCase();
+
+    // Check for complete "in X unit" patterns
+    if (/\bin\s+(\d+|a|an)\s+(second|minute|hour|day|week|month|year)s?\b/i.test(lowerText)) {
+        return true;
+    }
+
+    // Check for "X unit ago" patterns
+    if (/\b(\d+|a|an)\s+(second|minute|hour|day|week|month|year)s?\s+ago\b/i.test(lowerText)) {
+        return true;
+    }
+
+    // Other standalone relative phrases
     return lowerText.includes("from now") ||
-    lowerText.includes("ago") ||
-    /\bin\s+\d+\s+(second|minute|hour|day|week|month|year)s?/i.test(text) ||
-    lowerText.includes("yesterday") ||
-    lowerText.includes("tomorrow");
+           lowerText.includes("yesterday") ||
+           lowerText.includes("tomorrow") ||
+           /\b(today|tonight|tmrw)\b/i.test(lowerText);
 }
 
 /**
@@ -105,8 +132,8 @@ function hasRelativeTime(text) {
 * @param {string} text
 * @returns {boolean}
 */
-function hasTimeComponent(text) {
-    const sherlockResult = sherlockjs.parse(text);
+function hasTimeComponent(text, customNow) {
+    const sherlockResult = sherlock_tailored.parse(text, customNow);
     if (sherlockResult.isAllDay === false) {
         return true;
     }
@@ -115,23 +142,27 @@ function hasTimeComponent(text) {
 
 /**
 * Parse time with explicit timezone if provided
+* Cleans up incomplete relative time fragments before parsing
 * @param {string} text
 * @param {object} userConfig
 * @returns {Date | null}
 */
-function parseTimeWithTimezone(text, userConfig) {
-    const { timezone, cleanedText } = extractTimezone(text);
+function parseTimeWithTimezone(text, userConfig, customNow) {
+    let { timezone, cleanedText } = extractTimezone(text);
 
-    // Check for 24-hour time format first
-    const time24 = parse24HourTime(cleanedText);
+    // Clean contextual phrases that might confuse the parser -> Sherlock doesn't *get* confused :muscle:
+    // cleanedText = cleanedText.replace(/\bin\s+the\s+(morning|evening|afternoon|night)\b/gi, "").trim();
 
     // Determine which timezone to use
-    const targetZone = timezone || (userConfig.timeZoneRegion ? userConfig.timeZoneRegion : null);
+    const targetZone = timezone || (userConfig.timeZoneRegion ? userConfig.timeZoneRegion : null); // TODO: make sure this works when configuring manually
+
+    // Check for 24-hour time format (only if no AM/PM or time-of-day context)
+    const time24 = parse24HourTime(cleanedText); // TODO: nuke this
 
     if (time24 && targetZone) {
-        // We have a 24-hour time, construct the date manually
+        // We have an unambiguous 24-hour time, construct the date manually
         const now = DateTime.now().setZone(targetZone);
-        const dt = now.set({
+        let dt = now.set({
             hour: time24.hour,
             minute: time24.minute,
             second: 0,
@@ -142,9 +173,10 @@ function parseTimeWithTimezone(text, userConfig) {
         return dt.toUTC().toJSDate();
     }
 
+    // If we had an explicit timezone
     if (timezone) {
         // Parse the cleaned text with the detected timezone
-        const rawParsed = parseFreeformDate(cleanedText);
+        const rawParsed = parseFreeformDate(cleanedText, sherlock_tailored, customNow);
         if (!rawParsed) return null;
 
         // Create DateTime in the specified timezone
@@ -166,7 +198,7 @@ function parseTimeWithTimezone(text, userConfig) {
     }
 
     // No explicit timezone, use user's configured timezone
-    return parseTextDateIfValid(text, userConfig);
+    return parseTextDateIfValid(cleanedText, userConfig, sherlock_tailored, customNow);
 }
 
 /** @type {import("../command-module").CommandModule} */
@@ -229,9 +261,12 @@ module.exports = {
         const user = await userByObj(msg.author);
         if (!readGuild.config.timeReactions || !user.config.timeReactions) return;
 
+        // Make sure that the "current time" is when the message was sent
+        const customNow = msg.createdAt;
+
         // Check if message contains a relative time or explicit time
         const isRelativeTime = hasRelativeTime(msg.content);
-        const hasTime = hasTimeComponent(msg.content);
+        const hasTime = hasTimeComponent(msg.content, customNow);
 
         // Only proceed if there's a time component or relative time
         if (!isRelativeTime && !hasTime) return;
@@ -240,7 +275,7 @@ module.exports = {
         const { timezone } = extractTimezone(msg.content);
 
         // Try parsing
-        const rawParsed = parseFreeformDate(msg.content);
+        const rawParsed = parseFreeformDate(msg.content, sherlock_tailored, customNow);
         if (!rawParsed) return;
 
         // For absolute times without explicit timezone, require user timezone config
@@ -252,12 +287,12 @@ module.exports = {
             parsedTime = rawParsed.toJSDate();
         }
         else {
-            parsedTime = parseTimeWithTimezone(msg.content, user.config);
+            parsedTime = parseTimeWithTimezone(msg.content, user.config, customNow);
         }
 
         if (!parsedTime) return;
 
-        msg.react(process.env.beta ? "<:Normalize_Timezone:1452899414996811816>" : "<:Normalize_Timezone:1452898452173492284>").catch(() => {});
+        msg.react(process.env.beta ? "<:Normalize_Timezone:1452899414996811816>" : "<:Click_To_Normalize_Timezone:1452898452173492284>").catch(() => {});
     },
 
     async [Events.MessageReactionAdd](reaction, user) {
@@ -265,7 +300,7 @@ module.exports = {
         if (user.bot) return;
 
         // Check if it's the right emoji
-        if (reaction.emoji.name !== "Normalize_Timezone") return;
+        if (reaction.emoji.name !== "Normalize_Timezone" && reaction.emoji.name !== "Click_To_Normalize_Timezone") return;
 
         // Get the message author's user config for timezone
         const messageAuthor = await userByObj(reaction.message.author);
@@ -276,19 +311,19 @@ module.exports = {
         // Parse accordingly
         let parsedTime;
         if (isRelativeTime) {
-            const rawParsed = parseFreeformDate(reaction.message.content);
+            const rawParsed = parseFreeformDate(reaction.message.content, sherlock_tailored, reaction.message.createdAt);
             if (!rawParsed) return;
             parsedTime = rawParsed.toJSDate();
         }
         else {
-            parsedTime = parseTimeWithTimezone(reaction.message.content, messageAuthor.config);
+            parsedTime = parseTimeWithTimezone(reaction.message.content, messageAuthor.config, reaction.message.createdAt);
             if (!parsedTime) return;
         }
 
         parsedTime = Math.round(parsedTime.getTime() / 1000);
 
         let response =
-            `<t:${parsedTime}:f>, <t:${parsedTime}:R>\n` +
+            `<t:${parsedTime}:t>, <t:${parsedTime}:R>\n` +
             `-# Want to use this feature? ${cmds.auto_timestamp.help.mention}`;
 
         // Check if we can send messages in this channel
