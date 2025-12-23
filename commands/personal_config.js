@@ -46,6 +46,9 @@ module.exports = {
                 option.setName("ai_pings").setDescription("Respond with an AI message to pings or DMs")
             )
             .addBooleanOption(option =>
+                option.setName("auto_timezone_reaction").setDescription("Offer an automatic timezone conversion via reaction?")
+            )
+            .addBooleanOption(option =>
                 option.setName("trackable_expiration_dm").setDescription("Should I message you before your trackable expires?")
             )
             .addBooleanOption(option =>
@@ -96,6 +99,7 @@ module.exports = {
         const user = await userByObj(cmd.user);
 
         if (cmd.options.getBoolean("ai_pings") !== null) user.config.aiPings = cmd.options.getBoolean("ai_pings");
+        if (cmd.options.getBoolean("auto_timezone_reaction") !== null) user.config.timeReactions = cmd.options.getBoolean("auto_timezone_reaction");
         if (cmd.options.getBoolean("trackableNotifsSilenced") !== null) user.config.trackableNotifsSilenced = cmd.options.getBoolean("trackableNotifsSilenced");
         if (cmd.options.getBoolean("dm_infractions") !== null) user.config.dmOffenses = cmd.options.getBoolean("dm_infractions");
         if (cmd.options.getBoolean("dm_infraction_content") !== null) user.config.returnFiltered = cmd.options.getBoolean("dm_infraction_content");

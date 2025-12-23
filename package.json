@@ -18,7 +18,6 @@
     "chartjs-node-canvas": "^5.0.0",
     "chartjs-plugin-datalabels": "^2.2.0",
     "cheerio": "^1.0.0",
-    "compromise": "^14.14.4",
     "discord-api-types": "^0.38.37",
     "discord.js": "^14.25.1",
     "exifreader": "^4.31.1",
@@ -41,6 +40,8 @@
     "safe-regex": "^2.1.1",
     "sentiment": "^5.0.2",
     "sherlockjs": "^1.4.2",
+    "sugar": "^2.0.6",
+    "sugar-date": "^2.0.6",
     "turndown": "^7.2.0",
     "unzipper": "^0.12.3",
     "zod": "^4.2.1"

@@ -75,6 +75,17 @@
         "detailedDesc": "In the channel this command is used in, Stewbot will post a configurable message with buttons to add and remove the selected roles from themselves. Start by using the command with the message, and then Stewbot will prompt for the roles."
     },
     {
+        "name": "auto_timestamp",
+        "mention": "</auto_timestamp:1452919824748642304>",
+        "helpCategories": [
+            "General",
+            "Information",
+            "Module"
+        ],
+        "shortDesc": "Automatically convert times to timestamps",
+        "detailedDesc": "Automatically detects times in messages and converts them to Discord timestamps.\n\n                React with the Normalize_Timezone emoji to convert the detected time to a proper timestamp.\n\n                Supports timezone abbreviations (EST, PST, GMT, CST, etc.)\n\n                For times without explicit timezones, requires timezone configuration via /personal_config.\n\n                Only reacts to messages with times or relative time phrases (ignores date-only messages)."
+    },
+    {
         "name": "backuper",
         "mention": "`backuper` Module",
         "helpCategories": [

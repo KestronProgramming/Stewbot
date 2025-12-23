@@ -170,6 +170,7 @@ let guildConfigSchema = new mongoose.Schema({
     domain_scanning: { type: Boolean, default: true },
     fake_link_check: { type: Boolean, default: true },
     format_exploit_check: { type: Boolean, default: true },
+    timeReactions: { type: Boolean, default: true },
     ai: { type: Boolean, default: true },
     aiAccessMode: { type: String, enum: ["disabled", "whitelist", "blacklist"], default: "disabled" },
     aiAccessRoles: { type: [String], default: [] },
@@ -294,6 +295,7 @@ let userConfigSchema = new mongoose.Schema({
     trackableNotifsSilenced: { type: Boolean, default: false },
     beenAIDisclaimered: { type: Boolean, default: false },
     aiPings: { type: Boolean, default: true },
+    timeReactions: { type: Boolean, default: true },
     dmOffenses: { type: Boolean, default: true },
     returnFiltered: { type: Boolean, default: true }, // infraction content
     embedPreviews: { type: Boolean, default: true },

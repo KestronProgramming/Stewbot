@@ -95,6 +95,8 @@ async function getCommands(autoRelaunch = true) { // launching runs getCommands,
                         command.default.name = command.default.name || commandName;
 
                         returnCommands[commandName] = command?.default || command; // `import` throws the module under the `default` tag
+
+                        // console.log(`Loaded command file: "${commandName}"`);
                     }
                     catch (importError) {
                         try { notify(`Command ${commandName} failed to load`, true); }

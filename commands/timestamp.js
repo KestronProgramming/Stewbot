@@ -34,7 +34,7 @@ function resolveUserZone(config = {}) {
     return FixedOffsetZone.instance(baseOffset);
 }
 
-function parseTextDateIfValid_Version(text, userConfig) {
+function parseTextDateIfValid(text, userConfig) {
     const parsed = parseFreeformDate(text);
     if (!parsed) return null;
 
@@ -265,7 +265,7 @@ const components = {
 
 /** @type {import("../command-module").CommandModule} */
 module.exports = {
-    parseTextDateIfValid_Version,
+    parseTextDateIfValid: parseTextDateIfValid,
     parseFreeformDate,
 
     data: {
@@ -302,7 +302,7 @@ module.exports = {
             const quickInput = cmd.options.getString("quick-input");
             const userZone = resolveUserZone(user.config);
 
-            let startingTime = parseTextDateIfValid_Version(quickInput, user.config);
+            let startingTime = parseTextDateIfValid(quickInput, user.config);
             if (!startingTime) {
                 startingTime = DateTime.now().setZone(userZone)
                     .toUTC()
