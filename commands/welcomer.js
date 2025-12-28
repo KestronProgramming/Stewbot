@@ -79,7 +79,7 @@ async function sendWelcome(guild) {
                                 "inline": true
                             },
                             {
-                                "name": `${cmds.general_config.mention} ${cmds.personal_config.mention}`,
+                                "name": `${cmds.server_config.mention} ${cmds.personal_config.mention}`,
                                 "value": "Don't like some things that the bot does? Change the bot's automatic behaviors using these commands.",
                                 "inline": true
                             },

@@ -1509,8 +1509,6 @@ module.exports = {
             shortDesc: "Ask Stewbot's AI something",
             detailedDesc: "Have a fun chat with Stewbot's self-hosted AI"
         }
-
-
     },
 
     async execute(cmd) {
@@ -1701,7 +1699,7 @@ module.exports = {
                 if (!user.config?.beenAIDisclaimered && responseContent) {
                     user.config.beenAIDisclaimered = true;
                     user.save();
-                    responseContent += `\n-# This is part of a Stewbot feature. If you wish to disable it, a user can run /personal_config to disable it for them personally, or a moderator can run /general_config.`;
+                    responseContent += `\n-# This is part of a Stewbot feature. If you wish to disable it, a user can run /personal_config to disable it for them personally, or a moderator can run /server_config.`;
                 }
 
                 // For text responses - TODO: this is a little janky, would be better if it was handled in getAiResponse which returned an array of messages to send.

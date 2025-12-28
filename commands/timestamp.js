@@ -11,14 +11,14 @@ function applyContext(context = {}) {
 const sherlock = require("sherlockjs");
 const { DateTime, FixedOffsetZone } = require("luxon");
 
-function parseFreeformDate(text, customSherlock = sherlock, customNow) {
+function parseFreeformDate(text, customSherlock = sherlock, customNow, require24HourColon = true) {
     if (!text) return null;
 
     if (customNow && !customSherlock._can_pass_now_in_parse) {
         throw new Error("The custom 'now' property can only be passed if sherlock is modified to accept it.");
     }
 
-    const result = customSherlock.parse(text, customNow); // NOTE: customNow can only be used with a modified sherlock parser
+    const result = customSherlock.parse(text, customNow, require24HourColon); // NOTE: customNow can only be used with a modified sherlock parser
     if (!result.startDate || isNaN(result.startDate.getTime())) return null;
 
     return DateTime.fromJSDate(result.startDate);

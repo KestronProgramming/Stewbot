@@ -14,16 +14,13 @@ function applyContext(context = {}) {
 module.exports = {
     data: {
         // Slash command data
-        command: new SlashCommandBuilder().setName("general_config")
+        command: new SlashCommandBuilder().setName("server_config")
             .setDescription("Configure general behaviors")
             .addBooleanOption(option =>
                 option.setName("keywords").setDescription("Allow the bot to respond to certain keywords with an attempt at a humorous response?")
             )
             .addBooleanOption(option =>
                 option.setName("ai_pings").setDescription("Have the bot post an AI message when pinging it?")
-            )
-            .addBooleanOption(option =>
-                option.setName("auto_timezone_reaction").setDescription("Offer an automatic timezone conversion via reaction?")
             )
             .addBooleanOption(option =>
                 option.setName("embeds").setDescription("If a message link is posted, should I post a preview?")
@@ -53,7 +50,6 @@ module.exports = {
         const updates = {};
 
         if (cmd.options.getBoolean("ai_pings") !== null) updates["config.ai"] = cmd.options.getBoolean("ai_pings");
-        if (cmd.options.getBoolean("auto_timezone_reaction") !== null) updates["config.timeReactions"] = cmd.options.getBoolean("auto_timezone_reaction");
         if (cmd.options.getBoolean("embeds") !== null) updates["config.embedPreviews"] = cmd.options.getBoolean("embeds");
         if (cmd.options.getBoolean("keywords") !== null) updates["config.keywords"] = cmd.options.getBoolean("keywords");
 

@@ -1,12 +1,15 @@
 // #region CommandBoilerplate
 const Categories = require("./modules/Categories");
 const client = require("../client.js");
-const { userByObj } = require("./modules/database.js");
+const { userByObj, guildByObj } = require("./modules/database.js");
 const { Events, InteractionContextType: IT, ApplicationIntegrationType: AT, SlashCommandBuilder, PermissionFlagsBits } = require("discord.js");
-const sherlock_tailored = require("./modules/sherlock-tailored.js");
 const { parseTextDateIfValid, parseFreeformDate } = require("./timestamp.js");
 const { DateTime } = require("luxon");
 const TIMEZONE_MAP = require("../data/timezone_abbreviations.js");
+
+const sherlock_limited = require("./modules/sherlock-limited.js");
+const sherlock_full = require("./modules/sherlock-full.js");
+
 
 /**
 * Extracts timezone from text and returns the timezone and cleaned text
@@ -160,8 +163,8 @@ function isPureRelativeTimeOffset(text) {
 * @param {string} text
 * @returns {boolean}
 */
-function hasTimeComponent(text, customNow) {
-    const sherlockResult = sherlock_tailored.parse(text, customNow);
+function hasTimeComponent(text, customNow, customSherlock = sherlock_limited, require24HourColon = true) {
+    const sherlockResult = customSherlock.parse(text, customNow, require24HourColon);
     if (sherlockResult.isAllDay === false) {
         return true;
     }
@@ -175,7 +178,7 @@ function hasTimeComponent(text, customNow) {
 * @param {object} userConfig
 * @returns {Date | null}
 */
-function parseTimeWithTimezone(text, userConfig, customNow) {
+function parseTimeWithTimezone(text, userConfig, customNow, customSherlock = sherlock_limited, require24HourColon = true) {
     let { timezone, cleanedText } = extractTimezone(text);
 
     // Clean contextual phrases that might confuse the parser -> Sherlock doesn't *get* confused :muscle:
@@ -204,7 +207,7 @@ function parseTimeWithTimezone(text, userConfig, customNow) {
     // If we had an explicit timezone
     if (timezone) {
         // Parse the cleaned text with the detected timezone
-        const rawParsed = parseFreeformDate(cleanedText, sherlock_tailored, customNow);
+        const rawParsed = parseFreeformDate(cleanedText, customSherlock, customNow, require24HourColon);
         if (!rawParsed) return null;
 
         // Create DateTime in the specified timezone
@@ -226,7 +229,7 @@ function parseTimeWithTimezone(text, userConfig, customNow) {
     }
 
     // No explicit timezone, use user's configured timezone
-    return parseTextDateIfValid(cleanedText, userConfig, sherlock_tailored, customNow);
+    return parseTextDateIfValid(cleanedText, userConfig, customSherlock, customNow);
 }
 
 /** @type {import("../command-module").CommandModule} */
@@ -250,6 +253,32 @@ module.exports = {
                     .addBooleanOption(option =>
                         option.setName("private").setDescription("Make the response ephemeral?")
                     )
+            )
+            .addSubcommand(subcommand =>
+                subcommand.setName("personal_config")
+                    .setDescription("Configure your own personal setup for automatic timezone conversion")
+                    .addBooleanOption(option =>
+                        option.setName("auto_timezone_reaction").setDescription("Offer an automatic timezone conversion via reaction?")
+                            .setRequired(true)
+                    )
+                    .addBooleanOption(option =>
+                        option.setName("24hr_without_colon").setDescription("Add reactions to 24hr times without a colon? (Can be confused with years - 2023 vs 20:23 (8:23 PM))")
+                            .setRequired(true)
+                    )
+                    .addBooleanOption(option =>
+                        option.setName("private").setDescription("Make the response ephemeral?")
+                    )
+            )
+            .addSubcommand(subcommand =>
+                subcommand.setName("server_config")
+                    .setDescription("Configure whether timezone reactions will be added server wide")
+                    .addBooleanOption(option =>
+                        option.setName("auto_timezone_reaction").setDescription("Offer an automatic timezone conversion via reaction?")
+                            .setRequired(true)
+                    )
+                    .addBooleanOption(option =>
+                        option.setName("private").setDescription("Make the response ephemeral?")
+                    )
             ),
 
         help: {
@@ -260,18 +289,37 @@ module.exports = {
                 React with the Normalize_Timezone emoji to convert the detected time to a proper timestamp.\n
                 Supports timezone abbreviations (EST, PST, GMT, CST, etc.)\n
                 For times without explicit timezones, requires timezone configuration via /personal_config.\n
-                Only reacts to messages with times or relative time phrases (ignores date-only messages).`
+                You can enable and disable this personally and server wide.\n
+                By default, does not parse 24hr times such as '2023' due to overlap confusion with the year. This can be changed in the personal config.`
         }
     },
 
     async execute(cmd) {
-        if (cmd.options.getSubcommand() === "help") {
-            const helpMessage =
-                `The ${cmds.auto_timestamp.mention} module detects when you post a time in a message, and allows users to click the added emoji to convert it to their timezone.\n` +
-                // `\n` +
-                `To use this feature on your messages, you must configure your timezone in ${cmds.personal_config.mention}. To disable these reactions being added automatically, use ${cmds.personal_config.mention} for personal messages or ${cmds.general_config.mention} to disable it server-wide.`;
+        switch (cmd.options.getSubcommand()) {
+            case "help":
+                const helpMessage =
+                    `The ${cmds.auto_timestamp.mention} module detects when you post a time in a message, and allows users to click the added emoji to convert it to their timezone.\n` +
+                    // `\n` +
+                    `To use this feature on your messages, you must configure your timezone in ${cmds.personal_config.mention}. To disable these reactions being added automatically, use ${cmds.auto_timestamp.personal_config.mention} for personal messages or ${cmds.auto_timestamp.server_config.mention} to disable it server-wide.`;
 
-            cmd.followUp(helpMessage);
+                cmd.followUp(helpMessage);
+                break;
+            case "personal_config":
+                const user = await userByObj(cmd.user);
+                if (cmd.options.getBoolean("auto_timezone_reaction") !== null) user.config.timeReactions = cmd.options.getBoolean("auto_timezone_reaction");
+                if (cmd.options.getBoolean("24hr_without_colon") !== null) user.config.noColon24h = cmd.options.getBoolean("24hr_without_colon");
+                await user.save();
+
+                cmd.followUp(`I have configured your personal timezone reactions.${user.config.timeReactions ? ` To configure your timezone, use ${cmds.personal_config.mention}. This must be done before timezone reactions will begin being added.` : ``}`);
+                break;
+            case "server_config":
+                //IF(USER!==MODERATOR) return cmd.followUp("You need the [PERMS] permission to use this command."); <- Before pushing
+                const updates = {};
+                if (cmd.options.getBoolean("auto_timezone_reaction") !== null) updates["config.timeReactions"] = cmd.options.getBoolean("auto_timezone_reaction");
+                await guildByObj(cmd.guild, updates);
+
+                cmd.followUp(`I have configured timezone reactions server wide.${updates?.config?.timeReactions ? ` Users must run ${cmds.personal_config.mention} and configure their timezone before timezone reactions will be added to their messages.` : ``}`);
+                break;
         }
     },
 
@@ -281,6 +329,7 @@ module.exports = {
 
         // Ignore messages that are solely numbers
         if (/^\d+$/.test(msg.content.trim())) return;
+        //What we do want to parse: ^\d\d?\s?(a|p)m$
         if (/\ba (m(?:in(?:ute)?)?) ?(ago)?\b/ig.test(msg.content.trim())) return; // Too common
 
         const reactable = ("permissionsFor" in msg.channel) && msg.channel.permissionsFor(client.user).has(PermissionFlagsBits.AddReactions);
@@ -295,7 +344,7 @@ module.exports = {
 
         // Check if message contains a relative time or explicit time
         const isRelativeTime = hasRelativeTime(msg.content);
-        const hasTime = hasTimeComponent(msg.content, customNow);
+        const hasTime = hasTimeComponent(msg.content, customNow, sherlock_limited, !user.config.noColon24h);
 
         // Only proceed if there's a time component or relative time
         if (!isRelativeTime && !hasTime) return;
@@ -304,7 +353,7 @@ module.exports = {
         const { timezone } = extractTimezone(msg.content);
 
         // Try parsing
-        const rawParsed = parseFreeformDate(msg.content, sherlock_tailored, customNow);
+        const rawParsed = parseFreeformDate(msg.content, sherlock_limited, customNow, !user.config.noColon24h);
         if (!rawParsed) return;
 
         // For absolute times without explicit timezone, require user timezone config
@@ -318,7 +367,7 @@ module.exports = {
             parsedTime = rawParsed.toJSDate();
         }
         else {
-            parsedTime = parseTimeWithTimezone(msg.content, user.config, customNow);
+            parsedTime = parseTimeWithTimezone(msg.content, user.config, customNow, sherlock_limited, !user.config.noColon24h);
         }
 
         if (!parsedTime) return;
@@ -341,12 +390,12 @@ module.exports = {
         // Everything else (including "5:30 pm today") needs timezone handling
         let parsedTime;
         if (isPureRelativeTimeOffset(reaction.message.content)) {
-            const rawParsed = parseFreeformDate(reaction.message.content, sherlock_tailored, reaction.message.createdAt);
+            const rawParsed = parseFreeformDate(reaction.message.content, sherlock_full, reaction.message.createdAt);
             if (!rawParsed) return;
             parsedTime = rawParsed.toJSDate();
         }
         else {
-            parsedTime = parseTimeWithTimezone(reaction.message.content, messageAuthor.config, reaction.message.createdAt);
+            parsedTime = parseTimeWithTimezone(reaction.message.content, messageAuthor.config, reaction.message.createdAt, sherlock_full);
             if (!parsedTime) return;
         }
 
@@ -354,7 +403,7 @@ module.exports = {
 
         let response =
             `<t:${parsedTime}:t>, <t:${parsedTime}:R>\n` +
-            `-# Want to use this feature? ${cmds.auto_timestamp.help.mention}`;
+            `-# Want to use, or disable this feature? ${cmds.auto_timestamp.help.mention}`;
 
         // Check if we can send messages in this channel
         const canSendMessages = ("permissionsFor" in reaction.message.channel) &&

@@ -296,6 +296,7 @@ let userConfigSchema = new mongoose.Schema({
     beenAIDisclaimered: { type: Boolean, default: false },
     aiPings: { type: Boolean, default: true },
     timeReactions: { type: Boolean, default: true },
+    noColon24h: { type: Boolean, default: false },
     dmOffenses: { type: Boolean, default: true },
     returnFiltered: { type: Boolean, default: true }, // infraction content
     embedPreviews: { type: Boolean, default: true },

@@ -87,6 +87,8 @@ export default defineConfig([
             "no-new-func": "error",
             "radix": "warn",
 
+            "no-case-declarations": "warn",
+
             // Rules our codebase hasn't triggered, so I don't know if they are useful - disabled until I see them in action in our codebase
             // "no-redeclare": "error",
             // "no-undef-init": "error",
@@ -99,7 +101,11 @@ export default defineConfig([
             // "no-unused-private-class-members": "error",
 
             // Formatting rules
-            "@stylistic/indent": ["warn", 4], // or 2, depending on your preference
+            "@stylistic/indent": [
+                "warn", 
+                4, 
+                { "SwitchCase": 1 }
+            ],
             "@stylistic/brace-style": [
                 "warn", "stroustrup", {  // else on new line
                     "allowSingleLine": true

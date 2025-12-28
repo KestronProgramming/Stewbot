@@ -76,14 +76,14 @@
     },
     {
         "name": "auto_timestamp",
-        "mention": "</auto_timestamp:1453467919466893342>",
+        "mention": "</auto_timestamp:1454598162093309952>",
         "helpCategories": [
             "General",
             "Information",
             "Module"
         ],
         "shortDesc": "Automatically convert times to timestamps",
-        "detailedDesc": "Automatically detects times in messages and converts them to Discord timestamps.\n\n                React with the Normalize_Timezone emoji to convert the detected time to a proper timestamp.\n\n                Supports timezone abbreviations (EST, PST, GMT, CST, etc.)\n\n                For times without explicit timezones, requires timezone configuration via /personal_config.\n\n                Only reacts to messages with times or relative time phrases (ignores date-only messages)."
+        "detailedDesc": "Automatically detects times in messages and converts them to Discord timestamps.\n\n                React with the Normalize_Timezone emoji to convert the detected time to a proper timestamp.\n\n                Supports timezone abbreviations (EST, PST, GMT, CST, etc.)\n\n                For times without explicit timezones, requires timezone configuration via /personal_config.\n\n                You can enable and disable t."
     },
     {
         "name": "backuper",
@@ -382,19 +382,6 @@
         "detailedDesc": "Generate a random set of letters in an attempt to make an original name"
     },
     {
-        "name": "general_config",
-        "mention": "</general_config:1448914141736734787>",
-        "helpCategories": [
-            "General",
-            "Bot",
-            "Administration",
-            "Configuration",
-            "Server_Only"
-        ],
-        "shortDesc": "Configure general behaviors for the bot",
-        "detailedDesc": "Configure automatic actions the bot will take server wide, including whether Stewbot will automatically post embeds when it sees a message link, or if you want to disable Stewbot's automatic hacked/spam account protection."
-    },
-    {
         "name": "groupmute_config",
         "mention": "</groupmute_config:1448914141736734788>",
         "helpCategories": [
@@ -671,6 +658,19 @@
         ],
         "shortDesc": "React when Stewbot is mentioned",
         "detailedDesc": "Runs basic sentiment-analysis on messages mentioning Stewbot to determine how to react."
+    },
+    {
+        "name": "server_config",
+        "mention": "</server_config:1454595701135904829>",
+        "helpCategories": [
+            "General",
+            "Bot",
+            "Administration",
+            "Configuration",
+            "Server_Only"
+        ],
+        "shortDesc": "Configure general behaviors for the bot",
+        "detailedDesc": "Configure automatic actions the bot will take server wide, including whether Stewbot will automatically post embeds when it sees a message link, or if you want to disable Stewbot's automatic hacked/spam account protection."
     },
     {
         "name": "set_persistent_message",
