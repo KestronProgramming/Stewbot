@@ -15,7 +15,7 @@ const fs = require("fs");
 
 const approveQuoteButtons = [
     new ActionRowBuilder().addComponents(
-        new ButtonBuilder().setCustomId("quote_save")
+        new ButtonBuilder().setCustomId("quote_approve")
             .setLabel("Approve quote")
             .setStyle(ButtonStyle.Success),
         new ButtonBuilder().setCustomId("quote_block")
