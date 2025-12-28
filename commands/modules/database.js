@@ -349,13 +349,14 @@ const configSchema = new mongoose.Schema({
     dailyMeme: { type: Number, default: 0 },
     pfp: String,
     rss: { type: Map, of: rssFeedSchema, default: {} },
-    wotd: { type: String, default: "jerry" },
-    bootedAt: { type: Number, default: 0 },    // Last time the boot booted *without* /reboot (i.e. power outtage)
+    wotd: { type: String, default: "Jerry" },
+    bootedAt: { type: Number, default: 0 },    // Last time the bot booted *without* /reboot (i.e. power outage)
     restartedAt: { type: Number, default: 0 }, // Last /reboot
-    MOTD: { type: { // Statues
+    MOTD: { type: { // Statuses
         statuses: [],
         delay: { type: Number, default: 5000 }
-    }, default: {} }
+    }, default: {} },
+    blockedQuoteAuthors: { type: [String], default: [] }
 });
 
 const ConfigDB = mongoose.model("settings", configSchema);
@@ -575,6 +576,17 @@ let personalAiSchema = new mongoose.Schema({
     ratelimit: { type: Number }, // How many requests per ratelimit cycle
     ratelimitCycleLength: { type: Number } // How long a ratelimit cycle should last
 });
+
+let quoteSchema = new mongoose.Schema({
+    what: { type: String, required: true, unique: true }, // q
+    who: { type: String, required: true }, // a
+    blocked: { type: Boolean, required: true, default: false }
+});
+let blockedQuoteAuthorSchema = new mongoose.Schema({
+    what: { type: String, required: true, unique: true }, // q
+    who: { type: String, required: true }, // a
+    blocked: { type: Boolean, required: true, default: false }
+});
 //#endregion
 
 // Cache invalidators
@@ -590,6 +602,7 @@ const GuildUsers = mongoose.model("guildusers", guildUserSchema);
 const Users = mongoose.model("users", userSchema);
 const Trackables = mongoose.model("trackables", trackableSchema);
 const PersonalAIs = mongoose.model("personal_ais", personalAiSchema);
+const Quotes = mongoose.model("quotes", quoteSchema);
 
 // Drop indexes of docs where metadata was changed
 async function dropIndexes(Model) {
@@ -655,6 +668,7 @@ module.exports = {
     ConfigDB,
     Trackables,
     PersonalAIs,
+    Quotes,
 
     // Utilities
     keyDecode,

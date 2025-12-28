@@ -1,16 +1,101 @@
 // #region CommandBoilerplate
 const Categories = require("./modules/Categories");
 const client = require("../client.js");
-const { AttachmentBuilder, SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ModalBuilder, TextInputBuilder, TextInputStyle, PermissionFlagsBits } = require("discord.js");
+const { AttachmentBuilder, SlashCommandBuilder, TextDisplayBuilder, SeparatorBuilder, SeparatorSpacingSize, ContainerBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ModalBuilder, TextInputBuilder, TextInputStyle, PermissionFlagsBits, MessageFlags } = require("discord.js");
 function applyContext(context = {}) {
     for (let key in context) {
         this[key] = context[key];
     }
 }
+const { Quotes, ConfigDB } = require("./modules/database.js");
 
 // #endregion CommandBoilerplate
 
 const fs = require("fs");
+
+const approveQuoteButtons = [
+    new ActionRowBuilder().addComponents(
+        new ButtonBuilder().setCustomId("quote_save")
+            .setLabel("Approve quote")
+            .setStyle(ButtonStyle.Success),
+        new ButtonBuilder().setCustomId("quote_block")
+            .setLabel("Block quote")
+            .setStyle(ButtonStyle.Danger),
+        new ButtonBuilder().setCustomId("quote_block_author")
+            .setLabel("Block author")
+            .setStyle(ButtonStyle.Danger)
+    )
+        .toJSON()
+];
+
+async function getQuoteFromInternalDB() {
+    console.log("Accessing DB");
+    const blockedAuthors = (await ConfigDB.findOne()).blockedQuoteAuthors;
+    const cachedQuote = await Quotes.aggregate([
+        { $match: {
+            blocked: false,
+            who: { $nin: blockedAuthors }
+        } },
+        { $sample: { size: 1 } }
+    ]);
+    return cachedQuote[0];
+}
+
+async function getQuote() {
+    const response = await fetch("https://zenquotes.io/api/random");
+    let data = await response.text();
+    try {
+        data = JSON.parse(data)[0];
+
+        if (data.a === `zenquotes.io`) {
+            console.log("Ratelimited");
+            const cachedQuote = await getQuoteFromInternalDB();
+            return {
+                who: cachedQuote.who,
+                what: cachedQuote.what
+            };
+        }
+
+        const storedQuote = await Quotes.findOne({
+            what: data.q,
+            who: data.a
+        });
+
+        // Already exists, send to user if not blocked
+        const configdb = await ConfigDB.findOne();
+        if ((storedQuote && storedQuote.blocked) || configdb.blockedQuoteAuthors.includes(data.a)) return getQuote();
+
+        if (!storedQuote) {
+            const newQuote = new Quotes({
+                what: data.q,
+                who: data.a
+            });
+            await newQuote.save();
+
+            // Send a verification to KestronProgramming to ensure we do in fact want to keep it, if it isn't in the database already, and add it to the database.
+            const targetChannel = await client.channels.fetch(process.env.beta ? config.betaNoticeChannel : config.noticeChannel);
+            if (targetChannel?.isTextBased() && targetChannel?.isSendable()) {
+                await targetChannel.send({
+                    content: `> ${data.q}\n\\- ${data.a}`,
+                    components: approveQuoteButtons
+                });
+            }
+        }
+
+        return {
+            who: data.a,
+            what: data.q
+        };
+    }
+    catch (e) {
+        console.log(e);
+        const cachedQuote = await getQuoteFromInternalDB();
+        return {
+            who: cachedQuote.who,
+            what: cachedQuote.what
+        };
+    }
+}
 
 // RaC utilities
 let rac = {
@@ -362,6 +447,13 @@ module.exports = {
                     )
             )
             .addSubcommand(command =>
+                command.setName("quote").setDescription("Posts a quote from someone")
+                    .addBooleanOption(option =>
+                        option.setName("private").setDescription("Make the response ephemeral?")
+                            .setRequired(false)
+                    )
+            )
+            .addSubcommand(command =>
                 command.setName("wyr").setDescription("Posts a Would-You-Rather question")
             )
             .addSubcommand(command =>
@@ -477,6 +569,12 @@ module.exports = {
                 detailedDesc: //Detailed on exactly what the command does and how to use it
 					`Posts a joke. Disclaimer: This command uses a third party API, and has no quality guarantee.`
             },
+            "quote": {
+                helpCategories: [Categories.Entertainment],
+                shortDesc: "Posts a quote", //Should be the same as the command setDescription field
+                detailedDesc: //Detailed on exactly what the command does and how to use it
+					`Posts a quote. Disclaimer: This command uses a third party API, and has no quality guarantee.`
+            },
             "meme": {
                 helpCategories: [Categories.Entertainment],
                 shortDesc: "Posts a meme", //Should be the same as the command setDescription field
@@ -540,6 +638,29 @@ module.exports = {
                     .then(d => {
                         cmd.followUp(d.type === "single" ? `${d.joke}` : `${d.setup}\n\n||${d.delivery}||`);
                     });
+                break;
+            case "quote":
+                const quote = await getQuote();
+
+                const components = [
+                    new ContainerBuilder()
+                        .addTextDisplayComponents(
+                            new TextDisplayBuilder().setContent(quote.what)
+                        )
+                        .addSeparatorComponents(
+                            new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+                                .setDivider(true)
+                        )
+                        .addTextDisplayComponents(
+                            new TextDisplayBuilder().setContent(`-# \\- ${quote.who}`)
+                        )
+                ];
+
+                cmd.followUp({
+                    components: components,
+                    flags: MessageFlags.IsComponentsV2
+                });
+
                 break;
             case "meme":
                 var memes = await fs.promises.readdir("./memes");
@@ -646,7 +767,7 @@ module.exports = {
         }
     },
 
-    subscribedButtons: ["racMove", "racJoin", "moveModal"],
+    subscribedButtons: ["racMove", "racJoin", "moveModal", "quote_approve", "quote_block", "quote_block_author"],
 
     async onbutton(cmd, context) {
         applyContext(context);
@@ -705,6 +826,38 @@ module.exports = {
                 if ("update" in cmd) cmd.update(getRACBoard());
                 break;
             }
+
+            case "quote_approve":
+                //All we need to do is remove the buttons, because it's already in an "approved" state in the database.
+                cmd.message.react("✅").catch(() => {
+                    cmd.message.reply(`Approved quote`).catch(() => { });
+                });
+                cmd.message.edit({
+                    content: cmd.message.content,
+                    components: []
+                }).catch(() => { });
+                break;
+            case "quote_block_author":
+                let who = cmd.message.content.match(/(?<=\n\\-\s).*$/i)[0];
+                const config = await ConfigDB.findOne();
+                config.blockedQuoteAuthors.push(who);
+                config.save();
+                Quotes.deleteMany({ who }).catch(() => { });
+                cmd.message.delete().catch(() => { });
+                break;
+            case "quote_block":
+                await Quotes.findOneAndUpdate(
+                    {
+                        $match: {
+                            who: cmd.message.content.match(/(?<=\n\\-\s).*$/i),
+                            what: cmd.message.content.match(/(?<=^>\s).*(?=\n)/i)
+                        }
+                    },
+                    { $set: { blocked: true } }
+                );
+
+                cmd.message.delete().catch(() => { });
+                break;
 
             // Modal
             case "moveModal": {

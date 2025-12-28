@@ -83,7 +83,7 @@
             "Module"
         ],
         "shortDesc": "Automatically convert times to timestamps",
-        "detailedDesc": "Automatically detects times in messages and converts them to Discord timestamps.\n\n                React with the Normalize_Timezone emoji to convert the detected time to a proper timestamp.\n\n                Supports timezone abbreviations (EST, PST, GMT, CST, etc.)\n\n                For times without explicit timezones, requires timezone configuration via /personal_config.\n\n                You can enable and disable t."
+        "detailedDesc": "Automatically detects times in messages and converts them to Discord timestamps.\n\n                React with the Normalize_Timezone emoji to convert the detected time to a proper timestamp.\n\n                Supports timezone abbreviations (EST, PST, GMT, CST, etc.)\n\n                For times without explicit timezones, requires timezone configuration via /personal_config.\n\n                You can enable and disable this personally and server wide.\n\n                By default, does not parse 24hr times such as '2023' due to overlap confusion with the year. This can be changed in the personal config."
     },
     {
         "name": "backuper",
@@ -329,7 +329,7 @@
     },
     {
         "name": "fun dne",
-        "mention": "</fun dne:1448914141736734786>",
+        "mention": "</fun dne:1454669226626388082>",
         "helpCategories": [
             "Entertainment"
         ],
@@ -338,7 +338,7 @@
     },
     {
         "name": "fun rac",
-        "mention": "</fun rac:1448914141736734786>",
+        "mention": "</fun rac:1454669226626388082>",
         "helpCategories": [
             "Entertainment"
         ],
@@ -347,7 +347,7 @@
     },
     {
         "name": "fun wyr",
-        "mention": "</fun wyr:1448914141736734786>",
+        "mention": "</fun wyr:1454669226626388082>",
         "helpCategories": [
             "Entertainment"
         ],
@@ -356,7 +356,7 @@
     },
     {
         "name": "fun joke",
-        "mention": "</fun joke:1448914141736734786>",
+        "mention": "</fun joke:1454669226626388082>",
         "helpCategories": [
             "Entertainment"
         ],
@@ -364,8 +364,17 @@
         "detailedDesc": "Posts a joke. Disclaimer: This command uses a third party API, and has no quality guarantee."
     },
     {
+        "name": "fun quote",
+        "mention": "</fun quote:1454669226626388082>",
+        "helpCategories": [
+            "Entertainment"
+        ],
+        "shortDesc": "Posts a quote",
+        "detailedDesc": "Posts a quote. Disclaimer: This command uses a third party API, and has no quality guarantee."
+    },
+    {
         "name": "fun meme",
-        "mention": "</fun meme:1448914141736734786>",
+        "mention": "</fun meme:1454669226626388082>",
         "helpCategories": [
             "Entertainment"
         ],
@@ -374,7 +383,7 @@
     },
     {
         "name": "fun name_me",
-        "mention": "</fun name_me:1448914141736734786>",
+        "mention": "</fun name_me:1454669226626388082>",
         "helpCategories": [
             "Entertainment"
         ],
@@ -711,14 +720,14 @@
     },
     {
         "name": "submit_meme",
-        "mention": "</submit_meme:1448914142592372768>",
+        "mention": "</submit_meme:1454669342062022687>",
         "helpCategories": [
             "Bot",
             "Entertainment",
             "Context_Menu"
         ],
         "shortDesc": "Submit a meme to the Stewbot moderators for verification to show up in `/fun meme`",
-        "detailedDesc": "Using this command on a message with an image or video will submit it to the Stewbot moderators to verify to begin showing up in the </fun meme:1448914141736734786> command. This is a context menu command, and is accessed by holding down on a message on mobile, or right clicking on desktop, and then selecting \"Apps\"."
+        "detailedDesc": "Using this command on a message with an image or video will submit it to the Stewbot moderators to verify to begin showing up in the </fun meme:1454669226626388082> command. This is a context menu command, and is accessed by holding down on a message on mobile, or right clicking on desktop, and then selecting \"Apps\"."
     },
     {
         "name": "tag_role",
