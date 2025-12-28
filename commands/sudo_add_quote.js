@@ -16,18 +16,18 @@ module.exports = {
         sudo: true,
 
         command: new SlashCommandBuilder()
-                .setName("sudo_add_quote")
-                .setDescription("Directly Add a Quote to the DB")
-                .addStringOption(option=>
-                    option.setName("what")
+            .setName("sudo_add_quote")
+            .setDescription("Directly Add a Quote to the DB")
+            .addStringOption(option =>
+                option.setName("what")
                     .setDescription("What should the content of the quote be? (CHECK FOR TYPOS)")
                     .setRequired(true)
-                )   
-                .addStringOption(option=>
-                    option.setName("who")
+            )
+            .addStringOption(option =>
+                option.setName("who")
                     .setDescription("Who is the quote attributed to? (CHECK TYPOS, NO CONTROVERSIAL FIGURES)")
                     .setRequired(true)
-                )
+            )
             .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
 
         extra: { "contexts": [0], "integration_types": [0] },

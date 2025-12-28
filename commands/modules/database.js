@@ -94,6 +94,7 @@ let dailyItemSchema = new mongoose.Schema({
 
 let dailySchema = new mongoose.Schema({
     memes: { type: dailyItemSchema, default: {} },
+    quotes: { type: dailyItemSchema, default: {} },
     devos: { type: dailyItemSchema, default: {} },
     verses: { type: dailyItemSchema, default: {} }
     // wyrs: { type: dailyItemSchema, default: {} },

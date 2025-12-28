@@ -35,8 +35,7 @@ module.exports = {
         applyContext(context);
 
         // The sudo handler uses so many globals, it can stay in index.js for now
-        if (msg.content.startsWith("~sudo ") && !process.env.beta || msg.content.startsWith("~betaSudo ") && process.env.beta) {
-            if (msg.content.startsWith("~betaSudo ")) msg.content = msg.content.replaceAll("betaSudo", "sudo");
+        if (msg.content.startsWith("~prodSudo ") && !process.env.beta || msg.content.startsWith("~betaSudo ") && process.env.beta) {
 
             const devadminChannel = await client.channels.fetch(config.commandChannel);
             if (!("guild" in devadminChannel)) return;
@@ -83,7 +82,7 @@ module.exports = {
                         break;
                     case "runDaily":
                         await msg.reply(`Running the daily listeners...`);
-                        Object.entries(commands).find(([, module]) => module.daily)[1].daily();
+                        Object.entries(commands).map(([, module]) => module?.daily?.());
                         break;
                     case "runWelcome":
                         guild.sentWelcome = false;

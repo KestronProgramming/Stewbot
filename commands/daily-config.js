@@ -2,7 +2,9 @@
 const Categories = require("./modules/Categories");
 const client = require("../client.js");
 const { Guilds, ConfigDB, guildByObj } = require("./modules/database.js");
-const { AttachmentBuilder, SlashCommandBuilder, PermissionFlagsBits, ChannelType } = require("discord.js");
+const { AttachmentBuilder, SlashCommandBuilder, PermissionFlagsBits, ChannelType, ContainerBuilder, SeparatorBuilder, TextDisplayBuilder, SeparatorSpacingSize, MessageFlags } = require("discord.js");
+const { notify } = require("../utils.js");
+const { Quotes } = require("./modules/database.js");
 function applyContext(context = {}) {
     for (let key in context) {
         this[key] = context[key];
@@ -14,7 +16,6 @@ function applyContext(context = {}) {
 const fs = require("node:fs");
 const Turndown = require("turndown");
 var turndown = new Turndown();
-const { notify } = require("../utils");
 
 async function sendDailiesToSubscribed(type, message = {}) {
     const dailySubbedGuilds = await Guilds.find({
@@ -64,8 +65,9 @@ module.exports = {
             .addStringOption(option =>
                 option.setName("type").setDescription("What kind of daily post are you configuring?")
                     .addChoices(
-                        { "name": "Devotionals", "value": "devos" },
                         { "name": "Memes", "value": "memes" },
+                        { "name": "Quotes", "value": "quotes" },
+                        { "name": "Devotionals", "value": "devos" },
                         { "name": "Verse of the Day", "value": "verses" }
                     )
                     .setRequired(true)
@@ -235,5 +237,33 @@ module.exports = {
         catch (e) {
             notify("Meme Of The Day error: " + e.stack);
         };
+
+        //Daily Quotes
+        const blockedAuthors = (await ConfigDB.findOne()).blockedQuoteAuthors;
+        const cachedQuote = await Quotes.aggregate([
+            { $match: {
+                blocked: false,
+                who: { $nin: blockedAuthors }
+            } },
+            { $sample: { size: 1 } }
+        ]);
+        const todaysQuote = cachedQuote[0];
+        await sendDailiesToSubscribed("quotes", {
+            components: [
+                new TextDisplayBuilder().setContent("## Daily Quote"),
+                new ContainerBuilder()
+                    .addTextDisplayComponents(
+                        new TextDisplayBuilder().setContent(todaysQuote.what)
+                    )
+                    .addSeparatorComponents(
+                        new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+                            .setDivider(true)
+                    )
+                    .addTextDisplayComponents(
+                        new TextDisplayBuilder().setContent(`-# \\- ${todaysQuote.who}`)
+                    )
+            ],
+            flags: MessageFlags.IsComponentsV2
+        });
     }
 };
