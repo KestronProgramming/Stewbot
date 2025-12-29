@@ -334,7 +334,7 @@ module.exports = {
                     { $unwind: "$rssArray" },
                     // Match only rss item documents that this channel follows
                     { $match: {
-                        "rssArray.v.channels": cmd.channel.id
+                        "rssArray.v.channels": channelInput.id
                     } },
                     // Extract just the URL of each document
                     { $project: {
