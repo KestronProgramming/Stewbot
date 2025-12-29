@@ -64,7 +64,8 @@ var Sherlock = (function() {
             inMilliTime: /(?!)/g,
             // inMilliTime: /\b(\d+) ?(s(?:ec(?:ond)?)?|ms|millisecond)s? ?(ago|old)?\b/,
 
-            midtime: /(?:@ ?)?\b(?:at )?(dawn|morn(?:ing)?|noon|afternoon|evening|night|midnight)\b/,
+            midtime: /(?!)/g,
+            // midtime: /(?:@ ?)?\b(?:at )?(dawn|morn(?:ing)?|noon|afternoon|evening|night|midnight)\b/,
 
             //24hr times, 0000 - 2359
             // 23:50, 0700, 1900
@@ -101,7 +102,7 @@ var Sherlock = (function() {
             };
         },
 
-        parser = function(str, time, startTime, require24HourColon=true) {
+        parser = function(str, time, startTime, require24HourColon = true) {
             var ret = {},
                 dateMatch = false,
                 timeMatch = false,
@@ -128,7 +129,7 @@ var Sherlock = (function() {
             return ret;
         },
 
-        matchTime = function(str, time, startTime, require24HourColon=true) {
+        matchTime = function(str, time, startTime, require24HourColon = true) {
             var match, matchConfidence = 0, matchedString = false, matchedHour, matchedMin, matchedHasMeridian;
 
             if (match = str.match(new RegExp(patterns.explicitTime.source, "g"))) {
@@ -733,7 +734,7 @@ var Sherlock = (function() {
     // parses a string and returns an object defining the basic event
     // with properties: eventTitle, startDate, endDate, isAllDay
     // plus anything Watson adds on...
-        parse: function(str, now, require24HourColon=true) {
+        parse: function(str, now, require24HourColon = true) {
             // check for null input
             if (str === null) str = "";
 
