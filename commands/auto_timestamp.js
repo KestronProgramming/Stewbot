@@ -128,9 +128,9 @@ function hasRelativeTime(text) {
 
     // Other standalone relative phrases
     return lowerText.includes("from now") ||
-           lowerText.includes("yesterday") ||
-           lowerText.includes("tomorrow") ||
-           /\b(today|tonight|tmrw)\b/i.test(lowerText);
+        lowerText.includes("yesterday") ||
+        lowerText.includes("tomorrow") ||
+        /\b(today|tonight|tmrw)\b/i.test(lowerText);
 }
 
 /**
@@ -288,7 +288,7 @@ module.exports = {
             helpCategories: [Categories.General, Categories.Information, Categories.Module],
             shortDesc: "Automatically convert times to timestamps",
             detailedDesc:
-               `Automatically detects times in messages and converts them to Discord timestamps.\n
+                `Automatically detects times in messages and converts them to Discord timestamps.\n
                 React with the Normalize_Timezone emoji to convert the detected time to a proper timestamp.\n
                 Supports timezone abbreviations (EST, PST, GMT, CST, etc.)\n
                 For times without explicit timezones, requires timezone configuration via /personal_config.\n
@@ -360,7 +360,14 @@ module.exports = {
         if (!rawParsed) return;
 
         // For absolute times without explicit timezone, require user timezone config
-        if (!isRelativeTime && !timezone && !user.config.hasSetTZ) return;
+        if (!isRelativeTime && !timezone && !user.config.hasSetTZ) {
+            if (!user.beenTimezoneInformed) {
+                msg.react(process.env.beta ? "<:Cant_Normalize_Timezone:1455471237101912076>" : "<:Cant_Normalize_Timezone:1455471561460027464>").catch(() => { });
+                user.beenTimezoneInformed = true;
+                await user.save();
+            }
+            return;
+        }
 
         // Parse with appropriate timezone context
         // Pure relative offsets (like "in 20 min") don't need timezone conversion
@@ -375,7 +382,7 @@ module.exports = {
 
         if (!parsedTime) return;
 
-        msg.react(process.env.beta ? "<:Normalize_Timezone:1452899414996811816>" : "<:Click_To_Normalize_Timezone:1452898452173492284>").catch(() => {});
+        msg.react(process.env.beta ? "<:Normalize_Timezone:1452899414996811816>" : "<:Click_To_Normalize_Timezone:1452898452173492284>").catch(() => { });
     },
 
     async [Events.MessageReactionAdd](reaction, user) {
@@ -383,8 +390,19 @@ module.exports = {
         if (user.bot) return;
 
         // Check if it's the right emoji
-        if (reaction.emoji.name !== "Normalize_Timezone" && reaction.emoji.name !== "Click_To_Normalize_Timezone") return;
-
+        if (reaction.emoji.name !== "Normalize_Timezone" && reaction.emoji.name !== "Click_To_Normalize_Timezone") {
+            if (reaction.emoji.name === "Cant_Normalize_Timezone" || reaction.emoji.name === "Click_For_More_Info") {
+                // Get the message author's user config for timezone
+                const reactingUser = await userByObj(user);
+                if (reactingUser.config.hasSetTZ) {
+                    user.send(`This user has not configured their timezone, so I am unable to convert to yours.`);
+                }
+                else {
+                    user.send(`If you configure your timezone in ${cmds.personal_config.mention}, you can click the ${process.env.beta ? "<:Normalize_Timezone:1452899414996811816>" : "<:Click_To_Normalize_Timezone:1452898452173492284>"} reaction to have an automatic timestamp sent. Timestamps will automatically adjust for all user's timezones, and remove any timezone discrepancy confusion.\n-# The reaction to trigger this message will only be added once per user.`).catch(() => { });
+                }
+            }
+            return;
+        }
         // Get the message author's user config for timezone
         const messageAuthor = await userByObj(reaction.message.author);
 
@@ -410,7 +428,7 @@ module.exports = {
 
         // Check if we can send messages in this channel
         const canSendMessages = ("permissionsFor" in reaction.message.channel) &&
-        reaction.message.channel.permissionsFor(client.user).has(PermissionFlagsBits.SendMessages);
+            reaction.message.channel.permissionsFor(client.user).has(PermissionFlagsBits.SendMessages);
 
         if (reaction.message.author.id === user.id && canSendMessages) {
             // Check if we've already replied in the past hour.
@@ -424,7 +442,7 @@ module.exports = {
         }
         else {
             // DM with timestamp for other users
-            user.send(response).catch(() => {});
+            user.send(response).catch(() => { });
         }
     }
 };

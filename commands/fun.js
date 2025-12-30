@@ -8,10 +8,39 @@ function applyContext(context = {}) {
     }
 }
 const { Quotes, ConfigDB } = require("./modules/database.js");
-
+const { isDirty } = require("./filter");
 // #endregion CommandBoilerplate
 
+const { LRUCache } = require("lru-cache");
+const ms = require("ms");
+const factsCache = new LRUCache({ max: 100, ttl: ms("1d") });
+factsCache.set("Jerry is a rope, and Kestron's best friend.", {
+    text: "Jerry is a rope, and Kestron's best friend.",
+    source: "Jerry the Rope",
+    url: "https://kestron.com/"
+});
+
 const fs = require("fs");
+
+async function getFact() {
+    var d = await fetch("https://api.viewbits.com/v1/uselessfacts?mode=random");
+    let factResponse = await d.text();
+    factResponse = JSON.parse(factResponse);
+    if (factResponse?.info?.startsWith("Rate limit exceeded") || factResponse?.text?.length < 1) {
+        const randomKey = [...factsCache.keys()][Math.floor(Math.random() * factsCache.size)];
+        factResponse = factsCache.get(randomKey);
+    }
+    if (!factsCache.has(factResponse.text) && factResponse.text.length > 0 && !(await isDirty(factResponse.text))) {
+        factsCache.set(factResponse.text, factResponse);
+        if (factsCache.size > 100) {
+            factsCache.delete(factsCache.keys()[Math.floor(Math.random() * factsCache.size)]);
+        }
+    }
+    if (await isDirty(factResponse.text)) {
+        factResponse = await getFact();
+    }
+    return factResponse;
+}
 
 const approveQuoteButtons = [
     new ActionRowBuilder().addComponents(
@@ -32,10 +61,12 @@ async function getQuoteFromInternalDB() {
     console.log("Accessing DB");
     const blockedAuthors = (await ConfigDB.findOne()).blockedQuoteAuthors;
     const cachedQuote = await Quotes.aggregate([
-        { $match: {
-            blocked: false,
-            who: { $nin: blockedAuthors }
-        } },
+        {
+            $match: {
+                blocked: false,
+                who: { $nin: blockedAuthors }
+            }
+        },
         { $sample: { size: 1 } }
     ]);
     return cachedQuote[0];
@@ -454,15 +485,27 @@ module.exports = {
                     )
             )
             .addSubcommand(command =>
-                command.setName("wyr").setDescription("Posts a Would-You-Rather question")
-            )
-            .addSubcommand(command =>
-                command.setName("dne").setDescription("Posts a picture of a person - who never existed! (AI Person generation)")
+                command.setName("fact").setDescription("Posts a random fact")
                     .addBooleanOption(option =>
                         option.setName("private").setDescription("Make the response ephemeral?")
                             .setRequired(false)
                     )
             )
+            // .addSubcommand(command =>
+            //     command.setName("on_this_day").setDescription("Found out something that happened on this day")
+            //         .addStringOption(option =>
+            //             option.setName("type").setDescription("What type of event would you like to see?")
+            //                 .addChoices(
+            //                     { name: "Generic", value: "event" },
+            //                     { name: "Birth", value: "birth" },
+            //                     { name: "Death", value: "death" }
+            //                 )
+            //         )
+            //         .addBooleanOption(option =>
+            //             option.setName("private").setDescription("Make the response ephemeral?")
+            //                 .setRequired(false)
+            //         )
+            // )
             .addSubcommand(command =>
                 command.setName("rac").setDescription("Play a game of Rows & Columns")
                     .addBooleanOption(option =>
@@ -542,13 +585,13 @@ module.exports = {
                 helpCategories: [Categories.Entertainment],
                 shortDesc: "Posts a picture of a person who never existed using AI",
                 detailedDesc:
-					`Uses https://thispersondoesnotexist.com/ to display a picture of a completely fake human face.`
+                    `Uses https://thispersondoesnotexist.com/ to display a picture of a completely fake human face.`
             },
             "rac": {
                 helpCategories: [Categories.Entertainment],
                 shortDesc: "Play a game of Rows & Columns",
                 detailedDesc:
-					`**Rows & Columns**\n
+                    `**Rows & Columns**\n
 					\n
 					In this game your goal is to make as many of the longest rows as possible. Diagonal rows do not count. 3 in a row is 1 point, 4 in a row is 2 points, 5 in a row is 3 points, and so on. The game ends when all spots are filled.\n
 					\n
@@ -561,25 +604,25 @@ module.exports = {
                 helpCategories: [Categories.Entertainment],
                 shortDesc: "Posts a Would-You-Rather question", //Should be the same as the command setDescription field
                 detailedDesc: //Detailed on exactly what the command does and how to use it
-					`Posts a would you rather question. Disclaimer: This command uses a third party API, and has no quality guarantee.`
+                    `Posts a would you rather question. Disclaimer: This command uses a third party API, and has no quality guarantee.`
             },
             "joke": {
                 helpCategories: [Categories.Entertainment],
                 shortDesc: "Posts a joke", //Should be the same as the command setDescription field
                 detailedDesc: //Detailed on exactly what the command does and how to use it
-					`Posts a joke. Disclaimer: This command uses a third party API, and has no quality guarantee.`
+                    `Posts a joke. Disclaimer: This command uses a third party API, and has no quality guarantee.`
             },
             "quote": {
                 helpCategories: [Categories.Entertainment],
                 shortDesc: "Posts a quote", //Should be the same as the command setDescription field
                 detailedDesc: //Detailed on exactly what the command does and how to use it
-					`Posts a quote. Disclaimer: This command uses a third party API, and has no quality guarantee.`
+                    `Posts a quote. Disclaimer: This command uses a third party API, and has no quality guarantee.`
             },
             "meme": {
                 helpCategories: [Categories.Entertainment],
                 shortDesc: "Posts a meme", //Should be the same as the command setDescription field
                 detailedDesc: //Detailed on exactly what the command does and how to use it
-					`Posts one of the memes Stewbot's staff have approved for the bot to display. You can use the /submit_meme context menu command (holding down the message on mobile, right clicking on desktop, and then pressing Apps) to submit a meme for the Stewbot staff to review.`
+                    `Posts one of the memes Stewbot's staff have approved for the bot to display. You can use the /submit_meme context menu command (holding down the message on mobile, right clicking on desktop, and then pressing Apps) to submit a meme for the Stewbot staff to review.`
             },
             "name_me": {
                 helpCategories: [Categories.Entertainment],
@@ -590,7 +633,7 @@ module.exports = {
         }
 
     },
-
+    getFact,
     async execute(cmd, context) {
         applyContext(context);
 
@@ -661,6 +704,26 @@ module.exports = {
                     flags: MessageFlags.IsComponentsV2
                 });
 
+                break;
+            case "fact":
+                let factResponse = await getFact();
+                const factComponents = [
+                    new ContainerBuilder()
+                        .addTextDisplayComponents(
+                            new TextDisplayBuilder().setContent(factResponse.text)
+                        )
+                        .addSeparatorComponents(
+                            new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+                                .setDivider(true)
+                        )
+                        .addTextDisplayComponents(
+                            new TextDisplayBuilder().setContent(`-# \\- [${factResponse.source}](${factResponse.url})`)
+                        )
+                ];
+                cmd.followUp({
+                    components: factComponents,
+                    flags: MessageFlags.IsComponentsV2
+                });
                 break;
             case "meme":
                 var memes = await fs.promises.readdir("./memes");
@@ -734,8 +797,8 @@ module.exports = {
                 };
                 const result =
                     `You played: ${humanChoice} ${emojified[humanChoice]}\n` +
-					`I played: ${computerChoice} ${emojified[computerChoice]}\n` +
-					`\n${won == 0 ? `We` : `You`} ${won == 0 ? `tied` : won == 1 ? `lost` : `won`}! ${won == 1 ? ":stew:" : ""}`;
+                    `I played: ${computerChoice} ${emojified[computerChoice]}\n` +
+                    `\n${won == 0 ? `We` : `You`} ${won == 0 ? `tied` : won == 1 ? `lost` : `won`}! ${won == 1 ? ":stew:" : ""}`;
                 cmd.followUp(result);
                 break;
             case "minesweeper":
@@ -757,9 +820,9 @@ module.exports = {
                 // Format output message
                 const boardText = formatMinesweeperBoard(board, revealed, emojis, boardWidth, boardHeight);
                 const headerText = `New Markdown Minesweeper Game!\n` +
-                                `There are ${mineCount} mines.\n` +
-                                `Map size is ${boardWidth}x${boardHeight}.\n` +
-                                `----------------------------------\n`;
+                    `There are ${mineCount} mines.\n` +
+                    `Map size is ${boardWidth}x${boardHeight}.\n` +
+                    `----------------------------------\n`;
 
                 // Send response
                 cmd.followUp(headerText + boardText);
@@ -815,8 +878,8 @@ module.exports = {
                         .setLabel("Join Game")
                         .setStyle(ButtonStyle.Danger)
                         .setDisabled(true), new ButtonBuilder().setCustomId("racMove")
-                        .setLabel("Make a Move")
-                        .setStyle(ButtonStyle.Success));
+                            .setLabel("Make a Move")
+                            .setStyle(ButtonStyle.Success));
                     cmd.message.edit({
                         content: getRACBoard(),
                         components: [row.toJSON()]

@@ -216,7 +216,7 @@
             "Server_Only"
         ],
         "shortDesc": "Configure daily postings",
-        "detailedDesc": "Configure daily devotions, a daily verse of the day, and/or a daily meme to be posted to any channel you'd like every day at noon UTC."
+        "detailedDesc": "Configure any of daily devotions, a daily verse of the day, quotes, facts, and/or a daily meme to be posted to any channel you'd like every day at noon UTC."
     },
     {
         "name": "define",
@@ -329,7 +329,7 @@
     },
     {
         "name": "fun dne",
-        "mention": "</fun dne:1454669226626388082>",
+        "mention": "`fun` Module",
         "helpCategories": [
             "Entertainment"
         ],
@@ -338,7 +338,7 @@
     },
     {
         "name": "fun rac",
-        "mention": "</fun rac:1454669226626388082>",
+        "mention": "</fun rac:1455454702790770932>",
         "helpCategories": [
             "Entertainment"
         ],
@@ -347,7 +347,7 @@
     },
     {
         "name": "fun wyr",
-        "mention": "</fun wyr:1454669226626388082>",
+        "mention": "`fun` Module",
         "helpCategories": [
             "Entertainment"
         ],
@@ -356,7 +356,7 @@
     },
     {
         "name": "fun joke",
-        "mention": "</fun joke:1454669226626388082>",
+        "mention": "</fun joke:1455454702790770932>",
         "helpCategories": [
             "Entertainment"
         ],
@@ -365,7 +365,7 @@
     },
     {
         "name": "fun quote",
-        "mention": "</fun quote:1454669226626388082>",
+        "mention": "</fun quote:1455454702790770932>",
         "helpCategories": [
             "Entertainment"
         ],
@@ -374,7 +374,7 @@
     },
     {
         "name": "fun meme",
-        "mention": "</fun meme:1454669226626388082>",
+        "mention": "</fun meme:1455454702790770932>",
         "helpCategories": [
             "Entertainment"
         ],
@@ -383,7 +383,7 @@
     },
     {
         "name": "fun name_me",
-        "mention": "</fun name_me:1454669226626388082>",
+        "mention": "</fun name_me:1455454702790770932>",
         "helpCategories": [
             "Entertainment"
         ],
@@ -720,14 +720,14 @@
     },
     {
         "name": "submit_meme",
-        "mention": "</submit_meme:1454669342062022687>",
+        "mention": "</submit_meme:1455455817124937768>",
         "helpCategories": [
             "Bot",
             "Entertainment",
             "Context_Menu"
         ],
         "shortDesc": "Submit a meme to the Stewbot moderators for verification to show up in `/fun meme`",
-        "detailedDesc": "Using this command on a message with an image or video will submit it to the Stewbot moderators to verify to begin showing up in the </fun meme:1454669226626388082> command. This is a context menu command, and is accessed by holding down on a message on mobile, or right clicking on desktop, and then selecting \"Apps\"."
+        "detailedDesc": "Using this command on a message with an image or video will submit it to the Stewbot moderators to verify to begin showing up in the </fun meme:1455454702790770932> command. This is a context menu command, and is accessed by holding down on a message on mobile, or right clicking on desktop, and then selecting \"Apps\"."
     },
     {
         "name": "tag_role",

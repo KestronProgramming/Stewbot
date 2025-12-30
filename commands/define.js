@@ -17,7 +17,7 @@ module.exports = {
     data: {
         // Slash command data
         command: new SlashCommandBuilder().setName("define")
-            .setDescription("Get the definition for a word")
+            .setDescription("Get the definition for a word from the dictionary")
             .addStringOption(option =>
                 option.setName("what").setDescription("What to define")
                     .setRequired(true)

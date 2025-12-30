@@ -12,7 +12,7 @@ function applyContext(context = {}) {
 }
 
 // #endregion CommandBoilerplate
-
+//https://today.zenquotes.io/api/1/10 Jan 10
 const fs = require("node:fs");
 const Turndown = require("turndown");
 var turndown = new Turndown();
@@ -56,6 +56,8 @@ async function sendDailiesToSubscribed(type, message = {}) {
     }
 }
 
+const { getFact } = require("./fun.js");
+
 /** @type {import("../command-module").CommandModule} */
 module.exports = {
     data: {
@@ -67,6 +69,7 @@ module.exports = {
                     .addChoices(
                         { "name": "Memes", "value": "memes" },
                         { "name": "Quotes", "value": "quotes" },
+                        { "name": "Facts", "value": "facts" },
                         { "name": "Devotionals", "value": "devos" },
                         { "name": "Verse of the Day", "value": "verses" }
                     )
@@ -97,7 +100,7 @@ module.exports = {
             helpCategories: [Categories.Information, Categories.Entertainment, Categories.Administration, Categories.Configuration, Categories.Server_Only],
             shortDesc: "Configure daily postings",
             detailedDesc:
-				`Configure daily devotions, a daily verse of the day, and/or a daily meme to be posted to any channel you'd like every day at noon UTC.`
+				`Configure any of daily devotions, a daily verse of the day, quotes, facts, and/or a daily meme to be posted to any channel you'd like every day at noon UTC.`
         }
     },
 
@@ -261,6 +264,26 @@ module.exports = {
                     )
                     .addTextDisplayComponents(
                         new TextDisplayBuilder().setContent(`-# \\- ${todaysQuote.who}`)
+                    )
+            ],
+            flags: MessageFlags.IsComponentsV2
+        });
+
+        //Daily Fact
+        var dailyFact = await getFact();
+        await sendDailiesToSubscribed("facts", {
+            components: [
+                new TextDisplayBuilder().setContent("## Daily Fact"),
+                new ContainerBuilder()
+                    .addTextDisplayComponents(
+                        new TextDisplayBuilder().setContent(dailyFact.text)
+                    )
+                    .addSeparatorComponents(
+                        new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+                            .setDivider(true)
+                    )
+                    .addTextDisplayComponents(
+                        new TextDisplayBuilder().setContent(`-# \\- [${dailyFact.source}](${dailyFact.url})`)
                     )
             ],
             flags: MessageFlags.IsComponentsV2

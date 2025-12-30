@@ -95,6 +95,7 @@ let dailyItemSchema = new mongoose.Schema({
 let dailySchema = new mongoose.Schema({
     memes: { type: dailyItemSchema, default: {} },
     quotes: { type: dailyItemSchema, default: {} },
+    facts: { type: dailyItemSchema, default: {} },
     devos: { type: dailyItemSchema, default: {} },
     verses: { type: dailyItemSchema, default: {} }
     // wyrs: { type: dailyItemSchema, default: {} },
@@ -166,7 +167,7 @@ let warningSchema = new mongoose.Schema({
 
 let guildConfigSchema = new mongoose.Schema({
     antihack_log_channel: { type: String, default: "" },
-    antihack_to_log: { type: Boolean, default: false, required: false  },
+    antihack_to_log: { type: Boolean, default: false, required: false },
     antihack_auto_delete: { type: Boolean, default: true, required: false },
     domain_scanning: { type: Boolean, default: true },
     fake_link_check: { type: Boolean, default: true },
@@ -327,7 +328,8 @@ let userSchema = new mongoose.Schema({
     dmOffenses: { type: Boolean, default: true },
     hat_pull: hatPullSchema, // This one does not need defaults, it is checked for existence
     timer: timerSchema,
-    captcha: Boolean
+    captcha: Boolean,
+    beenTimezoneInformed: { type: Boolean, default: false }
 });
 
 userSchema.index({ "hat_pull.location": 1 });
@@ -353,10 +355,12 @@ const configSchema = new mongoose.Schema({
     wotd: { type: String, default: "Jerry" },
     bootedAt: { type: Number, default: 0 },    // Last time the bot booted *without* /reboot (i.e. power outage)
     restartedAt: { type: Number, default: 0 }, // Last /reboot
-    MOTD: { type: { // Statuses
-        statuses: [],
-        delay: { type: Number, default: 5000 }
-    }, default: {} },
+    MOTD: {
+        type: { // Statuses
+            statuses: [],
+            delay: { type: Number, default: 5000 }
+        }, default: {}
+    },
     blockedQuoteAuthors: { type: [String], default: [] }
 });
 
@@ -508,7 +512,7 @@ async function guildUserByObj(guild, userID, updateData = {}) {
     if (
         process.env.beta && (
             !(guild instanceof Guild) ||
-            !(typeof(userID) == "string")
+            !(typeof (userID) == "string")
         )
     ) {
         const warning = "WARNING: obj input seems incorrect. See console for stack trace.";
@@ -550,7 +554,7 @@ let trackableSchema = new mongoose.Schema({
     },
     tag: { type: String, required: true, default: "Look at my new trackable!!" },
     currentName: { type: String, required: true },
-    placed: { type: Number, required: true,  default: Date.now },
+    placed: { type: Number, required: true, default: Date.now },
     layout: { type: Number, required: true, default: 0 }, // The type of layout
     color: { type: Number, required: true, default: 0x00d7ff },
     pastLocations: { type: [String], required: true, default: [] },
@@ -577,17 +581,6 @@ let personalAiSchema = new mongoose.Schema({
     ratelimit: { type: Number }, // How many requests per ratelimit cycle
     ratelimitCycleLength: { type: Number } // How long a ratelimit cycle should last
 });
-
-let quoteSchema = new mongoose.Schema({
-    what: { type: String, required: true, unique: true }, // q
-    who: { type: String, required: true }, // a
-    blocked: { type: Boolean, required: true, default: false }
-});
-let blockedQuoteAuthorSchema = new mongoose.Schema({
-    what: { type: String, required: true, unique: true }, // q
-    who: { type: String, required: true }, // a
-    blocked: { type: Boolean, required: true, default: false }
-});
 //#endregion
 
 // Cache invalidators
@@ -597,6 +590,16 @@ guildUserSchema.post("save", doc => { messageDataCache.delete(`${doc.guildId}>${
 guildUserSchema.post("findOneAndUpdate", doc => { messageDataCache.delete(`${doc.guildId}>${doc.userId}`); });
 
 
+let quoteSchema = new mongoose.Schema({
+    what: { type: String, required: true, unique: true }, // q
+    who: { type: String, required: true }, // a
+    blocked: { type: Boolean, required: true, default: false }
+});
+
+// const onThisDaySchema = new mongoose.Schema({
+
+// });
+
 // Set plugins and define docs
 const Guilds = mongoose.model("guilds", guildSchema);
 const GuildUsers = mongoose.model("guildusers", guildUserSchema);
@@ -604,6 +607,7 @@ const Users = mongoose.model("users", userSchema);
 const Trackables = mongoose.model("trackables", trackableSchema);
 const PersonalAIs = mongoose.model("personal_ais", personalAiSchema);
 const Quotes = mongoose.model("quotes", quoteSchema);
+// const OnThisDays = mongoose.model("on_this_days", onThisDaySchema);
 
 // Drop indexes of docs where metadata was changed
 async function dropIndexes(Model) {
@@ -614,7 +618,7 @@ async function dropIndexes(Model) {
         const indexes2 = await Model.collection.indexes();
         console.log("Indexes after deletion:", indexes2.length);
     }
-    catch {}
+    catch { }
 }
 function onConnect() {
     if (process.env.beta) {
@@ -670,6 +674,7 @@ module.exports = {
     Trackables,
     PersonalAIs,
     Quotes,
+    // OnThisDays,
 
     // Utilities
     keyDecode,
