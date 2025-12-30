@@ -1,6 +1,6 @@
 // #region CommandBoilerplate
 const Categories = require("./modules/Categories");
-const { userByObj } = require("./modules/database.js");
+const { userByObj, Users } = require("./modules/database.js");
 const { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ModalBuilder, TextInputBuilder, TextInputStyle, StringSelectMenuBuilder, StringSelectMenuOptionBuilder } = require("discord.js");
 function applyContext(context = {}) {
     for (let key in context) {
@@ -24,7 +24,9 @@ function parseFreeformDate(text, customSherlock = sherlock, customNow, require24
     return DateTime.fromJSDate(result.startDate);
 }
 
-function resolveUserZone(config = {}) {
+/** @param {HydratedDocument<Users>} user */
+function getRegionFromUser(userConfig) {
+    const config = userConfig?.config || userConfig;
     if (config.timeZoneRegion) {
         const zoned = DateTime.now().setZone(config.timeZoneRegion);
         if (zoned.isValid) return zoned.zone;
@@ -39,7 +41,7 @@ function resolveUserZone(config = {}) {
 }
 
 function parseTextDateIfValid(text, userConfig, customSherlock = sherlock, customNow) {
-    const zone = resolveUserZone(userConfig);
+    const zone = getRegionFromUser(userConfig);
 
     // Convert the reference time (customNow) to the user's timezone to get their wall clock time
     // Then create a "fake now" Date with those wall-clock components
@@ -291,6 +293,7 @@ const components = {
 module.exports = {
     parseTextDateIfValid: parseTextDateIfValid,
     parseFreeformDate: parseFreeformDate,
+    getRegionFromUser: getRegionFromUser,
 
     data: {
         // Slash command data
@@ -324,7 +327,7 @@ module.exports = {
 
         if (user.config.hasSetTZ) {
             const quickInput = cmd.options.getString("quick-input");
-            const userZone = resolveUserZone(user.config);
+            const userZone = getRegionFromUser(user.config);
 
             let startingTime = parseTextDateIfValid(quickInput, user.config);
             if (!startingTime) {
@@ -352,7 +355,7 @@ module.exports = {
         applyContext(context);
 
         const user = await userByObj(cmd.user);
-        const userZone = resolveUserZone(user.config);
+        const userZone = getRegionFromUser(user.config);
         const getMessageTimestampSeconds = () => Number(cmd.message.content.split(":")[1]);
         const getMessageFormat = () => cmd.message.content.split(":")[2].split(">")[0];
         const getZonedMessageDate = () => DateTime.fromSeconds(getMessageTimestampSeconds()).setZone(userZone);

@@ -3,13 +3,16 @@ const Categories = require("./modules/Categories");
 const client = require("../client.js");
 const { userByObj, guildByObj } = require("./modules/database.js");
 const { Events, InteractionContextType: IT, ApplicationIntegrationType: AT, SlashCommandBuilder, PermissionFlagsBits } = require("discord.js");
-const { parseTextDateIfValid, parseFreeformDate } = require("./timestamp.js");
+const { parseTextDateIfValid, parseFreeformDate, getRegionFromUser } = require("./timestamp.js");
 const { DateTime } = require("luxon");
 const TIMEZONE_MAP = require("../data/timezone_abbreviations.js");
 
 const sherlock_limited = require("./modules/sherlock-limited.js");
 const sherlock_full = require("./modules/sherlock-full.js");
 
+const NodeCache = require("node-cache");
+const ms = require("ms");
+const clickReactionRatelimit = new NodeCache({ stdTTL: ms("5 min") / 1000, checkperiod: 60 });
 
 /**
 * Extracts timezone from text and returns the timezone and cleaned text
@@ -185,7 +188,7 @@ function parseTimeWithTimezone(text, userConfig, customNow, customSherlock = she
     // cleanedText = cleanedText.replace(/\bin\s+the\s+(morning|evening|afternoon|night)\b/gi, "").trim();
 
     // Determine which timezone to use
-    const targetZone = timezone || (userConfig.timeZoneRegion ? userConfig.timeZoneRegion : null); // TODO: make sure this works when configuring manually
+    const targetZone = timezone || getRegionFromUser(userConfig);
 
     // Check for 24-hour time format (only if no AM/PM or time-of-day context)
     const time24 = parse24HourTime(cleanedText); // TODO: nuke this
@@ -410,8 +413,14 @@ module.exports = {
         reaction.message.channel.permissionsFor(client.user).has(PermissionFlagsBits.SendMessages);
 
         if (reaction.message.author.id === user.id && canSendMessages) {
-            // Reply with timestamp if the reacting user is the message author
-            reaction.message.reply(response).catch(() => {});
+            // Check if we've already replied in the past hour.
+            if (!clickReactionRatelimit.has(reaction.message.id)) {
+                // Reply with timestamp if the reacting user is the message author, and we haven't replied in the past hour
+                clickReactionRatelimit.set(reaction.message.id, true);
+                reaction.message.reply(response).catch(() => {
+                    clickReactionRatelimit.delete(reaction.message.id);
+                });
+            }
         }
         else {
             // DM with timestamp for other users

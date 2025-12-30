@@ -167,7 +167,10 @@ export default defineConfig([
 
             // Member expression formatting (for chained calls)
             "@stylistic/dot-location": ["warn", "property"], // .setName() starts on new line
-            "@stylistic/newline-per-chained-call": ["warn", { "ignoreChainWithDepth": 2 }], // Break chains after 2 calls
+            "@stylistic/newline-per-chained-call": [
+                "warn", 
+                { "ignoreChainWithDepth": 3 }
+            ], // Break chains after 2 calls
 
             // Fix catch lines
             "@stylistic/padding-line-between-statements": ["warn", { "blankLine": "never", "prev": "block", "next": "block-like" }]

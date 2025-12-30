@@ -76,7 +76,7 @@
     },
     {
         "name": "auto_timestamp",
-        "mention": "</auto_timestamp:1454598162093309952>",
+        "mention": "</auto_timestamp:1455441709499420840>",
         "helpCategories": [
             "General",
             "Information",
@@ -523,14 +523,14 @@
     },
     {
         "name": "personal_config",
-        "mention": "</personal_config:1453467919466893343>",
+        "mention": "</personal_config:1455442533835472957>",
         "helpCategories": [
             "General",
             "Bot",
             "Configuration"
         ],
         "shortDesc": "Configure the bot for you personally",
-        "detailedDesc": "Configure options for your personal interactions with the bot. This includes options such as if the bot tells you when you're filtered, if it automatically embeds certain links you post, or if you want it to not ping you when you level up in a server. You can also set your timezone for use with </timestamp:1453467919466893344>"
+        "detailedDesc": "Configure options for your personal interactions with the bot. This includes options such as if the bot tells you when you're filtered, if it automatically embeds certain links you post, or if you want it to not ping you when you level up in a server. You can also set your timezone for use with </timestamp:1455441709499420841>"
     },
     {
         "name": "ping",
@@ -784,7 +784,7 @@
     },
     {
         "name": "timestamp",
-        "mention": "</timestamp:1453467919466893344>",
+        "mention": "</timestamp:1455441709499420841>",
         "helpCategories": [
             "General",
             "Information",
