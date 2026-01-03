@@ -220,15 +220,29 @@ module.exports = {
                     return cmd.followUp(result);
                 }
 
-                case "download_emoji": {
+                 case "download_emoji": {
+                    if (!emoji) {
+                        return cmd.followUp({ content: `Please provide an emoji to download.` });
+                    }
+
                     let { url, emojiName } = getEmojiData(emoji);
                     
-                    if (!emoji) {
-                        return cmd.followUp({ content: `Please provide a server emoji to download.` });
-                    }
-                    
+                    // If no custom emoji found, check for default emoji
                     if (!url) {
-                        return cmd.followUp({ content: `This does not appear to be a valid server emoji.` });
+                        // Try to extract unicode emoji
+                        const emojiRegex = /(\p{Emoji_Presentation}|\p{Emoji}\uFE0F)/gu;
+                        const unicodeEmoji = emoji.match(emojiRegex)?.[0];
+                        
+                        if (unicodeEmoji) {
+                            // Convert emoji to codepoints for Twemoji
+                            const codepoints = [...unicodeEmoji]
+                                .map(char => char.codePointAt(0).toString(16))
+                                .join('-');
+                            url = `https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/${codepoints}.png`;
+                            emojiName = `emoji-${codepoints}`;
+                        } else {
+                            return cmd.followUp({ content: `This does not appear to be a valid emoji.` });
+                        }
                     }
 
                     try {
@@ -236,16 +250,24 @@ module.exports = {
                         if (!response.ok) {
                             return cmd.followUp("Failed to download the emoji. Please try again.");
                         }
+
                         const buffer = Buffer.from(await response.arrayBuffer());
                         const extension = url.endsWith(".gif") ? "gif" : "png";
                         const fileName = `${emojiName || "emoji"}.${extension}`;
+                        
                         const attachment = new AttachmentBuilder(buffer, { name: fileName });
+                        
                         return cmd.followUp({ 
                             content: `Here's your emoji: **${emojiName || "emoji"}**`,
                             files: [attachment] 
                         });
                     } catch (error) {
-                        notify("Download emoji error:\n" + error.stack);
+                        try {
+                            notify("Download emoji error:\n" + error.stack);
+                        } catch (notifyError) {
+                            console.error("Download emoji error:", error.stack);
+                            console.error("Notify error:", notifyError);
+                        }
                         return cmd.followUp("There was an error downloading the emoji. Please try again.");
                     }
                 }
