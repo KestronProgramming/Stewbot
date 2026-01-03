@@ -2,7 +2,7 @@
 const Categories = require("./modules/Categories");
 const client = require("../client.js");
 const { userByObj } = require("./modules/database.js");
-const { SlashCommandBuilder, PermissionFlagsBits } = require("discord.js");
+const { SlashCommandBuilder, PermissionFlagsBits, AttachmentBuilder } = require("discord.js");
 function applyContext(context = {}) {
     for (let key in context) {
         this[key] = context[key];
@@ -72,7 +72,8 @@ module.exports = {
                         { name: "Clone from primed emoji", value: "clone_primed" },
                         { name: "Clone from prime_embed", value: "clone_embed" },
                         { name: "Clone from emoji ID", value: "clone_id" },
-                        { name: "Clone from a Nitro emoji", value: "direct_clone" }
+                        { name: "Clone from a Nitro emoji", value: "direct_clone" },
+                        { name: "Download emoji", value: "download_emoji" }
                     )
                     .setRequired(true)
             )
@@ -217,6 +218,58 @@ module.exports = {
 
                     let [_worked, result] = await uploadEmoji(url, emojiName, cmd.guild);
                     return cmd.followUp(result);
+                }
+
+                 case "download_emoji": {
+                    if (!emoji) {
+                        return cmd.followUp({ content: `Please provide an emoji to download.` });
+                    }
+
+                    let { url, emojiName } = getEmojiData(emoji);
+                    
+                    // If no custom emoji found, check for default emoji
+                    if (!url) {
+                        // Try to extract unicode emoji
+                        const emojiRegex = /(\p{Emoji_Presentation}|\p{Emoji}\uFE0F)/gu;
+                        const unicodeEmoji = emoji.match(emojiRegex)?.[0];
+                        
+                        if (unicodeEmoji) {
+                            // Convert emoji to codepoints for Twemoji
+                            const codepoints = [...unicodeEmoji]
+                                .map(char => char.codePointAt(0).toString(16))
+                                .join('-');
+                            url = `https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/${codepoints}.png`;
+                            emojiName = `emoji-${codepoints}`;
+                        } else {
+                            return cmd.followUp({ content: `This does not appear to be a valid emoji.` });
+                        }
+                    }
+
+                    try {
+                        const response = await fetch(url);
+                        if (!response.ok) {
+                            return cmd.followUp("Failed to download the emoji. Please try again.");
+                        }
+
+                        const buffer = Buffer.from(await response.arrayBuffer());
+                        const extension = url.endsWith(".gif") ? "gif" : "png";
+                        const fileName = `${emojiName || "emoji"}.${extension}`;
+                        
+                        const attachment = new AttachmentBuilder(buffer, { name: fileName });
+                        
+                        return cmd.followUp({ 
+                            content: `Here's your emoji: **${emojiName || "emoji"}**`,
+                            files: [attachment] 
+                        });
+                    } catch (error) {
+                        try {
+                            notify("Download emoji error:\n" + error.stack);
+                        } catch (notifyError) {
+                            console.error("Download emoji error:", error.stack);
+                            console.error("Notify error:", notifyError);
+                        }
+                        return cmd.followUp("There was an error downloading the emoji. Please try again.");
+                    }
                 }
 
             }
