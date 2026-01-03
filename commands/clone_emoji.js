@@ -2,7 +2,7 @@
 const Categories = require("./modules/Categories");
 const client = require("../client.js");
 const { userByObj } = require("./modules/database.js");
-const { SlashCommandBuilder, PermissionFlagsBits } = require("discord.js");
+const { SlashCommandBuilder, PermissionFlagsBits, AttachmentBuilder } = require("discord.js");
 function applyContext(context = {}) {
     for (let key in context) {
         this[key] = context[key];
@@ -72,7 +72,8 @@ module.exports = {
                         { name: "Clone from primed emoji", value: "clone_primed" },
                         { name: "Clone from prime_embed", value: "clone_embed" },
                         { name: "Clone from emoji ID", value: "clone_id" },
-                        { name: "Clone from a Nitro emoji", value: "direct_clone" }
+                        { name: "Clone from a Nitro emoji", value: "direct_clone" },
+                        { name: "Download emoji", value: "download_emoji" }
                     )
                     .setRequired(true)
             )
@@ -217,6 +218,36 @@ module.exports = {
 
                     let [_worked, result] = await uploadEmoji(url, emojiName, cmd.guild);
                     return cmd.followUp(result);
+                }
+
+                case "download_emoji": {
+                    let { url, emojiName } = getEmojiData(emoji);
+                    
+                    if (!emoji) {
+                        return cmd.followUp({ content: `Please provide a server emoji to download.` });
+                    }
+                    
+                    if (!url) {
+                        return cmd.followUp({ content: `This does not appear to be a valid server emoji.` });
+                    }
+
+                    try {
+                        const response = await fetch(url);
+                        if (!response.ok) {
+                            return cmd.followUp("Failed to download the emoji. Please try again.");
+                        }
+                        const buffer = Buffer.from(await response.arrayBuffer());
+                        const extension = url.endsWith(".gif") ? "gif" : "png";
+                        const fileName = `${emojiName || "emoji"}.${extension}`;
+                        const attachment = new AttachmentBuilder(buffer, { name: fileName });
+                        return cmd.followUp({ 
+                            content: `Here's your emoji: **${emojiName || "emoji"}**`,
+                            files: [attachment] 
+                        });
+                    } catch (error) {
+                        notify("Download emoji error:\n" + error.stack);
+                        return cmd.followUp("There was an error downloading the emoji. Please try again.");
+                    }
                 }
 
             }
