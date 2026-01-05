@@ -55,7 +55,7 @@ module.exports = {
             cmd.followUp(`Not here.`);
         }
         else {
-            notify(`Launch commands was used outside of Kestron Central by <@${cmd.user.id}>.`);
+            notify(`Launch commands was used outside of Stewared by <@${cmd.user.id}>.`);
             cmd.followUp(`No.`);
         }
     }

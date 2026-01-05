@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, Kestron and WKoA
+ * Copyright (c) 2025, Stewared
  *
  * This file was originally distributed under the BSD-3-Clause License
  * and is now relicensed under the GNU General Public License v3.0.

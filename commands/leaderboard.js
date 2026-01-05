@@ -271,7 +271,7 @@ module.exports = {
                         ).join("")
                     )
                     .setColor(0x006400)
-                    .setThumbnail("https://stewbot.kestron.software/roboabacus.jpg")
+                    .setThumbnail("https://bot.stewared.com/roboabacus.jpg")
                     .setFooter({ text: footerRank });
 
                 cmd.followUp({

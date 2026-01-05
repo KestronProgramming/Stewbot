@@ -47,11 +47,11 @@ module.exports = {
             "description": "Stewbot is a passion project, born out of our desire for the ultimate Discord bot. We never charge for any usage of the bot. We never have advertisements. We never store, or sell your info. We make the source code that the bot runs on public and open source. We provide free features that other bots charge for.\n\nIf this is something that speaks to you, that you want to support and to help fund, you can donate here.\nThank you so much, we truly appreciate it.",
             "color": 0x006400,
             "thumbnail": {
-                "url": "https://stewbot.kestron.software/stewbot.jpg"
+                "url": "https://bot.stewared.com/stewbot.jpg"
             },
             "footer": {
                 "text": "Stewbot",
-                "icon_url": "https://stewbot.kestron.software/stewbot.jpg"
+                "icon_url": "https://bot.stewared.com/stewbot.jpg"
             }
         }], components: [
             new ActionRowBuilder()

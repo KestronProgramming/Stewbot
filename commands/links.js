@@ -52,9 +52,9 @@ module.exports = {
             `Here is a list of links in relation with this bot you may find useful.\n` +
 			`- [Stewbot's Install Link](<${config.install}>)\n` +
 			`- [Support Server](<${config.invite}>)\n` +
-			`- [Stewbot's Source Code on Github](<https://github.com/KestronProgramming/Stewbot>)\n` +
-			`- [Stewbot's Website](<https://stewbot.kestron.com/>)\n` +
-			`- [Donate](<https://stewbot.kestron.com/donate>)`
+			`- [Stewbot's Source Code on Github](<https://github.com/Stewared/Stewbot>)\n` +
+			`- [Stewbot's Website](<https://bot.stewared.com/>)\n` +
+			`- [Donate](<https://bot.stewared.com/donate>)`
         ));
     }
 };

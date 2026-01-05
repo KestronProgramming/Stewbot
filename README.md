@@ -6,7 +6,7 @@ Stewbot is completely open source and free.
 
 ## Links
 - [App Directory](https://discord.com/discovery/applications/966167746243076136)
-- [Website](https://stewbot.kestron.com)
+- [Website](https://bot.stewared.com)
 - [Support Server](https://discord.gg/k3yVkrrvez)
 
 ## Running Locally

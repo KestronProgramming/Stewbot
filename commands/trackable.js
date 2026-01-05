@@ -32,7 +32,7 @@ const aboutTrackables = {
             },
             "footer": {
                 "text": "Stewbot",
-                "icon_url": "https://stewbot.kestron.software/stewbot.jpg"
+                "icon_url": "https://bot.stewared.com/stewbot.jpg"
             }
         }
         // {
@@ -40,7 +40,7 @@ const aboutTrackables = {
         // 		`To celebrate the launch of Trackables, we're giving away one month of Nitro to:\n1. The user who moves the most trackables\n`+
         // 		`2. The creator of the trackable that gets moved the most\n`+
         // 		`\n`+
-        // 		`Good luck! Join [Kestron Central](<${config.invite}>) for giveaway updates and to find more trackables!`,
+        // 		`Good luck! Join [Stewared](<${config.invite}>) for giveaway updates and to find more trackables!`,
         // 	"fields": [],
         // 	"color": 15764728,
         // 	"title": "🥳 Nitro Giveaway!",
@@ -560,7 +560,7 @@ module.exports = {
                     return cmd.followUp(textAsEmbed(
                         `You already have a trackable, use ${cmds.trackable.stats.mention} to see how far it went!\n` +
 						`\n` +
-						`Currently, each user only gets one, unchangeable trackable. This will change Soon™️, join [Kestron Central](<${config.install}>) for updates or other support.`
+						`Currently, each user only gets one, unchangeable trackable. This will change Soon™️, join [Stewared](<${config.install}>) for updates or other support.`
                     ));
                 }
 

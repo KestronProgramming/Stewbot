@@ -61,11 +61,11 @@ module.exports = {
         cmd.followUp({ content: `**Celebrate Stewbot's Birthday with us!**`, embeds: [{
             title: "Stewbot is turning 3!!!",
             description: "Stewbot is turning 3!!! We're celebrating by running a giveaway! On Stewbot's birthday (April 19th), we'll be giving away free Nitro to 3 different users!",
-            url: "https://stewbot.kestron.com",
+            url: "https://bot.stewared.com",
             fields: [
                 {
                     name: "How to Enter",
-                    value: `You'll need to be in Stewbot's home server to enter: [Kestron Central](${config.invite}). Once there, check the #announcements channel!`,
+                    value: `You'll need to be in Stewbot's home server to enter: [Stewared Support](${config.invite}). Once there, check the #announcements channel!`,
                     inline: true
                 },
                 {

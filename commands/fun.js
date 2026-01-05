@@ -103,7 +103,7 @@ async function getQuote() {
             });
             await newQuote.save();
 
-            // Send a verification to KestronProgramming to ensure we do in fact want to keep it, if it isn't in the database already, and add it to the database.
+            // Send a verification to Stewared to ensure we do in fact want to keep it, if it isn't in the database already, and add it to the database.
             const targetChannel = await client.channels.fetch(process.env.beta ? config.betaNoticeChannel : config.noticeChannel);
             if (targetChannel?.isTextBased() && targetChannel?.isSendable()) {
                 await targetChannel.send({

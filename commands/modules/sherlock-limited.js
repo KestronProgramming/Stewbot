@@ -2,7 +2,7 @@
  * Sherlock - https://github.com/neilgupta/Sherlock/blob/master/sherlock.js
  * Copyright (c) 2021 Neil Gupta
  *
- * Modified for tailored use case in https://github.com/KestronProgramming/Stewbot
+ * Modified for tailored use case in https://github.com/Stewared/Stewbot
  * - Disabled ranges
  * - Disabled "now" trigger
  * - Allowed passing now time as function param to avoid async edge cases
