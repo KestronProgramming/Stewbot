@@ -92,7 +92,7 @@ const keyword = [
     },
     {
         keywords: ["ow"],
-        response: "On a scale of 1-10, how would you rate your pain?\nhttps://th.bing.com/th/id/R.0ac8bd2af895c546d6802cc8803db1ee?rik=uHFTb0b3ii%2bbng&pid=ImgRaw&r=0&sres=1&sresct=1",
+        response: "On a [scale of 1-10]( https://web.archive.org/web/20260107021630if_/https://i.pinimg.com/1200x/ee/e6/2d/eee62d39e1db3bd44337120f5b31e9c7.jpg ), how would you rate your pain?",
         only: true,
         message: false,
         timeout: 0
