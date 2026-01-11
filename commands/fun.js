@@ -485,6 +485,16 @@ module.exports = {
                     )
             )
             .addSubcommand(command =>
+                command.setName("wyr").setDescription("Posts a Would-You-Rather question")
+            )
+            .addSubcommand(command =>
+                command.setName("dne").setDescription("Posts a random factpicture of a person - who never existed! (AI Person generation)")
+                    .addBooleanOption(option =>
+                        option.setName("private").setDescription("Make the response ephemeral?")
+                            .setRequired(false)
+                    )
+            )
+            .addSubcommand(command =>
                 command.setName("fact").setDescription("Posts a random fact")
                     .addBooleanOption(option =>
                         option.setName("private").setDescription("Make the response ephemeral?")
