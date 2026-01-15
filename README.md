@@ -1,4 +1,6 @@
 [![Support Server](https://img.shields.io/discord/983074750165299250?label=Discord&logo=discord&style=for-the-badge)](https://discord.gg/k3yVkrrvez)
+&nbsp;&nbsp;
+[![Donate](https://img.shields.io/badge/Donate-PayPal-blue?style=for-the-badge&logo=paypal)](https://www.paypal.com/donate?business=kestron@kestron.software&no_recurring=0&item_name=KestronProgramming&item_number=Stewbot)
 
 # Stewbot
 This is the open source repository for Stewbot, an advanced Discord bot with the intention of helping keep your server running smoothly while also providing entertainment.
