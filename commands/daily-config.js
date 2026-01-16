@@ -276,14 +276,14 @@ module.exports = {
                 new TextDisplayBuilder().setContent("## Daily Fact"),
                 new ContainerBuilder()
                     .addTextDisplayComponents(
-                        new TextDisplayBuilder().setContent(`Kyle W said he'd pay $5 for this fact :)`)//dailyFact.text)
+                        new TextDisplayBuilder().setContent(`dailyFact.text`)
                     )
                     .addSeparatorComponents(
                         new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
                             .setDivider(true)
                     )
                     .addTextDisplayComponents(
-                        new TextDisplayBuilder().setContent(`-# \\- We're kidding LOL`)//[${dailyFact.source}](${dailyFact.url})`)
+                        new TextDisplayBuilder().setContent(`-# \\- [${dailyFact.source}](${dailyFact.url})`)
                     )
             ],
             flags: MessageFlags.IsComponentsV2
