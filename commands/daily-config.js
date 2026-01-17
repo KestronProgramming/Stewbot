@@ -276,7 +276,7 @@ module.exports = {
                 new TextDisplayBuilder().setContent("## Daily Fact"),
                 new ContainerBuilder()
                     .addTextDisplayComponents(
-                        new TextDisplayBuilder().setContent(`dailyFact.text`)
+                        new TextDisplayBuilder().setContent(`${dailyFact.text}`)
                     )
                     .addSeparatorComponents(
                         new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
