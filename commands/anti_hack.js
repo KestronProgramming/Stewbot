@@ -24,6 +24,16 @@ const cache = {}; // TODO: lru cache
 const CROSS_CHANNEL_WINDOW_MS = ms("10s");
 const SAME_CONTENT_CROSS_CHANNEL_THRESHOLD = 3;
 const ATTACHMENT_ONLY_CROSS_CHANNEL_THRESHOLD = 3;
+const DANGER_KEYWORDS = ["@everyone", "@here", "http"];
+
+/**
+ * Returns true when message content includes any high-risk spam indicator.
+ * @param {string} content
+ * */
+function containsDangerKeyword(content) {
+    const lowerContent = content.toLowerCase();
+    return DANGER_KEYWORDS.some(keyword => lowerContent.includes(keyword));
+}
 
 /**
  * Track posts by fingerprint and detect cross-channel bursts in a short window.
@@ -198,11 +208,12 @@ module.exports = {
 
             const trimmedContent = msg.content.trim();
             const isAttachmentOnly = trimmedContent.length === 0 && msg.attachments.size > 0;
+            const hasDangerKeyword = containsDangerKeyword(msg.content);
 
             let sameContentCrossChannel = { triggered: false, justTriggered: false };
             let attachmentOnlyCrossChannel = { triggered: false, justTriggered: false };
 
-            if (trimmedContent.length > 0) {
+            if (trimmedContent.length > 0 && hasDangerKeyword) {
                 const contentHash = crypto.createHash("md5")
                     .update(trimmedContent.slice(0, 148))
                     .digest("hex");
@@ -229,14 +240,7 @@ module.exports = {
 
             if (cache[msg.author.id].lastHash === hash || crossChannelDetected) {
                 // Keep existing hash-streak behavior for repeated risky content.
-                if (
-                    cache[msg.author.id].lastHash === hash &&
-                    (
-                        msg.content.toLowerCase().includes("@everyone") ||
-                        msg.content.toLowerCase().includes("@here") ||
-                        msg.content.toLowerCase().includes("http")
-                    )
-                ) cache[msg.author.id].hashStreak++;
+                if (cache[msg.author.id].lastHash === hash && hasDangerKeyword) cache[msg.author.id].hashStreak++;
                 else if (cache[msg.author.id].lastHash !== hash) {
                     cache[msg.author.id].lastHash = hash;
                     cache[msg.author.id].hashStreak = 0;
