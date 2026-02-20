@@ -165,6 +165,7 @@ module.exports = {
                 let turnsJustLegit = false;
                 if (cmd.options.getBoolean("reset") && !guild.counting.reset) {
                     guild.counting.nextNum = 1;
+                    guild.counting.lastValidCountMessageId = "";
                     resetJustSet = true;
                 }
                 if (cmd.options.getBoolean("reset") !== null) guild.counting.reset = cmd.options.getBoolean("reset");
@@ -172,11 +173,15 @@ module.exports = {
                 // If resetting is on and post between turns is enabled, reset the count so it can be legit
                 if (cmd.options.getInteger("posts_between_turns") >= 1 && guild.counting.takeTurns < 1 && guild.counting.reset) {
                     guild.counting.nextNum = 1;
+                    guild.counting.lastValidCountMessageId = "";
                     turnsJustLegit = true;
                 }
 
                 guild.counting.active = cmd.options.getBoolean("active");
-                if (cmd.options.getChannel("channel") !== null) guild.counting.channel = cmd.options.getChannel("channel").id;
+                if (cmd.options.getChannel("channel") !== null) {
+                    guild.counting.channel = cmd.options.getChannel("channel").id;
+                    guild.counting.lastValidCountMessageId = "";
+                }
                 if (cmd.options.getBoolean("public") !== null) guild.counting.public = cmd.options.getBoolean("public");
                 if (cmd.options.getInteger("posts_between_turns") !== null) guild.counting.takeTurns = cmd.options.getInteger("posts_between_turns");
                 if (cmd.options.getBoolean("apply-a-fail-role") !== null) guild.counting.failRoleActive = cmd.options.getBoolean("apply-a-fail-role");
@@ -264,6 +269,7 @@ module.exports = {
                     break;
                 }
                 guild.counting.nextNum = cmd.options.getInteger("num");
+                guild.counting.lastValidCountMessageId = "";
                 if (guild.counting.nextNum > 1) {
                     guild.counting.legit = false;
                 }
@@ -296,6 +302,7 @@ module.exports = {
             // Fetch the full guild object for simplicity - TODO_DB: this could be made more efficient
             let guild = await guildByObj(msg.guild);
             let guildCounting = guild.counting;
+            guildCounting.lastValidCountMessageId ??= "";
 
             // Fetch the guild user's doc if we're counting
             guildUser = await guildUserByObj(msg.guild, msg.author.id);
@@ -324,6 +331,7 @@ module.exports = {
                         }, 150);
 
                         guildCounting.nextNum++;
+                        guildCounting.lastValidCountMessageId = msg.id;
                         if (guildCounting.legit && num > guildCounting.highestNum) {
                             msg.react("🎉");
                             guildCounting.highestNum = num;
@@ -343,6 +351,7 @@ module.exports = {
                             msg.reply(`⛔ **Reset**\nNope, you need to wait for ${guildCounting.takeTurns} other ${guildCounting.takeTurns === 1 ? "person" : "people"} to post before you post again!${guildCounting.reset ? ` The next number to post was going to be \`${guildCounting.nextNum}\`, but now it's \`1\`.` : ""}`);
                             if (guildCounting.reset) {
                                 guildCounting.nextNum = 1;
+                                guildCounting.lastValidCountMessageId = "";
                                 if (guildCounting.reset && guildCounting.takeTurns > 0) guildCounting.legit = true;
 
                                 await GuildUsers.updateMany(
@@ -395,6 +404,7 @@ module.exports = {
                     if (guildUser.beenCountWarned && guildCounting.reset) {
                         msg.reply(`⛔ **Reset**\nNope, that was incorrect! The next number to post was supposed to be \`${guildCounting.nextNum}\`, but now it's \`1\`.`);
                         guildCounting.nextNum = 1;
+                        guildCounting.lastValidCountMessageId = "";
 
                         if (guildCounting.reset && guildCounting.takeTurns > 0)
                             guildCounting.legit = true;
@@ -456,45 +466,44 @@ module.exports = {
                 }
             }
 
-            guildUser.save();
-            guild.save();
+            await Promise.all([
+                guildUser.save(),
+                guild.save()
+            ]);
         }
     },
 
-    async [Events.MessageUpdate](_, msg, readGuild) {
+    async [Events.MessageUpdate](_, msg, _readGuild) {
         if (msg.guild?.id === undefined || client.user.id === msg.author?.id) return; // Ignore self and DMs
-
-        if (!readGuild?.counting?.active) return;
-
+        const guild = await guildByObj(msg.guild);
+        const guildCounting = guild?.counting;
+        if (!guildCounting?.active) return;
         // Counting edit handlers
-        if (readGuild.counting.channel === msg.channel.id) {
-            var num = msg.content ? processForNumber(msg.content) : null;
-            if (num !== null && num !== undefined) {
-                if (+num === readGuild.counting.nextNum - 1) {
-                    msg.channel.send(String(num)).then(m => m.react("✅"));
-                }
+        if (guildCounting.channel === msg.channel.id&&guildCounting.lastValidCountMessageId === msg.id) {
+            try {
+                const reposted = await msg.channel.send(String(expectedNum));
+                await reposted.react("\u2705").catch(() => {});
+                await guildByObj(msg.guild, {
+                    "counting.lastValidCountMessageId": reposted.id
+                });
             }
+            catch {}
         }
     },
-
-    async [Events.MessageDelete](msg, guildStore) {
+    async [Events.MessageDelete](msg, _guildStore) {
         if (!msg.guild) return;
-
+        const guild = await guildByObj(msg.guild);
+        const guildCounting = guild?.counting;
         // Resend if the latest counting number was deleted
-        if (guildStore?.counting?.active && guildStore.counting.channel === msg.channel.id) {
-
-            // var num=msg.content?.match(/^(\d|,)+(?:\b)/i);
-            var num = msg.content ? processForNumber(msg.content) : null;
-
-            if (num !== null && num !== undefined) {
-
-                // If the deleted number is the current number, sent it ourselves
-                if (+num === guildStore.counting.nextNum - 1) {
-                    msg.channel.send(String(num))
-                        .then(m => m.react("✅"));
-                }
+        if (guildCounting?.active && guildCounting.lastValidCountMessageId === msg.id) {
+            try {
+                const reposted = await msg.channel.send(String(expectedNum));
+                await reposted.react("\u2705").catch(() => {});
+                await guildByObj(msg.guild, {
+                    "counting.lastValidCountMessageId": reposted.id
+                });
             }
+            catch {}
         }
-
     }
 };

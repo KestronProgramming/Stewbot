@@ -116,7 +116,8 @@ let countingSchema = new mongoose.Schema({
     legit: { type: Boolean, default: true },
     reset: { type: Boolean, default: false },
     nextNum: { type: Number, default: 1 },
-    highestNum: { type: Number, default: 0 }
+    highestNum: { type: Number, default: 0 },
+    lastValidCountMessageId: { type: String, default: "" }
 });
 
 let autoLeaveMessageSchema = new mongoose.Schema({
