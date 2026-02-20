@@ -21,6 +21,45 @@ const listFormatter = new Intl.ListFormat("en", { style: "long", type: "conjunct
 
 // Store post hashes so we can catch repeat posts
 const cache = {}; // TODO: lru cache
+const CROSS_CHANNEL_WINDOW_MS = ms("10s");
+const SAME_CONTENT_CROSS_CHANNEL_THRESHOLD = 3;
+const ATTACHMENT_ONLY_CROSS_CHANNEL_THRESHOLD = 3;
+
+/**
+ * Track posts by fingerprint and detect cross-channel bursts in a short window.
+ * @param {object} userCache
+ * @param {string} key
+ * @param {string} channelId
+ * @param {number} threshold
+ * */
+function registerCrossChannelPost(userCache, key, channelId, threshold) {
+    const now = Date.now();
+    userCache.crossChannelPosts ??= {};
+
+    // Prune stale entries from all tracked fingerprints to keep cache growth bounded.
+    for (const trackedKey of Object.keys(userCache.crossChannelPosts)) {
+        userCache.crossChannelPosts[trackedKey] = userCache.crossChannelPosts[trackedKey]
+            .filter(entry => now - entry.timestamp <= CROSS_CHANNEL_WINDOW_MS);
+
+        if (userCache.crossChannelPosts[trackedKey].length === 0) {
+            delete userCache.crossChannelPosts[trackedKey];
+        }
+    }
+
+    const history = userCache.crossChannelPosts[key] ?? [];
+    const channelsBefore = new Set(history.map(entry => entry.channelId)).size;
+
+    history.push({ channelId, timestamp: now });
+    if (history.length > 30) history.splice(0, history.length - 30);
+
+    userCache.crossChannelPosts[key] = history;
+
+    const channelsAfter = new Set(history.map(entry => entry.channelId)).size;
+    return {
+        triggered: channelsAfter >= threshold,
+        justTriggered: channelsBefore < threshold && channelsAfter >= threshold
+    };
+}
 
 /**
  * Deletes a message and any warnings from the badware_scanner replying to it
@@ -155,20 +194,68 @@ module.exports = {
             cache[msg.guild.id].users[msg.author.id].lastMessages ??= [];
             cache[msg.author.id] ??= {};
             cache[msg.author.id].hashStreak ??= 0;
+            cache[msg.author.id].crossChannelPosts ??= {};
 
-            if (cache[msg.author.id].lastHash === hash) {
-                // Check if this has the indications of a spammer
+            const trimmedContent = msg.content.trim();
+            const isAttachmentOnly = trimmedContent.length === 0 && msg.attachments.size > 0;
+
+            let sameContentCrossChannel = { triggered: false, justTriggered: false };
+            let attachmentOnlyCrossChannel = { triggered: false, justTriggered: false };
+
+            if (trimmedContent.length > 0) {
+                const contentHash = crypto.createHash("md5")
+                    .update(trimmedContent.slice(0, 148))
+                    .digest("hex");
+
+                sameContentCrossChannel = registerCrossChannelPost(
+                    cache[msg.author.id],
+                    `content:${contentHash}`,
+                    msg.channel.id,
+                    SAME_CONTENT_CROSS_CHANNEL_THRESHOLD
+                );
+            }
+
+            if (isAttachmentOnly) {
+                attachmentOnlyCrossChannel = registerCrossChannelPost(
+                    cache[msg.author.id],
+                    "attachment-only",
+                    msg.channel.id,
+                    ATTACHMENT_ONLY_CROSS_CHANNEL_THRESHOLD
+                );
+            }
+
+            const crossChannelDetected =
+                sameContentCrossChannel.triggered || attachmentOnlyCrossChannel.triggered;
+
+            if (cache[msg.author.id].lastHash === hash || crossChannelDetected) {
+                // Keep existing hash-streak behavior for repeated risky content.
                 if (
-                    msg.content.toLowerCase().includes("@everyone") ||
-                    msg.content.toLowerCase().includes("@here") ||
-                    msg.content.toLowerCase().includes("http")
+                    cache[msg.author.id].lastHash === hash &&
+                    (
+                        msg.content.toLowerCase().includes("@everyone") ||
+                        msg.content.toLowerCase().includes("@here") ||
+                        msg.content.toLowerCase().includes("http")
+                    )
                 ) cache[msg.author.id].hashStreak++;
+                else if (cache[msg.author.id].lastHash !== hash) {
+                    cache[msg.author.id].lastHash = hash;
+                    cache[msg.author.id].hashStreak = 0;
+                }
 
                 const spamThreshold = 3;
 
-                if (cache[msg.author.id].hashStreak >= spamThreshold) {
+                if (cache[msg.author.id].hashStreak >= spamThreshold || crossChannelDetected) {
                     // NOTE: To avoid spam when we only have delete perms, we only warn when this user hits a hash streak of 3.
-                    const toNotify = cache[msg.author.id].hashStreak == 3;
+                    const toNotify = (
+                        cache[msg.author.id].hashStreak === spamThreshold ||
+                        sameContentCrossChannel.justTriggered ||
+                        attachmentOnlyCrossChannel.justTriggered
+                    );
+                    const timeoutReason = cache[msg.author.id].hashStreak >= spamThreshold
+                        ? "Detected spam activity of high profile pings and/or a URL of some kind. Automatically applied for safety."
+                        : sameContentCrossChannel.triggered
+                            ? "Detected the same content posted across multiple channels in a short span. Automatically applied for safety."
+                            : "Detected attachment-only posts across multiple channels in a short span. Automatically applied for safety.";
 
                     const user = await userByObj(msg.author);
                     const userInGuild = guildUserStore; //await guildUserByObj(msg.guild, msg.author.id);
@@ -187,7 +274,7 @@ module.exports = {
                         if (canTimeoutUser) {
                             msg.member.timeout(
                                 ms("1d"),
-                                `Detected spam activity of high profile pings and/or a URL of some kind. Automatically applied for safety.`
+                                timeoutReason
                             ); //One day, by then any automated hacks should've run their course
                             user.timedOutIn.push(msg.guild.id);
                         }

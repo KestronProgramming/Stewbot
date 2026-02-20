@@ -1,23 +1,13 @@
 [
     {
         "name": "admin_message",
-        "mention": "</admin_message:1451384674252492811>",
+        "mention": "</admin_message:1448914141330018324>",
         "helpCategories": [
             "Administration",
             "Server_Only"
         ],
         "shortDesc": "Post anonymously in the server's name",
         "detailedDesc": "Moderators can use this command to make a post in the server's name. If you specify a user, Stewbot will DM the selected user with the message of choice. If no user is selected, the bot will use webhooks to post your message in the server's name in the same channel this command is used in."
-    },
-    {
-        "name": "ai_config",
-        "mention": "</ai_config:1452478904752410734>",
-        "helpCategories": [
-            "Configuration",
-            "Information"
-        ],
-        "shortDesc": "Configure AI settings",
-        "detailedDesc": "Configure your personal AI API key for Stewbot integrations."
     },
     {
         "name": "anti_hack",
@@ -76,7 +66,7 @@
     },
     {
         "name": "auto_timestamp",
-        "mention": "</auto_timestamp:1455441709499420840>",
+        "mention": "`auto_timestamp` Module",
         "helpCategories": [
             "General",
             "Information",
@@ -151,7 +141,7 @@
     },
     {
         "name": "chat",
-        "mention": "</chat:1451825246444322910>",
+        "mention": "</chat:1448914141552054313>",
         "helpCategories": [
             "General",
             "Bot",
@@ -183,7 +173,7 @@
     },
     {
         "name": "counting config",
-        "mention": "</counting config:1453081968144154634>",
+        "mention": "</counting config:1448914141552054315>",
         "helpCategories": [
             "General",
             "Entertainment",
@@ -195,7 +185,7 @@
     },
     {
         "name": "counting set_number",
-        "mention": "</counting set_number:1453081968144154634>",
+        "mention": "</counting set_number:1448914141552054315>",
         "helpCategories": [
             "General",
             "Entertainment",
@@ -207,7 +197,7 @@
     },
     {
         "name": "daily-config",
-        "mention": "</daily-config:1454690560660213885>",
+        "mention": "</daily-config:1448914141552054317>",
         "helpCategories": [
             "Information",
             "Entertainment",
@@ -329,7 +319,7 @@
     },
     {
         "name": "fun dne",
-        "mention": "`fun` Module",
+        "mention": "</fun dne:1448914141736734786>",
         "helpCategories": [
             "Entertainment"
         ],
@@ -338,7 +328,7 @@
     },
     {
         "name": "fun rac",
-        "mention": "</fun rac:1455454702790770932>",
+        "mention": "</fun rac:1448914141736734786>",
         "helpCategories": [
             "Entertainment"
         ],
@@ -347,7 +337,7 @@
     },
     {
         "name": "fun wyr",
-        "mention": "`fun` Module",
+        "mention": "</fun wyr:1448914141736734786>",
         "helpCategories": [
             "Entertainment"
         ],
@@ -356,7 +346,7 @@
     },
     {
         "name": "fun joke",
-        "mention": "</fun joke:1455454702790770932>",
+        "mention": "</fun joke:1448914141736734786>",
         "helpCategories": [
             "Entertainment"
         ],
@@ -365,7 +355,7 @@
     },
     {
         "name": "fun quote",
-        "mention": "</fun quote:1455454702790770932>",
+        "mention": "`fun` Module",
         "helpCategories": [
             "Entertainment"
         ],
@@ -374,7 +364,7 @@
     },
     {
         "name": "fun meme",
-        "mention": "</fun meme:1455454702790770932>",
+        "mention": "</fun meme:1448914141736734786>",
         "helpCategories": [
             "Entertainment"
         ],
@@ -383,7 +373,7 @@
     },
     {
         "name": "fun name_me",
-        "mention": "</fun name_me:1455454702790770932>",
+        "mention": "</fun name_me:1448914141736734786>",
         "helpCategories": [
             "Entertainment"
         ],
@@ -523,14 +513,14 @@
     },
     {
         "name": "personal_config",
-        "mention": "</personal_config:1455442533835472957>",
+        "mention": "</personal_config:1448914142080794732>",
         "helpCategories": [
             "General",
             "Bot",
             "Configuration"
         ],
         "shortDesc": "Configure the bot for you personally",
-        "detailedDesc": "Configure options for your personal interactions with the bot. This includes options such as if the bot tells you when you're filtered, if it automatically embeds certain links you post, or if you want it to not ping you when you level up in a server. You can also set your timezone for use with </timestamp:1455441709499420841>"
+        "detailedDesc": "Configure options for your personal interactions with the bot. This includes options such as if the bot tells you when you're filtered, if it automatically embeds certain links you post, or if you want it to not ping you when you level up in a server. You can also set your timezone for use with </timestamp:1448914142592372776>"
     },
     {
         "name": "ping",
@@ -624,7 +614,7 @@
     },
     {
         "name": "rss follow",
-        "mention": "</rss follow:1452820560760541385>",
+        "mention": "</rss follow:1450292696953651293>",
         "helpCategories": [
             "Information",
             "Configuration",
@@ -636,18 +626,18 @@
     },
     {
         "name": "rss unfollow",
-        "mention": "</rss unfollow:1452820560760541385>",
+        "mention": "</rss unfollow:1450292696953651293>",
         "helpCategories": [
             "Configuration",
             "Administration",
             "Server_Only"
         ],
         "shortDesc": "Unfollow an RSS feed",
-        "detailedDesc": "Specify the channel the feed is followed in, and the URL of the feed to unfollow, and Stewbot will no longer post RSS updates for that feed there. You can use </rss check:1452820560760541385> to get the URL needed for this command."
+        "detailedDesc": "Specify the channel the feed is followed in, and the URL of the feed to unfollow, and Stewbot will no longer post RSS updates for that feed there. You can use </rss check:1450292696953651293> to get the URL needed for this command."
     },
     {
         "name": "rss check",
-        "mention": "</rss check:1452820560760541385>",
+        "mention": "</rss check:1450292696953651293>",
         "helpCategories": [
             "Information",
             "Administration",
@@ -670,7 +660,7 @@
     },
     {
         "name": "server_config",
-        "mention": "</server_config:1454595701135904829>",
+        "mention": "`server_config` Module",
         "helpCategories": [
             "General",
             "Bot",
@@ -720,18 +710,18 @@
     },
     {
         "name": "submit_meme",
-        "mention": "</submit_meme:1455455817124937768>",
+        "mention": "</submit_meme:1448914142592372768>",
         "helpCategories": [
             "Bot",
             "Entertainment",
             "Context_Menu"
         ],
         "shortDesc": "Submit a meme to the Stewbot moderators for verification to show up in `/fun meme`",
-        "detailedDesc": "Using this command on a message with an image or video will submit it to the Stewbot moderators to verify to begin showing up in the </fun meme:1455454702790770932> command. This is a context menu command, and is accessed by holding down on a message on mobile, or right clicking on desktop, and then selecting \"Apps\"."
+        "detailedDesc": "Using this command on a message with an image or video will submit it to the Stewbot moderators to verify to begin showing up in the </fun meme:1448914141736734786> command. This is a context menu command, and is accessed by holding down on a message on mobile, or right clicking on desktop, and then selecting \"Apps\"."
     },
     {
         "name": "tag_role",
-        "mention": "</tag_role:1450389861122048061>",
+        "mention": "</tag_role:1448914142592372770>",
         "helpCategories": [
             "Server_Only",
             "Administration"
@@ -784,7 +774,7 @@
     },
     {
         "name": "timestamp",
-        "mention": "</timestamp:1455441709499420841>",
+        "mention": "</timestamp:1448914142592372776>",
         "helpCategories": [
             "General",
             "Information",

@@ -8,7 +8,33 @@ let skipValidateEnvs = process.argv.includes("--ignore-missing-envs");
 
 const fs = require("fs");
 const { jsonc } = require("jsonc");
-const chalk = require("chalk").default;
+
+/**
+ * Keep env loading compatible with both chalk v4 (CJS) and v5 (ESM-only).
+ * Falls back to no-op styling in CommonJS if chalk cannot be required.
+ * */
+function buildNoColorChalk() {
+    const plain = text => String(text);
+    const plainWithBold = Object.assign((text) => String(text), {
+        bold: text => String(text)
+    });
+
+    return {
+        red: plainWithBold,
+        yellow: plainWithBold,
+        blue: plainWithBold,
+        bold: plain
+    };
+}
+
+let chalk;
+try {
+    const imported = require("chalk");
+    chalk = imported.default || imported;
+}
+catch {
+    chalk = buildNoColorChalk();
+}
 
 // Utility to catch errors reading envs
 function readEnvs(filename, warningOnMissing, warningOnInvalid, errorCallback) {
