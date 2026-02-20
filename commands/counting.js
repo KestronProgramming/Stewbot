@@ -369,7 +369,7 @@ module.exports = {
                             }
                         }
                         else {
-                            msg.reply(`⚠️ **Warning**\nNope, that's incorrect. You have been warned! Next time this will reset the count. The next number is **${guildCounting.nextNum}**.\`\`\`\nNumbers entered must be the last number plus one, (so if the last entered number is 148, the next number is 149).${guildCounting.takeTurns > 0 ? ` You also need to make sure at least ${guildCounting.takeTurns} other ${guildCounting.takeTurns === 1 ? "person" : "people"} take${guildCounting.takeTurns === 1 ? "s" : ""} a turn before you take another turn.\`\`\`` : "```"}`);
+                            msg.reply(`# ⚠️ **Warning**\n## The Next Number Is: \`${guildCounting.nextNum}\`\n\nThat was incorrect. You have been warned! Next time this will reset the count. The next number is **${guildCounting.nextNum}**.\`\`\`\nNumbers entered must be the last number plus one, (so if the last entered number is 148, the next number is 149).${guildCounting.takeTurns > 0 ? ` You also need to make sure at least ${guildCounting.takeTurns} other ${guildCounting.takeTurns === 1 ? "person" : "people"} take${guildCounting.takeTurns === 1 ? "s" : ""} a turn before you take another turn.\`\`\`\n\nYou did not wait out a sufficient amount of turns before posting a second time.` : "```"}`);
                             guildUser.beenCountWarned = true;
                             if (guildCounting.warnRoleActive && msg.guild.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits.ManageRoles)) {
                                 let wr = msg.guild.roles.cache.get(guildCounting.warnRole);
@@ -393,7 +393,7 @@ module.exports = {
                 else if (guildCounting.reset && guildCounting.nextNum !== 1) {
                     msg.react("❌");
                     if (guildUser.beenCountWarned && guildCounting.reset) {
-                        msg.reply(`⛔ **Reset**\nNope, that was incorrect! The next number to post was going to be \`${guildCounting.nextNum}\`, but now it's \`1\`.`);
+                        msg.reply(`⛔ **Reset**\nNope, that was incorrect! The next number to post was supposed to be \`${guildCounting.nextNum}\`, but now it's \`1\`.`);
                         guildCounting.nextNum = 1;
 
                         if (guildCounting.reset && guildCounting.takeTurns > 0)
@@ -423,14 +423,16 @@ module.exports = {
                     }
                     else {
                         msg.reply(
-                            `⚠️ **Warning**\n` +
+                            `# ⚠️ **Warning**\n` +
+                            `## The Next Number To Post Is: \`${guildCounting.nextNum}\`\n\n`+
                             `Nope, that's incorrect. You have been warned! Next time this will reset the count. The next number is **${guildCounting.nextNum}**.` +
                             `\`\`\`\n` +
                             `Numbers entered must be the last number plus one, (so if the last entered number is 148, the next number is 149).` +
                                 `${guildCounting.takeTurns > 0
                                     ? ` You also need to make sure at least ${guildCounting.takeTurns} other ${guildCounting.takeTurns === 1 ? "person" : "people"} take${guildCounting.takeTurns === 1 ? "s" : ""} a turn before you take another turn.\`\`\``
                                     : "```"
-                                }`
+                                }\n\n`+
+                            `Your mistake was posting the wrong number. Read: \`${num}\`.`
                         );
 
                         guildUser.beenCountWarned = true;
